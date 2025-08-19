@@ -1,0 +1,349 @@
+// Prisma Schema for Collect Your Cards
+// Database: SQL Server 2022
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlserver"
+  url      = env("DATABASE_URL")
+}
+
+// User Management
+model User {
+  user_id            BigInt    @id @default(autoincrement())
+  email              String    @unique @db.NVarChar(255)
+  password_hash      String?   @db.NVarChar(500)
+  name               String?   @db.NVarChar(Max)
+  role               String    @default("user") @db.NVarChar(50) // user, admin, superadmin, data_admin
+  is_active          Boolean   @default(true)
+  is_verified        Boolean   @default(false)
+  verification_token String?   @db.NVarChar(500)
+  reset_token        String?   @db.NVarChar(500)
+  reset_token_expires DateTime? @db.DateTime2
+  last_login         DateTime? @db.DateTime2
+  login_attempts     Int       @default(0)
+  locked_until       DateTime? @db.DateTime2
+  created            DateTime  @default(now()) @db.DateTime2
+
+  // Relationships
+  sessions       UserSession[]
+  auth_logs      UserAuthLog[]
+  user_cards     UserCard[]
+  user_locations UserLocation[]
+  import_jobs    ImportJob[]
+  ebay_accounts  UserEbayAccount[]
+  ebay_purchases EbayPurchase[]
+
+  @@map("user")
+}
+
+model UserSession {
+  session_id     BigInt    @id @default(autoincrement())
+  user_id        BigInt
+  session_token  String    @db.NVarChar(500) // Added missing session_token field
+  token_hash     String?   @db.NVarChar(500) // Made optional since it's nullable in DB
+  expires_at     DateTime  @db.DateTime2
+  ip_address     String?   @db.VarChar(45)
+  user_agent     String?   @db.VarChar(500)
+  last_accessed  DateTime? @db.DateTime2    // Made optional since it's nullable in DB
+  created        DateTime  @default(now()) @db.DateTime2
+
+  // Relationships
+  user User @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@index([token_hash])
+  @@map("user_session")
+}
+
+model UserAuthLog {
+  log_id      BigInt   @id @default(autoincrement())
+  user_id     BigInt?
+  email       String   @db.NVarChar(255)
+  event_type  String   @db.NVarChar(50) // login, login_success, login_failed, logout, etc.
+  ip_address  String?  @db.VarChar(45)
+  user_agent  String?  @db.VarChar(500)
+  success     Boolean
+  error_message String? @db.NVarChar(Max)
+  created     DateTime @default(now()) @db.DateTime2
+
+  // Relationships
+  user User? @relation(fields: [user_id], references: [user_id], onDelete: SetNull)
+
+  @@index([email])
+  @@map("user_auth_log")
+}
+
+// Sports Organizations & Structure
+model Organization {
+  organization_id Int    @id @default(autoincrement())
+  name           String @db.NVarChar(Max) // MLB, NFL, NBA, etc.
+  abbreviation   String @db.NVarChar(Max)
+
+  // Relationships
+  sets  Set[]
+  teams Team[]
+
+  @@map("organizations")
+}
+
+model Manufacturer {
+  manufacturer_id Int    @id @default(autoincrement())
+  name           String @db.NVarChar(Max) // Topps, Panini, Upper Deck
+
+  // Relationships
+  sets Set[]
+
+  @@map("manufacturers")
+}
+
+model Set {
+  set_id       Int     @id @default(autoincrement())
+  name         String  @db.NVarChar(Max)
+  year         Int
+  organization Int
+  manufacturer Int
+  card_count   Int?
+  series_count Int?
+  is_complete  Boolean?
+
+  // Relationships
+  organization_rel Organization @relation(fields: [organization], references: [organization_id])
+  manufacturer_rel Manufacturer @relation(fields: [manufacturer], references: [manufacturer_id])
+  series          Series[]
+
+  @@map("sets")
+}
+
+model Series {
+  series_id           BigInt  @id @default(autoincrement())
+  name               String  @db.NVarChar(Max)
+  set                Int
+  card_count         Int     @default(0)
+  is_base            Boolean @default(false)
+  parallel_of_series BigInt? // For parallel sets
+
+  // Relationships
+  set_rel            Set      @relation(fields: [set], references: [set_id])
+  parallel_series    Series?  @relation("ParallelSeries", fields: [parallel_of_series], references: [series_id], onDelete: NoAction, onUpdate: NoAction)
+  child_parallels    Series[] @relation("ParallelSeries")
+  cards              Card[]
+
+  @@map("series")
+}
+
+// Colors for card variants
+model Color {
+  color_id Int    @id @default(autoincrement())
+  name     String @db.NVarChar(Max)
+  hex_code String @db.NVarChar(7)
+
+  // Relationships
+  cards Card[]
+
+  @@map("colors")
+}
+
+// Grading agencies
+model GradingAgency {
+  grading_agency_id Int    @id @default(autoincrement())
+  name             String @db.NVarChar(Max) // PSA, BGS, SGC, etc.
+  abbreviation     String @db.NVarChar(10)
+
+  // Relationships
+  user_cards UserCard[]
+
+  @@map("grading_agencies")
+}
+
+// Players and Teams
+model Player {
+  player_id   BigInt    @id @default(autoincrement())
+  first_name  String    @db.NVarChar(Max)
+  last_name   String    @db.NVarChar(Max)
+  nick_name   String?   @db.NVarChar(Max)
+  birthdate   DateTime? @db.DateTime2
+  is_hof      Boolean   @default(false)
+  card_count  Int       @default(0)
+
+  // Relationships
+  player_teams PlayerTeam[]
+
+  @@map("players")
+}
+
+model Team {
+  team_id         Int    @id @default(autoincrement())
+  name           String @db.NVarChar(Max)
+  city           String @db.NVarChar(Max)
+  mascot         String @db.NVarChar(Max)
+  abbreviation   String @db.NVarChar(Max)
+  organization   Int
+  primary_color  String @db.NVarChar(Max)
+  secondary_color String @db.NVarChar(Max)
+
+  // Relationships
+  organization_rel Organization @relation(fields: [organization], references: [organization_id])
+  player_teams    PlayerTeam[]
+
+  @@map("teams")
+}
+
+model PlayerTeam {
+  player_team_id BigInt @id @default(autoincrement())
+  player         BigInt
+  team           Int
+
+  // Relationships
+  player_rel       Player             @relation(fields: [player], references: [player_id])
+  team_rel         Team               @relation(fields: [team], references: [team_id])
+  card_player_teams CardPlayerTeam[]
+
+  @@unique([player, team])
+  @@map("player_teams")
+}
+
+// Cards
+model Card {
+  card_id      BigInt  @id @default(autoincrement())
+  sort_order   Int?
+  card_number  String  @db.NVarChar(Max)
+  series       BigInt
+  color        Int?
+  is_rookie    Boolean @default(false)
+  is_autograph Boolean @default(false)
+  is_relic     Boolean @default(false)
+  print_run    Int?
+  notes        String? @db.NVarChar(Max)
+  created      DateTime @default(now()) @db.DateTime2
+
+  // Relationships
+  series_rel        Series             @relation(fields: [series], references: [series_id])
+  color_rel         Color?             @relation(fields: [color], references: [color_id])
+  card_player_teams CardPlayerTeam[]
+  user_cards        UserCard[]
+  ebay_purchases    EbayPurchase[]
+
+  @@index([series])
+  @@map("cards")
+}
+
+model CardPlayerTeam {
+  card_player_team_id BigInt @id @default(autoincrement())
+  card               BigInt
+  player_team        BigInt
+
+  // Relationships
+  card_rel         Card       @relation(fields: [card], references: [card_id], onDelete: Cascade, onUpdate: NoAction)
+  player_team_rel  PlayerTeam @relation(fields: [player_team], references: [player_team_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([card, player_team])
+  @@map("card_player_teams")
+}
+
+// User Collections
+model UserLocation {
+  user_location_id BigInt  @id @default(autoincrement())
+  user            BigInt
+  location        String  @db.NVarChar(Max)
+  card_count      Int     @default(0)
+  is_dashboard    Boolean @default(true)
+
+  // Relationships
+  user_rel   User       @relation(fields: [user], references: [user_id], onDelete: Cascade)
+  user_cards UserCard[]
+
+  @@map("user_locations")
+}
+
+model UserCard {
+  user_card_id      BigInt   @id @default(autoincrement())
+  user             BigInt
+  card             BigInt
+  serial_number    Int?
+  purchase_price   Float? @default(0) @db.Money
+  estimated_value  Float? @default(0) @db.Money
+  current_value    Float? @default(0) @db.Money
+  grading_agency   Int?
+  grade            Decimal? @db.Decimal(18,0)
+  is_for_sale      Boolean  @default(false)
+  is_wanted        Boolean  @default(false)
+  user_location    BigInt?
+  notes            String?  @db.NVarChar(Max)
+  created          DateTime @default(now()) @db.DateTime2
+
+  // Relationships
+  user_rel            User            @relation(fields: [user], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+  card_rel            Card            @relation(fields: [card], references: [card_id], onDelete: NoAction, onUpdate: NoAction)
+  grading_agency_rel  GradingAgency?  @relation(fields: [grading_agency], references: [grading_agency_id], onDelete: NoAction, onUpdate: NoAction)
+  user_location_rel   UserLocation?   @relation(fields: [user_location], references: [user_location_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([user, card])
+  @@index([user, card])
+  @@map("user_cards")
+}
+
+// Import System
+model ImportJob {
+  id             BigInt    @id @default(autoincrement())
+  user_id        BigInt
+  filename       String    @db.NVarChar(255)
+  status         String    @db.NVarChar(50) // pending, processing, completed, failed
+  current_stage  Int       @default(0)
+  total_rows     Int?
+  processed_rows Int       @default(0)
+  matched_rows   Int       @default(0)
+  imported_rows  Int       @default(0)
+  error_count    Int       @default(0)
+  stage_data     String?   @db.NVarChar(Max) // JSON
+  error_log      String?   @db.NVarChar(Max)
+  created        DateTime  @default(now()) @db.DateTime2
+  completed_at   DateTime? @db.DateTime2
+
+  // Relationships
+  user User @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@map("import_jobs")
+}
+
+// eBay Integration
+model UserEbayAccount {
+  id                BigInt    @id @default(autoincrement())
+  user_id           BigInt
+  ebay_user_id      String    @db.NVarChar(255)
+  access_token      String    @db.NVarChar(Max) // Encrypted
+  refresh_token     String?   @db.NVarChar(Max) // Encrypted
+  token_expires_at  DateTime? @db.DateTime2
+  last_sync_at      DateTime? @db.DateTime2
+  is_active         Boolean   @default(true)
+  created           DateTime  @default(now()) @db.DateTime2
+
+  // Relationships
+  user User @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@unique([user_id, ebay_user_id])
+  @@map("user_ebay_accounts")
+}
+
+model EbayPurchase {
+  id                 BigInt    @id @default(autoincrement())
+  user_id            BigInt
+  ebay_item_id       String    @unique @db.NVarChar(255)
+  title              String    @db.NVarChar(Max)
+  purchase_date      DateTime  @db.DateTime2
+  price              Decimal   @db.Decimal(10,2)
+  currency           String    @default("USD") @db.VarChar(3)
+  seller_name        String?   @db.NVarChar(255)
+  is_sports_card     Boolean?
+  matched_card_id    BigInt?
+  status             String    @default("pending") @db.VarChar(50) // pending, approved, dismissed, added
+  user_notes         String?   @db.NVarChar(Max)
+  created            DateTime  @default(now()) @db.DateTime2
+
+  // Relationships
+  user         User  @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  matched_card Card? @relation(fields: [matched_card_id], references: [card_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@map("ebay_purchases")
+}

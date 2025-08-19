@@ -1,0 +1,11 @@
+/* Layout Component Styles */
+.app-layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-main {
+  flex: 1;
+  padding-top: 0; /* Header is sticky, so no extra padding needed */
+}

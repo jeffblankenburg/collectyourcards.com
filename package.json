@@ -1,0 +1,54 @@
+{
+  "name": "collect-your-cards",
+  "version": "1.0.0",
+  "description": "Ultimate sports card collection management platform",
+  "main": "server/server.js",
+  "scripts": {
+    "dev": "concurrently \"npm run server:dev\" \"npm run client:dev\"",
+    "server:dev": "nodemon server/server.js",
+    "client:dev": "cd client && npm run dev",
+    "build": "cd client && npm run build",
+    "start": "node server/server.js",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:studio": "prisma studio",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "lint": "eslint server client/src --ext .js,.jsx,.ts,.tsx",
+    "typecheck": "cd client && npm run type-check"
+  },
+  "keywords": [
+    "sports cards",
+    "collection",
+    "trading cards",
+    "database"
+  ],
+  "author": "Jeff Blankenburg",
+  "license": "MIT",
+  "dependencies": {
+    "@azure/communication-email": "^1.0.0",
+    "@dynatrace/oneagent-sdk": "^1.5.0",
+    "@prisma/client": "^6.13.0",
+    "axios": "^1.7.9",
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.4.1",
+    "express-validator": "^7.2.1",
+    "helmet": "^8.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^1.4.4-lts.1",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.17.0",
+    "concurrently": "^9.1.0",
+    "eslint": "^9.17.0",
+    "jest": "^29.7.0",
+    "nodemon": "^3.1.7",
+    "prisma": "^6.13.0",
+    "supertest": "^7.1.4"
+  }
+}
