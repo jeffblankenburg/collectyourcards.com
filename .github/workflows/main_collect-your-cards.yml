@@ -1,4 +1,4 @@
-# Build and deploy Docker container to Azure Container Instances
+# Build and deploy Docker container to existing Azure Web App
 name: Build and deploy containerized app to Azure
 
 on:
@@ -8,10 +8,8 @@ on:
   workflow_dispatch:
 
 env:
-  REGISTRY_NAME: collectyourcardsregistry
   IMAGE_NAME: collectyourcards
-  RESOURCE_GROUP: collect-your-cards-rg
-  CONTAINER_GROUP: collect-your-cards-container
+  WEB_APP_NAME: collect-your-cards
 
 jobs:
   build-and-deploy:
@@ -31,94 +29,15 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_4439AA608AE4414393C14DB5B132DE61 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_3939050614DD498DA01E9B9C3DB155AA }}
 
-      - name: Create Azure Container Registry (if not exists)
+      - name: Build Docker image
         run: |
-          echo "🔧 Setting up Azure Container Registry..."
-          
-          # Check if resource group exists, create if not
-          if ! az group show --name ${{ env.RESOURCE_GROUP }} >/dev/null 2>&1; then
-            echo "Creating resource group: ${{ env.RESOURCE_GROUP }}"
-            az group create --name ${{ env.RESOURCE_GROUP }} --location eastus
-          fi
-          
-          # Check if ACR exists, create if not
-          if ! az acr show --name ${{ env.REGISTRY_NAME }} >/dev/null 2>&1; then
-            echo "Creating Azure Container Registry: ${{ env.REGISTRY_NAME }}"
-            az acr create --resource-group ${{ env.RESOURCE_GROUP }} \
-                         --name ${{ env.REGISTRY_NAME }} \
-                         --sku Basic \
-                         --admin-enabled true
-          fi
-          
-          echo "✅ Azure Container Registry ready"
+          echo "🔧 Building Docker image locally..."
+          docker build -t ${{ env.IMAGE_NAME }}:latest .
+          echo "✅ Docker image built successfully"
 
-      - name: Build and push Docker image
-        run: |
-          echo "🔧 Building and pushing Docker image..."
-          
-          # Login to ACR
-          az acr login --name ${{ env.REGISTRY_NAME }}
-          
-          # Build image
-          docker build -t ${{ env.REGISTRY_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ github.sha }} .
-          docker build -t ${{ env.REGISTRY_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:latest .
-          
-          # Push image
-          docker push ${{ env.REGISTRY_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ github.sha }}
-          docker push ${{ env.REGISTRY_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:latest
-          
-          echo "✅ Docker image pushed successfully"
-
-      - name: Deploy to Azure Container Instances
-        run: |
-          echo "🚀 Deploying to Azure Container Instances..."
-          
-          # Get ACR credentials
-          ACR_USERNAME=$(az acr credential show --name ${{ env.REGISTRY_NAME }} --query username --output tsv)
-          ACR_PASSWORD=$(az acr credential show --name ${{ env.REGISTRY_NAME }} --query passwords[0].value --output tsv)
-          
-          # Deploy container
-          az container create \
-            --resource-group ${{ env.RESOURCE_GROUP }} \
-            --name ${{ env.CONTAINER_GROUP }} \
-            --image ${{ env.REGISTRY_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:latest \
-            --registry-login-server ${{ env.REGISTRY_NAME }}.azurecr.io \
-            --registry-username $ACR_USERNAME \
-            --registry-password $ACR_PASSWORD \
-            --dns-name-label collect-your-cards-app \
-            --ports 3001 \
-            --environment-variables \
-              NODE_ENV=production \
-              PORT=3001 \
-              FRONTEND_URL=https://collectyourcards.com \
-            --secure-environment-variables \
-              DATABASE_URL="${{ secrets.DATABASE_URL }}" \
-              JWT_SECRET="${{ secrets.JWT_SECRET }}" \
-              AZURE_COMMUNICATION_CONNECTION_STRING="${{ secrets.AZURE_COMMUNICATION_CONNECTION_STRING }}" \
-            --cpu 1 \
-            --memory 2 \
-            --restart-policy Always \
-            --location eastus \
-            || true
-          
-          # If container exists, update it
-          echo "🔄 Updating existing container..."
-          az container restart \
-            --resource-group ${{ env.RESOURCE_GROUP }} \
-            --name ${{ env.CONTAINER_GROUP }} \
-            || echo "Container restart failed, continuing..."
-          
-          echo "✅ Deployment completed"
-
-      - name: Get container URL
-        run: |
-          echo "🌐 Getting container URL..."
-          FQDN=$(az container show \
-            --resource-group ${{ env.RESOURCE_GROUP }} \
-            --name ${{ env.CONTAINER_GROUP }} \
-            --query ipAddress.fqdn \
-            --output tsv)
-          
-          echo "🎉 Application deployed to: http://$FQDN:3001"
-          echo "🔗 Health check: http://$FQDN:3001/health"
+      - name: Deploy Docker container to Azure Web App
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ env.WEB_APP_NAME }}
+          images: ${{ env.IMAGE_NAME }}:latest
           
