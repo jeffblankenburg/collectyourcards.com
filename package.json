@@ -7,7 +7,7 @@
     "dev": "concurrently \"npm run server:dev\" \"npm run client:dev\"",
     "server:dev": "nodemon server/server.js",
     "client:dev": "cd client && npm run dev",
-    "build": "npx prisma generate && cd client && npm install && npm run build",
+    "build": "cd client && npm install && npm run build",
     "install:all": "npm install && cd client && npm install",
     "start": "node server/server.js",
     "db:generate": "prisma generate",
