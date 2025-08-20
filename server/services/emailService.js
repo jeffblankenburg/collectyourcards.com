@@ -2,12 +2,37 @@ const { EmailClient } = require('@azure/communication-email')
 
 class EmailService {
   constructor() {
-    this.client = new EmailClient(process.env.AZURE_COMMUNICATION_CONNECTION_STRING)
     this.fromEmail = process.env.EMAIL_FROM || 'DoNotReply@collectyourcards.com'
     this.baseUrl = process.env.BASE_URL || 'http://localhost:5174'
+    this.client = null
+    this.isConfigured = false
+    
+    // Initialize email client with error handling
+    try {
+      const connectionString = process.env.AZURE_COMMUNICATION_CONNECTION_STRING
+      if (connectionString && connectionString.trim() !== '') {
+        this.client = new EmailClient(connectionString)
+        this.isConfigured = true
+        console.log('✅ Azure Communication Services email client initialized')
+      } else {
+        console.log('⚠️  Azure Communication Services not configured - email features disabled')
+      }
+    } catch (error) {
+      console.error('❌ Failed to initialize Azure Communication Services:', error.message)
+      console.log('📧 Email features will be disabled')
+    }
   }
 
   async sendEmail(to, subject, htmlContent, textContent = null) {
+    if (!this.isConfigured || !this.client) {
+      console.log(`📧 Email would be sent to ${to}: ${subject} (Email service not configured)`)
+      return { 
+        success: false, 
+        error: 'Email service not configured',
+        mockSent: true 
+      }
+    }
+
     try {
       const emailMessage = {
         senderAddress: this.fromEmail,
@@ -254,6 +279,21 @@ class EmailService {
 
   stripHtml(html) {
     return html.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim()
+  }
+
+  // Check if email service is available
+  isAvailable() {
+    return this.isConfigured && this.client !== null
+  }
+
+  // Get email service status
+  getStatus() {
+    return {
+      configured: this.isConfigured,
+      available: this.isAvailable(),
+      fromEmail: this.fromEmail,
+      baseUrl: this.baseUrl
+    }
   }
 }
 
