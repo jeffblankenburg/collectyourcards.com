@@ -17,7 +17,7 @@ const config = {
 
 // Trust proxy for Azure Web Apps (required for rate limiting)
 if (config.environment === 'production') {
-  app.set('trust proxy', 1);
+  app.set('trust proxy', true);
   console.log('✅ Express configured to trust proxy for Azure Web Apps');
 }
 
@@ -28,13 +28,22 @@ app.use(cors({
   credentials: true
 }));
 
-// Rate limiting
+// Rate limiting with Azure-compatible configuration
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // limit each IP to 100 requests per windowMs
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  // Custom key generator for Azure Web Apps
+  keyGenerator: (req) => {
+    return req.ip || req.connection.remoteAddress || 'unknown';
+  },
+  // Skip rate limiting if IP can't be determined
+  skip: (req) => {
+    const ip = req.ip || req.connection.remoteAddress;
+    return !ip || ip === 'unknown';
+  }
 });
 app.use('/api/', limiter);
 
