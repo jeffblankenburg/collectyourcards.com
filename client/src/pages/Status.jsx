@@ -225,7 +225,8 @@ function Status() {
                 </div>
                 <div className="status-details">
                   <p>Version: {systemStatus.frontend.version}</p>
-                  <p>Port: 5174</p>
+                  <p>{isProduction ? 'Host: Azure Static Files' : 'Port: 5174 (Vite Dev)'}</p>
+                  {isProduction && <p>Served via: Express Static Middleware</p>}
                 </div>
               </div>
 
@@ -238,7 +239,8 @@ function Status() {
                 <div className="status-details">
                   {systemStatus.backend.responseTime && <p>Response: {systemStatus.backend.responseTime}</p>}
                   {systemStatus.backend.environment && <p>Environment: {systemStatus.backend.environment}</p>}
-                  <p>Port: 3001</p>
+                  <p>Port: {isProduction ? (systemStatus.azureInfo?.port || 'Azure-assigned') : '3001'}</p>
+                  {isProduction && <p>Host: Azure Web App</p>}
                 </div>
               </div>
 
@@ -258,7 +260,14 @@ function Status() {
                       <p>Teams: {systemStatus.database.records.teams || 0}</p>
                     </div>
                   )}
-                  <p>Port: 1433 (Docker)</p>
+                  {isProduction ? (
+                    <div>
+                      <p>Host: Azure SQL Database</p>
+                      <p>Connection: Managed by Azure</p>
+                    </div>
+                  ) : (
+                    <p>Port: 1433 (Docker Container)</p>
+                  )}
                 </div>
               </div>
             </div>
