@@ -11,6 +11,15 @@ const dynatraceService = require('../services/dynatraceService')
 
 const router = express.Router()
 
+// Health check endpoint for auth routes
+router.get('/health', (req, res) => {
+  res.json({
+    status: 'OK',
+    route: 'auth',
+    timestamp: new Date().toISOString()
+  })
+})
+
 // Initialize Prisma with error handling for production
 let prisma
 let databaseAvailable = false
@@ -21,18 +30,8 @@ try {
   console.log('✅ Database connection initialized for auth routes')
 } catch (error) {
   console.error('❌ Database connection failed for auth routes:', error.message)
-  console.error('📝 Attempting to generate Prisma client...')
-  
-  try {
-    // Try to generate Prisma client on the fly
-    require('child_process').execSync('npx prisma generate', { stdio: 'inherit' })
-    prisma = new PrismaClient()
-    databaseAvailable = true
-    console.log('✅ Prisma client generated successfully, database connection initialized')
-  } catch (genError) {
-    console.error('❌ Failed to generate Prisma client:', genError.message)
-    databaseAvailable = false
-  }
+  console.error('   Prisma client may not be generated. This should be done during build.')
+  databaseAvailable = false
 }
 
 // Enhanced rate limiting for auth endpoints

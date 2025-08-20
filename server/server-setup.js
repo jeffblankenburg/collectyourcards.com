@@ -67,12 +67,21 @@ app.use((err, req, res, next) => {
   next(err);
 });
 
-// Health check endpoint
+// Health check endpoints (both root and /api for compatibility)
 app.get('/health', (req, res) => {
   res.json({
     status: 'OK',
     timestamp: new Date().toISOString(),
     environment: config.environment
+  });
+});
+
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    environment: config.environment,
+    api: 'operational'
   });
 });
 
@@ -104,23 +113,51 @@ if (config.environment === 'test') {
     { path: '/api/search', file: './routes/search', name: 'Search' }
   ];
 
+  console.log('📍 Loading API routes in production mode...');
+  
   routes.forEach(route => {
     try {
-      app.use(route.path, require(route.file));
-      console.log(`✅ Loaded ${route.name} routes`);
+      const routeModule = require(route.file);
+      app.use(route.path, routeModule);
+      console.log(`✅ Loaded ${route.name} routes at ${route.path}`);
     } catch (error) {
       console.error(`❌ Failed to load ${route.name} routes:`, error.message);
+      console.error(`   Stack trace:`, error.stack);
+      
+      // Use mock route as fallback
       app.use(route.path, createMockRoute(route.name));
-      console.log(`🔄 Using mock ${route.name} endpoint instead`);
+      console.log(`🔄 Using mock ${route.name} endpoint at ${route.path} instead`);
     }
   });
+  
+  console.log('📍 All routes loaded. Testing route registration...');
+  
+  // Log all registered routes for debugging
+  const registeredRoutes = [];
+  app._router.stack.forEach((middleware) => {
+    if (middleware.route) {
+      registeredRoutes.push(`${Object.keys(middleware.route.methods).join(',').toUpperCase()} ${middleware.route.path}`);
+    } else if (middleware.name === 'router' && middleware.regexp) {
+      registeredRoutes.push(`ROUTER ${middleware.regexp.source}`);
+    }
+  });
+  console.log('📍 Registered routes:', registeredRoutes);
 }
+
+// Add simple test endpoint that always works (no dependencies)
+app.get('/api/test', (req, res) => {
+  res.json({
+    message: 'API is reachable',
+    timestamp: new Date().toISOString(),
+    environment: config.environment
+  });
+});
 
 // Status monitoring routes (always available)
 try {
   app.use('/api', require('./routes/status'));
 } catch (error) {
-  console.warn('Status routes not found');
+  console.warn('Status routes not found:', error.message);
 }
 
 // Global error handler
