@@ -44,15 +44,32 @@ router.get('/database/status', async (req, res) => {
       })
     }
     
-    // Test database connection
-    await prisma.$connect()
+    // Test database connection with timeout
+    try {
+      await prisma.$connect()
+      await new Promise(resolve => setTimeout(resolve, 100)) // Small delay for engine to be ready
+    } catch (connectError) {
+      throw new Error(`Connection failed: ${connectError.message}`)
+    }
     
-    // Get record counts using raw queries
+    // Get record counts using raw queries with better error handling
     const [cardsResult, playersResult, teamsResult, usersResult] = await Promise.all([
-      prisma.$queryRaw`SELECT COUNT(*) as count FROM card`.catch(() => [{ count: 0 }]),
-      prisma.$queryRaw`SELECT COUNT(*) as count FROM player`.catch(() => [{ count: 0 }]),
-      prisma.$queryRaw`SELECT COUNT(*) as count FROM team`.catch(() => [{ count: 0 }]),
-      prisma.$queryRaw`SELECT COUNT(*) as count FROM [user]`.catch(() => [{ count: 0 }])
+      prisma.$queryRaw`SELECT COUNT(*) as count FROM card`.catch(err => {
+        console.error('Card count query failed:', err.message)
+        return [{ count: 0 }]
+      }),
+      prisma.$queryRaw`SELECT COUNT(*) as count FROM player`.catch(err => {
+        console.error('Player count query failed:', err.message)
+        return [{ count: 0 }]
+      }),
+      prisma.$queryRaw`SELECT COUNT(*) as count FROM team`.catch(err => {
+        console.error('Team count query failed:', err.message)
+        return [{ count: 0 }]
+      }),
+      prisma.$queryRaw`SELECT COUNT(*) as count FROM [user]`.catch(err => {
+        console.error('User count query failed:', err.message)
+        return [{ count: 0 }]
+      })
     ])
 
     const cardsCount = Number(cardsResult[0]?.count || 0)
