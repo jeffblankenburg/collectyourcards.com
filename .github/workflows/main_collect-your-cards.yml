@@ -1,5 +1,5 @@
-# Build and deploy Docker container to existing Azure Web App
-name: Build and deploy containerized app to Azure
+# Simple Node.js deployment to Azure Web App
+name: Deploy Node.js app to Azure
 
 on:
   push:
@@ -7,51 +7,36 @@ on:
       - main
   workflow_dispatch:
 
-env:
-  IMAGE_NAME: collectyourcards
-  WEB_APP_NAME: collect-your-cards
-
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write
-
+    
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Login to Azure
-        uses: azure/login@v2
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_C4DA97AE58B34560A5A8CA177571DF44 }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_4439AA608AE4414393C14DB5B132DE61 }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_3939050614DD498DA01E9B9C3DB155AA }}
+          node-version: '20'
+          cache: 'npm'
 
-      - name: Build Docker image
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Build frontend
         run: |
-          echo "🔧 Building Docker image..."
-          docker build -t ${{ env.IMAGE_NAME }}:latest .
-          echo "✅ Docker image built successfully"
+          cd client
+          npm ci
+          npm run build
+          cd ..
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
-          app-name: ${{ env.WEB_APP_NAME }}
-          images: ${{ env.IMAGE_NAME }}:latest
-          
-      - name: Set production environment variables
-        run: |
-          echo "🔧 Setting environment variables..."
-          az webapp config appsettings set \
-            --name ${{ env.WEB_APP_NAME }} \
-            --resource-group collect-your-cards_group \
-            --settings \
-              NODE_ENV=production \
-              PORT=80 \
-              JWT_SECRET=${{ secrets.JWT_SECRET || 'fallback-secret-key' }} \
-              FRONTEND_URL=https://collectyourcards.com \
-              BASE_URL=https://collectyourcards.com
-          echo "✅ Environment variables set"
-          
+          app-name: collect-your-cards
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: .
