@@ -85,6 +85,48 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Production diagnostic endpoint to help troubleshoot Azure deployment
+app.get('/api/production-status', (req, res) => {
+  try {
+    const diagnostics = {
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV || 'unknown',
+      platform: process.platform,
+      nodeVersion: process.version,
+      port: process.env.PORT || 'not set',
+      containerInfo: {
+        hostname: require('os').hostname(),
+        arch: process.arch,
+        uptime: process.uptime()
+      },
+      envCheck: {
+        DATABASE_URL: process.env.DATABASE_URL ? 'configured' : 'missing',
+        JWT_SECRET: process.env.JWT_SECRET ? 'configured' : 'missing',
+        FRONTEND_URL: process.env.FRONTEND_URL || 'not set',
+        AZURE_COMMUNICATION_CONNECTION_STRING: process.env.AZURE_COMMUNICATION_CONNECTION_STRING ? 'configured' : 'missing'
+      },
+      azureWebApp: {
+        siteName: process.env.WEBSITE_SITE_NAME || 'not detected',
+        instanceId: process.env.WEBSITE_INSTANCE_ID || 'not detected',
+        resourceGroup: process.env.WEBSITE_RESOURCE_GROUP || 'not detected',
+        hostname: process.env.WEBSITE_HOSTNAME || 'not detected'
+      },
+      server: {
+        listening: true,
+        trustProxy: config.environment === 'production'
+      }
+    }
+    
+    res.json(diagnostics)
+  } catch (error) {
+    res.status(500).json({
+      error: 'Diagnostic failed',
+      message: error.message,
+      timestamp: new Date().toISOString()
+    })
+  }
+});
+
 // Create placeholder route handlers for testing
 const createMockRoute = (routeName) => {
   return (req, res, next) => {
