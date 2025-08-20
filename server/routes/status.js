@@ -2,7 +2,15 @@ const express = require('express')
 const router = express.Router()
 const { PrismaClient } = require('@prisma/client')
 const dynatraceService = require('../services/dynatraceService')
-const prisma = new PrismaClient()
+
+// Initialize Prisma with error handling (don't fail route loading if Prisma fails)
+let prisma
+try {
+  prisma = new PrismaClient()
+} catch (error) {
+  console.error('Status route: Prisma client failed to initialize:', error.message)
+  prisma = null
+}
 
 // Health check endpoint
 router.get('/health', async (req, res) => {
@@ -28,6 +36,14 @@ router.get('/health', async (req, res) => {
 // Database status endpoint
 router.get('/database/status', async (req, res) => {
   try {
+    if (!prisma) {
+      return res.status(500).json({
+        status: 'error',
+        message: 'Prisma client not available',
+        error: 'Prisma client failed to initialize'
+      })
+    }
+    
     // Test database connection
     await prisma.$connect()
     
@@ -244,26 +260,30 @@ router.get('/status', async (req, res) => {
     })
 
     // Check Prisma status
-    try {
-      const testPrisma = new PrismaClient()
-      status.prisma.clientAvailable = true
-      
+    if (prisma) {
       try {
-        await testPrisma.$connect()
-        status.prisma.databaseConnected = true
+        status.prisma.clientAvailable = true
         
-        // Test a simple query
-        const result = await testPrisma.$queryRaw`SELECT 1 as test`
-        status.prisma.queryTest = 'success'
-        
-        await testPrisma.$disconnect()
-      } catch (dbError) {
-        status.prisma.databaseConnected = false
-        status.prisma.error = dbError.message
+        try {
+          await prisma.$connect()
+          status.prisma.databaseConnected = true
+          
+          // Test a simple query
+          const result = await prisma.$queryRaw`SELECT 1 as test`
+          status.prisma.queryTest = 'success'
+          
+          await prisma.$disconnect()
+        } catch (dbError) {
+          status.prisma.databaseConnected = false
+          status.prisma.error = dbError.message
+        }
+      } catch (prismaError) {
+        status.prisma.clientAvailable = false
+        status.prisma.error = prismaError.message
       }
-    } catch (prismaError) {
+    } else {
       status.prisma.clientAvailable = false
-      status.prisma.error = prismaError.message
+      status.prisma.error = 'Prisma client failed to initialize during route loading'
     }
 
     // Add connection string info (sanitized)
