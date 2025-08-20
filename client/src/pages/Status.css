@@ -10,6 +10,30 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.production-badge {
+  background: #ff4444;
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  margin-left: 1rem;
+  font-weight: bold;
+  animation: pulse 2s infinite;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.last-check {
+  color: #bbb;
+  font-size: 0.875rem;
 }
 
 .status-header h1 {
@@ -446,4 +470,153 @@
   color: white;
   opacity: 0.9;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Production-specific styles */
+.endpoint-error {
+  border: 2px solid #ff4444 !important;
+  background: rgba(255, 68, 68, 0.1) !important;
+}
+
+.endpoint-name {
+  font-weight: bold;
+  color: #fbbf24;
+}
+
+.endpoint-error-details {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background: rgba(255, 68, 68, 0.2);
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+
+.error-label {
+  font-weight: bold;
+  color: #ff6b6b;
+}
+
+.response-time {
+  background: rgba(76, 175, 80, 0.2);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  color: #4caf50;
+  font-weight: bold;
+}
+
+.routes-section, .prisma-section, .azure-section {
+  margin-bottom: 3rem;
+}
+
+.routes-section h2, .prisma-section h2, .azure-section h2 {
+  font-size: 1.8rem;
+  margin-bottom: 1.5rem;
+  color: #87ceeb;
+}
+
+.routes-grid, .azure-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  padding: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.route-item, .azure-item {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.route-name, .azure-key {
+  font-weight: bold;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  color: #fbbf24;
+}
+
+.route-status.loaded {
+  color: #4caf50;
+  font-weight: bold;
+}
+
+.route-status.failed {
+  color: #ff4444;
+  font-weight: bold;
+}
+
+.route-error {
+  color: #ff6b6b;
+  font-size: 0.8rem;
+}
+
+.azure-value {
+  font-family: 'Courier New', monospace;
+  font-size: 0.85rem;
+  opacity: 0.9;
+}
+
+.prisma-info {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  padding: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.info-item {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+  align-items: center;
+}
+
+.info-item:last-child {
+  margin-bottom: 0;
+}
+
+.info-label {
+  font-weight: bold;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  color: #fbbf24;
+  min-width: 150px;
+}
+
+.info-value {
+  font-family: 'Courier New', monospace;
+  font-size: 0.85rem;
+  opacity: 0.9;
+}
+
+.info-item .success {
+  color: #4caf50;
+  font-weight: bold;
+}
+
+.info-item .error {
+  color: #ff4444;
+  font-weight: bold;
+}
+
+.info-item.error {
+  background: rgba(255, 68, 68, 0.1);
+  padding: 0.5rem;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 68, 68, 0.3);
+}
+
+.error-text {
+  color: #ff6b6b;
+  font-family: 'Courier New', monospace;
+  font-size: 0.85rem;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.7; }
+  100% { opacity: 1; }
 }

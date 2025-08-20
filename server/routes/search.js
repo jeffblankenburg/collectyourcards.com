@@ -17,6 +17,16 @@ try {
   databaseAvailable = false
 }
 
+// Health check endpoint for search routes
+router.get('/health', (req, res) => {
+  res.json({
+    status: 'OK',
+    route: 'search',
+    timestamp: new Date().toISOString(),
+    databaseAvailable: databaseAvailable
+  })
+})
+
 // Universal search endpoint with intelligent entity recognition
 router.get('/universal', async (req, res) => {
   try {

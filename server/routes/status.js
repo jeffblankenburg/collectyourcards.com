@@ -206,4 +206,107 @@ router.get('/dynatrace/status', async (req, res) => {
   }
 })
 
+// Detailed status endpoint for production diagnostics
+router.get('/status', async (req, res) => {
+  try {
+    const status = {
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV || 'development',
+      nodeVersion: process.version,
+      platform: process.platform,
+      uptime: process.uptime(),
+      routes: {},
+      prisma: {},
+      azure: {}
+    }
+
+    // Check which routes are loaded
+    const routeFiles = [
+      { name: 'Auth', path: './auth' },
+      { name: 'Cards', path: './cards' },
+      { name: 'Collection', path: './collection' },
+      { name: 'Admin', path: './admin' },
+      { name: 'Import', path: './import' },
+      { name: 'eBay', path: './ebay' },
+      { name: 'Search', path: './search' }
+    ]
+
+    routeFiles.forEach(route => {
+      try {
+        require(route.path)
+        status.routes[route.name] = { loaded: true }
+      } catch (error) {
+        status.routes[route.name] = { 
+          loaded: false, 
+          error: error.message.substring(0, 100) 
+        }
+      }
+    })
+
+    // Check Prisma status
+    try {
+      const testPrisma = new PrismaClient()
+      status.prisma.clientAvailable = true
+      
+      try {
+        await testPrisma.$connect()
+        status.prisma.databaseConnected = true
+        
+        // Test a simple query
+        const result = await testPrisma.$queryRaw`SELECT 1 as test`
+        status.prisma.queryTest = 'success'
+        
+        await testPrisma.$disconnect()
+      } catch (dbError) {
+        status.prisma.databaseConnected = false
+        status.prisma.error = dbError.message
+      }
+    } catch (prismaError) {
+      status.prisma.clientAvailable = false
+      status.prisma.error = prismaError.message
+    }
+
+    // Add connection string info (sanitized)
+    if (process.env.DATABASE_URL) {
+      // Sanitize connection string for display
+      const dbUrl = process.env.DATABASE_URL
+      if (dbUrl.includes('sqlserver://')) {
+        const parts = dbUrl.split('@')
+        if (parts.length > 1) {
+          status.prisma.connectionString = `sqlserver://***@${parts[1]}`
+        } else {
+          status.prisma.connectionString = 'sqlserver://*** (connection string format issue)'
+        }
+      } else {
+        status.prisma.connectionString = 'Available (non-SQL Server)'
+      }
+    } else {
+      status.prisma.connectionString = 'Not configured'
+    }
+
+    // Azure-specific information
+    if (process.env.NODE_ENV === 'production') {
+      status.azure = {
+        website_site_name: process.env.WEBSITE_SITE_NAME || 'Not available',
+        website_resource_group: process.env.WEBSITE_RESOURCE_GROUP || 'Not available',
+        website_instance_id: process.env.WEBSITE_INSTANCE_ID || 'Not available',
+        website_hostname: process.env.WEBSITE_HOSTNAME || 'Not available',
+        scm_commit_id: process.env.SCM_COMMIT_ID || 'Not available',
+        port: process.env.PORT || '3001',
+        trust_proxy: process.env.NODE_ENV === 'production' ? 'enabled' : 'disabled'
+      }
+    }
+
+    res.json(status)
+    
+  } catch (error) {
+    console.error('Status check error:', error)
+    res.status(500).json({
+      error: 'Status check failed',
+      message: error.message,
+      timestamp: new Date().toISOString()
+    })
+  }
+})
+
 module.exports = router

@@ -11,8 +11,13 @@ function Status() {
     endpoints: [],
     environment: {},
     performance: {},
-    errors: []
+    errors: [],
+    apiRoutes: {},
+    prismaStatus: {},
+    azureInfo: {}
   })
+  
+  const isProduction = window.location.hostname === 'collectyourcards.com'
 
   useEffect(() => {
     checkAllSystems()
@@ -24,23 +29,83 @@ function Status() {
     const startTime = Date.now()
     const status = {
       loading: false,
-      frontend: { status: 'operational', version: '1.0.0', timestamp: new Date().toISOString() },
+      frontend: { 
+        status: 'operational', 
+        version: '1.0.0', 
+        timestamp: new Date().toISOString(),
+        url: window.location.origin,
+        environment: isProduction ? 'production' : 'development'
+      },
       backend: { status: 'checking' },
       database: { status: 'checking' },
       endpoints: [],
       environment: {},
       performance: {},
-      errors: []
+      errors: [],
+      apiRoutes: {},
+      prismaStatus: {},
+      azureInfo: {}
+    }
+
+    // Test critical API endpoints
+    const criticalEndpoints = [
+      { name: 'Health', path: '/api/health', method: 'GET' },
+      { name: 'Test', path: '/api/test', method: 'GET' },
+      { name: 'Auth Health', path: '/api/auth/health', method: 'GET' },
+      { name: 'Search Health', path: '/api/search/health', method: 'GET' },
+      { name: 'Status', path: '/api/status', method: 'GET' }
+    ]
+    
+    const endpointResults = []
+    
+    for (const endpoint of criticalEndpoints) {
+      const endpointStart = Date.now()
+      try {
+        const response = await axios.get(endpoint.path)
+        endpointResults.push({
+          ...endpoint,
+          status: 'operational',
+          responseTime: Date.now() - endpointStart,
+          data: response.data
+        })
+      } catch (error) {
+        endpointResults.push({
+          ...endpoint,
+          status: 'error',
+          responseTime: Date.now() - endpointStart,
+          error: error.response?.status || error.message
+        })
+        status.errors.push({ 
+          component: endpoint.name, 
+          error: `${endpoint.path}: ${error.response?.status || error.message}` 
+        })
+      }
+    }
+    
+    status.endpoints = endpointResults
+    
+    // Determine backend status based on health check
+    const healthCheck = endpointResults.find(e => e.path === '/api/health')
+    if (healthCheck && healthCheck.status === 'operational') {
+      status.backend = {
+        status: 'operational',
+        ...healthCheck.data,
+        responseTime: healthCheck.responseTime + 'ms'
+      }
+    } else {
+      status.backend = {
+        status: 'error',
+        message: 'Backend unreachable',
+        error: healthCheck?.error || 'No response'
+      }
     }
 
     try {
-      // Check backend health
-      const healthResponse = await axios.get('/api/health')
-      status.backend = {
-        status: 'operational',
-        ...healthResponse.data,
-        responseTime: Date.now() - startTime + 'ms'
-      }
+      // Check more detailed backend status if available
+      const statusResponse = await axios.get('/api/status')
+      status.apiRoutes = statusResponse.data.routes || {}
+      status.prismaStatus = statusResponse.data.prisma || {}
+      status.azureInfo = statusResponse.data.azure || {}
 
       // Check database status
       try {
@@ -136,10 +201,13 @@ function Status() {
   return (
     <div className="status-page">
       <div className="status-header">
-        <h1>System Status Dashboard</h1>
-        <button onClick={checkAllSystems} className="refresh-button">
-          🔄 Refresh
-        </button>
+        <h1>System Status Dashboard {isProduction && <span className="production-badge">PRODUCTION</span>}</h1>
+        <div className="header-actions">
+          <span className="last-check">Environment: {isProduction ? 'Azure Production' : 'Local Development'}</span>
+          <button onClick={checkAllSystems} className="refresh-button">
+            🔄 Refresh
+          </button>
+        </div>
       </div>
 
       {systemStatus.loading ? (
@@ -197,20 +265,25 @@ function Status() {
           </div>
 
           <div className="endpoints-section">
-            <h2>API Endpoints</h2>
+            <h2>API Endpoints {isProduction && '(Critical Routes)'}</h2>
             {systemStatus.endpoints.length > 0 ? (
               <div className="endpoints-grid">
                 {systemStatus.endpoints.map((endpoint, index) => (
-                  <div key={index} className="endpoint-card">
+                  <div key={index} className={`endpoint-card ${endpoint.status === 'error' ? 'endpoint-error' : ''}`}>
                     <div className="endpoint-header">
-                      <span className="endpoint-method">{endpoint.method}</span>
+                      <span className="endpoint-name">{endpoint.name}</span>
                       <span className="endpoint-path">{endpoint.path}</span>
                     </div>
                     <div className="endpoint-status">
                       <span>{getStatusIcon(endpoint.status)}</span>
-                      <span>{endpoint.status}</span>
-                      {endpoint.responseTime && <span>{endpoint.responseTime}ms</span>}
+                      <span className={endpoint.status}>{endpoint.status}</span>
+                      {endpoint.responseTime !== undefined && <span className="response-time">{endpoint.responseTime}ms</span>}
                     </div>
+                    {endpoint.error && (
+                      <div className="endpoint-error-details">
+                        <span className="error-label">Error:</span> {endpoint.error}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -218,6 +291,69 @@ function Status() {
               <p className="no-endpoints">No endpoint monitoring data available</p>
             )}
           </div>
+          
+          {isProduction && systemStatus.apiRoutes && Object.keys(systemStatus.apiRoutes).length > 0 && (
+            <div className="routes-section">
+              <h2>Route Loading Status</h2>
+              <div className="routes-grid">
+                {Object.entries(systemStatus.apiRoutes).map(([route, info]) => (
+                  <div key={route} className="route-item">
+                    <span className="route-name">{route}:</span>
+                    <span className={`route-status ${info.loaded ? 'loaded' : 'failed'}`}>
+                      {info.loaded ? '✅ Loaded' : '❌ Failed'}
+                    </span>
+                    {info.error && <span className="route-error">({info.error})</span>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {isProduction && systemStatus.prismaStatus && Object.keys(systemStatus.prismaStatus).length > 0 && (
+            <div className="prisma-section">
+              <h2>Prisma & Database Status</h2>
+              <div className="prisma-info">
+                <div className="info-item">
+                  <span className="info-label">Prisma Client:</span>
+                  <span className={systemStatus.prismaStatus.clientAvailable ? 'success' : 'error'}>
+                    {systemStatus.prismaStatus.clientAvailable ? '✅ Available' : '❌ Not Available'}
+                  </span>
+                </div>
+                <div className="info-item">
+                  <span className="info-label">Database Connected:</span>
+                  <span className={systemStatus.prismaStatus.databaseConnected ? 'success' : 'error'}>
+                    {systemStatus.prismaStatus.databaseConnected ? '✅ Connected' : '❌ Disconnected'}
+                  </span>
+                </div>
+                {systemStatus.prismaStatus.connectionString && (
+                  <div className="info-item">
+                    <span className="info-label">Connection:</span>
+                    <span className="info-value">{systemStatus.prismaStatus.connectionString}</span>
+                  </div>
+                )}
+                {systemStatus.prismaStatus.error && (
+                  <div className="info-item error">
+                    <span className="info-label">Error:</span>
+                    <span className="error-text">{systemStatus.prismaStatus.error}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+          
+          {isProduction && systemStatus.azureInfo && Object.keys(systemStatus.azureInfo).length > 0 && (
+            <div className="azure-section">
+              <h2>Azure Web App Information</h2>
+              <div className="azure-grid">
+                {Object.entries(systemStatus.azureInfo).map(([key, value]) => (
+                  <div key={key} className="azure-item">
+                    <span className="azure-key">{key}:</span>
+                    <span className="azure-value">{String(value)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {systemStatus.environment && Object.keys(systemStatus.environment).length > 0 && (
             <div className="environment-section">
