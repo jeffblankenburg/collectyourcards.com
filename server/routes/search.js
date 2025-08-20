@@ -13,7 +13,18 @@ try {
   console.log('✅ Database connection initialized for search routes')
 } catch (error) {
   console.error('❌ Database connection failed for search routes:', error.message)
-  databaseAvailable = false
+  console.error('📝 Attempting to generate Prisma client...')
+  
+  try {
+    // Try to generate Prisma client on the fly
+    require('child_process').execSync('npx prisma generate', { stdio: 'inherit' })
+    prisma = new PrismaClient()
+    databaseAvailable = true
+    console.log('✅ Prisma client generated successfully, database connection initialized')
+  } catch (genError) {
+    console.error('❌ Failed to generate Prisma client:', genError.message)
+    databaseAvailable = false
+  }
 }
 
 // Universal search endpoint with intelligent entity recognition
