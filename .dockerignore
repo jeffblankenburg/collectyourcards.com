@@ -1,0 +1,82 @@
+# Dependencies
+node_modules
+client/node_modules
+npm-debug.log*
+
+# Development files
+.env.local
+.env.development
+.env.test
+
+# Git
+.git
+.gitignore
+
+# Documentation
+README.md
+*.md
+!CLAUDE.md
+
+# Build artifacts (will be built inside container)
+client/dist
+
+# Development tools
+.vscode
+.idea
+
+# Logs
+*.log
+logs
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage
+.nyc_output
+
+# Dependency directories
+jspm_packages/
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# dotenv environment variables file
+.env
+.env.production
+
+# MacOS
+.DS_Store
+
+# Windows
+Thumbs.db
+
+# Azure deployment files
+.azure
+.deployment
+
+# GitHub Actions
+.github/workflows
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose*.yml
+
+# Test files
+tests/
+__tests__/
+*.test.js
+*.spec.js
