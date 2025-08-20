@@ -29,12 +29,17 @@ jobs:
         run: |
           npm cache clean --force
           rm -rf node_modules package-lock.json || true
-          echo "🔧 Installing dependencies..."
-          npm install
+          echo "🔧 Installing production dependencies only..."
+          npm ci --omit=dev
           echo "🔧 Generating Prisma client explicitly..."
           npx prisma generate
           echo "✅ Verifying Prisma client was generated..."
           ls -la node_modules/.prisma/client/ || echo "❌ .prisma/client directory not found"
+          echo "🧹 Cleaning up unnecessary files to reduce deployment size..."
+          rm -rf node_modules/.cache || true
+          rm -rf node_modules/*/test || true
+          rm -rf node_modules/*/tests || true
+          rm -rf node_modules/*/*.md || true
           npm run build --if-present
           
       - name: Run tests (allow failure for now)
@@ -83,8 +88,10 @@ jobs:
           package: .
           restart: true
           clean: true
+          timeout: 300000
         env:
           NODE_ENV: production
+          SCM_DO_BUILD_DURING_DEPLOYMENT: false
         
       - name: 'Retry deployment on failure'
         if: failure()
