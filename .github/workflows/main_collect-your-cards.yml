@@ -62,6 +62,9 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_4439AA608AE4414393C14DB5B132DE61 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_3939050614DD498DA01E9B9C3DB155AA }}
 
+      - name: 'Wait before deployment'
+        run: sleep 30
+        
       - name: 'Deploy to Azure Web App'
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
@@ -69,6 +72,27 @@ jobs:
           app-name: 'collect-your-cards'
           slot-name: 'Production'
           package: .
+          restart: true
+          clean: true
+        env:
+          NODE_ENV: production
+        
+      - name: 'Retry deployment on failure'
+        if: failure()
+        run: |
+          echo "Deployment failed, waiting 60 seconds before retry..."
+          sleep 60
+        continue-on-error: true
+        
+      - name: 'Deploy to Azure Web App (Retry)'
+        if: failure()
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: 'collect-your-cards'
+          slot-name: 'Production'
+          package: .
+          restart: true
+          clean: true
         env:
           NODE_ENV: production
           
