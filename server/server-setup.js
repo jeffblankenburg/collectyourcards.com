@@ -153,6 +153,68 @@ app.get('/api/test', (req, res) => {
   });
 });
 
+// Add diagnostic endpoint to check Prisma client files
+app.get('/api/debug/prisma', (req, res) => {
+  const fs = require('fs');
+  const path = require('path');
+  
+  try {
+    const prismaPath = path.join(__dirname, '../node_modules/.prisma/client');
+    const clientPath = path.join(__dirname, '../node_modules/@prisma/client');
+    
+    const diagnostics = {
+      timestamp: new Date().toISOString(),
+      paths: {
+        prismaClientPath: clientPath,
+        prismaGeneratedPath: prismaPath
+      },
+      files: {}
+    };
+    
+    // Check if directories exist
+    try {
+      diagnostics.files.prismaClientExists = fs.existsSync(clientPath);
+      diagnostics.files.prismaGeneratedExists = fs.existsSync(prismaPath);
+      
+      if (fs.existsSync(clientPath)) {
+        diagnostics.files.clientDirContents = fs.readdirSync(clientPath);
+      }
+      
+      if (fs.existsSync(prismaPath)) {
+        diagnostics.files.generatedDirContents = fs.readdirSync(prismaPath);
+      }
+      
+      // Check specific files
+      const defaultJsPath = path.join(clientPath, 'default.js');
+      diagnostics.files.defaultJsExists = fs.existsSync(defaultJsPath);
+      
+    } catch (fsError) {
+      diagnostics.error = fsError.message;
+    }
+    
+    // Try to require Prisma client
+    try {
+      const { PrismaClient } = require('@prisma/client');
+      diagnostics.prismaClient = { 
+        canRequire: true,
+        constructor: typeof PrismaClient
+      };
+    } catch (requireError) {
+      diagnostics.prismaClient = { 
+        canRequire: false,
+        error: requireError.message
+      };
+    }
+    
+    res.json(diagnostics);
+  } catch (error) {
+    res.status(500).json({
+      error: 'Diagnostic failed',
+      message: error.message
+    });
+  }
+});
+
 // Status monitoring routes (always available)
 try {
   app.use('/api', require('./routes/status'));
