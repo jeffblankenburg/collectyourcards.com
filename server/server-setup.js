@@ -15,6 +15,12 @@ const config = {
   environment: process.env.NODE_ENV || 'development'
 };
 
+// Trust proxy for Azure Web Apps (required for rate limiting)
+if (config.environment === 'production') {
+  app.set('trust proxy', 1);
+  console.log('✅ Express configured to trust proxy for Azure Web Apps');
+}
+
 // Security middleware
 app.use(helmet());
 app.use(cors({
