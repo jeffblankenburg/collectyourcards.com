@@ -79,24 +79,26 @@ if (config.environment === 'test') {
   app.use('/api/search', createMockRoute('Search'));
 } else {
   // In non-test environments, require actual route files
-  try {
-    app.use('/api/auth', require('./routes/auth'));
-    app.use('/api/cards', require('./routes/cards'));
-    app.use('/api/collection', require('./routes/collection'));
-    app.use('/api/admin', require('./routes/admin'));
-    app.use('/api/import', require('./routes/import'));
-    app.use('/api/ebay', require('./routes/ebay'));
-    app.use('/api/search', require('./routes/search'));
-  } catch (error) {
-    console.warn('Route files not found, using mock endpoints');
-    app.use('/api/auth', createMockRoute('Auth'));
-    app.use('/api/cards', createMockRoute('Cards'));
-    app.use('/api/collection', createMockRoute('Collection'));
-    app.use('/api/admin', createMockRoute('Admin'));
-    app.use('/api/import', createMockRoute('Import'));
-    app.use('/api/ebay', createMockRoute('eBay'));
-    app.use('/api/search', createMockRoute('Search'));
-  }
+  const routes = [
+    { path: '/api/auth', file: './routes/auth', name: 'Auth' },
+    { path: '/api/cards', file: './routes/cards', name: 'Cards' },
+    { path: '/api/collection', file: './routes/collection', name: 'Collection' },
+    { path: '/api/admin', file: './routes/admin', name: 'Admin' },
+    { path: '/api/import', file: './routes/import', name: 'Import' },
+    { path: '/api/ebay', file: './routes/ebay', name: 'eBay' },
+    { path: '/api/search', file: './routes/search', name: 'Search' }
+  ];
+
+  routes.forEach(route => {
+    try {
+      app.use(route.path, require(route.file));
+      console.log(`✅ Loaded ${route.name} routes`);
+    } catch (error) {
+      console.error(`❌ Failed to load ${route.name} routes:`, error.message);
+      app.use(route.path, createMockRoute(route.name));
+      console.log(`🔄 Using mock ${route.name} endpoint instead`);
+    }
+  });
 }
 
 // Status monitoring routes (always available)
