@@ -10,7 +10,19 @@ const rateLimiter = require('../middleware/rateLimiter')
 const dynatraceService = require('../services/dynatraceService')
 
 const router = express.Router()
-const prisma = new PrismaClient()
+
+// Initialize Prisma with error handling for production
+let prisma
+let databaseAvailable = false
+
+try {
+  prisma = new PrismaClient()
+  databaseAvailable = true
+  console.log('✅ Database connection initialized for auth routes')
+} catch (error) {
+  console.error('❌ Database connection failed for auth routes:', error.message)
+  databaseAvailable = false
+}
 
 // Enhanced rate limiting for auth endpoints
 const authLimiter = rateLimiter({

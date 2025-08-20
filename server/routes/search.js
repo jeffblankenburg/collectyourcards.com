@@ -2,7 +2,19 @@ const express = require('express')
 const { PrismaClient } = require('@prisma/client')
 
 const router = express.Router()
-const prisma = new PrismaClient()
+
+// Initialize Prisma with error handling for production
+let prisma
+let databaseAvailable = false
+
+try {
+  prisma = new PrismaClient()
+  databaseAvailable = true
+  console.log('✅ Database connection initialized for search routes')
+} catch (error) {
+  console.error('❌ Database connection failed for search routes:', error.message)
+  databaseAvailable = false
+}
 
 // Universal search endpoint with intelligent entity recognition
 router.get('/universal', async (req, res) => {
@@ -13,6 +25,15 @@ router.get('/universal', async (req, res) => {
     
     if (!query || query.trim().length < 2) {
       return res.json({ results: [], suggestions: [] })
+    }
+
+    // Check if database is available
+    if (!databaseAvailable) {
+      return res.json({
+        results: [],
+        suggestions: ['Database temporarily unavailable'],
+        message: 'Search service is temporarily unavailable'
+      })
     }
 
     const searchQuery = query.trim()
