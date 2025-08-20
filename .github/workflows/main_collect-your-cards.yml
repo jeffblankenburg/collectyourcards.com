@@ -29,8 +29,10 @@ jobs:
         run: |
           npm cache clean --force
           rm -rf node_modules package-lock.json || true
-          echo "🔧 Installing dependencies (will auto-generate Prisma client via postinstall)..."
+          echo "🔧 Installing dependencies..."
           npm install
+          echo "🔧 Generating Prisma client explicitly..."
+          npx prisma generate
           echo "✅ Verifying Prisma client was generated..."
           ls -la node_modules/.prisma/client/ || echo "❌ .prisma/client directory not found"
           npm run build --if-present
