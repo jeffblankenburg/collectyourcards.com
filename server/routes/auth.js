@@ -15,13 +15,13 @@ const prisma = new PrismaClient()
 // Enhanced rate limiting for auth endpoints
 const authLimiter = rateLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // limit each IP to 5 requests per windowMs
+  max: process.env.NODE_ENV === 'test' ? 100 : 5, // More lenient for tests
   message: 'Too many authentication attempts, please try again later.'
 })
 
 const strictAuthLimiter = rateLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 3, // limit each IP to 3 requests per windowMs for sensitive operations
+  max: process.env.NODE_ENV === 'test' ? 100 : 3, // More lenient for tests
   message: 'Too many sensitive authentication requests, please try again later.'
 })
 

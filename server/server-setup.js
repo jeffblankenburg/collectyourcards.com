@@ -35,11 +35,22 @@ app.use('/api/', limiter);
 // Dynatrace monitoring middleware (must be early in the stack)
 app.use(dynatraceService.expressMiddleware());
 
-// Body parsing middleware
+// Body parsing middleware with error handling
 app.use(express.json({ 
   limit: '10mb'
 }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// JSON parsing error handler
+app.use((err, req, res, next) => {
+  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+    return res.status(400).json({
+      error: 'Invalid JSON',
+      message: 'Request body contains invalid JSON'
+    });
+  }
+  next(err);
+});
 
 // Health check endpoint
 app.get('/health', (req, res) => {

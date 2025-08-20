@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  # Your existing SQL Server database
+  collect-cards-db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: collect-cards-db
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=DevPassword123!
+      - MSSQL_PID=Developer
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+    networks:
+      - app-network
+
+  # Dynatrace OneAgent for container monitoring
+  # Note: This requires Dynatrace SaaS/Managed environment
+  dynatrace-oneagent:
+    image: dynatrace/oneagent:latest
+    container_name: dynatrace-oneagent
+    privileged: true
+    pid: host
+    network_mode: host
+    environment:
+      - ONEAGENT_INSTALLER_SCRIPT_URL=${DYNATRACE_INSTALLER_URL}
+      - ONEAGENT_INSTALLER_SKIP_CERT_CHECK=true
+    volumes:
+      - /:/mnt/root
+    restart: unless-stopped
+    depends_on:
+      - collect-cards-db
+
+  # Your Node.js application with OneAgent
+  collect-cards-app:
+    build: .
+    container_name: collect-cards-app
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=sqlserver://collect-cards-db:1433;database=CollectYourCards;user=sa;password=DevPassword123!;trustServerCertificate=true;encrypt=false
+      - DYNATRACE_ENVIRONMENT_ID=${DYNATRACE_ENVIRONMENT_ID}
+      - DYNATRACE_API_TOKEN=${DYNATRACE_API_TOKEN}
+      - DYNATRACE_PAAS_TOKEN=${DYNATRACE_PAAS_TOKEN}
+      - DYNATRACE_ENDPOINT=${DYNATRACE_ENDPOINT}
+    ports:
+      - "3001:3001"
+    depends_on:
+      - collect-cards-db
+      - dynatrace-oneagent
+    networks:
+      - app-network
+    restart: unless-stopped
+
+volumes:
+  sqlserver_data:
+
+networks:
+  app-network:
+    driver: bridge
