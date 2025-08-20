@@ -24,11 +24,17 @@ jobs:
           node-version: '22.x'
 
       - name: npm install and build
+        env:
+          DATABASE_URL: "sqlserver://localhost:1433;database=TempBuild;user=sa;password=BuildPassword123!;encrypt=false;trustServerCertificate=true"
         run: |
           npm cache clean --force
           rm -rf node_modules package-lock.json || true
           npm install --production=false
-          npx prisma generate
+          echo "🔧 Generating Prisma client..."
+          npx prisma generate --verbose
+          echo "✅ Verifying Prisma client was generated..."
+          ls -la node_modules/.prisma/ || echo "❌ .prisma directory not found"
+          ls -la node_modules/.prisma/client/ || echo "❌ .prisma/client directory not found"
           npm run build --if-present
           
       - name: Run tests (allow failure for now)
