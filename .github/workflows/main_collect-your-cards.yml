@@ -31,7 +31,7 @@ jobs:
           rm -rf node_modules package-lock.json || true
           npm install --production=false
           echo "🔧 Generating Prisma client..."
-          npx prisma generate --verbose
+          npx prisma generate
           echo "✅ Verifying Prisma client was generated..."
           ls -la node_modules/.prisma/ || echo "❌ .prisma directory not found"
           ls -la node_modules/.prisma/client/ || echo "❌ .prisma/client directory not found"
