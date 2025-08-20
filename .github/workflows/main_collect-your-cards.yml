@@ -31,13 +31,27 @@ jobs:
 
       - name: Build Docker image
         run: |
-          echo "🔧 Building Docker image locally..."
+          echo "🔧 Building Docker image..."
           docker build -t ${{ env.IMAGE_NAME }}:latest .
           echo "✅ Docker image built successfully"
 
-      - name: Deploy Docker container to Azure Web App
+      - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
           app-name: ${{ env.WEB_APP_NAME }}
           images: ${{ env.IMAGE_NAME }}:latest
+          
+      - name: Set production environment variables
+        run: |
+          echo "🔧 Setting environment variables..."
+          az webapp config appsettings set \
+            --name ${{ env.WEB_APP_NAME }} \
+            --resource-group collect-your-cards_group \
+            --settings \
+              NODE_ENV=production \
+              PORT=80 \
+              JWT_SECRET=${{ secrets.JWT_SECRET || 'fallback-secret-key' }} \
+              FRONTEND_URL=https://collectyourcards.com \
+              BASE_URL=https://collectyourcards.com
+          echo "✅ Environment variables set"
           
