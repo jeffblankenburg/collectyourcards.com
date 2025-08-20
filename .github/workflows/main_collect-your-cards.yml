@@ -28,9 +28,9 @@ jobs:
           DATABASE_URL: "sqlserver://localhost:1433;database=TempBuild;user=sa;password=BuildPassword123!;encrypt=false;trustServerCertificate=true"
         run: |
           npm cache clean --force
-          rm -rf node_modules package-lock.json || true
+          rm -rf node_modules || true
           echo "🔧 Installing production dependencies only..."
-          npm ci --omit=dev
+          npm install --production
           echo "🔧 Generating Prisma client explicitly..."
           npx prisma generate
           echo "✅ Verifying Prisma client was generated..."
