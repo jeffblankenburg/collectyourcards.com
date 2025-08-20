@@ -106,6 +106,26 @@ try {
   console.warn('Status routes not found');
 }
 
+// Serve static files from client build in production
+const path = require('path');
+if (config.environment === 'production') {
+  // Serve static files from client/dist
+  app.use(express.static(path.join(__dirname, '../client/dist')));
+  
+  // Catch-all handler: send back React's index.html file for client-side routing
+  app.get('*', (req, res) => {
+    // Don't serve index.html for API routes
+    if (req.path.startsWith('/api/') || req.path.startsWith('/health')) {
+      return res.status(404).json({
+        error: 'Not Found',
+        message: `API route ${req.originalUrl} not found`
+      });
+    }
+    
+    res.sendFile(path.join(__dirname, '../client/dist/index.html'));
+  });
+}
+
 // Global error handler
 app.use((err, req, res, next) => {
   console.error('Global error:', err);
@@ -124,13 +144,15 @@ app.use((err, req, res, next) => {
   }
 });
 
-// 404 handler
-app.use('*', (req, res) => {
-  res.status(404).json({
-    error: 'Not Found',
-    message: `Route ${req.originalUrl} not found`
+// 404 handler for non-production environments only
+if (config.environment !== 'production') {
+  app.use('*', (req, res) => {
+    res.status(404).json({
+      error: 'Not Found',
+      message: `Route ${req.originalUrl} not found`
+    });
   });
-});
+}
 
 module.exports = {
   app,

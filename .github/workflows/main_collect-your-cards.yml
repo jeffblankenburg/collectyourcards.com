@@ -69,4 +69,6 @@ jobs:
           app-name: 'collect-your-cards'
           slot-name: 'Production'
           package: .
+        env:
+          NODE_ENV: production
           
