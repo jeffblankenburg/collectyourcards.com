@@ -110,10 +110,10 @@ const SimpleCardIcon = ({ size = 16, className = '' }) => (
     fill="currentColor"
   >
     <rect
-      x="4"
-      y="1"
-      width="10"
-      height="14"
+      x="3"
+      y="0.5"
+      width="11"
+      height="15"
       rx="1.5"
       ry="1.5"
       stroke="currentColor"
