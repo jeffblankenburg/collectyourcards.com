@@ -58,7 +58,7 @@
   width: 16px;
   height: 16px;
   border: 2px solid rgba(255, 255, 255, 0.3);
-  border-top: 2px solid #FF9900;
+  border-top: 2px solid #e5e7eb;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -219,7 +219,7 @@
 }
 
 .card-shape {
-  background: linear-gradient(45deg, #FF9900, #FF9900);
+  background: linear-gradient(45deg, #e5e7eb, #e5e7eb);
   color: #1e293b;
   font-weight: 700;
   font-size: 0.7rem;
@@ -297,7 +297,7 @@
 
 /* Search Highlight */
 .search-highlight {
-  background: linear-gradient(135deg, #FF9900 0%, #FF9900 100%);
+  background: linear-gradient(135deg, #e5e7eb 0%, #e5e7eb 100%);
   color: #1e293b;
   padding: 0 0.2rem;
   border-radius: 3px;
@@ -372,7 +372,7 @@
 
 .view-all-results {
   width: 100%;
-  background: linear-gradient(135deg, #FF9900 0%, #FF9900 100%);
+  background: linear-gradient(135deg, #e5e7eb 0%, #e5e7eb 100%);
   color: #1e293b;
   border: none;
   padding: 0.6rem 1rem;
