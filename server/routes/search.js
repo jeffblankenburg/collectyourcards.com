@@ -504,9 +504,9 @@ async function searchSeries(query, limit) {
       FROM series s
       JOIN [set] st ON s.[set] = st.set_id
       JOIN manufacturer m ON st.manufacturer = m.manufacturer_id
-      WHERE s.name LIKE '${searchPattern}'
-         OR st.name LIKE '${searchPattern}'
-         OR m.name LIKE '${searchPattern}'
+      WHERE s.name LIKE '${searchPattern}' COLLATE SQL_Latin1_General_CP1_CI_AS
+         OR st.name LIKE '${searchPattern}' COLLATE SQL_Latin1_General_CP1_CI_AS
+         OR m.name LIKE '${searchPattern}' COLLATE SQL_Latin1_General_CP1_CI_AS
     `)
     
     console.log(`Found ${results.length} series for "${query}"`)
