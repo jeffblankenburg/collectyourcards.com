@@ -46,7 +46,7 @@
 }
 
 .refresh-button {
-  background: rgba(251, 191, 36, 0.1);
+  background: rgba(229, 231, 235, 0.1);
   border: 2px solid #fbbf24;
   color: #fbbf24;
   padding: 0.75rem 1.5rem;
@@ -57,7 +57,7 @@
 }
 
 .refresh-button:hover {
-  background: rgba(251, 191, 36, 0.2);
+  background: rgba(229, 231, 235, 0.2);
   border-color: #f59e0b;
   color: #f59e0b;
   transform: translateY(-2px);

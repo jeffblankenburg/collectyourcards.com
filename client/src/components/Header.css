@@ -42,7 +42,7 @@
 }
 
 .header-logo h1 {
-  background: linear-gradient(45deg, #1e40af, #1e40af);
+  background: linear-gradient(45deg, #e5e7eb, #e5e7eb);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -82,9 +82,9 @@
 }
 
 .nav-link.active {
-  color: #1e40af;
-  background: rgba(251, 191, 36, 0.1);
-  border: 1px solid rgba(251, 191, 36, 0.2);
+  color: #e5e7eb;
+  background: rgba(229, 231, 235, 0.1);
+  border: 1px solid rgba(229, 231, 235, 0.2);
 }
 
 .nav-icon {
@@ -128,14 +128,14 @@
 }
 
 .header-button.primary {
-  background: linear-gradient(135deg, #1e40af 0%, #1e40af 100%);
+  background: linear-gradient(135deg, #e5e7eb 0%, #e5e7eb 100%);
   color: #1e293b;
-  box-shadow: 0 4px 8px rgba(251, 191, 36, 0.3);
+  box-shadow: 0 4px 8px rgba(229, 231, 235, 0.3);
 }
 
 .header-button.primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 12px rgba(251, 191, 36, 0.4);
+  box-shadow: 0 6px 12px rgba(229, 231, 235, 0.4);
   text-decoration: none;
   color: #1e293b;
 }
@@ -175,7 +175,7 @@
 
 .user-avatar-button:hover {
   background: rgba(255, 255, 255, 0.15);
-  border-color: rgba(251, 191, 36, 0.3);
+  border-color: rgba(229, 231, 235, 0.3);
   transform: translateY(-1px);
 }
 
@@ -183,7 +183,7 @@
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #1e40af 0%, #1e40af 100%);
+  background: linear-gradient(135deg, #e5e7eb 0%, #e5e7eb 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -239,7 +239,7 @@
 
 .dropdown-header {
   padding: 1rem;
-  background: rgba(251, 191, 36, 0.1);
+  background: rgba(229, 231, 235, 0.1);
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
@@ -259,14 +259,14 @@
 
 .user-role {
   display: inline-block;
-  background: rgba(251, 191, 36, 0.2);
-  color: #1e40af;
+  background: rgba(229, 231, 235, 0.2);
+  color: #e5e7eb;
   padding: 0.25rem 0.5rem;
   border-radius: 12px;
   font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
-  border: 1px solid rgba(251, 191, 36, 0.3);
+  border: 1px solid rgba(229, 231, 235, 0.3);
 }
 
 .dropdown-divider {

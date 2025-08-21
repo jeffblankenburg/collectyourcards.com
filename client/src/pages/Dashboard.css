@@ -56,8 +56,8 @@
 }
 
 .profile-link:hover {
-  background: rgba(251, 191, 36, 0.1);
-  border-color: rgba(251, 191, 36, 0.2);
+  background: rgba(229, 231, 235, 0.1);
+  border-color: rgba(229, 231, 235, 0.2);
   text-decoration: none;
   color: white;
 }
@@ -165,8 +165,8 @@
 }
 
 .action-card:hover:not(:disabled) {
-  border-color: rgba(251, 191, 36, 0.3);
-  background: rgba(251, 191, 36, 0.1);
+  border-color: rgba(229, 231, 235, 0.3);
+  background: rgba(229, 231, 235, 0.1);
   transform: translateY(-2px);
 }
 
@@ -267,9 +267,9 @@
 }
 
 .feature-status.coming-soon {
-  background: rgba(251, 191, 36, 0.2);
+  background: rgba(229, 231, 235, 0.2);
   color: #fbbf24;
-  border: 1px solid rgba(251, 191, 36, 0.3);
+  border: 1px solid rgba(229, 231, 235, 0.3);
 }
 
 .dashboard-footer {
@@ -309,17 +309,17 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem 1.5rem;
-  background: rgba(251, 191, 36, 0.1);
+  background: rgba(229, 231, 235, 0.1);
   color: #fbbf24;
   text-decoration: none;
   border-radius: 8px;
-  border: 1px solid rgba(251, 191, 36, 0.2);
+  border: 1px solid rgba(229, 231, 235, 0.2);
   font-weight: 600;
   transition: all 0.2s;
 }
 
 .help-button:hover {
-  background: rgba(251, 191, 36, 0.2);
+  background: rgba(229, 231, 235, 0.2);
   color: #f59e0b;
   text-decoration: none;
   transform: translateY(-2px);

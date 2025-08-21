@@ -87,7 +87,7 @@
   outline: none;
   border-color: #fbbf24;
   background: rgba(255, 255, 255, 0.08);
-  box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.2);
+  box-shadow: 0 0 0 3px rgba(229, 231, 235, 0.2);
 }
 
 .form-group input:disabled {
@@ -209,12 +209,12 @@
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s;
-  box-shadow: 0 4px 8px rgba(251, 191, 36, 0.3);
+  box-shadow: 0 4px 8px rgba(229, 231, 235, 0.3);
 }
 
 .auth-button:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 6px 12px rgba(251, 191, 36, 0.4);
+  box-shadow: 0 6px 12px rgba(229, 231, 235, 0.4);
 }
 
 .auth-button:disabled {
@@ -272,9 +272,9 @@
 .auth-demo {
   margin-top: 2rem;
   padding: 1.5rem;
-  background: rgba(251, 191, 36, 0.1);
+  background: rgba(229, 231, 235, 0.1);
   border-radius: 8px;
-  border: 1px solid rgba(251, 191, 36, 0.2);
+  border: 1px solid rgba(229, 231, 235, 0.2);
 }
 
 .auth-demo h3 {

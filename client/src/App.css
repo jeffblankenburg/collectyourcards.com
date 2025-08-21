@@ -15,7 +15,7 @@
 h1 {
   font-size: 3rem;
   margin-bottom: 0.5rem;
-  background: linear-gradient(45deg, #1e40af, #1e40af);
+  background: linear-gradient(45deg, #e5e7eb, #e5e7eb);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -37,7 +37,7 @@ h1 {
 }
 
 .hero-search h3 {
-  color: #1e40af;
+  color: #e5e7eb;
   font-size: 1.8rem;
   margin-bottom: 0.5rem;
   font-weight: 700;
@@ -97,12 +97,12 @@ h1 {
 
 .feature-card:hover {
   transform: translateY(-4px);
-  border-color: rgba(251, 191, 36, 0.3);
+  border-color: rgba(229, 231, 235, 0.3);
 }
 
 .feature-card h4 {
   margin-bottom: 0.5rem;
-  color: #1e40af;
+  color: #e5e7eb;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -122,9 +122,9 @@ h1 {
 }
 
 .feature-status.coming-soon {
-  background: rgba(251, 191, 36, 0.2);
-  color: #1e40af;
-  border: 1px solid rgba(251, 191, 36, 0.3);
+  background: rgba(229, 231, 235, 0.2);
+  color: #e5e7eb;
+  border: 1px solid rgba(229, 231, 235, 0.3);
 }
 
 /* Authentication Section */
@@ -139,7 +139,7 @@ h1 {
 
 .auth-section h3, .user-section h3 {
   margin-bottom: 0.5rem;
-  color: #1e40af;
+  color: #e5e7eb;
   font-size: 1.8rem;
 }
 
@@ -169,14 +169,14 @@ h1 {
 }
 
 .action-button.primary {
-  background: linear-gradient(135deg, #1e40af 0%, #1e40af 100%);
+  background: linear-gradient(135deg, #e5e7eb 0%, #e5e7eb 100%);
   color: #1e293b;
-  box-shadow: 0 4px 8px rgba(251, 191, 36, 0.3);
+  box-shadow: 0 4px 8px rgba(229, 231, 235, 0.3);
 }
 
 .action-button.primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 12px rgba(251, 191, 36, 0.4);
+  box-shadow: 0 6px 12px rgba(229, 231, 235, 0.4);
   text-decoration: none;
   color: #1e293b;
 }
@@ -208,12 +208,12 @@ h1 {
 }
 
 .tech-badge {
-  background: rgba(251, 191, 36, 0.2);
-  color: #1e40af;
+  background: rgba(229, 231, 235, 0.2);
+  color: #e5e7eb;
   padding: 0.5rem 1rem;
   border-radius: 20px;
   font-size: 0.9rem;
-  border: 1px solid rgba(251, 191, 36, 0.3);
+  border: 1px solid rgba(229, 231, 235, 0.3);
 }
 
 @media (max-width: 768px) {
