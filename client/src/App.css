@@ -15,7 +15,7 @@
 h1 {
   font-size: 3rem;
   margin-bottom: 0.5rem;
-  background: linear-gradient(45deg, #FF9900, #FF9900);
+  background: linear-gradient(45deg, #1e40af, #1e40af);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -37,7 +37,7 @@ h1 {
 }
 
 .hero-search h3 {
-  color: #FF9900;
+  color: #1e40af;
   font-size: 1.8rem;
   margin-bottom: 0.5rem;
   font-weight: 700;
@@ -102,7 +102,7 @@ h1 {
 
 .feature-card h4 {
   margin-bottom: 0.5rem;
-  color: #FF9900;
+  color: #1e40af;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -123,7 +123,7 @@ h1 {
 
 .feature-status.coming-soon {
   background: rgba(251, 191, 36, 0.2);
-  color: #FF9900;
+  color: #1e40af;
   border: 1px solid rgba(251, 191, 36, 0.3);
 }
 
@@ -139,7 +139,7 @@ h1 {
 
 .auth-section h3, .user-section h3 {
   margin-bottom: 0.5rem;
-  color: #FF9900;
+  color: #1e40af;
   font-size: 1.8rem;
 }
 
@@ -169,7 +169,7 @@ h1 {
 }
 
 .action-button.primary {
-  background: linear-gradient(135deg, #FF9900 0%, #FF9900 100%);
+  background: linear-gradient(135deg, #1e40af 0%, #1e40af 100%);
   color: #1e293b;
   box-shadow: 0 4px 8px rgba(251, 191, 36, 0.3);
 }
@@ -209,7 +209,7 @@ h1 {
 
 .tech-badge {
   background: rgba(251, 191, 36, 0.2);
-  color: #FF9900;
+  color: #1e40af;
   padding: 0.5rem 1rem;
   border-radius: 20px;
   font-size: 0.9rem;

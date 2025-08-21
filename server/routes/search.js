@@ -229,7 +229,7 @@ async function searchCardsByNumberAndPlayer(cardNumber, playerName, limit) {
     return results.map(card => ({
       type: 'card',
       id: card.card_id.toString(),
-      title: `#${card.card_number} ${card.player_names || 'Unknown Player'} • ${card.series_name}${buildCardDescription(card) ? ' • ' + buildCardDescription(card) : ''}`,
+      title: `#${card.card_number} ${card.player_names || 'Unknown Player'} • ${card.series_name}`,
       subtitle: null,
       description: null,
       relevanceScore: 95,
@@ -281,7 +281,7 @@ async function searchCardsByNumber(cardNumber, limit) {
     return results.map(card => ({
       type: 'card',
       id: card.card_id.toString(),
-      title: `#${card.card_number} ${card.player_names || 'Unknown Player'} • ${card.series_name}${buildCardDescription(card) ? ' • ' + buildCardDescription(card) : ''}`,
+      title: `#${card.card_number} ${card.player_names || 'Unknown Player'} • ${card.series_name}`,
       subtitle: null,
       description: null,
       relevanceScore: card.card_number === cardNumber ? 100 : 80,
@@ -342,7 +342,7 @@ async function searchCardsByType(cardTypes, playerName, limit) {
     return results.map(card => ({
       type: 'card',
       id: card.card_id.toString(),
-      title: `#${card.card_number} ${card.player_names || 'Unknown Player'} • ${card.series_name}${buildCardDescription(card) ? ' • ' + buildCardDescription(card) : ''}`,
+      title: `#${card.card_number} ${card.player_names || 'Unknown Player'} • ${card.series_name}`,
       subtitle: null,
       description: null,
       relevanceScore: 85,

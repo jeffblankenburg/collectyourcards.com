@@ -42,7 +42,7 @@
 }
 
 .header-logo h1 {
-  background: linear-gradient(45deg, #FF9900, #FF9900);
+  background: linear-gradient(45deg, #1e40af, #1e40af);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -82,7 +82,7 @@
 }
 
 .nav-link.active {
-  color: #FF9900;
+  color: #1e40af;
   background: rgba(251, 191, 36, 0.1);
   border: 1px solid rgba(251, 191, 36, 0.2);
 }
@@ -128,7 +128,7 @@
 }
 
 .header-button.primary {
-  background: linear-gradient(135deg, #FF9900 0%, #FF9900 100%);
+  background: linear-gradient(135deg, #1e40af 0%, #1e40af 100%);
   color: #1e293b;
   box-shadow: 0 4px 8px rgba(251, 191, 36, 0.3);
 }
@@ -183,7 +183,7 @@
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #FF9900 0%, #FF9900 100%);
+  background: linear-gradient(135deg, #1e40af 0%, #1e40af 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -260,7 +260,7 @@
 .user-role {
   display: inline-block;
   background: rgba(251, 191, 36, 0.2);
-  color: #FF9900;
+  color: #1e40af;
   padding: 0.25rem 0.5rem;
   border-radius: 12px;
   font-size: 0.75rem;
