@@ -31,7 +31,7 @@ app.use(cors({
 // Rate limiting with Azure-compatible configuration
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
+  max: 1000, // Increased limit for development
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
@@ -39,10 +39,18 @@ const limiter = rateLimit({
   keyGenerator: (req) => {
     return req.ip || req.connection.remoteAddress || 'unknown';
   },
-  // Skip rate limiting if IP can't be determined
+  // Skip rate limiting if IP can't be determined or in development
   skip: (req) => {
     const ip = req.ip || req.connection.remoteAddress;
-    return !ip || ip === 'unknown';
+    if (!ip || ip === 'unknown') return true;
+    
+    // Skip rate limiting for localhost/development
+    if (config.environment === 'development' && 
+        (ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1')) {
+      return true;
+    }
+    
+    return false;
   }
 });
 app.use('/api/', limiter);
@@ -143,6 +151,7 @@ if (config.environment === 'test') {
   app.use('/api/import', createMockRoute('Import'));
   app.use('/api/ebay', createMockRoute('eBay'));
   app.use('/api/search', createMockRoute('Search'));
+  app.use('/api/players', createMockRoute('Players'));
 } else {
   // In non-test environments, require actual route files
   const routes = [
@@ -152,7 +161,8 @@ if (config.environment === 'test') {
     { path: '/api/admin', file: './routes/admin', name: 'Admin' },
     { path: '/api/import', file: './routes/import', name: 'Import' },
     { path: '/api/ebay', file: './routes/ebay', name: 'eBay' },
-    { path: '/api/search', file: './routes/search', name: 'Search' }
+    { path: '/api/search', file: './routes/search', name: 'Search' },
+    { path: '/api/players', file: './routes/players', name: 'Players' }
   ];
 
   console.log('📍 Loading API routes in production mode...');

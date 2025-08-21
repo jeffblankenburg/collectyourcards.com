@@ -23,7 +23,7 @@ function Dashboard() {
         <header className="dashboard-header">
           <div className="welcome-section">
             <h1>Welcome back, {user.name || user.first_name || 'there'}! 👋</h1>
-            <p>Manage your card collection and track your investments</p>
+            <p>Organize your card collection and discover what you need</p>
           </div>
           <div className="header-actions">
             <Link to="/profile" className="profile-link">
@@ -128,7 +128,7 @@ function Dashboard() {
               </div>
               <div className="feature-item">
                 <h4><Icon name="diamond" size={16} /> Value Tracking</h4>
-                <p>Track market values and get insights on your collection's worth</p>
+                <p>Track card values and see what you have, what you need, and what you want</p>
                 <span className="feature-status coming-soon">Coming Soon</span>
               </div>
               <div className="feature-item">

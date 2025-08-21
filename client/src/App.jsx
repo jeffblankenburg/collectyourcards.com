@@ -67,9 +67,9 @@ function App() {
               <span className="feature-status coming-soon"><Icon name="warning" size={14} /> Coming Soon</span>
             </div>
             <div className="feature-card">
-              <h4><Icon name="mobile" size={18} /> eBay Integration</h4>
-              <p>Automatic purchase detection</p>
-              <span className="feature-status coming-soon"><Icon name="warning" size={14} /> Coming Soon</span>
+              <Icon name="chart" size={24} />
+              <h4>Track Progress</h4>
+              <p>See what you have, what you need, and discover what you want next</p>
             </div>
           </div>
         </div>

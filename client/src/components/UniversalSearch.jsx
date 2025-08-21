@@ -175,7 +175,20 @@ function UniversalSearch({ className = '' }) {
         navigate(`/cards/${result.id}`)
         break
       case 'player':
-        navigate(`/players/${result.id}`)
+        // Create player slug from first and last name
+        const firstName = result.data?.first_name || ''
+        const lastName = result.data?.last_name || ''
+        if (firstName && lastName) {
+          const playerSlug = `${firstName}-${lastName}`
+            .toLowerCase()
+            .replace(/[^a-z0-9\s-]/g, '')
+            .replace(/\s+/g, '-')
+            .replace(/-+/g, '-')
+            .trim()
+          navigate(`/players/${playerSlug}`)
+        } else {
+          console.error('Player data missing for navigation:', result)
+        }
         break
       case 'team':
         navigate(`/teams/${result.id}`)
@@ -203,12 +216,19 @@ function UniversalSearch({ className = '' }) {
   // Get icon for result type
   const getResultIcon = (type) => {
     switch (type) {
-      case 'card': return <Icon name="card" size={16} />
-      case 'player': return <Icon name="player" size={16} />
-      case 'team': return <Icon name="team" size={16} />
-      case 'series': return <Icon name="series" size={16} />
-      case 'collection': return <Icon name="collections" size={16} />
-      default: return <Icon name="search" size={16} />
+      case 'card': return <Icon name="card" size={24} />
+      case 'player': return <Icon name="player" size={24} />
+      case 'team': {
+        // Get sport-specific ball icon based on organization
+        const org = result?.data?.organization_name?.toLowerCase() || ''
+        if (org.includes('baseball')) return <Icon name="baseball" size={24} />
+        if (org.includes('football')) return <Icon name="football" size={24} />
+        if (org.includes('basketball')) return <Icon name="basketball" size={24} />
+        return <Icon name="team" size={24} />
+      }
+      case 'series': return <Icon name="series" size={24} />
+      case 'collection': return <Icon name="collections" size={24} />
+      default: return <Icon name="search" size={24} />
     }
   }
 
@@ -249,9 +269,6 @@ function UniversalSearch({ className = '' }) {
   return (
     <div className={`universal-search ${className}`} ref={searchRef}>
       <div className="search-input-container">
-        <div className="search-icon">
-          <Icon name="search" size={16} />
-        </div>
         <input
           type="text"
           placeholder="Search cards, players, teams..."
@@ -307,22 +324,13 @@ function UniversalSearch({ className = '' }) {
               }}
             >
               <div className="result-icon">
-                {result.type === 'history' ? <Icon name="clock" size={16} /> : getResultIcon(result.type)}
+                {result.type === 'history' ? <Icon name="clock" size={16} /> : getResultIcon(result.type, result)}
               </div>
               <div className="result-content">
                 <div className="result-title">
                   {highlightQuery(result.title, query)}
                 </div>
               </div>
-              {result.type !== 'history' && (
-                <div className="result-count">
-                  <div className="card-icon-count">
-                    <div className="card-shape">
-                      {getEntityCount(result)}
-                    </div>
-                  </div>
-                </div>
-              )}
               {result.type === 'history' && (
                 <button
                   className="remove-history"

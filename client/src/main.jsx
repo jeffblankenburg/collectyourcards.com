@@ -11,6 +11,8 @@ import Login from './pages/Login.jsx'
 import Register from './pages/Register.jsx'
 import Dashboard from './pages/Dashboard.jsx'
 import Profile from './pages/Profile.jsx'
+import Attributions from './pages/Attributions.jsx'
+import PlayerDetail from './pages/PlayerDetail.jsx'
 import './index.css'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
@@ -24,6 +26,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
               <Route path="/status" element={<Status />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
+              <Route path="/attributions" element={<Attributions />} />
               <Route 
                 path="/dashboard" 
                 element={
@@ -40,6 +43,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
                   </ProtectedRoute>
                 } 
               />
+              <Route path="/players/:playerSlug" element={<PlayerDetail />} />
             </Routes>
           </Layout>
         </AuthProvider>

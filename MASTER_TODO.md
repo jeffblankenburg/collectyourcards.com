@@ -1937,8 +1937,23 @@ async function processEbayPurchase(purchase) {
 - ✅ **Add card selection/removal functionality for partial parallels** - Added individual card checkboxes with bulk select/deselect options, visual indicators for partial selection (⚠️), updated series table to show selected/total count, and partial selection warnings
 
 ### 📋 Next Immediate Tasks
+
+#### 🎯 **PRIORITY: Cards Table Enhancement** (Player Detail Page)
+- **Remove table header title and container** - Give table maximum space possible
+- **Add right-justified search box above table** - Auto-filter cards based on user input
+- **Reorder columns**: Card #, Player(s), Series, Print Run, Color, Attributes, Notes
+- **Enhance Player column**:
+  - Add "RC" tag for rookie cards
+  - Add team circles before each player name showing their team for that card
+  - Support multiple players per card with proper team indicators
+- **Format Print Run column**: Always start with "/" when value exists (e.g., "/25")
+- **Add Attributes column**: Show "auto" and "relic" tags for autograph/relic cards
+- **Simplify download button**: Change from "Download Excel" to just "Download"
+
+#### 🔄 **Other Active Tasks**
 - **Test import system with reference spreadsheets** - Validate complete workflow with real data
 - **Implement database backup strategy** - Prevent future data loss like we experienced
+- **Comprehensive icon design review** - Once core functionality is complete, take a harder look at all icons to ensure they work well together and serve the user journey effectively
 
 ## Completed Tasks Archive
 *Will move completed items here to keep main list clean*

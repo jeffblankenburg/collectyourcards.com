@@ -1,0 +1,176 @@
+/* Attributions Page Styles */
+.attributions-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #1e293b 0%, #475569 100%);
+  padding: 2rem;
+}
+
+.attributions-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.attributions-header {
+  text-align: center;
+  margin-bottom: 3rem;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  padding: 2.5rem;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.attributions-header h1 {
+  color: white;
+  font-size: 2.5rem;
+  margin: 0 0 1rem 0;
+  background: linear-gradient(45deg, #e5e7eb, #e5e7eb);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.attributions-header p {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 1.2rem;
+  line-height: 1.6;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.attributions-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.attribution-section {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.attribution-section h2 {
+  color: white;
+  font-size: 1.8rem;
+  margin: 0 0 1.5rem 0;
+  border-bottom: 2px solid rgba(229, 231, 235, 0.2);
+  padding-bottom: 0.5rem;
+}
+
+.attribution-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.attribution-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  transition: all 0.2s ease;
+}
+
+.attribution-card:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(229, 231, 235, 0.2);
+  transform: translateY(-2px);
+}
+
+.attribution-icon {
+  flex-shrink: 0;
+  color: #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.attribution-info {
+  flex: 1;
+}
+
+.attribution-info h3 {
+  color: white;
+  font-size: 1.2rem;
+  margin: 0 0 0.5rem 0;
+  font-weight: 600;
+}
+
+.attribution-info p {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.attribution-info a {
+  color: #e5e7eb;
+  text-decoration: underline;
+  transition: color 0.2s ease;
+}
+
+.attribution-info a:hover {
+  color: white;
+  text-decoration: none;
+}
+
+.license-info, .future-info {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.license-info p, .future-info p {
+  margin: 0 0 1rem 0;
+}
+
+.license-info p:last-child, .future-info p:last-child {
+  margin-bottom: 0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .attributions-page {
+    padding: 1rem;
+  }
+  
+  .attributions-header {
+    padding: 2rem 1.5rem;
+  }
+  
+  .attributions-header h1 {
+    font-size: 2rem;
+  }
+  
+  .attributions-header p {
+    font-size: 1rem;
+  }
+  
+  .attribution-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .attribution-card {
+    flex-direction: column;
+    text-align: center;
+    gap: 1rem;
+  }
+  
+  .attribution-icon {
+    width: 80px;
+    height: 80px;
+  }
+}
