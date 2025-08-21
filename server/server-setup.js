@@ -195,6 +195,33 @@ app.get('/api/test', (req, res) => {
   });
 });
 
+// Database connection test endpoint
+app.get('/api/db-test', async (req, res) => {
+  try {
+    // Test Prisma connection
+    const { PrismaClient } = require('@prisma/client')
+    const prisma = new PrismaClient()
+    
+    await prisma.$connect()
+    const result = await prisma.$queryRaw`SELECT 1 as test`
+    await prisma.$disconnect()
+    
+    res.json({
+      status: 'success',
+      message: 'Database connected successfully',
+      result: result,
+      databaseUrl: process.env.DATABASE_URL ? 'configured' : 'missing'
+    })
+  } catch (error) {
+    res.status(500).json({
+      status: 'error',
+      message: 'Database connection failed',
+      error: error.message,
+      databaseUrl: process.env.DATABASE_URL ? 'configured' : 'missing'
+    })
+  }
+});
+
 // Add diagnostic endpoint to check Prisma client files
 app.get('/api/debug/prisma', (req, res) => {
   const fs = require('fs');
