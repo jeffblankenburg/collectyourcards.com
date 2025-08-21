@@ -59,6 +59,5 @@ jobs:
         uses: azure/webapps-deploy@v2
         with:
           app-name: 'collect-your-cards'
-          slot-name: 'Production'
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_7B8C8F4A5C2D4BE6A3F7A8D1C6E4B2A9 }}
           package: .
