@@ -55,7 +55,7 @@ const iconMap = {
   
   // Search & Discovery
   'search': Search,
-  'card': CreditCard,
+  'card': 'custom-card', // Custom card icon
   'player': User,
   'team': Shield,
   
@@ -100,6 +100,29 @@ const iconMap = {
   'flag': Flag
 }
 
+// Custom card icon component - vertically-oriented rectangle with rounded corners
+const SimpleCardIcon = ({ size = 16, className = '' }) => (
+  <svg 
+    width={size} 
+    height={size} 
+    viewBox="0 0 16 16" 
+    className={`simple-card-icon ${className}`}
+    fill="currentColor"
+  >
+    <rect
+      x="4"
+      y="2"
+      width="8"
+      height="12"
+      rx="2"
+      ry="2"
+      stroke="currentColor"
+      strokeWidth="1"
+      fill="none"
+    />
+  </svg>
+)
+
 // Custom stacked cards icon component
 const StackedCardsIcon = ({ size = 16, className = '' }) => (
   <div className={`stacked-cards-icon ${className}`} style={{ width: size, height: size }}>
@@ -119,6 +142,11 @@ function Icon({
   strokeWidth = 2,
   ...props 
 }) {
+  // Handle custom card icon
+  if (name === 'card') {
+    return <SimpleCardIcon size={size} className={className} />
+  }
+  
   // Handle custom stacked cards icon
   if (name === 'series') {
     return <StackedCardsIcon size={size} className={className} />
