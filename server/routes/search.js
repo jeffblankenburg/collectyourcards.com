@@ -471,7 +471,7 @@ async function searchTeams(query, limit) {
     return results.map(team => ({
       type: 'team',
       id: team.team_id.toString(),
-      title: `${team.name} • ${team.city} ${team.mascot} • ${team.organization_name} • ${team.abbreviation}`,
+      title: team.name,
       subtitle: null,
       description: null,
       relevanceScore: calculateTeamRelevance(team, query),
@@ -503,7 +503,7 @@ async function searchSeries(query, limit) {
         m.name as manufacturer_name
       FROM series s
       JOIN [set] st ON s.[set] = st.set_id
-      JOIN manufacturer m ON st.manufacturer = m.manufacturer_id
+      LEFT JOIN manufacturer m ON st.manufacturer = m.manufacturer_id
       WHERE s.name LIKE '${searchPattern}' COLLATE SQL_Latin1_General_CP1_CI_AS
          OR st.name LIKE '${searchPattern}' COLLATE SQL_Latin1_General_CP1_CI_AS
          OR m.name LIKE '${searchPattern}' COLLATE SQL_Latin1_General_CP1_CI_AS

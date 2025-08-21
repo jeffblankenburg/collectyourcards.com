@@ -214,7 +214,7 @@ function UniversalSearch({ className = '' }) {
   }
   
   // Get icon for result type
-  const getResultIcon = (type) => {
+  const getResultIcon = (type, result) => {
     switch (type) {
       case 'card': return <Icon name="card" size={24} />
       case 'player': return <Icon name="player" size={24} />
@@ -324,6 +324,7 @@ function UniversalSearch({ className = '' }) {
               }}
             >
               <div className="result-icon">
+                {result.type === 'history' ? <Icon name="clock" size={16} /> : getResultIcon(result.type, result)}
                 {result.type === 'history' ? <Icon name="clock" size={16} /> : getResultIcon(result.type, result)}
               </div>
               <div className="result-content">

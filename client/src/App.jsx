@@ -35,11 +35,11 @@ function App() {
 
         {!isAuthenticated && (
           <div className="auth-section">
-            <h3>Get Started Today</h3>
-            <p>Join thousands of collectors managing their card collections</p>
+            <h3>Ready to Organize Your Collection?</h3>
+            <p>Create an account to start tracking your collection and discover new cards</p>
             <div className="auth-actions">
               <Link to="/register" className="action-button primary">
-                <Icon name="target" size={16} /> Create Account
+                <Icon name="collections" size={16} /> Start Collecting
               </Link>
               <Link to="/login" className="action-button secondary">
                 <Icon name="user" size={16} /> Sign In
@@ -49,42 +49,31 @@ function App() {
         )}
 
         <div className="features-preview">
-          <h3>Platform Features</h3>
+          <h3>What You Can Do</h3>
           <div className="feature-grid">
             <div className="feature-card">
-              <h4><Icon name="user" size={18} /> Authentication System</h4>
-              <p>Secure user registration and login</p>
-              <span className="feature-status available"><Icon name="success" size={14} /> Available</span>
+              <Icon name="search" size={24} />
+              <h4>Search Cards</h4>
+              <p>Find cards by number, player, team, or series</p>
             </div>
             <div className="feature-card">
-              <h4><Icon name="collections" size={18} /> Collection Management</h4>
-              <p>Track your card collection digitally</p>
-              <span className="feature-status coming-soon"><Icon name="warning" size={14} /> Coming Soon</span>
+              <Icon name="collections" size={24} />
+              <h4>Track Collections</h4>
+              <p>Organize and manage your card collection</p>
             </div>
             <div className="feature-card">
-              <h4><Icon name="import" size={18} /> Spreadsheet Import</h4>
-              <p>Bulk import from Excel/CSV files</p>
-              <span className="feature-status coming-soon"><Icon name="warning" size={14} /> Coming Soon</span>
+              <Icon name="import" size={24} />
+              <h4>Import Data</h4>
+              <p>Upload spreadsheets to quickly build your collection</p>
             </div>
             <div className="feature-card">
               <Icon name="chart" size={24} />
-              <h4>Track Progress</h4>
-              <p>See what you have, what you need, and discover what you want next</p>
+              <h4>View Analytics</h4>
+              <p>Analyze collection value and trends</p>
             </div>
           </div>
         </div>
 
-        <div className="tech-stack">
-          <h3>Technology Stack</h3>
-          <div className="tech-grid">
-            <span className="tech-badge">React 18</span>
-            <span className="tech-badge">Node.js</span>
-            <span className="tech-badge">Express.js</span>
-            <span className="tech-badge">Prisma ORM</span>
-            <span className="tech-badge">SQL Server</span>
-            <span className="tech-badge">JWT Auth</span>
-          </div>
-        </div>
       </header>
     </div>
   )

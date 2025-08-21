@@ -103,9 +103,6 @@ function Footer() {
             <Link to="/terms" className="footer-link">
               Terms of Service
             </Link>
-            <Link to="/attributions" className="footer-link">
-              Icon Credits
-            </Link>
           </div>
         </div>
       </div>

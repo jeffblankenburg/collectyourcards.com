@@ -32,6 +32,7 @@ import {
   Users,
   Shield,
   Flag,
+  Circle,
   // Status/System
   CheckCircle,
   XCircle,
