@@ -162,7 +162,10 @@ if (config.environment === 'test') {
     { path: '/api/import', file: './routes/import', name: 'Import' },
     { path: '/api/ebay', file: './routes/ebay', name: 'eBay' },
     { path: '/api/search', file: './routes/search', name: 'Search' },
-    { path: '/api/players', file: './routes/players', name: 'Players' }
+    { path: '/api/players', file: './routes/players', name: 'Players' },
+    { path: '/api/players-list', file: './routes/players-list', name: 'Players List' },
+    { path: '/api/teams-list', file: './routes/teams-list', name: 'Teams List' },
+    { path: '/api/series-list', file: './routes/series-list', name: 'Series List' }
   ];
 
   console.log('📍 Loading API routes in production mode...');

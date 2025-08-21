@@ -65,59 +65,34 @@ function Header() {
 
         {/* Navigation */}
         <nav className="header-nav">
-          {isAuthenticated ? (
-            <>
-              <Link 
-                to="/dashboard" 
-                className={`nav-link ${isActive('/dashboard') ? 'active' : ''}`}
-              >
-                <Icon name="home" size={18} className="nav-icon" />
-                Dashboard
-              </Link>
-              <Link 
-                to="/collections" 
-                className={`nav-link ${isActive('/collections') ? 'active' : ''}`}
-              >
-                <Icon name="collections" size={18} className="nav-icon" />
-                Collections
-              </Link>
-              <Link 
-                to="/import" 
-                className={`nav-link ${isActive('/import') ? 'active' : ''}`}
-              >
-                <Icon name="import" size={18} className="nav-icon" />
-                Import
-              </Link>
-              <Link 
-                to="/analytics" 
-                className={`nav-link ${isActive('/analytics') ? 'active' : ''}`}
-              >
-                <Icon name="analytics" size={18} className="nav-icon" />
-                Analytics
-              </Link>
-            </>
-          ) : (
-            <>
-              <Link 
-                to="/" 
-                className={`nav-link ${isActive('/') ? 'active' : ''}`}
-              >
-                Home
-              </Link>
-              <Link 
-                to="/features" 
-                className={`nav-link ${isActive('/features') ? 'active' : ''}`}
-              >
-                Features
-              </Link>
-              <Link 
-                to="/pricing" 
-                className={`nav-link ${isActive('/pricing') ? 'active' : ''}`}
-              >
-                Pricing
-              </Link>
-            </>
-          )}
+          <Link 
+            to="/" 
+            className={`nav-link ${isActive('/') ? 'active' : ''}`}
+          >
+            <Icon name="home" size={18} className="nav-icon" />
+            Home
+          </Link>
+          <Link 
+            to="/players" 
+            className={`nav-link ${location.pathname.startsWith('/players') ? 'active' : ''}`}
+          >
+            <Icon name="player" size={18} className="nav-icon" />
+            Players
+          </Link>
+          <Link 
+            to="/teams" 
+            className={`nav-link ${location.pathname.startsWith('/teams') ? 'active' : ''}`}
+          >
+            <Icon name="team" size={18} className="nav-icon" />
+            Teams
+          </Link>
+          <Link 
+            to="/series" 
+            className={`nav-link ${location.pathname.startsWith('/series') ? 'active' : ''}`}
+          >
+            <Icon name="series" size={18} className="nav-icon" />
+            Series
+          </Link>
         </nav>
 
         {/* Universal Search - Hidden on pages with prominent search */}

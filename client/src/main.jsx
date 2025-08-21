@@ -13,6 +13,7 @@ import Dashboard from './pages/Dashboard.jsx'
 import Profile from './pages/Profile.jsx'
 import Attributions from './pages/Attributions.jsx'
 import PlayerDetail from './pages/PlayerDetail.jsx'
+import PlayersLanding from './pages/PlayersLanding.jsx'
 import './index.css'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
@@ -43,6 +44,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
                   </ProtectedRoute>
                 } 
               />
+              <Route path="/players" element={<PlayersLanding />} />
               <Route path="/players/:playerSlug" element={<PlayerDetail />} />
             </Routes>
           </Layout>
