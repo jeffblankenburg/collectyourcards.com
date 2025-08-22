@@ -325,7 +325,6 @@ function UniversalSearch({ className = '' }) {
             >
               <div className="result-icon">
                 {result.type === 'history' ? <Icon name="clock" size={16} /> : getResultIcon(result.type, result)}
-                {result.type === 'history' ? <Icon name="clock" size={16} /> : getResultIcon(result.type, result)}
               </div>
               <div className="result-content">
                 <div className="result-title">

@@ -7,13 +7,16 @@ import ProtectedRoute from './components/ProtectedRoute.jsx'
 import Layout from './components/Layout.jsx'
 import App from './App.jsx'
 import Status from './pages/Status.jsx'
-import Login from './pages/Login.jsx'
-import Register from './pages/Register.jsx'
+import Auth from './pages/Auth.jsx'
 import Dashboard from './pages/Dashboard.jsx'
 import Profile from './pages/Profile.jsx'
 import Attributions from './pages/Attributions.jsx'
 import PlayerDetail from './pages/PlayerDetail.jsx'
 import PlayersLanding from './pages/PlayersLanding.jsx'
+import TeamsLanding from './pages/TeamsLanding.jsx'
+import TeamDetail from './pages/TeamDetail.jsx'
+import SeriesLanding from './pages/SeriesLanding.jsx'
+import SeriesDetail from './pages/SeriesDetail.jsx'
 import './index.css'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
@@ -25,8 +28,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
             <Routes>
               <Route path="/" element={<App />} />
               <Route path="/status" element={<Status />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
+              <Route path="/auth/:mode" element={<Auth />} />
+              <Route path="/login" element={<Auth />} />
+              <Route path="/register" element={<Auth />} />
               <Route path="/attributions" element={<Attributions />} />
               <Route 
                 path="/dashboard" 
@@ -46,6 +50,10 @@ ReactDOM.createRoot(document.getElementById('root')).render(
               />
               <Route path="/players" element={<PlayersLanding />} />
               <Route path="/players/:playerSlug" element={<PlayerDetail />} />
+              <Route path="/teams" element={<TeamsLanding />} />
+              <Route path="/teams/:teamSlug" element={<TeamDetail />} />
+              <Route path="/series" element={<SeriesLanding />} />
+              <Route path="/series/:seriesSlug" element={<SeriesDetail />} />
             </Routes>
           </Layout>
         </AuthProvider>

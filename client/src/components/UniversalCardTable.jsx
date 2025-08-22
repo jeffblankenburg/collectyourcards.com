@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react'
 import axios from 'axios'
+import { useAuth } from '../contexts/AuthContext'
 import Icon from './Icon'
+import AddCardModal from './AddCardModal'
 import './UniversalCardTable.css'
 
 const UniversalCardTable = ({
@@ -13,9 +15,11 @@ const UniversalCardTable = ({
   downloadFilename = 'cards',
   pageSize = 100,
   onCardClick = null,
+  onSeriesClick = null,
   showSearch = false,
   selectedTeamIds = []
 }) => {
+  const { isAuthenticated } = useAuth()
   const [cards, setCards] = useState(initialCards)
   const [sortField, setSortField] = useState(defaultSort)
   const [sortDirection, setSortDirection] = useState('asc')
@@ -23,6 +27,9 @@ const UniversalCardTable = ({
   const [loading, setLoading] = useState(false)
   const [totalCardsCount, setTotalCardsCount] = useState(0)
   const [searchQuery, setSearchQuery] = useState('')
+  const [userCardCounts, setUserCardCounts] = useState({})
+  const [showAddCardModal, setShowAddCardModal] = useState(false)
+  const [selectedCard, setSelectedCard] = useState(null)
   // Removed infinite scroll state - no longer needed
   const [columnWidths, setColumnWidths] = useState({
     cardNumber: '100px',
@@ -40,13 +47,20 @@ const UniversalCardTable = ({
   // Load initial data from API endpoint or use provided cards
   useEffect(() => {
     if (apiEndpoint) {
-      console.log('🔃 useEffect triggered for endpoint:', apiEndpoint, 'loading:', loading, 'loadingRef:', loadingRef.current)
+      // console.log('🔃 useEffect triggered for endpoint:', apiEndpoint, 'loading:', loading, 'loadingRef:', loadingRef.current)
       loadInitialData()
     } else if (initialCards.length > 0) {
       setCards(initialCards)
       setTotalCardsCount(initialCards.length)
     }
   }, [apiEndpoint]) // Removed initialCards dependency
+
+  // Load user card counts when cards change and user is authenticated
+  useEffect(() => {
+    if (isAuthenticated && displayedCards.length > 0) {
+      loadUserCardCounts()
+    }
+  }, [isAuthenticated, displayedCards])
 
   const loadInitialData = async () => {
     if (!apiEndpoint || loading || loadingRef.current) return
@@ -60,7 +74,7 @@ const UniversalCardTable = ({
       url.searchParams.set('limit', '10000') // Load ALL cards
       url.searchParams.set('page', '1')
       
-      console.log('📥 Loading ALL data:', url.pathname + url.search)
+      // console.log('📥 Loading ALL data:', url.pathname + url.search)
       const response = await axios.get(url.pathname + url.search)
       
       const { cards: newCards, total } = response.data
@@ -73,7 +87,7 @@ const UniversalCardTable = ({
       setCards(uniqueCards)
       setTotalCardsCount(total || uniqueCards.length)
       
-      console.log(`✅ Loaded ALL ${uniqueCards.length} cards`)
+      // console.log(`✅ Loaded ALL ${uniqueCards.length} cards`)
     } catch (error) {
       console.error('Error loading data:', error)
       setCards([])
@@ -81,6 +95,31 @@ const UniversalCardTable = ({
     } finally {
       setLoading(false)
       loadingRef.current = false
+    }
+  }
+
+  const loadUserCardCounts = async () => {
+    try {
+      const cardIds = displayedCards.map(card => card.card_id)
+      if (cardIds.length === 0) return
+
+      const response = await axios.post('/api/user/cards/counts', { card_ids: cardIds })
+      setUserCardCounts(response.data.counts || {})
+    } catch (err) {
+      console.error('Error loading user card counts:', err)
+      setUserCardCounts({})
+    }
+  }
+
+  const handleAddCard = (card) => {
+    setSelectedCard(card)
+    setShowAddCardModal(true)
+  }
+
+  const handleCardAdded = () => {
+    // Refresh user card counts after adding a card
+    if (displayedCards.length > 0) {
+      loadUserCardCounts()
     }
   }
 
@@ -442,6 +481,16 @@ const UniversalCardTable = ({
                   onMouseDown={(e) => handleResizeStart(e, 'notes')}
                 />
               </th>
+              {isAuthenticated && (
+                <>
+                  <th className="center">
+                    Owned
+                  </th>
+                  <th className="center">
+                    Action
+                  </th>
+                </>
+              )}
             </tr>
           </thead>
           <tbody>
@@ -475,10 +524,22 @@ const UniversalCardTable = ({
                   </td>
                 )}
                 <td className="series-cell">
-                  {card.series_rel?.name}
+                  {onSeriesClick ? (
+                    <span 
+                      className="series-link"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onSeriesClick(card.series_rel)
+                      }}
+                    >
+                      {card.series_rel?.name}
+                    </span>
+                  ) : (
+                    card.series_rel?.name
+                  )}
                 </td>
                 <td className="print-run-cell center">
-                  {card.print_run ? `/${card.print_run.toLocaleString()}` : ''}
+                  {card.print_run ? `/${card.print_run}` : ''}
                 </td>
                 <td className="color-cell">
                   {card.color_rel?.color && (
@@ -502,6 +563,25 @@ const UniversalCardTable = ({
                 <td className="notes-cell">
                   {card.notes}
                 </td>
+                {isAuthenticated && (
+                  <>
+                    <td className="user-card-count-cell center">
+                      {userCardCounts[card.card_id] || 0}
+                    </td>
+                    <td className="action-cell center">
+                      <button
+                        className="add-card-btn"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleAddCard(card)
+                        }}
+                        title="Add to Collection"
+                      >
+                        <Icon name="plus" size={16} style={{color: 'white'}} />
+                      </button>
+                    </td>
+                  </>
+                )}
               </tr>
             ))}
           </tbody>
@@ -546,6 +626,14 @@ const UniversalCardTable = ({
           </button>
         </div>
       </div>
+      
+      {/* Add Card Modal */}
+      <AddCardModal
+        isOpen={showAddCardModal}
+        onClose={() => setShowAddCardModal(false)}
+        card={selectedCard}
+        onCardAdded={handleCardAdded}
+      />
     </div>
   )
 }

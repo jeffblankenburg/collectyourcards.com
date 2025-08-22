@@ -38,10 +38,10 @@ function App() {
             <h3>Ready to Organize Your Collection?</h3>
             <p>Create an account to start tracking your collection and discover new cards</p>
             <div className="auth-actions">
-              <Link to="/register" className="action-button primary">
+              <Link to="/auth/signup" className="action-button primary">
                 <Icon name="collections" size={16} /> Start Collecting
               </Link>
-              <Link to="/login" className="action-button secondary">
+              <Link to="/auth/login" className="action-button secondary">
                 <Icon name="user" size={16} /> Sign In
               </Link>
             </div>

@@ -1,0 +1,387 @@
+import React, { useState, useEffect } from 'react'
+import { useAuth } from '../contexts/AuthContext'
+import axios from 'axios'
+import Icon from './Icon'
+import './AddCardModal.css'
+
+const AddCardModal = ({ 
+  isOpen, 
+  onClose, 
+  card, 
+  onCardAdded 
+}) => {
+  const { user } = useAuth()
+  const [loading, setLoading] = useState(false)
+  const [locations, setLocations] = useState([])
+  const [gradingAgencies, setGradingAgencies] = useState([])
+  const [showPricing, setShowPricing] = useState(true)
+  const [showGrading, setShowGrading] = useState(false)
+  
+  const [formData, setFormData] = useState({
+    serial_number: '',
+    user_location: '',
+    notes: '',
+    aftermarket_auto: false,
+    purchase_price: '',
+    estimated_value: '',
+    grading_agency: '',
+    grade: '',
+    grade_id: ''
+  })
+
+  useEffect(() => {
+    if (isOpen) {
+      loadLocations()
+      loadGradingAgencies()
+      resetForm()
+    }
+  }, [isOpen])
+
+  const resetForm = () => {
+    setFormData({
+      serial_number: '',
+      user_location: '',
+      notes: '',
+      aftermarket_auto: false,
+      purchase_price: '',
+      estimated_value: '',
+      grading_agency: '',
+      grade: '',
+      grade_id: ''
+    })
+    setShowPricing(false)
+    setShowGrading(false)
+  }
+
+  const loadLocations = async () => {
+    try {
+      console.log('Loading user locations...')
+      const response = await axios.get('/api/user/locations')
+      console.log('Locations response:', response.data)
+      setLocations(response.data.locations || [])
+    } catch (err) {
+      console.error('Error loading locations:', err.response?.data || err.message)
+      // Set empty array if request fails
+      setLocations([])
+    }
+  }
+
+  const loadGradingAgencies = async () => {
+    try {
+      const response = await axios.get('/api/grading-agencies')
+      setGradingAgencies(response.data.agencies || [])
+    } catch (err) {
+      console.error('Error loading grading agencies:', err)
+    }
+  }
+
+  const handleInputChange = (e) => {
+    const { name, value, type, checked } = e.target
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }))
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setLoading(true)
+
+    try {
+      const submitData = {
+        card_id: card.card_id,
+        ...formData,
+        serial_number: formData.serial_number ? parseInt(formData.serial_number) : null,
+        user_location: formData.user_location || null,
+        purchase_price: formData.purchase_price ? parseFloat(formData.purchase_price) : null,
+        estimated_value: formData.estimated_value ? parseFloat(formData.estimated_value) : null,
+        grading_agency: formData.grading_agency || null,
+        grade: formData.grade || null
+      }
+
+      await axios.post('/api/user/cards', submitData)
+      
+      if (onCardAdded) onCardAdded()
+      onClose()
+    } catch (err) {
+      console.error('Error adding card:', err)
+      // Handle error - could show a toast notification
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (!isOpen || !card) return null
+
+  const hasSerial = card.print_run && card.print_run > 0
+
+  // Calculate text color based on background brightness (for parallel colors)
+  const getTextColorForBackground = (hexColor) => {
+    if (!hexColor) return '#ffffff'
+    
+    // Remove # if present
+    const hex = hexColor.replace('#', '')
+    
+    // Parse RGB values
+    const r = parseInt(hex.substr(0, 2), 16)
+    const g = parseInt(hex.substr(2, 2), 16) 
+    const b = parseInt(hex.substr(4, 2), 16)
+    
+    // Calculate relative luminance using WCAG formula
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+    
+    // Return black text for bright colors, white text for dark colors
+    return luminance > 0.5 ? '#000000' : '#ffffff'
+  }
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content add-card-modal" onClick={e => e.stopPropagation()}>
+        {/* Card Header */}
+        <div className="card-header">
+          <button className="modal-close" onClick={onClose}>
+            <Icon name="close" size={20} />
+          </button>
+          
+          <div className="card-info">
+            <div className="card-number">#{card.card_number}</div>
+            <div className="card-details">
+              <div className="card-players">
+                {card.card_player_teams?.map((cpt, index) => (
+                  <span key={index}>
+                    {cpt.player?.name}
+                    {index < card.card_player_teams.length - 1 ? ', ' : ''}
+                  </span>
+                )) || 'N/A'}
+              </div>
+              <div className="card-teams">
+                {card.card_player_teams?.map((cpt, index) => (
+                  <span key={index}>
+                    {cpt.team?.name}
+                    {index < card.card_player_teams.length - 1 ? ', ' : ''}
+                  </span>
+                )) || 'N/A'}
+              </div>
+              <div className="card-series">{card.series_rel?.name}</div>
+            </div>
+          </div>
+          
+          {/* Color stripe for parallels */}
+          {card.color_rel?.hex_color && card.color_rel?.color && (
+            <div 
+              className="card-color-stripe"
+              style={{ backgroundColor: card.color_rel.hex_color }}
+            >
+              <span 
+                className="color-name"
+                style={{
+                  color: getTextColorForBackground(card.color_rel.hex_color)
+                }}
+              >
+                {card.color_rel.color}
+              </span>
+            </div>
+          )}
+        </div>
+
+        <form onSubmit={handleSubmit} className="add-card-form">
+
+          {/* Main Form Fields */}
+          <div className="form-section main-fields">
+            <div className="form-grid">
+              {hasSerial && (
+                <div className="form-group">
+                  <label>Serial Number</label>
+                  <div className="serial-input-wrapper">
+                    <input
+                      type="number"
+                      name="serial_number"
+                      value={formData.serial_number}
+                      onChange={handleInputChange}
+                      placeholder="#"
+                      min="1"
+                      max={card.print_run}
+                      className="serial-input"
+                    />
+                    <span className="print-run-suffix">/ {card.print_run}</span>
+                  </div>
+                </div>
+              )}
+
+              <div className="form-group">
+                <label>Location</label>
+                <select
+                  name="user_location"
+                  value={formData.user_location}
+                  onChange={handleInputChange}
+                >
+                  <option value="">Select location</option>
+                  {locations.map(location => (
+                    <option key={location.user_location_id} value={location.user_location_id}>
+                      {location.location}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="form-group full-width">
+              <label>Notes</label>
+              <textarea
+                name="notes"
+                value={formData.notes}
+                onChange={handleInputChange}
+                placeholder="Any notes about this card..."
+                rows="2"
+              />
+            </div>
+
+            <div className="checkbox-group">
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  name="aftermarket_auto"
+                  checked={formData.aftermarket_auto}
+                  onChange={handleInputChange}
+                />
+                <span>Aftermarket Autograph</span>
+              </label>
+            </div>
+          </div>
+
+          {/* Pricing Information - Collapsible */}
+          <div className="form-section collapsible">
+            <div 
+              className="section-header"
+              onClick={() => setShowPricing(!showPricing)}
+            >
+              <h4>Pricing Information</h4>
+              <Icon name={showPricing ? "arrow-up" : "arrow-down"} size={18} />
+            </div>
+            
+            {showPricing && (
+              <div className="collapsible-content">
+                <div className="form-grid">
+                  <div className="form-group">
+                    <label>Purchase Price</label>
+                    <div className="price-input">
+                      <span className="currency">$</span>
+                      <input
+                        type="number"
+                        name="purchase_price"
+                        value={formData.purchase_price}
+                        onChange={handleInputChange}
+                        placeholder="0.00"
+                        step="0.01"
+                        min="0"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label>Estimated Value</label>
+                    <div className="price-input">
+                      <span className="currency">$</span>
+                      <input
+                        type="number"
+                        name="estimated_value"
+                        value={formData.estimated_value}
+                        onChange={handleInputChange}
+                        placeholder="0.00"
+                        step="0.01"
+                        min="0"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Grading Information - Collapsible */}
+          <div className="form-section collapsible">
+            <div 
+              className="section-header"
+              onClick={() => setShowGrading(!showGrading)}
+            >
+              <h4>Grading Information</h4>
+              <Icon name={showGrading ? "arrow-up" : "arrow-down"} size={18} />
+            </div>
+            
+            {showGrading && (
+              <div className="collapsible-content">
+                <div className="form-group full-width">
+                  <label>Grading Agency</label>
+                  <select
+                    name="grading_agency"
+                    value={formData.grading_agency}
+                    onChange={handleInputChange}
+                  >
+                    <option value="">Select a grading agency</option>
+                    {gradingAgencies.map(agency => (
+                      <option key={agency.grading_agency_id} value={agency.grading_agency_id}>
+                        {agency.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="form-grid">
+                  <div className="form-group">
+                    <label>Grade</label>
+                    <input
+                      type="text"
+                      name="grade"
+                      value={formData.grade}
+                      onChange={handleInputChange}
+                      placeholder="e.g., 10, 9.5, PSA 10"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>Grade ID</label>
+                    <input
+                      type="text"
+                      name="grade_id"
+                      value={formData.grade_id}
+                      onChange={handleInputChange}
+                      placeholder="Cert number"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Form Actions */}
+          <div className="form-actions">
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={onClose}
+              disabled={loading}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <Icon name="activity" size={16} className="spinner" />
+                  Adding...
+                </>
+              ) : (
+                'Add Card'
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+export default AddCardModal

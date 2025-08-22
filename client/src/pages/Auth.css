@@ -30,7 +30,41 @@
   -webkit-text-fill-color: transparent;
   background-clip: text;
   font-size: 2.5rem;
-  margin: 0 0 0.5rem 0;
+  margin: 0 0 1.5rem 0;
+}
+
+/* Auth Mode Toggle */
+.auth-mode-toggle {
+  display: flex;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 0.25rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.mode-button {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.mode-button:hover {
+  color: white;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.mode-button.active {
+  background: linear-gradient(135deg, #e5e7eb 0%, #e5e7eb 100%);
+  color: #1e293b;
+  box-shadow: 0 2px 8px rgba(229, 231, 235, 0.3);
 }
 
 .auth-header h2 {

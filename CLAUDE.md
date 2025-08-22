@@ -15,6 +15,7 @@
 - **NEVER USE JAVASCRIPT ALERTS** - Always use toast messages or inline error displays instead
 - **NO MANUAL PAGINATION** - Never implement manual pagination (Previous/Next buttons, page numbers). Always use infinite scrolling for better UX
 - **ADMIN TABLES FIRST COLUMN**: Always show database ID as first column in all admin tables for debugging/query purposes
+- **ICONOGRAPHY REVIEW NEEDED**: All application icons need comprehensive review for consistency, appropriateness, and sports-card specific relevance
 - Use toast notifications for all success/error feedback
 - Prefer inline validation and error messages in forms
 

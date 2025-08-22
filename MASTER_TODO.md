@@ -1955,6 +1955,9 @@ async function processEbayPurchase(purchase) {
 - **Implement database backup strategy** - Prevent future data loss like we experienced
 - **Comprehensive icon design review** - Once core functionality is complete, take a harder look at all icons to ensure they work well together and serve the user journey effectively
 
+#### 🐛 **CSS Bugs to Fix**
+- **Player card text centering on mobile** - On smaller screen widths, the player names on player cards in TeamDetail page become centered instead of staying left-justified. CSS text-align: left was added but didn't fix the issue. Investigate inherited styles or flexbox alignment causing this behavior.
+
 ## Completed Tasks Archive
 *Will move completed items here to keep main list clean*
 

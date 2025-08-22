@@ -12,13 +12,19 @@ function Header() {
   const location = useLocation()
   const navigate = useNavigate()
   const [showUserMenu, setShowUserMenu] = useState(false)
+  const [showMobileMenu, setShowMobileMenu] = useState(false)
   const dropdownRef = useRef(null)
+  const mobileMenuRef = useRef(null)
 
-  // Close dropdown when clicking outside
+  // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setShowUserMenu(false)
+      }
+      if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target) && 
+          !event.target.closest('.mobile-menu-toggle')) {
+        setShowMobileMenu(false)
       }
     }
 
@@ -28,6 +34,11 @@ function Header() {
     }
   }, [])
 
+  // Close mobile menu on navigation
+  useEffect(() => {
+    setShowMobileMenu(false)
+  }, [location.pathname])
+
   const handleLogout = async () => {
     await logout()
     setShowUserMenu(false)
@@ -36,7 +47,7 @@ function Header() {
   }
 
   const isActive = (path) => {
-    return location.pathname === path || (path === '/dashboard' && location.pathname === '/')
+    return location.pathname === path
   }
 
   // Hide nav search on pages that have their own prominent search
@@ -58,42 +69,80 @@ function Header() {
   return (
     <header className="app-header">
       <div className="header-container">
+        {/* Mobile Menu Toggle */}
+        <button 
+          className="mobile-menu-toggle"
+          onClick={() => setShowMobileMenu(!showMobileMenu)}
+          aria-label="Toggle menu"
+        >
+          <Icon name={showMobileMenu ? 'close' : 'menu'} size={24} />
+        </button>
+
         {/* Logo Section */}
         <Link to="/" className="header-logo">
           <h1>🎴 Collect Your Cards</h1>
         </Link>
 
-        {/* Navigation */}
-        <nav className="header-nav">
-          <Link 
-            to="/" 
-            className={`nav-link ${isActive('/') ? 'active' : ''}`}
-          >
-            <Icon name="home" size={18} className="nav-icon" />
-            Home
-          </Link>
+        {/* Desktop Navigation */}
+        <nav className="header-nav desktop-nav">
           <Link 
             to="/players" 
             className={`nav-link ${location.pathname.startsWith('/players') ? 'active' : ''}`}
           >
             <Icon name="player" size={18} className="nav-icon" />
-            Players
+            <span className="nav-text">Players</span>
           </Link>
           <Link 
             to="/teams" 
             className={`nav-link ${location.pathname.startsWith('/teams') ? 'active' : ''}`}
           >
             <Icon name="team" size={18} className="nav-icon" />
-            Teams
+            <span className="nav-text">Teams</span>
           </Link>
           <Link 
             to="/series" 
             className={`nav-link ${location.pathname.startsWith('/series') ? 'active' : ''}`}
           >
             <Icon name="series" size={18} className="nav-icon" />
-            Series
+            <span className="nav-text">Sets</span>
           </Link>
         </nav>
+
+        {/* Mobile Navigation Menu */}
+        {showMobileMenu && (
+          <nav className="mobile-nav" ref={mobileMenuRef}>
+            <Link 
+              to="/players" 
+              className={`mobile-nav-link ${location.pathname.startsWith('/players') ? 'active' : ''}`}
+            >
+              <Icon name="player" size={20} />
+              <span>Players</span>
+            </Link>
+            <Link 
+              to="/teams" 
+              className={`mobile-nav-link ${location.pathname.startsWith('/teams') ? 'active' : ''}`}
+            >
+              <Icon name="team" size={20} />
+              <span>Teams</span>
+            </Link>
+            <Link 
+              to="/series" 
+              className={`mobile-nav-link ${location.pathname.startsWith('/series') ? 'active' : ''}`}
+            >
+              <Icon name="series" size={20} />
+              <span>Sets</span>
+            </Link>
+            {!isAuthenticated && (
+              <>
+                <div className="mobile-nav-divider"></div>
+                <Link to="/auth/login" className="mobile-nav-link primary">
+                  <Icon name="user" size={20} />
+                  <span>Sign In</span>
+                </Link>
+              </>
+            )}
+          </nav>
+        )}
 
         {/* Universal Search - Hidden on pages with prominent search */}
         {!hideNavSearch() && (
@@ -163,11 +212,8 @@ function Header() {
             </div>
           ) : (
             <div className="auth-buttons">
-              <Link to="/login" className="header-button secondary">
+              <Link to="/auth/login" className="header-button primary">
                 Sign In
-              </Link>
-              <Link to="/register" className="header-button primary">
-                Get Started
               </Link>
             </div>
           )}

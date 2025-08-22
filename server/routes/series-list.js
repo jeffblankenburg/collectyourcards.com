@@ -6,43 +6,71 @@ const prisma = new PrismaClient()
 // GET /api/series-list - Get top series by card count
 router.get('/', async (req, res) => {
   try {
-    const { limit = 50 } = req.query
-    const limitNum = Math.min(parseInt(limit) || 50, 100)
+    const { limit } = req.query
+    const useLimit = limit && parseInt(limit) > 0
+    const limitNum = useLimit ? parseInt(limit) : null
 
-    console.log('Getting top series list with limit:', limitNum)
+    console.log('Getting series list', useLimit ? `with limit: ${limitNum}` : 'without limit')
 
-    // Get top series by card count
-    const topSeries = await prisma.$queryRaw`
-      SELECT TOP ${limitNum}
+    // Get ALL series with pre-calculated metadata (including series with 0 cards)
+    const topSeriesQuery = `
+      SELECT ${useLimit ? `TOP ${limitNum}` : ''}
         s.series_id,
         s.name,
-        s.year,
-        m.name as manufacturer_name,
-        COUNT(DISTINCT c.card_id) as card_count,
-        COUNT(DISTINCT p.player_id) as player_count,
-        MIN(c.sort_order) as min_card_number,
-        MAX(c.sort_order) as max_card_number
+        s.card_count,
+        s.parallel_of_series,
+        parent_s.name as parent_series_name,
+        s.print_run_variations,
+        s.min_print_run,
+        s.max_print_run,
+        s.primary_color_name,
+        s.primary_color_hex,
+        s.front_image_path,
+        s.back_image_path
       FROM series s
-      LEFT JOIN manufacturer m ON s.manufacturer = m.manufacturer_id
-      JOIN card c ON s.series_id = c.series
-      JOIN card_player_team cpt ON c.card_id = cpt.card
-      JOIN player_team pt ON cpt.player_team = pt.player_team_id
-      JOIN player p ON pt.player = p.player_id
-      GROUP BY s.series_id, s.name, s.year, m.name
-      ORDER BY COUNT(DISTINCT c.card_id) DESC
+      LEFT JOIN series parent_s ON s.parallel_of_series = parent_s.series_id
+      ORDER BY s.name DESC
     `
 
-    // Serialize BigInt values
-    const serializedSeries = topSeries.map(series => ({
-      series_id: Number(series.series_id),
-      name: series.name,
-      year: Number(series.year),
-      manufacturer_name: series.manufacturer_name,
-      card_count: Number(series.card_count),
-      player_count: Number(series.player_count),
-      min_card_number: Number(series.min_card_number),
-      max_card_number: Number(series.max_card_number)
-    }))
+    const topSeries = await prisma.$queryRawUnsafe(topSeriesQuery)
+
+    // Serialize BigInt values (works with current database schema)
+    const serializedSeries = topSeries.map(series => {
+      // Extract year from series name (e.g., "1952 Bowman" -> 1952)
+      const yearMatch = series.name.match(/(\d{4})/)
+      const year = yearMatch ? parseInt(yearMatch[1]) : null
+      
+      // Create print run display from min/max values
+      let printRunDisplay = null
+      const minPrint = series.min_print_run ? Number(series.min_print_run) : null
+      const maxPrint = series.max_print_run ? Number(series.max_print_run) : null
+      const printRunVars = Number(series.print_run_variations || 0)
+      
+      if (minPrint && maxPrint) {
+        if (printRunVars === 1) {
+          printRunDisplay = `/${minPrint}`
+        } else {
+          printRunDisplay = `up to /${maxPrint}`
+        }
+      }
+      
+      return {
+        series_id: Number(series.series_id),
+        name: series.name,
+        year: year,
+        card_count: Number(series.card_count),
+        is_parallel: !!series.parallel_of_series,
+        parallel_of_series: series.parallel_of_series ? Number(series.parallel_of_series) : null,
+        parent_series_name: series.parent_series_name,
+        print_run_display: printRunDisplay,
+        print_run_uniform: printRunVars <= 1,
+        color_uniform: !!series.primary_color_name,
+        primary_color_name: series.primary_color_name,
+        primary_color_hex: series.primary_color_hex,
+        front_image_path: series.front_image_path,
+        back_image_path: series.back_image_path
+      }
+    })
 
     res.json({
       series: serializedSeries,

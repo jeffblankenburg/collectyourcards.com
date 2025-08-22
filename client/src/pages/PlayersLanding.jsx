@@ -10,22 +10,38 @@ function PlayersLanding() {
   const navigate = useNavigate()
   
   const [players, setPlayers] = useState([])
-  const [recentPlayers, setRecentPlayers] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
   useEffect(() => {
     loadPlayersData()
-    if (isAuthenticated) {
-      loadRecentVisits()
-    }
   }, [isAuthenticated])
 
   const loadPlayersData = async () => {
     try {
       setLoading(true)
-      const response = await axios.get('/api/players-list?limit=50')
-      setPlayers(response.data.players || [])
+      
+      // Load players list with authentication if available
+      let apiUrl = '/api/players-list?limit=100'
+      
+      // Include auth header if authenticated - backend will automatically include recently viewed
+      const config = {}
+      if (isAuthenticated) {
+        const token = localStorage.getItem('token')
+        if (token) {
+          config.headers = {
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      }
+      
+      const response = await axios.get(apiUrl, config)
+      let playersList = response.data.players || []
+      
+      // Backend automatically includes recently viewed players at the top for authenticated users
+      // Non-authenticated users see players sorted by card count (default)
+      
+      setPlayers(playersList)
       setError(null)
     } catch (err) {
       console.error('Error loading players:', err)
@@ -35,18 +51,7 @@ function PlayersLanding() {
     }
   }
 
-  const loadRecentVisits = () => {
-    try {
-      const recent = localStorage.getItem('recentPlayerVisits')
-      if (recent) {
-        setRecentPlayers(JSON.parse(recent).slice(0, 6)) // Show max 6 recent
-      }
-    } catch (err) {
-      console.error('Error loading recent visits:', err)
-    }
-  }
-
-  const handlePlayerClick = (player) => {
+  const handlePlayerClick = (player, teamId = null) => {
     const slug = `${player.first_name}-${player.last_name}`
       .toLowerCase()
       .replace(/[^a-z0-9\s-]/g, '')
@@ -62,77 +67,107 @@ function PlayersLanding() {
       })
     }
 
-    navigate(`/players/${slug}`)
-  }
-
-  const trackPlayerVisit = (player) => {
-    try {
-      const recent = JSON.parse(localStorage.getItem('recentPlayerVisits') || '[]')
-      
-      // Remove if already exists
-      const filtered = recent.filter(p => p.player_id !== player.player_id)
-      
-      // Add to front
-      const updated = [player, ...filtered].slice(0, 20) // Keep max 20
-      
-      localStorage.setItem('recentPlayerVisits', JSON.stringify(updated))
-      setRecentPlayers(updated.slice(0, 6))
-    } catch (err) {
-      console.error('Error tracking visit:', err)
+    // Navigate with optional team filter
+    const url = `/players/${slug}`
+    if (teamId) {
+      navigate(url, { state: { selectedTeamId: teamId } })
+    } else {
+      navigate(url)
     }
   }
 
-  const PlayerCard = ({ player, isRecent = false }) => (
-    <div 
-      className={`player-card ${isRecent ? 'recent' : ''}`}
-      onClick={() => handlePlayerClick(player)}
-    >
-      <div className="player-card-content">
-        <div className="player-info">
-          <h3 className="player-name">
-            {player.first_name} {player.last_name}
-            {player.is_hof && <Icon name="trophy" size={16} className="hof-icon" />}
-          </h3>
-          {player.nick_name && (
-            <p className="player-nickname">"{player.nick_name}"</p>
-          )}
-        </div>
+  const trackPlayerVisit = async (player) => {
+    try {
+      // Track visit on backend
+      await axios.post('/api/players/track-visit', {
+        player_id: player.player_id
+      })
+
+      // For authenticated users, also update localStorage but DON'T reload the list
+      // The list will be updated on next page load to avoid grid shifting
+      if (isAuthenticated) {
+        const recent = JSON.parse(localStorage.getItem('recentPlayerVisits') || '[]')
         
-        <div className="player-stats">
-          <div className="card-count">
-            <span className="count-number">{player.card_count.toLocaleString()}</span>
-            <span className="count-label">Cards</span>
+        // Remove if already exists
+        const filtered = recent.filter(p => p.player_id !== player.player_id)
+        
+        // Add to front
+        const updated = [player, ...filtered].slice(0, 20) // Keep max 20
+        
+        localStorage.setItem('recentPlayerVisits', JSON.stringify(updated))
+      }
+    } catch (err) {
+      console.error('Error tracking visit:', err)
+      
+      // Fallback to localStorage tracking for authenticated users if API fails
+      if (isAuthenticated) {
+        try {
+          const recent = JSON.parse(localStorage.getItem('recentPlayerVisits') || '[]')
+          const filtered = recent.filter(p => p.player_id !== player.player_id)
+          const updated = [player, ...filtered].slice(0, 20)
+          localStorage.setItem('recentPlayerVisits', JSON.stringify(updated))
+        } catch (localErr) {
+          console.error('Error with localStorage fallback:', localErr)
+        }
+      }
+    }
+  }
+
+  const PlayerCard = ({ player }) => {
+    const handleTeamClick = (e, teamId) => {
+      e.stopPropagation()
+      handlePlayerClick(player, teamId)
+    }
+
+    return (
+      <div 
+        className="player-card"
+        onClick={() => handlePlayerClick(player)}
+      >
+        <div className="player-card-content">
+          <div className="player-info">
+            <h3 className="player-name">
+              {player.first_name} {player.last_name}
+              {player.is_hof && <Icon name="trophy" size={16} className="hof-icon" />}
+            </h3>
+          </div>
+          
+          <div className="player-stats">
+            {player.nick_name && (
+              <div className="nickname-section">
+                <p className="player-nickname">"{player.nick_name}"</p>
+              </div>
+            )}
+            <div className="card-count">
+              <span className="count-number">{player.card_count.toLocaleString()}</span>
+              <span className="count-label">Cards</span>
+            </div>
+          </div>
+
+          <div className="player-teams">
+            {player.teams?.map(team => (
+              <div
+                key={team.team_id}
+                className="mini-team-circle clickable"
+                style={{
+                  '--primary-color': team.primary_color || '#666',
+                  '--secondary-color': team.secondary_color || '#999'
+                }}
+                title={`${team.name} (${team.card_count} cards)`}
+                onClick={(e) => handleTeamClick(e, team.team_id)}
+              >
+                {team.abbreviation}
+              </div>
+            ))}
           </div>
         </div>
-
-        <div className="player-teams">
-          {player.teams?.slice(0, 4).map(team => (
-            <div
-              key={team.team_id}
-              className="mini-team-circle"
-              style={{
-                '--primary-color': team.primary_color || '#666',
-                '--secondary-color': team.secondary_color || '#999'
-              }}
-              title={`${team.name} (${team.card_count} cards)`}
-            >
-              {team.abbreviation}
-            </div>
-          ))}
-          {player.teams?.length > 4 && (
-            <div className="more-teams">+{player.teams.length - 4}</div>
-          )}
-        </div>
       </div>
-    </div>
-  )
+    )
+  }
 
   if (loading) {
     return (
       <div className="players-landing">
-        <div className="landing-header">
-          <h1>Players</h1>
-        </div>
         <div className="loading-container">
           <Icon name="activity" size={24} className="spinner" />
           <p>Loading players...</p>
@@ -144,9 +179,6 @@ function PlayersLanding() {
   if (error) {
     return (
       <div className="players-landing">
-        <div className="landing-header">
-          <h1>Players</h1>
-        </div>
         <div className="error-container">
           <Icon name="error" size={24} />
           <p>{error}</p>
@@ -160,34 +192,11 @@ function PlayersLanding() {
 
   return (
     <div className="players-landing">
-      <div className="landing-header">
-        <h1>Players</h1>
-        <p>Discover players and their card collections</p>
+      <div className="players-grid">
+        {players.map(player => (
+          <PlayerCard key={player.player_id} player={player} />
+        ))}
       </div>
-
-      {isAuthenticated && recentPlayers.length > 0 && (
-        <section className="recent-section">
-          <h2>Recently Viewed</h2>
-          <div className="players-grid recent-grid">
-            {recentPlayers.map(player => (
-              <PlayerCard 
-                key={`recent-${player.player_id}`} 
-                player={player} 
-                isRecent={true} 
-              />
-            ))}
-          </div>
-        </section>
-      )}
-
-      <section className="top-players-section">
-        <h2>Top Players by Card Count</h2>
-        <div className="players-grid">
-          {players.map(player => (
-            <PlayerCard key={player.player_id} player={player} />
-          ))}
-        </div>
-      </section>
     </div>
   )
 }

@@ -164,8 +164,14 @@ if (config.environment === 'test') {
     { path: '/api/search', file: './routes/search', name: 'Search' },
     { path: '/api/players', file: './routes/players', name: 'Players' },
     { path: '/api/players-list', file: './routes/players-list', name: 'Players List' },
+    { path: '/api/teams', file: './routes/teams', name: 'Teams' },
     { path: '/api/teams-list', file: './routes/teams-list', name: 'Teams List' },
-    { path: '/api/series-list', file: './routes/series-list', name: 'Series List' }
+    { path: '/api/series-list', file: './routes/series-list', name: 'Series List' },
+    { path: '/api/sets-list', file: './routes/sets-list', name: 'Sets List' },
+    { path: '/api/series-by-set', file: './routes/series-by-set', name: 'Series By Set' },
+    { path: '/api/user/cards', file: './routes/user-cards', name: 'User Cards' },
+    { path: '/api/user/locations', file: './routes/user-locations', name: 'User Locations' },
+    { path: '/api/grading-agencies', file: './routes/grading-agencies', name: 'Grading Agencies' }
   ];
 
   console.log('📍 Loading API routes in production mode...');

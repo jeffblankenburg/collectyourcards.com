@@ -10,11 +10,12 @@ router.get('/', async (req, res) => {
       player_name, 
       team_id, 
       series_name,
+      series_id,
       limit = 100, 
       page = 1 
     } = req.query
 
-    console.log('Cards API request:', { player_name, team_id, series_name, limit, page })
+    console.log('Cards API request:', { player_name, team_id, series_name, series_id, limit, page })
 
     const limitNum = Math.min(parseInt(limit) || 100, 10000) // Cap at 10000 for loading all data
     const pageNum = parseInt(page) || 1
@@ -52,6 +53,10 @@ router.get('/', async (req, res) => {
 
     if (series_name) {
       whereConditions.push(`LOWER(s.name) LIKE LOWER('%${series_name}%')`)
+    }
+
+    if (series_id) {
+      whereConditions.push(`s.series_id = ${parseInt(series_id)}`)
     }
 
     const whereClause = whereConditions.length > 0 

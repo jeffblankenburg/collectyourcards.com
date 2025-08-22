@@ -1,6 +1,3 @@
-// Prisma Schema for Collect Your Cards
-// Database: SQL Server 2022
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,340 +7,563 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// User Management
-model User {
-  user_id            BigInt    @id @default(autoincrement())
-  email              String    @unique @db.NVarChar(255)
-  password_hash      String?   @db.NVarChar(500)
-  name               String?   @db.NVarChar(Max)
-  role               String    @default("user") @db.NVarChar(50) // user, admin, superadmin, data_admin
-  is_active          Boolean   @default(true)
-  is_verified        Boolean   @default(false)
-  verification_token String?   @db.NVarChar(500)
-  reset_token        String?   @db.NVarChar(500)
-  reset_token_expires DateTime? @db.DateTime2
-  last_login         DateTime? @db.DateTime2
-  login_attempts     Int       @default(0)
-  locked_until       DateTime? @db.DateTime2
-  created            DateTime  @default(now()) @db.DateTime2
-
-  // Relationships
-  sessions       UserSession[]
-  auth_logs      UserAuthLog[]
-  user_cards     UserCard[]
-  user_locations UserLocation[]
-  import_jobs    ImportJob[]
-  ebay_accounts  UserEbayAccount[]
-  ebay_purchases EbayPurchase[]
-
-  @@map("user")
-}
-
-model UserSession {
-  session_id     BigInt    @id @default(autoincrement())
-  user_id        BigInt
-  session_token  String    @db.NVarChar(500) // Added missing session_token field
-  token_hash     String?   @db.NVarChar(500) // Made optional since it's nullable in DB
-  expires_at     DateTime  @db.DateTime2
-  ip_address     String?   @db.VarChar(45)
-  user_agent     String?   @db.VarChar(500)
-  last_accessed  DateTime? @db.DateTime2    // Made optional since it's nullable in DB
-  created        DateTime  @default(now()) @db.DateTime2
-
-  // Relationships
-  user User @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
-
-  @@index([token_hash])
-  @@map("user_session")
-}
-
-model UserAuthLog {
-  log_id      BigInt   @id @default(autoincrement())
-  user_id     BigInt?
-  email       String   @db.NVarChar(255)
-  event_type  String   @db.NVarChar(50) // login, login_success, login_failed, logout, etc.
+model admin_action_log {
+  log_id      BigInt   @id(map: "PK_admin_action_log") @default(autoincrement())
+  user_id     BigInt
+  action_type String   @db.VarChar(50)
+  entity_type String   @db.VarChar(50)
+  entity_id   String?  @db.VarChar(100)
+  old_values  String?  @db.NVarChar(Max)
+  new_values  String?  @db.NVarChar(Max)
   ip_address  String?  @db.VarChar(45)
   user_agent  String?  @db.VarChar(500)
-  success     Boolean
-  error_message String? @db.NVarChar(Max)
-  created     DateTime @default(now()) @db.DateTime2
+  created     DateTime @default(now(), map: "DF__admin_act__creat__0E391C95") @db.DateTime
 
-  // Relationships
-  user User? @relation(fields: [user_id], references: [user_id], onDelete: SetNull)
-
-  @@index([email])
-  @@map("user_auth_log")
+  @@index([created], map: "idx_admin_action_log_created")
+  @@index([entity_type, entity_id], map: "idx_admin_action_log_entity")
+  @@index([user_id], map: "idx_admin_action_log_user")
 }
 
-// Sports Organizations & Structure
-model Organization {
-  organization_id Int    @id @default(autoincrement())
-  name           String @db.NVarChar(Max) // MLB, NFL, NBA, etc.
-  abbreviation   String @db.NVarChar(Max)
+model card {
+  card_id                                      BigInt             @id(map: "PK_card") @default(autoincrement())
+  sort_order                                   Int?
+  card_number                                  String?            @db.NVarChar(Max)
+  is_rookie                                    Boolean            @default(false, map: "DEFAULT_card_is_rookie")
+  is_autograph                                 Boolean            @default(false, map: "DEFAULT_card_is_autograph")
+  is_relic                                     Boolean            @default(false, map: "DEFAULT_card_is_relic")
+  print_run                                    Int?
+  series                                       BigInt?
+  color                                        Int?
+  notes                                        String?            @db.NVarChar(Max)
+  created                                      DateTime           @default(now(), map: "DEFAULT_card_created") @db.DateTime
+  created_month                                DateTime?          @db.Date
+  color_card_colorTocolor                      color?             @relation("card_colorTocolor", fields: [color], references: [color_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_card_color")
+  card_player_team_card_player_team_cardTocard card_player_team[] @relation("card_player_team_cardTocard")
+  card_variation_card_variation_cardTocard     card_variation[]   @relation("card_variation_cardTocard")
+  user_card_user_card_cardTocard               user_card[]        @relation("user_card_cardTocard")
 
-  // Relationships
-  sets  Set[]
-  teams Team[]
-
-  @@map("organizations")
+  @@index([created_month], map: "idx_card_created_month")
+  @@index([series], map: "IX_card_series_optimized")
 }
 
-model Manufacturer {
-  manufacturer_id Int    @id @default(autoincrement())
-  name           String @db.NVarChar(Max) // Topps, Panini, Upper Deck
+model card_player_team {
+  card_player_team_id                                   BigInt       @id(map: "PK_card_player_team") @default(autoincrement())
+  card                                                  BigInt?
+  player_team                                           BigInt?
+  created                                               DateTime     @default(now(), map: "DEFAULT_card_player_team_created") @db.DateTime
+  card_card_player_team_cardTocard                      card?        @relation("card_player_team_cardTocard", fields: [card], references: [card_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_card_player_team_card")
+  player_team_card_player_team_player_teamToplayer_team player_team? @relation("card_player_team_player_teamToplayer_team", fields: [player_team], references: [player_team_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_card_player_team_player_team")
 
-  // Relationships
-  sets Set[]
-
-  @@map("manufacturers")
+  @@index([card, player_team], map: "idx_card_player_team")
+  @@index([card, player_team], map: "IX_card_player_team_card_player")
+  @@index([card, player_team], map: "IX_card_player_team_card_team")
+  @@index([player_team, card], map: "IX_card_player_team_optimized")
+  @@index([player_team], map: "IX_card_player_team_player_team")
 }
 
-model Set {
-  set_id       Int     @id @default(autoincrement())
-  name         String  @db.NVarChar(Max)
-  year         Int
-  organization Int
-  manufacturer Int
-  card_count   Int?
-  series_count Int?
-  is_complete  Boolean?
-
-  // Relationships
-  organization_rel Organization @relation(fields: [organization], references: [organization_id])
-  manufacturer_rel Manufacturer @relation(fields: [manufacturer], references: [manufacturer_id])
-  series          Series[]
-
-  @@map("sets")
+model card_variation {
+  card_variation_id                                  BigInt      @id(map: "PK_card_variation") @default(autoincrement())
+  card                                               BigInt?
+  description                                        String?     @db.NVarChar(Max)
+  created                                            DateTime?   @default(now(), map: "DEFAULT_card_variation_created") @db.DateTime
+  card_card_variation_cardTocard                     card?       @relation("card_variation_cardTocard", fields: [card], references: [card_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_card_variation_card")
+  user_card_user_card_card_variationTocard_variation user_card[] @relation("user_card_card_variationTocard_variation")
 }
 
-model Series {
-  series_id           BigInt  @id @default(autoincrement())
-  name               String  @db.NVarChar(Max)
-  set                Int
-  card_count         Int     @default(0)
-  is_base            Boolean @default(false)
-  parallel_of_series BigInt? // For parallel sets
-
-  // Relationships
-  set_rel            Set      @relation(fields: [set], references: [set_id])
-  parallel_series    Series?  @relation("ParallelSeries", fields: [parallel_of_series], references: [series_id], onDelete: NoAction, onUpdate: NoAction)
-  child_parallels    Series[] @relation("ParallelSeries")
-  cards              Card[]
-
-  @@map("series")
+model color {
+  color_id               Int      @id(map: "PK_color") @default(autoincrement())
+  name                   String?  @db.NVarChar(Max)
+  hex_value              String?  @db.NVarChar(Max)
+  created                DateTime @default(now(), map: "DEFAULT_color_created") @db.DateTime
+  card_card_colorTocolor card[]   @relation("card_colorTocolor")
 }
 
-// Colors for card variants
-model Color {
-  color_id Int    @id @default(autoincrement())
-  name     String @db.NVarChar(Max)
-  hex_code String @db.NVarChar(7)
-
-  // Relationships
-  cards Card[]
-
-  @@map("colors")
+model duplicate_detection_job {
+  job_id                BigInt    @id(map: "PK_duplicate_detection_job") @default(autoincrement())
+  started_at            DateTime  @default(now(), map: "DF__duplicate__start__13F1F5EB") @db.DateTime
+  completed_at          DateTime? @db.DateTime
+  status                String    @default("running", map: "DF__duplicate__statu__14E61A24") @db.NVarChar(50)
+  total_players_checked Int       @default(0, map: "DF__duplicate__total__15DA3E5D")
+  groups_found          Int       @default(0, map: "DF__duplicate__group__16CE6296")
+  error_message         String?   @db.NVarChar(Max)
 }
 
-// Grading agencies
-model GradingAgency {
-  grading_agency_id Int    @id @default(autoincrement())
-  name             String @db.NVarChar(Max) // PSA, BGS, SGC, etc.
-  abbreviation     String @db.NVarChar(10)
+model duplicate_player_group {
+  group_id            BigInt    @id(map: "PK_duplicate_player_group") @default(autoincrement())
+  similarity_score    Float
+  total_cards         Int       @default(0, map: "DF__duplicate__total__19AACF41")
+  status              String    @default("pending", map: "DF__duplicate__statu__1A9EF37A") @db.NVarChar(50)
+  created             DateTime  @default(now(), map: "DF__duplicate__creat__1B9317B3") @db.DateTime
+  last_updated        DateTime  @default(now(), map: "DF__duplicate__last___1C873BEC") @db.DateTime
+  resolved_by_user_id BigInt?
+  resolved_at         DateTime? @db.DateTime
 
-  // Relationships
-  user_cards UserCard[]
-
-  @@map("grading_agencies")
+  @@index([status], map: "idx_duplicate_player_group_status")
 }
 
-// Players and Teams
-model Player {
-  player_id   BigInt    @id @default(autoincrement())
-  first_name  String    @db.NVarChar(Max)
-  last_name   String    @db.NVarChar(Max)
-  nick_name   String?   @db.NVarChar(Max)
-  birthdate   DateTime? @db.DateTime2
-  is_hof      Boolean   @default(false)
-  card_count  Int       @default(0)
+model duplicate_player_member {
+  member_id  BigInt   @id(map: "PK_duplicate_player_member") @default(autoincrement())
+  group_id   BigInt
+  player_id  BigInt
+  is_primary Boolean  @default(false, map: "DF__duplicate__is_pr__1F63A897")
+  created    DateTime @default(now(), map: "DF__duplicate__creat__2057CCD0") @db.DateTime
 
-  // Relationships
-  player_teams PlayerTeam[]
-
-  @@map("players")
+  @@index([group_id], map: "idx_duplicate_player_member_group")
+  @@index([player_id], map: "idx_duplicate_player_member_player")
 }
 
-model Team {
-  team_id         Int    @id @default(autoincrement())
-  name           String @db.NVarChar(Max)
-  city           String @db.NVarChar(Max)
-  mascot         String @db.NVarChar(Max)
-  abbreviation   String @db.NVarChar(Max)
-  organization   Int
-  primary_color  String @db.NVarChar(Max)
-  secondary_color String @db.NVarChar(Max)
-
-  // Relationships
-  organization_rel Organization @relation(fields: [organization], references: [organization_id])
-  player_teams    PlayerTeam[]
-
-  @@map("teams")
+model ebay_deletion_log {
+  log_id        BigInt    @id(map: "PK__ebay_del__9E2397E03EB60A60") @default(autoincrement())
+  username      String    @db.NVarChar(255)
+  user_id       String    @db.NVarChar(255)
+  eias_token    String?   @db.NVarChar(Max)
+  deletion_date DateTime? @default(now(), map: "DF__ebay_dele__delet__41B8C09B")
+  processed     Boolean?  @default(false, map: "DF__ebay_dele__proce__42ACE4D4")
+  created_at    DateTime? @default(now(), map: "DF__ebay_dele__creat__43A1090D")
 }
 
-model PlayerTeam {
-  player_team_id BigInt @id @default(autoincrement())
-  player         BigInt
-  team           Int
+model ebay_purchases {
+  id                    BigInt    @id @default(autoincrement())
+  user_id               BigInt
+  ebay_account_id       BigInt?
+  ebay_item_id          String    @unique @db.NVarChar(255)
+  ebay_transaction_id   String?   @db.NVarChar(255)
+  ebay_order_id         String?   @db.NVarChar(255)
+  title                 String    @db.NVarChar(Max)
+  purchase_date         DateTime  @db.DateTime
+  price                 Decimal   @db.Decimal(10, 2)
+  currency              String    @default("USD") @db.VarChar(3)
+  quantity              Int       @default(1)
+  seller_name           String?   @db.NVarChar(255)
+  seller_feedback_score Int?
+  image_url             String?   @db.NVarChar(Max)
+  ebay_category_id      Int?
+  category_path         String?   @db.NVarChar(Max)
+  item_condition        String?   @db.NVarChar(50)
+  is_sports_card        Boolean?
+  card_confidence       Decimal?  @db.Decimal(3, 2)
+  detected_sport        String?   @db.NVarChar(50)
+  detected_year         Int?
+  detected_brand        String?   @db.NVarChar(100)
+  detected_series       String?   @db.NVarChar(255)
+  detected_player       String?   @db.NVarChar(255)
+  status                String    @default("pending") @db.VarChar(50)
+  user_notes            String?   @db.NVarChar(Max)
+  matched_card_id       BigInt?
+  match_confidence      Decimal?  @db.Decimal(3, 2)
+  manual_match          Boolean   @default(false)
+  processed_at          DateTime? @db.DateTime
+  created_at            DateTime  @default(now()) @db.DateTime
+  updated_at            DateTime  @default(now()) @db.DateTime
 
-  // Relationships
-  player_rel       Player             @relation(fields: [player], references: [player_id])
-  team_rel         Team               @relation(fields: [team], references: [team_id])
-  card_player_teams CardPlayerTeam[]
-
-  @@unique([player, team])
-  @@map("player_teams")
+  @@index([ebay_account_id], map: "IX_ebay_purchases_ebay_account_id")
+  @@index([is_sports_card], map: "IX_ebay_purchases_is_sports_card")
+  @@index([matched_card_id], map: "IX_ebay_purchases_matched_card_id")
+  @@index([purchase_date], map: "IX_ebay_purchases_purchase_date")
+  @@index([status], map: "IX_ebay_purchases_status")
+  @@index([user_id], map: "IX_ebay_purchases_user_id")
 }
 
-// Cards
-model Card {
-  card_id      BigInt  @id @default(autoincrement())
-  sort_order   Int?
-  card_number  String  @db.NVarChar(Max)
-  series       BigInt
-  color        Int?
-  is_rookie    Boolean @default(false)
-  is_autograph Boolean @default(false)
-  is_relic     Boolean @default(false)
-  print_run    Int?
-  notes        String? @db.NVarChar(Max)
-  created      DateTime @default(now()) @db.DateTime2
+model ebay_sync_logs {
+  id                 BigInt    @id @default(autoincrement())
+  user_id            BigInt
+  ebay_account_id    BigInt?
+  sync_type          String    @db.VarChar(50)
+  sync_start         DateTime  @db.DateTime
+  sync_end           DateTime? @db.DateTime
+  items_processed    Int       @default(0)
+  sports_cards_found Int       @default(0)
+  new_purchases      Int       @default(0)
+  errors_encountered Int       @default(0)
+  error_details      String?   @db.NVarChar(Max)
+  status             String    @db.VarChar(50)
 
-  // Relationships
-  series_rel        Series             @relation(fields: [series], references: [series_id])
-  color_rel         Color?             @relation(fields: [color], references: [color_id])
-  card_player_teams CardPlayerTeam[]
-  user_cards        UserCard[]
-  ebay_purchases    EbayPurchase[]
-
-  @@index([series])
-  @@map("cards")
+  @@index([ebay_account_id], map: "IX_ebay_sync_logs_ebay_account_id")
+  @@index([status], map: "IX_ebay_sync_logs_status")
+  @@index([sync_start], map: "IX_ebay_sync_logs_sync_start")
+  @@index([user_id], map: "IX_ebay_sync_logs_user_id")
 }
 
-model CardPlayerTeam {
-  card_player_team_id BigInt @id @default(autoincrement())
-  card               BigInt
-  player_team        BigInt
-
-  // Relationships
-  card_rel         Card       @relation(fields: [card], references: [card_id], onDelete: Cascade, onUpdate: NoAction)
-  player_team_rel  PlayerTeam @relation(fields: [player_team], references: [player_team_id], onDelete: NoAction, onUpdate: NoAction)
-
-  @@unique([card, player_team])
-  @@map("card_player_teams")
+model grading_agency {
+  grading_agency_id Int       @id(map: "PK_rating_agency") @default(autoincrement())
+  name              String?   @db.NVarChar(Max)
+  abbreviation      String?   @db.NVarChar(Max)
+  created           DateTime? @default(now(), map: "DEFAULT_rating_agency_created") @db.DateTime
+  sort_order        Int?
 }
 
-// User Collections
-model UserLocation {
-  user_location_id BigInt  @id @default(autoincrement())
-  user            BigInt
-  location        String  @db.NVarChar(Max)
-  card_count      Int     @default(0)
-  is_dashboard    Boolean @default(true)
-
-  // Relationships
-  user_rel   User       @relation(fields: [user], references: [user_id], onDelete: Cascade)
-  user_cards UserCard[]
-
-  @@map("user_locations")
-}
-
-model UserCard {
-  user_card_id      BigInt   @id @default(autoincrement())
-  user             BigInt
-  card             BigInt
-  serial_number    Int?
-  purchase_price   Float? @default(0) @db.Money
-  estimated_value  Float? @default(0) @db.Money
-  current_value    Float? @default(0) @db.Money
-  grading_agency   Int?
-  grade            Decimal? @db.Decimal(18,0)
-  is_for_sale      Boolean  @default(false)
-  is_wanted        Boolean  @default(false)
-  user_location    BigInt?
-  notes            String?  @db.NVarChar(Max)
-  created          DateTime @default(now()) @db.DateTime2
-
-  // Relationships
-  user_rel            User            @relation(fields: [user], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
-  card_rel            Card            @relation(fields: [card], references: [card_id], onDelete: NoAction, onUpdate: NoAction)
-  grading_agency_rel  GradingAgency?  @relation(fields: [grading_agency], references: [grading_agency_id], onDelete: NoAction, onUpdate: NoAction)
-  user_location_rel   UserLocation?   @relation(fields: [user_location], references: [user_location_id], onDelete: NoAction, onUpdate: NoAction)
-
-  @@unique([user, card])
-  @@index([user, card])
-  @@map("user_cards")
-}
-
-// Import System
-model ImportJob {
-  id             BigInt    @id @default(autoincrement())
-  user_id        BigInt
+model import_job {
+  id             BigInt    @id(map: "PK_import_job") @default(autoincrement())
+  user_id        BigInt?
   filename       String    @db.NVarChar(255)
-  status         String    @db.NVarChar(50) // pending, processing, completed, failed
-  current_stage  Int       @default(0)
+  file_size      Int?
+  status         String?   @default("pending", map: "DF__import_jo__statu__6BE40491") @db.NVarChar(50)
+  current_stage  Int?      @default(0, map: "DF__import_jo__curre__6CD828CA")
   total_rows     Int?
-  processed_rows Int       @default(0)
-  matched_rows   Int       @default(0)
-  imported_rows  Int       @default(0)
-  error_count    Int       @default(0)
-  stage_data     String?   @db.NVarChar(Max) // JSON
+  processed_rows Int?      @default(0, map: "DF__import_jo__proce__6DCC4D03")
+  matched_rows   Int?      @default(0, map: "DF__import_jo__match__6EC0713C")
+  imported_rows  Int?      @default(0, map: "DF__import_jo__impor__6FB49575")
+  error_count    Int?      @default(0, map: "DF__import_jo__error__70A8B9AE")
+  stage_data     String?   @db.NVarChar(Max)
   error_log      String?   @db.NVarChar(Max)
-  created        DateTime  @default(now()) @db.DateTime2
-  completed_at   DateTime? @db.DateTime2
+  created_at     DateTime? @default(now(), map: "DF__import_jo__creat__719CDDE7") @db.DateTime
+  updated_at     DateTime? @default(now(), map: "DF__import_jo__updat__72910220") @db.DateTime
+  completed_at   DateTime? @db.DateTime
 
-  // Relationships
-  user User @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
-
-  @@map("import_jobs")
+  @@index([user_id, status], map: "idx_import_jobs_user_status")
 }
 
-// eBay Integration
-model UserEbayAccount {
+model import_mapping {
+  id              BigInt    @id(map: "PK_import_mapping") @default(autoincrement())
+  user_id         BigInt?
+  name            String    @db.NVarChar(255)
+  source_type     String?   @db.VarChar(50)
+  column_mappings String    @db.NVarChar(Max)
+  sample_data     String?   @db.NVarChar(Max)
+  is_public       Boolean?  @default(false, map: "DF__import_ma__is_pu__793DFFAF")
+  usage_count     Int?      @default(0, map: "DF__import_ma__usage__7A3223E8")
+  created_at      DateTime? @default(now(), map: "DF__import_ma__creat__7B264821") @db.DateTime
+  updated_at      DateTime? @default(now(), map: "DF__import_ma__updat__7C1A6C5A") @db.DateTime
+}
+
+model import_recovery_point {
+  recovery_id               String   @id @db.NVarChar(255)
+  import_id                 String   @db.NVarChar(255)
+  user_id                   BigInt
+  import_summary            String?  @db.NVarChar(Max)
+  inserted_data             String?  @db.NVarChar(Max)
+  reversible_operations     String?  @db.NVarChar(Max)
+  non_reversible_operations String?  @db.NVarChar(Max)
+  recovery_complexity       String   @default("SIMPLE") @db.NVarChar(50)
+  estimated_recovery_time   Int?
+  can_fully_reverse         Boolean  @default(true)
+  created_at                DateTime @default(now()) @db.DateTime
+  summary                   String?  @db.NVarChar(255)
+
+  @@index([created_at], map: "IX_import_recovery_point_created_at")
+  @@index([import_id], map: "IX_import_recovery_point_import_id")
+  @@index([user_id], map: "IX_import_recovery_point_user_id")
+}
+
+model import_series_staging {
+  id                 BigInt    @id(map: "PK_import_series_staging") @default(autoincrement())
+  import_job_id      BigInt
+  series_name        String    @db.NVarChar(255)
+  base_series_name   String?   @db.NVarChar(255)
+  is_parallel        Boolean?  @default(false, map: "DF__import_se__is_pa__7EF6D905")
+  color              String?   @db.VarChar(50)
+  print_run          Int?
+  card_count         Int?
+  existing_series_id BigInt?
+  match_confidence   Decimal?  @db.Decimal(5, 2)
+  user_action        String?   @default("pending", map: "DF__import_se__user___7FEAFD3E") @db.VarChar(50)
+  created_series_id  BigInt?
+  created_at         DateTime? @default(now(), map: "DF__import_se__creat__00DF2177") @db.DateTime
+
+  @@index([import_job_id], map: "idx_import_series_staging_job")
+}
+
+model import_staging {
+  id                BigInt    @id(map: "PK_import_staging") @default(autoincrement())
+  import_job_id     BigInt
+  stage_number      Int
+  row_number        Int?
+  raw_data          String    @db.NVarChar(Max)
+  mapped_data       String?   @db.NVarChar(Max)
+  entity_type       String?   @db.VarChar(50)
+  match_status      String?   @db.VarChar(50)
+  match_confidence  Decimal?  @db.Decimal(5, 2)
+  matched_entity_id Int?
+  user_action       String?   @default("pending", map: "DF__import_st__user___756D6ECB") @db.VarChar(50)
+  error_message     String?   @db.NVarChar(Max)
+  created_at        DateTime? @default(now(), map: "DF__import_st__creat__76619304") @db.DateTime
+
+  @@index([import_job_id, entity_type], map: "idx_import_staging_entity_type")
+  @@index([import_job_id, stage_number], map: "idx_import_staging_job_stage")
+}
+
+model manufacturer {
+  manufacturer_id                    Int       @id(map: "PK_manufacturer") @default(autoincrement())
+  name                               String?   @db.NVarChar(Max)
+  created                            DateTime? @default(now(), map: "DEFAULT_manufacturer_created") @db.DateTime
+  set_set_manufacturerTomanufacturer set[]     @relation("set_manufacturerTomanufacturer")
+}
+
+model organization {
+  organization_id                      Int      @id(map: "PK_organization") @default(autoincrement())
+  name                                 String?  @db.NVarChar(Max)
+  abbreviation                         String?  @db.NVarChar(Max)
+  created                              DateTime @default(now(), map: "DEFAULT_organization_created") @db.DateTime
+  set_set_organizationToorganization   set[]    @relation("set_organizationToorganization")
+  team_team_organizationToorganization team[]   @relation("team_organizationToorganization")
+}
+
+model player {
+  player_id                              BigInt        @id(map: "PK_player") @default(autoincrement())
+  first_name                             String?       @db.NVarChar(Max)
+  last_name                              String?       @db.NVarChar(Max)
+  nick_name                              String?       @db.NVarChar(Max)
+  birthdate                              DateTime?     @db.DateTime
+  created                                DateTime?     @default(now(), map: "DEFAULT_player_created") @db.DateTime
+  is_hof                                 Boolean?      @default(false, map: "DEFAULT_player_is_hof")
+  card_count                             Int?          @default(0, map: "DF__player__card_cou__2FCF1A8A")
+  player_team_player_team_playerToplayer player_team[] @relation("player_team_playerToplayer")
+  user_player_user_player_playerToplayer user_player[] @relation("user_player_playerToplayer")
+}
+
+model player_alias {
+  alias_id         BigInt   @id(map: "PK_player_alias") @default(autoincrement())
+  player_id        BigInt
+  alias_name       String   @db.NVarChar(255)
+  alias_type       String?  @db.VarChar(50)
+  confidence_score Decimal? @default(100.0, map: "DF__player_al__confi__2334397B") @db.Decimal(5, 2)
+  created_by       BigInt?
+  created          DateTime @default(now(), map: "DF__player_al__creat__24285DB4") @db.DateTime
+
+  @@index([alias_name], map: "idx_player_alias_name")
+  @@index([player_id], map: "idx_player_alias_player")
+}
+
+model player_team {
+  player_team_id                                             BigInt             @id(map: "PK_player_team") @default(autoincrement())
+  player                                                     BigInt?
+  team                                                       Int?
+  created                                                    DateTime           @default(now(), map: "DEFAULT_player_team_created") @db.DateTime
+  card_player_team_card_player_team_player_teamToplayer_team card_player_team[] @relation("card_player_team_player_teamToplayer_team")
+  player_player_team_playerToplayer                          player?            @relation("player_team_playerToplayer", fields: [player], references: [player_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_player_team_player")
+  team_player_team_teamToteam                                team?              @relation("player_team_teamToteam", fields: [team], references: [team_Id], onDelete: NoAction, onUpdate: NoAction, map: "FK_player_team_team")
+
+  @@index([player_team_id, player], map: "idx_player_team")
+}
+
+model series {
+  series_id            BigInt   @id(map: "PK_series") @default(autoincrement())
+  name                 String?  @db.NVarChar(Max)
+  set                  Int?
+  card_count           Int      @default(0, map: "DEFAULT_series_card_count")
+  photo_url            String?  @db.NVarChar(Max)
+  created              DateTime @default(now(), map: "DEFAULT_series_created") @db.DateTime
+  card_entered_count   Int?     @default(0, map: "DF__series__card_ent__3493CFA7")
+  is_base              Boolean? @default(false, map: "DEFAULT_series_is_base")
+  parallel_of_series   BigInt?
+  front_image_path     String?  @db.NVarChar(Max)
+  back_image_path      String?  @db.NVarChar(Max)
+  min_print_run        Int?
+  max_print_run        Int?
+  print_run_variations Int?
+  print_run_display    String?  @db.NVarChar(50)
+  primary_color_name   String?  @db.NVarChar(100)
+  primary_color_hex    String?  @db.NVarChar(10)
+  color_variations     Int?
+  set_series_setToset  set?     @relation("series_setToset", fields: [set], references: [set_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_series_set")
+
+  @@index([set], map: "IX_series_set")
+}
+
+model set {
+  set_id                                      Int           @id(map: "PK_set") @default(autoincrement())
+  name                                        String?       @db.NVarChar(Max)
+  year                                        Int?
+  organization                                Int?
+  manufacturer                                Int?
+  created                                     DateTime      @default(now(), map: "DEFAULT_set_created") @db.DateTime
+  card_count                                  Int?          @default(0, map: "DF__set__card_count__3864608B")
+  series_count                                Int?          @default(0, map: "DF__set__series_coun__395884C4")
+  is_complete                                 Boolean?      @default(false, map: "DEFAULT_set_is_complete")
+  series_series_setToset                      series[]      @relation("series_setToset")
+  manufacturer_set_manufacturerTomanufacturer manufacturer? @relation("set_manufacturerTomanufacturer", fields: [manufacturer], references: [manufacturer_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_set_manufacturer")
+  organization_set_organizationToorganization organization? @relation("set_organizationToorganization", fields: [organization], references: [organization_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_set_organization")
+
+  @@index([set_id], map: "IX_set_series_lookup")
+}
+
+model staging_data {
+  staging_data_id              BigInt    @id(map: "PK_staging_data") @default(autoincrement())
+  primary_key                  BigInt?
+  table_name                   String?   @db.NVarChar(Max)
+  field_name                   String?   @db.NVarChar(Max)
+  data_value                   String?   @db.NVarChar(Max)
+  user                         BigInt?
+  created                      DateTime? @default(now(), map: "DEFAULT_staging_data_created") @db.DateTime
+  user_staging_data_userTouser user?     @relation("staging_data_userTouser", fields: [user], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_staging_data_user")
+}
+
+model team {
+  team_Id                                      Int           @id(map: "PK_team") @default(autoincrement())
+  name                                         String?       @db.NVarChar(Max)
+  city                                         String?       @db.NVarChar(Max)
+  mascot                                       String?       @db.NVarChar(Max)
+  abbreviation                                 String?       @db.NVarChar(Max)
+  organization                                 Int?
+  created                                      DateTime      @default(now(), map: "DEFAULT_team_created") @db.DateTime
+  primary_color                                String?       @db.NVarChar(Max)
+  secondary_color                              String?       @db.NVarChar(Max)
+  card_count                                   Int?          @default(0, map: "DF__team__card_count__3B40CD36")
+  player_team_player_team_teamToteam           player_team[] @relation("player_team_teamToteam")
+  organization_team_organizationToorganization organization? @relation("team_organizationToorganization", fields: [organization], references: [organization_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_team_organization")
+  user_team_user_team_teamToteam               user_team[]   @relation("user_team_teamToteam")
+}
+
+model user {
+  user_id                              BigInt         @id(map: "PK_user") @default(autoincrement())
+  name                                 String?        @db.NVarChar(Max)
+  email                                String?        @unique @db.NVarChar(255)
+  created                              DateTime?      @default(now(), map: "DEFAULT_user_created") @db.DateTime
+  created_at                           DateTime?      @db.DateTime
+  first_name                           String?        @db.NVarChar(100)
+  is_active                            Boolean?       @default(true, map: "DF__user__is_active__03BB8E22")
+  is_verified                          Boolean?       @default(false, map: "DF__user__is_verifie__02C769E9")
+  last_login                           DateTime?      @db.DateTime
+  last_name                            String?        @db.NVarChar(100)
+  locked_until                         DateTime?      @db.DateTime
+  login_attempts                       Int?           @default(0, map: "DF__user__login_atte__04AFB25B")
+  password_hash                        String?        @db.NVarChar(500)
+  reset_token                          String?        @db.NVarChar(500)
+  reset_token_expires                  DateTime?      @db.DateTime
+  role                                 String?        @default("user", map: "DF__user__role__01D345B0") @db.NVarChar(50)
+  updated_at                           DateTime?      @db.DateTime
+  verification_token                   String?        @db.NVarChar(500)
+  staging_data_staging_data_userTouser staging_data[] @relation("staging_data_userTouser")
+  user_card_user_card_userTouser       user_card[]    @relation("user_card_userTouser")
+  user_player_user_player_userTouser   user_player[]  @relation("user_player_userTouser")
+  user_team_user_team_userTouser       user_team[]    @relation("user_team_userTouser")
+}
+
+model user_auth_log {
+  log_id        BigInt   @id(map: "PK_user_auth_log") @default(autoincrement())
+  user_id       BigInt?
+  email         String?  @db.NVarChar(255)
+  event_type    String   @db.VarChar(50)
+  ip_address    String?  @db.VarChar(45)
+  user_agent    String?  @db.VarChar(500)
+  success       Boolean  @default(true, map: "DF__user_auth__succe__078C1F06")
+  error_message String?  @db.NVarChar(Max)
+  created       DateTime @default(now(), map: "DF__user_auth__creat__0880433F") @db.DateTime
+
+  @@index([created], map: "idx_user_auth_log_created")
+  @@index([email], map: "idx_user_auth_log_email")
+  @@index([user_id], map: "idx_user_auth_log_user")
+}
+
+model user_card {
+  user_card_id                                            BigInt            @id(map: "PK_user_card") @default(autoincrement())
+  user                                                    BigInt?
+  card                                                    BigInt?
+  serial_number                                           Int?
+  purchase_price                                          Float?            @default(0, map: "DEFAULT_user_card_purchase_price") @db.Money
+  estimated_value                                         Float?            @default(0, map: "DEFAULT_user_card_estimated_value") @db.Money
+  current_value                                           Float?            @default(0, map: "DEFAULT_user_card_current_value") @db.Money
+  photo                                                   String?           @db.NVarChar(Max)
+  notes                                                   String?           @db.NVarChar(Max)
+  card_variation                                          BigInt?
+  grading_agency                                          Int?
+  grade                                                   Decimal?          @db.Decimal(18, 0)
+  grade_id                                                BigInt?
+  aftermarket_autograph                                   Boolean?
+  is_for_sale                                             Boolean?          @default(false, map: "DEFAULT_user_card_is_for_sale")
+  is_wanted                                               Boolean?          @default(false, map: "DEFAULT_user_card_is_wanted")
+  is_special                                              Boolean?          @default(false, map: "DEFAULT_user_card_is_special")
+  is_labeled                                              Boolean?          @default(false, map: "DEFAULT_user_card_is_labeled")
+  user_location                                           BigInt?
+  random_code                                             String?           @db.NVarChar(Max)
+  created                                                 DateTime?         @default(now(), map: "DEFAULT_user_card_created") @db.DateTime
+  ebay_purchase_id                                        BigInt?
+  card_user_card_cardTocard                               card?             @relation("user_card_cardTocard", fields: [card], references: [card_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_user_card_card")
+  card_variation_user_card_card_variationTocard_variation card_variation?   @relation("user_card_card_variationTocard_variation", fields: [card_variation], references: [card_variation_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_user_card_card_variation")
+  user_user_card_userTouser                               user?             @relation("user_card_userTouser", fields: [user], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_user_card_user")
+  user_location_user_card_user_locationTouser_location    user_location?    @relation("user_card_user_locationTouser_location", fields: [user_location], references: [user_location_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_user_card_user_location")
+  user_card_photo_user_card_photo_user_cardTouser_card    user_card_photo[] @relation("user_card_photo_user_cardTouser_card")
+
+  @@index([card, user], map: "idx_user_card_covering")
+  @@index([card_variation], map: "IX_user_card_card_variation")
+  @@index([is_special], map: "IX_user_card_is_special")
+  @@index([user, card], map: "IX_user_card_optimized")
+  @@index([user], map: "IX_user_card_user")
+}
+
+model user_card_photo {
+  user_card_photo_id                             BigInt     @id(map: "PK_user_card_photo") @default(autoincrement())
+  user_card                                      BigInt?
+  photo_url                                      String?    @db.NVarChar(Max)
+  created                                        DateTime?  @default(now(), map: "DEFAULT_user_card_photo_created") @db.DateTime
+  user_card_user_card_photo_user_cardTouser_card user_card? @relation("user_card_photo_user_cardTouser_card", fields: [user_card], references: [user_card_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_user_card_photo_user_card")
+
+  @@index([user_card], map: "IX_user_card_photo_user_card")
+}
+
+model user_ebay_accounts {
   id                BigInt    @id @default(autoincrement())
   user_id           BigInt
   ebay_user_id      String    @db.NVarChar(255)
-  access_token      String    @db.NVarChar(Max) // Encrypted
-  refresh_token     String?   @db.NVarChar(Max) // Encrypted
-  token_expires_at  DateTime? @db.DateTime2
-  last_sync_at      DateTime? @db.DateTime2
+  ebay_username     String?   @db.NVarChar(255)
+  access_token      String    @db.NVarChar(Max)
+  refresh_token     String?   @db.NVarChar(Max)
+  token_expires_at  DateTime? @db.DateTime
+  scope_permissions String?   @db.NVarChar(Max)
+  last_sync_at      DateTime? @db.DateTime
   is_active         Boolean   @default(true)
-  created           DateTime  @default(now()) @db.DateTime2
+  created_at        DateTime  @default(now()) @db.DateTime
+  updated_at        DateTime  @default(now()) @db.DateTime
 
-  // Relationships
-  user User @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
-
-  @@unique([user_id, ebay_user_id])
-  @@map("user_ebay_accounts")
+  @@unique([user_id, ebay_user_id], map: "UK_user_ebay_accounts_user_ebay")
+  @@index([ebay_user_id], map: "IX_user_ebay_accounts_ebay_user_id")
+  @@index([last_sync_at], map: "IX_user_ebay_accounts_last_sync")
+  @@index([user_id], map: "IX_user_ebay_accounts_user_id")
 }
 
-model EbayPurchase {
-  id                 BigInt    @id @default(autoincrement())
-  user_id            BigInt
-  ebay_item_id       String    @unique @db.NVarChar(255)
-  title              String    @db.NVarChar(Max)
-  purchase_date      DateTime  @db.DateTime2
-  price              Decimal   @db.Decimal(10,2)
-  currency           String    @default("USD") @db.VarChar(3)
-  seller_name        String?   @db.NVarChar(255)
-  is_sports_card     Boolean?
-  matched_card_id    BigInt?
-  status             String    @default("pending") @db.VarChar(50) // pending, approved, dismissed, added
-  user_notes         String?   @db.NVarChar(Max)
-  created            DateTime  @default(now()) @db.DateTime2
+model user_location {
+  user_location_id                                 BigInt      @id(map: "PK_user_location") @default(autoincrement())
+  user                                             BigInt?
+  location                                         String?     @db.NVarChar(Max)
+  created                                          DateTime?   @default(now(), map: "DEFAULT_user_location_created") @db.DateTime
+  card_count                                       Int?        @default(0, map: "DF__user_loca__card___498EEC8D")
+  is_dashboard                                     Boolean?    @default(true, map: "DEFAULT_user_location_is_dashboard")
+  user_card_user_card_user_locationTouser_location user_card[] @relation("user_card_user_locationTouser_location")
+}
 
-  // Relationships
-  user         User  @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
-  matched_card Card? @relation(fields: [matched_card_id], references: [card_id], onDelete: NoAction, onUpdate: NoAction)
+model user_player {
+  user_player_id                    BigInt    @id(map: "PK_user_player") @default(autoincrement())
+  user                              BigInt
+  player                            BigInt
+  created                           DateTime? @default(now(), map: "DEFAULT_user_player_created") @db.DateTime
+  player_user_player_playerToplayer player    @relation("user_player_playerToplayer", fields: [player], references: [player_id], onUpdate: NoAction, map: "FK_user_player_player")
+  user_user_player_userTouser       user      @relation("user_player_userTouser", fields: [user], references: [user_id], onUpdate: NoAction, map: "FK_user_player_user")
+}
 
-  @@map("ebay_purchases")
+model user_series {
+  user_series_id BigInt   @id(map: "PK_user_series") @default(autoincrement())
+  user_id        BigInt
+  series_id      BigInt
+  created        DateTime @default(now(), map: "DF__user_seri__creat__2704CA5F") @db.DateTime
+
+  @@index([series_id], map: "idx_user_series_series")
+  @@index([user_id], map: "idx_user_series_user")
+}
+
+model user_session {
+  session_id    BigInt    @id(map: "PK_user_session") @default(autoincrement())
+  user_id       BigInt
+  session_token String    @db.NVarChar(500)
+  expires_at    DateTime  @db.DateTime
+  created       DateTime  @default(now(), map: "DF__user_sess__creat__0B5CAFEA") @db.DateTime
+  last_accessed DateTime? @db.DateTime
+  ip_address    String?   @db.VarChar(45)
+  user_agent    String?   @db.VarChar(500)
+  token_hash    String?   @db.NVarChar(500)
+
+  @@index([expires_at], map: "idx_user_session_expires")
+  @@index([session_token], map: "idx_user_session_token")
+  @@index([user_id], map: "idx_user_session_user")
+}
+
+model user_team {
+  user_team_id              BigInt    @id(map: "PK_user_team") @default(autoincrement())
+  user                      BigInt?
+  team                      Int?
+  created                   DateTime? @default(now(), map: "DEFAULT_user_team_created") @db.DateTime
+  team_user_team_teamToteam team?     @relation("user_team_teamToteam", fields: [team], references: [team_Id], onDelete: NoAction, onUpdate: NoAction, map: "FK_user_team_team")
+  user_user_team_userTouser user?     @relation("user_team_userTouser", fields: [user], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_user_team_user")
+
+  @@index([created], map: "IX_user_team_created")
+  @@index([team], map: "IX_user_team_team")
 }

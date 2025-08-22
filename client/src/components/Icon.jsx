@@ -22,6 +22,11 @@ import {
   Eye,
   EyeOff,
   Trash2,
+  Menu,
+  X,
+  Plus,
+  ChevronDown,
+  ChevronUp,
   // Card/Collection related
   CreditCard,
   BookOpen,
@@ -102,6 +107,12 @@ const iconMap = {
   'eye': Eye,
   'eye-off': EyeOff,
   'delete': Trash2,
+  'menu': Menu,
+  'close': X,
+  'plus': Plus,
+  'add': Plus,
+  'arrow-down': ChevronDown,
+  'arrow-up': ChevronUp,
   
   // Groups & Teams
   'users': Users,

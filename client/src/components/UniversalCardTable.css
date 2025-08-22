@@ -99,7 +99,7 @@
 .cards-table thead {
   position: sticky;
   top: 0;
-  z-index: 10;
+  z-index: 5;
   background: rgba(30, 41, 59, 0.95);
   backdrop-filter: blur(10px);
 }
@@ -191,6 +191,18 @@
   font-weight: 500;
   color: white;
   min-width: 200px;
+}
+
+.series-link {
+  color: #e5e7eb;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.series-link:hover {
+  color: white;
+  text-decoration: underline;
 }
 
 .card-number-cell {
@@ -320,6 +332,42 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.user-card-count-cell {
+  color: #22c55e;
+  font-weight: 600;
+  width: 45px;
+  min-width: 45px;
+  max-width: 45px;
+  padding: 0.5rem 0.25rem;
+  font-size: 0.9rem;
+}
+
+.action-cell {
+  width: 45px;
+  min-width: 45px;
+  max-width: 45px;
+  padding: 0.5rem 0.25rem;
+}
+
+.add-card-btn {
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 6px;
+  padding: 0.5rem;
+  cursor: pointer;
+  color: #3b82f6;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.add-card-btn:hover {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: rgba(59, 130, 246, 0.5);
+  transform: translateY(-1px);
 }
 
 /* Special icons */
@@ -453,7 +501,7 @@
   background: transparent;
   cursor: col-resize;
   user-select: none;
-  z-index: 10;
+  z-index: 5;
 }
 
 .resize-handle:hover {
@@ -521,4 +569,22 @@
   .table-footer {
     padding: 1rem;
   }
+}
+
+/* Add Card Button Styles */
+.add-card-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  padding: 0.4rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.add-card-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.3);
 }
