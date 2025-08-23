@@ -199,6 +199,27 @@ function Header() {
                     <Icon name="activity" size={16} className="dropdown-icon" />
                     System Status
                   </Link>
+                  {(user?.role === 'admin' || user?.role === 'superadmin') && (
+                    <>
+                      <div className="dropdown-divider"></div>
+                      <Link 
+                        to="/admin" 
+                        className="dropdown-item admin-item"
+                        onClick={() => setShowUserMenu(false)}
+                      >
+                        <Icon name="shield" size={16} className="dropdown-icon" />
+                        Admin Dashboard
+                      </Link>
+                      <Link 
+                        to="/admin/ingestion" 
+                        className="dropdown-item admin-item"
+                        onClick={() => setShowUserMenu(false)}
+                      >
+                        <Icon name="upload" size={16} className="dropdown-icon" />
+                        Data Ingestion
+                      </Link>
+                    </>
+                  )}
                   <div className="dropdown-divider"></div>
                   <button 
                     className="dropdown-item logout-item"

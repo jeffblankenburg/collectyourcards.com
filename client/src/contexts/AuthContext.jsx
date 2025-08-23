@@ -18,7 +18,7 @@ export const AuthProvider = ({ children }) => {
 
   // Check if user is logged in on app start
   useEffect(() => {
-    const token = localStorage.getItem('authToken')
+    const token = localStorage.getItem('token')
     if (token) {
       // Set default authorization header
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
@@ -53,7 +53,7 @@ export const AuthProvider = ({ children }) => {
       const { token, user: userData } = response.data
       
       // Store token
-      localStorage.setItem('authToken', token)
+      localStorage.setItem('token', token)
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
       
       // Update state
@@ -85,7 +85,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = () => {
     // Remove token
-    localStorage.removeItem('authToken')
+    localStorage.removeItem('token')
     delete axios.defaults.headers.common['Authorization']
     
     // Clear state

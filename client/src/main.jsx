@@ -17,6 +17,11 @@ import TeamsLanding from './pages/TeamsLanding.jsx'
 import TeamDetail from './pages/TeamDetail.jsx'
 import SeriesLanding from './pages/SeriesLanding.jsx'
 import SeriesDetail from './pages/SeriesDetail.jsx'
+import AdminData from './pages/AdminData.jsx'
+import AdminDashboard from './pages/AdminDashboard.jsx'
+import AdminTables from './pages/AdminTables.jsx'
+import AdminTableEditor from './pages/AdminTableEditor.jsx'
+import SpreadsheetIngestion from './pages/SpreadsheetIngestion.jsx'
 import './index.css'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
@@ -54,6 +59,46 @@ ReactDOM.createRoot(document.getElementById('root')).render(
               <Route path="/teams/:teamSlug" element={<TeamDetail />} />
               <Route path="/series" element={<SeriesLanding />} />
               <Route path="/series/:seriesSlug" element={<SeriesDetail />} />
+              <Route 
+                path="/admin" 
+                element={
+                  <ProtectedRoute>
+                    <AdminDashboard />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/admin/tables" 
+                element={
+                  <ProtectedRoute>
+                    <AdminTables />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/admin/table/:tableName" 
+                element={
+                  <ProtectedRoute>
+                    <AdminTableEditor />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/admin/data" 
+                element={
+                  <ProtectedRoute>
+                    <AdminData />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/admin/ingestion" 
+                element={
+                  <ProtectedRoute>
+                    <SpreadsheetIngestion />
+                  </ProtectedRoute>
+                } 
+              />
             </Routes>
           </Layout>
         </AuthProvider>

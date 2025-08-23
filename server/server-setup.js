@@ -159,6 +159,7 @@ if (config.environment === 'test') {
     { path: '/api/cards', file: './routes/cards', name: 'Cards' },
     { path: '/api/collection', file: './routes/collection', name: 'Collection' },
     { path: '/api/admin', file: './routes/admin', name: 'Admin' },
+    { path: '/api/admin-data', file: './routes/admin-data', name: 'Admin Data' },
     { path: '/api/import', file: './routes/import', name: 'Import' },
     { path: '/api/ebay', file: './routes/ebay', name: 'eBay' },
     { path: '/api/search', file: './routes/search', name: 'Search' },
