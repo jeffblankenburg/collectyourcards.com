@@ -45,6 +45,54 @@ const TABLE_DISPLAY_NAMES = {
   user_card_photo: 'Card Photos'
 }
 
+// Table-specific field configuration
+const TABLE_FIELD_CONFIG = {
+  team: {
+    hiddenFields: [], // All fields visible for teams
+    readonlyFields: ['team_Id', 'created', 'card_count'],
+    dropdownFields: {
+      organization: { sourceTable: 'organization', valueField: 'organization_id', displayField: 'name' }
+    },
+    booleanFields: [],
+    noWrapFields: ['name']
+  },
+  series: {
+    hiddenFields: ['min_print_run', 'max_print_run', 'print_run_variations', 'print_run_display'],
+    readonlyFields: ['series_id', 'created', 'card_entered_count'],
+    dropdownFields: {
+      set: { sourceTable: 'set', valueField: 'set_id', displayField: 'name' },
+      parallel_of_series: { sourceTable: 'series', valueField: 'series_id', displayField: 'name', 
+                           filter: (item, currentRow) => item.set_id === currentRow.set_id && !item.parallel_of_series }
+    },
+    booleanFields: ['is_base', 'is_parallel'],
+    noWrapFields: ['name'],
+    editableFields: ['card_count'] // Explicitly editable
+  },
+  set: {
+    hiddenFields: [],
+    readonlyFields: ['set_id', 'created', 'card_count', 'series_count'],
+    dropdownFields: {
+      organization: { sourceTable: 'organization', valueField: 'organization_id', displayField: 'name' }
+    },
+    booleanFields: ['is_complete'],
+    noWrapFields: ['name']
+  },
+  color: {
+    hiddenFields: ['created'],
+    readonlyFields: ['color_id'],
+    dropdownFields: {},
+    booleanFields: [],
+    noWrapFields: ['name']
+  },
+  grading_agency: {
+    hiddenFields: ['created'],
+    readonlyFields: ['grading_agency_id'],
+    dropdownFields: {},
+    booleanFields: [],
+    noWrapFields: ['name']
+  }
+}
+
 function AdminTableEditor() {
   const { tableName } = useParams()
   const navigate = useNavigate()
@@ -62,6 +110,7 @@ function AdminTableEditor() {
   const [editValue, setEditValue] = useState('')
   const [newRow, setNewRow] = useState(null) // For adding new records
   const [savingCells, setSavingCells] = useState(new Set()) // Track which cells are being saved
+  const [deleteConfirm, setDeleteConfirm] = useState(null) // For delete confirmation dialog
 
   // Check if user has admin privileges
   if (!user || !['admin', 'superadmin'].includes(user.role)) {
@@ -178,8 +227,13 @@ function AdminTableEditor() {
   }
 
   const handleCellClick = (rowIndex, columnName, currentValue) => {
-    // Don't edit primary key columns
-    if (columnName === primaryKey || columnName.endsWith('_id') || columnName === 'id') return
+    const config = TABLE_FIELD_CONFIG[tableName] || {}
+    
+    // Don't edit readonly fields or primary keys
+    if (columnName === primaryKey || 
+        columnName.endsWith('_id') || 
+        columnName === 'id' ||
+        config.readonlyFields?.includes(columnName)) return
     
     setEditingCell({ row: rowIndex, col: columnName })
     setEditValue(currentValue || '')
@@ -262,7 +316,14 @@ function AdminTableEditor() {
   }
 
   const moveToNextCell = (currentRow, currentCol, backwards = false, sameColumn = false) => {
-    const editableColumns = columns.filter(col => col !== primaryKey && !col.endsWith('_id') && col !== 'id')
+    const config = TABLE_FIELD_CONFIG[tableName] || {}
+    const editableColumns = columns.filter(col => 
+      col !== primaryKey && 
+      !col.endsWith('_id') && 
+      col !== 'id' &&
+      !config.readonlyFields?.includes(col) &&
+      !config.hiddenFields?.includes(col)
+    )
     const currentColIndex = editableColumns.indexOf(currentCol)
     
     let nextRow = currentRow
@@ -295,18 +356,27 @@ function AdminTableEditor() {
     }
   }
 
-  const handleDeleteRow = async (row) => {
-    if (window.confirm('Are you sure you want to delete this record?')) {
-      try {
-        const recordId = row[primaryKey]
-        
-        await axios.delete(`/api/admin-data/table-data/${tableName}/${recordId}`)
-        addToast('Record deleted successfully', 'success')
-        loadTableData(tableName)
-      } catch (error) {
-        console.error('Error deleting record:', error)
-        addToast('Failed to delete record', 'error')
-      }
+  const handleDeleteRow = (row) => {
+    setDeleteConfirm({
+      row,
+      message: `Are you sure you want to delete this ${displayName.toLowerCase().slice(0, -1)}?`
+    })
+  }
+
+  const confirmDelete = async () => {
+    if (!deleteConfirm) return
+    
+    try {
+      const recordId = deleteConfirm.row[primaryKey]
+      
+      await axios.delete(`/api/admin-data/table-data/${tableName}/${recordId}`)
+      addToast('Record deleted successfully', 'success')
+      loadTableData(tableName)
+    } catch (error) {
+      console.error('Error deleting record:', error)
+      addToast('Failed to delete record', 'error')
+    } finally {
+      setDeleteConfirm(null)
     }
   }
 
@@ -319,6 +389,14 @@ function AdminTableEditor() {
       }
     })
     setNewRow(emptyRow)
+    
+    // Scroll to bottom to make new row visible
+    setTimeout(() => {
+      const tableWrapper = document.querySelector('.spreadsheet-table-wrapper')
+      if (tableWrapper) {
+        tableWrapper.scrollTop = tableWrapper.scrollHeight
+      }
+    }, 100)
   }
 
   const handleNewRowSave = async () => {
@@ -336,6 +414,15 @@ function AdminTableEditor() {
   // Helper function to determine if a field should link to another table
   const getEntityLink = (columnName, value) => {
     if (!value || value === null) return null
+    
+    // Don't make primary keys clickable within their own table
+    if ((tableName === 'team' && columnName === 'team_Id') ||
+        (tableName === 'series' && columnName === 'series_id') ||
+        (tableName === 'set' && columnName === 'set_id') ||
+        (tableName === 'color' && columnName === 'color_id') ||
+        (tableName === 'grading_agency' && columnName === 'grading_agency_id')) {
+      return null
+    }
     
     const linkMappings = {
       // Direct ID mappings
@@ -358,7 +445,7 @@ function AdminTableEditor() {
     }
     
     const targetTable = linkMappings[columnName]
-    return targetTable ? `/admin/tables/${targetTable}` : null
+    return targetTable ? `/admin/table/${targetTable}` : null
   }
 
   // Render cell content with potential linking
@@ -424,18 +511,6 @@ function AdminTableEditor() {
 
       <div className="admin-table-header">
         <div className="header-content">
-          <div className="breadcrumb">
-            <Link to="/admin" className="breadcrumb-link">
-              <Icon name="shield" size={16} />
-              Admin
-            </Link>
-            <Icon name="chevron-right" size={16} />
-            <Link to="/admin/tables" className="breadcrumb-link">
-              Database Tables
-            </Link>
-            <Icon name="chevron-right" size={16} />
-            <span>{displayName}</span>
-          </div>
           <div className="title-section">
             <h1>{displayName}</h1>
             <div className="table-info">
@@ -498,8 +573,10 @@ function AdminTableEditor() {
               <table className="spreadsheet-table">
                 <thead>
                   <tr>
-                    <th className="row-number-header">#</th>
-                    {columns.map(col => (
+                    {columns.filter(col => {
+                      const config = TABLE_FIELD_CONFIG[tableName] || {}
+                      return !config.hiddenFields?.includes(col)
+                    }).map(col => (
                       <th 
                         key={col} 
                         className={`
@@ -537,11 +614,14 @@ function AdminTableEditor() {
                 <tbody>
                   {tableData.map((row, rowIndex) => (
                     <tr key={rowIndex} className="data-row">
-                      <td className="row-number">{rowIndex + 1}</td>
-                      {columns.map(col => {
+                      {columns.filter(col => {
+                        const config = TABLE_FIELD_CONFIG[tableName] || {}
+                        return !config.hiddenFields?.includes(col)
+                      }).map(col => {
                         const cellKey = `${rowIndex}-${col}`
                         const isEditing = editingCell?.row === rowIndex && editingCell?.col === col
-                        const isReadonly = col === primaryKey || col.endsWith('_id') || col === 'id'
+                        const config = TABLE_FIELD_CONFIG[tableName] || {}
+                        const isReadonly = col === primaryKey || col.endsWith('_id') || col === 'id' || config.readonlyFields?.includes(col)
                         const isSaving = savingCells.has(cellKey)
                         
                         return (
@@ -588,11 +668,12 @@ function AdminTableEditor() {
                   {/* New row for adding records */}
                   {newRow && (
                     <tr className="new-row">
-                      <td className="row-number">
-                        <Icon name="plus" size={12} />
-                      </td>
-                      {columns.map(col => {
-                        const isReadonly = col === primaryKey || col.endsWith('_id') || col === 'id'
+                      {columns.filter(col => {
+                        const config = TABLE_FIELD_CONFIG[tableName] || {}
+                        return !config.hiddenFields?.includes(col)
+                      }).map(col => {
+                        const config = TABLE_FIELD_CONFIG[tableName] || {}
+                        const isReadonly = col === primaryKey || col.endsWith('_id') || col === 'id' || config.readonlyFields?.includes(col)
                         
                         return (
                           <td key={col} className={isReadonly ? 'readonly-cell' : 'editable-cell'}>
@@ -631,6 +712,37 @@ function AdminTableEditor() {
           </>
         )}
       </div>
+
+      {/* Custom Delete Confirmation Dialog */}
+      {deleteConfirm && (
+        <div className="modal-overlay" onClick={() => setDeleteConfirm(null)}>
+          <div className="confirmation-dialog" onClick={(e) => e.stopPropagation()}>
+            <div className="dialog-header">
+              <Icon name="alert-triangle" size={24} className="warning-icon" />
+              <h3>Confirm Deletion</h3>
+            </div>
+            <div className="dialog-content">
+              <p>{deleteConfirm.message}</p>
+              <p className="warning-text">This action cannot be undone.</p>
+            </div>
+            <div className="dialog-actions">
+              <button 
+                className="cancel-btn"
+                onClick={() => setDeleteConfirm(null)}
+              >
+                Cancel
+              </button>
+              <button 
+                className="delete-btn"
+                onClick={confirmDelete}
+              >
+                <Icon name="trash" size={16} />
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
