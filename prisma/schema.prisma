@@ -402,6 +402,8 @@ model team {
   player_team_player_team_teamToteam           player_team[] @relation("player_team_teamToteam")
   organization_team_organizationToorganization organization? @relation("team_organizationToorganization", fields: [organization], references: [organization_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_team_organization")
   user_team_user_team_teamToteam               user_team[]   @relation("user_team_teamToteam")
+
+  @@map("team")
 }
 
 model user {
@@ -423,10 +425,13 @@ model user {
   role                                 String?        @default("user", map: "DF__user__role__01D345B0") @db.NVarChar(50)
   updated_at                           DateTime?      @db.DateTime
   verification_token                   String?        @db.NVarChar(500)
-  staging_data_staging_data_userTouser staging_data[] @relation("staging_data_userTouser")
-  user_card_user_card_userTouser       user_card[]    @relation("user_card_userTouser")
-  user_player_user_player_userTouser   user_player[]  @relation("user_player_userTouser")
-  user_team_user_team_userTouser       user_team[]    @relation("user_team_userTouser")
+  staging_data_staging_data_userTouser staging_data[]  @relation("staging_data_userTouser")
+  user_card_user_card_userTouser       user_card[]     @relation("user_card_userTouser")
+  user_player_user_player_userTouser   user_player[]   @relation("user_player_userTouser")
+  user_session_user_session_userTouser user_session[]  @relation("user_session_userTouser")
+  user_team_user_team_userTouser       user_team[]     @relation("user_team_userTouser")
+
+  @@map("user")
 }
 
 model user_auth_log {
@@ -550,10 +555,12 @@ model user_session {
   ip_address    String?   @db.VarChar(45)
   user_agent    String?   @db.VarChar(500)
   token_hash    String?   @db.NVarChar(500)
+  user          user      @relation("user_session_userTouser", fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_user_session_user")
 
   @@index([expires_at], map: "idx_user_session_expires")
   @@index([session_token], map: "idx_user_session_token")
   @@index([user_id], map: "idx_user_session_user")
+  @@map("user_session")
 }
 
 model user_team {

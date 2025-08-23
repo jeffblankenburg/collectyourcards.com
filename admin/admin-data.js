@@ -108,42 +108,83 @@ router.get('/table-data/:tableName', async (req, res) => {
     // Get table columns
     const columns = await getTableColumns(tableName)
     
-    // Build search condition if search term provided - search ALL columns, not just displayFields
+    // Build enhanced search condition and joins to get display names
     let searchCondition = ''
+    let joinClauses = ''
+    let selectFields = 't.*'
+    
+    // Always add joins for foreign key relationships to get display names
+    if (tableName === 'team') {
+      joinClauses += ' LEFT JOIN [organization] org ON t.[organization] = org.[organization_id]'
+      selectFields += ', org.[name] as organization_name'
+    } else if (tableName === 'series') {
+      joinClauses += ' LEFT JOIN [set] s ON t.[set] = s.[set_id]'
+      joinClauses += ' LEFT JOIN [series] ps ON t.[parallel_of_series] = ps.[series_id]'
+      selectFields += ', s.[name] as set_name, ps.[name] as parallel_of_series_name'
+    } else if (tableName === 'set') {
+      joinClauses += ' LEFT JOIN [organization] org ON t.[organization] = org.[organization_id]'
+      selectFields += ', org.[name] as organization_name'
+    } else if (tableName === 'card') {
+      joinClauses += ' LEFT JOIN [series] ser ON t.[series] = ser.[series_id]'
+      joinClauses += ' LEFT JOIN [grading_agency] ga ON t.[grading_agency] = ga.[grading_agency_id]'
+      selectFields += ', ser.[name] as series_name, ga.[name] as grading_agency_name'
+    }
+
+    // Build search condition if search term provided
     if (search) {
-      // Exclude system fields and IDs from search, but include all meaningful content fields
+      const escapedSearch = search.replace(/'/g, "''") // Escape single quotes
+      const searchClauses = []
+      
+      // Search in direct text fields (exclude IDs and system fields)
       const excludeFromSearch = [config.primaryKey, 'created', 'updated', 'created_at', 'updated_at']
-      const searchFields = columns.filter(field => 
+      const textFields = columns.filter(field => 
         !excludeFromSearch.includes(field) && 
         !field.toLowerCase().includes('password') &&
         !field.toLowerCase().includes('token') &&
-        !field.toLowerCase().includes('secret')
+        !field.toLowerCase().includes('secret') &&
+        !field.toLowerCase().endsWith('_id') &&
+        !field.toLowerCase().includes('id')
       )
       
-      if (searchFields.length > 0) {
-        const escapedSearch = search.replace(/'/g, "''") // Escape single quotes
-        const searchClauses = searchFields.map(field => 
-          `CAST([${field}] AS NVARCHAR(MAX)) LIKE '%${escapedSearch}%'`
-        )
+      // Add text field searches
+      textFields.forEach(field => {
+        searchClauses.push(`CAST(t.[${field}] AS NVARCHAR(MAX)) LIKE '%${escapedSearch}%'`)
+      })
+      
+      // Add foreign key relationship searches
+      if (tableName === 'team') {
+        searchClauses.push(`CAST(org.[name] AS NVARCHAR(MAX)) LIKE '%${escapedSearch}%'`)
+      } else if (tableName === 'series') {
+        searchClauses.push(`CAST(s.[name] AS NVARCHAR(MAX)) LIKE '%${escapedSearch}%'`)
+        searchClauses.push(`CAST(ps.[name] AS NVARCHAR(MAX)) LIKE '%${escapedSearch}%'`)
+      } else if (tableName === 'set') {
+        searchClauses.push(`CAST(org.[name] AS NVARCHAR(MAX)) LIKE '%${escapedSearch}%'`)
+      } else if (tableName === 'card') {
+        searchClauses.push(`CAST(ser.[name] AS NVARCHAR(MAX)) LIKE '%${escapedSearch}%'`)
+        searchClauses.push(`CAST(ga.[name] AS NVARCHAR(MAX)) LIKE '%${escapedSearch}%'`)
+      }
+      
+      if (searchClauses.length > 0) {
         searchCondition = `WHERE ${searchClauses.join(' OR ')}`
       }
     }
     
-    // Get total count
-    const countQuery = `SELECT COUNT(*) as total FROM [${tableName}] ${searchCondition}`
+    // Get total count with proper table alias
+    const countQuery = `SELECT COUNT(*) as total FROM [${tableName}] t ${joinClauses} ${searchCondition}`
     const countResult = await prisma.$queryRawUnsafe(countQuery)
     const total = Number(countResult[0].total)
     
-    // Build ORDER BY clause
-    let orderByClause = `ORDER BY [${config.primaryKey}] DESC`
+    // Build ORDER BY clause with table alias
+    let orderByClause = `ORDER BY t.[${config.primaryKey}] DESC`
     if (sortColumn && columns.includes(sortColumn)) {
       const direction = sortDirection.toLowerCase() === 'desc' ? 'DESC' : 'ASC'
-      orderByClause = `ORDER BY [${sortColumn}] ${direction}`
+      orderByClause = `ORDER BY t.[${sortColumn}] ${direction}`
     }
     
-    // Get all data (no pagination)
+    // Get all data (no pagination) with related display names
     const dataQuery = `
-      SELECT TOP (${limitNum}) * FROM [${tableName}] 
+      SELECT TOP (${limitNum}) ${selectFields} FROM [${tableName}] t
+      ${joinClauses}
       ${searchCondition}
       ${orderByClause}
     `

@@ -8,11 +8,13 @@
 3. **Remove breadcrumbing** - Header breadcrumb navigation is redundant with quick jump menu
 4. **Auto-scroll for new rows** - When adding rows, scroll to bottom to make them visible
 5. **Full-width tables** - Utilize full screen width on PC screens with responsive design
+6. **Boolean checkboxes** - All boolean values represented with interactive checkboxes
+7. **No-wrap columns** - Important columns (name fields) never truncate or wrap
 
 ### 🔄 IN PROGRESS  
-6. **Client-side search filtering** - Load data once, filter locally without new API calls
-7. **Resizable columns** - All columns need to be resizable in every table
-8. **Boolean checkboxes** - All boolean values represented with checkboxes instead of text
+8. **Client-side search filtering** - Load data once, filter locally without new API calls
+9. **Resizable columns** - All columns need to be resizable in every table
+10. **Dynamic dropdowns** - Organization, set, parallel_of_series dropdowns
 
 ## Table-Specific Requirements
 

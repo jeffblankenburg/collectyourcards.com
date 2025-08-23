@@ -46,6 +46,7 @@ import {
   Link2,
   Shuffle,
   AtSign,
+  Mail,
   // Card/Collection related
   CreditCard,
   BookOpen,
@@ -156,6 +157,7 @@ const iconMap = {
   'link': Link2,
   'shuffle': Shuffle,
   'alias': AtSign,
+  'mail': Mail,
   'staging': Database, // Use same as database for staging
   'trash': Trash2,
   

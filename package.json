@@ -31,7 +31,7 @@
   "dependencies": {
     "@azure/communication-email": "^1.0.0",
     "@dynatrace/oneagent-sdk": "^1.5.0",
-    "@prisma/client": "^6.13.0",
+    "@prisma/client": "^6.14.0",
     "axios": "^1.7.9",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",

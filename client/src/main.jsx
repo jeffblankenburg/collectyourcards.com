@@ -17,10 +17,9 @@ import TeamsLanding from './pages/TeamsLanding.jsx'
 import TeamDetail from './pages/TeamDetail.jsx'
 import SeriesLanding from './pages/SeriesLanding.jsx'
 import SeriesDetail from './pages/SeriesDetail.jsx'
-import AdminData from './pages/AdminData.jsx'
-import AdminDashboard from './pages/AdminDashboard.jsx'
-import AdminTables from './pages/AdminTables.jsx'
-import AdminTableEditor from './pages/AdminTableEditor.jsx'
+import Admin from './pages/Admin.jsx'
+import AdminUsers from './pages/AdminUsers.jsx'
+import AdminTeams from './pages/AdminTeams.jsx'
 import SpreadsheetIngestion from './pages/SpreadsheetIngestion.jsx'
 import './index.css'
 
@@ -63,31 +62,23 @@ ReactDOM.createRoot(document.getElementById('root')).render(
                 path="/admin" 
                 element={
                   <ProtectedRoute>
-                    <AdminDashboard />
+                    <Admin />
                   </ProtectedRoute>
                 } 
               />
               <Route 
-                path="/admin/tables" 
+                path="/admin/users" 
                 element={
                   <ProtectedRoute>
-                    <AdminTables />
+                    <AdminUsers />
                   </ProtectedRoute>
                 } 
               />
               <Route 
-                path="/admin/table/:tableName" 
+                path="/admin/teams" 
                 element={
                   <ProtectedRoute>
-                    <AdminTableEditor />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/admin/data" 
-                element={
-                  <ProtectedRoute>
-                    <AdminData />
+                    <AdminTeams />
                   </ProtectedRoute>
                 } 
               />

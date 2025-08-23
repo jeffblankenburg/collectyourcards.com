@@ -31,24 +31,12 @@ const authMiddleware = async (req, res, next) => {
 
     // Check if session exists and is valid
     const tokenHash = crypto.createHash('sha256').update(token).digest('hex')
-    const session = await prisma.userSession.findFirst({
+    const session = await prisma.user_session.findFirst({
       where: {
         user_id: BigInt(decoded.userId),
         token_hash: tokenHash,
         expires_at: {
           gt: new Date()
-        }
-      },
-      include: {
-        user: {
-          select: {
-            user_id: true,
-            email: true,
-            name: true,
-            role: true,
-            is_active: true,
-            is_verified: true
-          }
         }
       }
     })
@@ -60,15 +48,35 @@ const authMiddleware = async (req, res, next) => {
       })
     }
 
+    // Get user details separately
+    const user = await prisma.user.findUnique({
+      where: { user_id: session.user_id },
+      select: {
+        user_id: true,
+        email: true,
+        name: true,
+        role: true,
+        is_active: true,
+        is_verified: true
+      }
+    })
+
+    if (!user) {
+      return res.status(401).json({
+        error: 'Access denied',
+        message: 'User not found'
+      })
+    }
+
     // Check if user is still active and verified
-    if (!session.user.is_active) {
+    if (!user.is_active) {
       return res.status(403).json({
         error: 'Account deactivated',
         message: 'Your account has been deactivated'
       })
     }
 
-    if (!session.user.is_verified) {
+    if (!user.is_verified) {
       return res.status(403).json({
         error: 'Email not verified',
         message: 'Please verify your email address'
@@ -76,18 +84,18 @@ const authMiddleware = async (req, res, next) => {
     }
 
     // Update session last accessed time
-    await prisma.userSession.update({
+    await prisma.user_session.update({
       where: { session_id: session.session_id },
       data: { last_accessed: new Date() }
     })
 
     // Add user info to request object
     req.user = {
-      userId: session.user.user_id.toString(),
-      email: session.user.email,
-      name: session.user.name,
-      role: session.user.role,
-      is_verified: session.user.is_verified
+      userId: user.user_id.toString(),
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      is_verified: user.is_verified
     }
 
     next()

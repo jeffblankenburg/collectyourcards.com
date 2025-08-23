@@ -147,7 +147,6 @@ if (config.environment === 'test') {
   app.use('/api/auth', createMockRoute('Auth'));
   app.use('/api/cards', createMockRoute('Cards'));
   app.use('/api/collection', createMockRoute('Collection'));
-  app.use('/api/admin', createMockRoute('Admin'));
   app.use('/api/import', createMockRoute('Import'));
   app.use('/api/ebay', createMockRoute('eBay'));
   app.use('/api/search', createMockRoute('Search'));
@@ -156,10 +155,10 @@ if (config.environment === 'test') {
   // In non-test environments, require actual route files
   const routes = [
     { path: '/api/auth', file: './routes/auth', name: 'Auth' },
+    { path: '/api/admin', file: './routes/admin-users', name: 'Admin Users' },
+    { path: '/api/admin', file: './routes/admin-teams', name: 'Admin Teams' },
     { path: '/api/cards', file: './routes/cards', name: 'Cards' },
     { path: '/api/collection', file: './routes/collection', name: 'Collection' },
-    { path: '/api/admin', file: './routes/admin', name: 'Admin' },
-    { path: '/api/admin-data', file: './routes/admin-data', name: 'Admin Data' },
     { path: '/api/import', file: './routes/import', name: 'Import' },
     { path: '/api/ebay', file: './routes/ebay', name: 'eBay' },
     { path: '/api/search', file: './routes/search', name: 'Search' },

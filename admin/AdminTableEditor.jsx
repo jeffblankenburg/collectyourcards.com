@@ -48,8 +48,8 @@ const TABLE_DISPLAY_NAMES = {
 // Table-specific field configuration
 const TABLE_FIELD_CONFIG = {
   team: {
-    hiddenFields: [], // All fields visible for teams
-    readonlyFields: ['team_Id', 'created', 'card_count'],
+    hiddenFields: ['created'], // Hide created field
+    readonlyFields: ['team_Id', 'card_count'],
     dropdownFields: {
       organization: { sourceTable: 'organization', valueField: 'organization_id', displayField: 'name' }
     },
@@ -57,8 +57,8 @@ const TABLE_FIELD_CONFIG = {
     noWrapFields: ['name']
   },
   series: {
-    hiddenFields: ['min_print_run', 'max_print_run', 'print_run_variations', 'print_run_display'],
-    readonlyFields: ['series_id', 'created', 'card_entered_count'],
+    hiddenFields: ['created', 'min_print_run', 'max_print_run', 'print_run_variations', 'print_run_display'], // Hide created field
+    readonlyFields: ['series_id', 'card_entered_count'],
     dropdownFields: {
       set: { sourceTable: 'set', valueField: 'set_id', displayField: 'name' },
       parallel_of_series: { sourceTable: 'series', valueField: 'series_id', displayField: 'name', 
@@ -69,8 +69,8 @@ const TABLE_FIELD_CONFIG = {
     editableFields: ['card_count'] // Explicitly editable
   },
   set: {
-    hiddenFields: [],
-    readonlyFields: ['set_id', 'created', 'card_count', 'series_count'],
+    hiddenFields: ['created'], // Hide created field
+    readonlyFields: ['set_id', 'card_count', 'series_count'],
     dropdownFields: {
       organization: { sourceTable: 'organization', valueField: 'organization_id', displayField: 'name' }
     },
@@ -78,18 +78,50 @@ const TABLE_FIELD_CONFIG = {
     noWrapFields: ['name']
   },
   color: {
-    hiddenFields: ['created'],
+    hiddenFields: ['created'], // Already hidden
     readonlyFields: ['color_id'],
     dropdownFields: {},
     booleanFields: [],
     noWrapFields: ['name']
   },
   grading_agency: {
-    hiddenFields: ['created'],
+    hiddenFields: ['created'], // Already hidden
     readonlyFields: ['grading_agency_id'],
     dropdownFields: {},
     booleanFields: [],
     noWrapFields: ['name']
+  },
+  // Add configurations for other common tables
+  manufacturer: {
+    hiddenFields: ['created'],
+    readonlyFields: ['manufacturer_id'],
+    dropdownFields: {},
+    booleanFields: [],
+    noWrapFields: ['name']
+  },
+  organization: {
+    hiddenFields: ['created'],
+    readonlyFields: ['organization_id'],
+    dropdownFields: {},
+    booleanFields: [],
+    noWrapFields: ['name']
+  },
+  player: {
+    hiddenFields: ['created'],
+    readonlyFields: ['player_id', 'card_count'],
+    dropdownFields: {},
+    booleanFields: ['is_hof'],
+    noWrapFields: ['first_name', 'last_name']
+  },
+  card: {
+    hiddenFields: ['created'],
+    readonlyFields: ['card_id'],
+    dropdownFields: {
+      series: { sourceTable: 'series', valueField: 'series_id', displayField: 'name' },
+      grading_agency: { sourceTable: 'grading_agency', valueField: 'grading_agency_id', displayField: 'name' }
+    },
+    booleanFields: ['is_rookie', 'is_autograph', 'is_memorabilia'],
+    noWrapFields: []
   }
 }
 
@@ -111,6 +143,9 @@ function AdminTableEditor() {
   const [newRow, setNewRow] = useState(null) // For adding new records
   const [savingCells, setSavingCells] = useState(new Set()) // Track which cells are being saved
   const [deleteConfirm, setDeleteConfirm] = useState(null) // For delete confirmation dialog
+  const [dropdownData, setDropdownData] = useState({}) // Store data for dropdown fields
+  const [columnWidths, setColumnWidths] = useState({}) // Store column widths for resizing
+  const [resizing, setResizing] = useState(null) // Track which column is being resized
 
   // Check if user has admin privileges
   if (!user || !['admin', 'superadmin'].includes(user.role)) {
@@ -150,6 +185,10 @@ function AdminTableEditor() {
   useEffect(() => {
     loadTableData(tableName)
   }, [tableName, sortColumn, sortDirection])
+
+  useEffect(() => {
+    loadDropdownData(tableName)
+  }, [tableName])
 
   useEffect(() => {
     if (searchTerm !== '') {
@@ -211,6 +250,43 @@ function AdminTableEditor() {
       addToast('Failed to load table data', 'error')
     } finally {
       setLoading(false)
+    }
+  }
+
+  // Load limited data for dropdown fields (just show a few recent/popular options)
+  const loadDropdownData = async (tableNameParam) => {
+    const config = TABLE_FIELD_CONFIG[tableNameParam] || {}
+    const dropdownFields = config.dropdownFields || {}
+    
+    if (Object.keys(dropdownFields).length === 0) {
+      setDropdownData({})
+      return
+    }
+    
+    try {
+      const newDropdownData = {}
+      
+      // Load just the most recent/commonly used options for each dropdown field
+      for (const [fieldName, fieldConfig] of Object.entries(dropdownFields)) {
+        try {
+          const response = await axios.get(`/api/admin-data/table-data/${fieldConfig.sourceTable}`, {
+            params: { 
+              limit: 50,  // Only load top 50 most recent options
+              sortColumn: fieldConfig.valueField,
+              sortDirection: 'desc'
+            }
+          })
+          newDropdownData[fieldName] = response.data.data || []
+        } catch (fieldError) {
+          console.error(`Error loading ${fieldName} dropdown data:`, fieldError)
+          newDropdownData[fieldName] = []
+        }
+      }
+      
+      setDropdownData(newDropdownData)
+    } catch (error) {
+      console.error('Error loading dropdown data:', error)
+      addToast('Failed to load dropdown data', 'error')
     }
   }
 
@@ -448,7 +524,169 @@ function AdminTableEditor() {
     return targetTable ? `/admin/table/${targetTable}` : null
   }
 
-  // Render cell content with potential linking, checkboxes, etc.
+  // Helper function to get dropdown options with filtering
+  const getDropdownOptions = (fieldName, fieldConfig, currentRow) => {
+    const data = dropdownData[fieldName] || []
+    
+    if (fieldConfig.filter && currentRow) {
+      try {
+        return data.filter(item => fieldConfig.filter(item, currentRow))
+      } catch (error) {
+        console.error('Error filtering dropdown options:', error)
+        return data
+      }
+    }
+    
+    return data
+  }
+
+  // Simple dropdown component as separate React component
+  const SearchableDropdown = ({ fieldName, fieldConfig, currentValue, onChange, currentRow, dropdownData }) => {
+    const [searchTerm, setSearchTerm] = useState('')
+    const [showSuggestions, setShowSuggestions] = useState(false)
+    const [suggestions, setSuggestions] = useState([])
+    const [loading, setLoading] = useState(false)
+
+    // Get the current display name for the value
+    const getCurrentDisplayName = () => {
+      if (!currentValue) return ''
+      
+      // Try to get from server-provided display name first
+      const displayFieldName = `${fieldName}_name`
+      if (currentRow && currentRow[displayFieldName]) {
+        return currentRow[displayFieldName]
+      }
+      
+      // Fallback to dropdown data
+      const option = (dropdownData[fieldName] || []).find(
+        item => item[fieldConfig.valueField] == currentValue
+      )
+      return option ? option[fieldConfig.displayField] : currentValue
+    }
+
+    // Search for options by name
+    const searchOptions = async (query) => {
+      if (!query || query.length < 2) {
+        setSuggestions(dropdownData[fieldName] || [])
+        return
+      }
+
+      setLoading(true)
+      try {
+        const response = await axios.get(`/api/admin-data/table-data/${fieldConfig.sourceTable}`, {
+          params: { 
+            limit: 20,
+            search: query
+          }
+        })
+        setSuggestions(response.data.data || [])
+      } catch (error) {
+        console.error('Error searching options:', error)
+        setSuggestions([])
+      }
+      setLoading(false)
+    }
+
+    // Initialize with current display name
+    useEffect(() => {
+      const displayName = getCurrentDisplayName()
+      setSearchTerm(displayName)
+      setSuggestions(dropdownData[fieldName] || [])
+    }, [currentValue, dropdownData[fieldName], currentRow])
+
+    return (
+      <div className="searchable-dropdown">
+        <input
+          type="text"
+          value={searchTerm}
+          onChange={(e) => {
+            setSearchTerm(e.target.value)
+            setShowSuggestions(true)
+            searchOptions(e.target.value)
+          }}
+          onFocus={() => {
+            setShowSuggestions(true)
+            setSuggestions(dropdownData[fieldName] || [])
+          }}
+          onBlur={() => {
+            setTimeout(() => setShowSuggestions(false), 200)
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              setShowSuggestions(false)
+            } else if (e.key === 'Enter' && suggestions.length > 0) {
+              // Auto-select first suggestion on Enter
+              const firstSuggestion = suggestions[0]
+              setSearchTerm(firstSuggestion[fieldConfig.displayField])
+              setShowSuggestions(false)
+              onChange(firstSuggestion[fieldConfig.valueField])
+            }
+          }}
+          placeholder={`Search ${fieldName}...`}
+          className="dropdown-input"
+          autoFocus
+        />
+        
+        {showSuggestions && (
+          <div className="dropdown-suggestions">
+            {loading && <div className="dropdown-loading">Searching...</div>}
+            {suggestions.length === 0 && !loading && (
+              <div className="dropdown-empty">No matches found</div>
+            )}
+            {suggestions.slice(0, 10).map(option => {
+              const key = option[fieldConfig.valueField]
+              const display = option[fieldConfig.displayField]
+              return (
+                <div
+                  key={key}
+                  className="dropdown-suggestion"
+                  onClick={() => {
+                    setSearchTerm(display)
+                    setShowSuggestions(false)
+                    onChange(key) // Save the ID, not the display name
+                  }}
+                >
+                  {display}
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  // Simple render function that returns the component
+  const renderDropdownInput = (fieldName, fieldConfig, currentValue, onChange, currentRow) => {
+    return (
+      <SearchableDropdown
+        fieldName={fieldName}
+        fieldConfig={fieldConfig}
+        currentValue={currentValue}
+        onChange={onChange}
+        currentRow={currentRow}
+        dropdownData={dropdownData}
+      />
+    )
+  }
+
+  // Get display text for dropdown values using server-provided display names
+  const getDropdownDisplayText = (row, columnName, fieldConfig, value) => {
+    if (!value) return <em className="null-value">null</em>
+    
+    // Check if server provided a display name (e.g., set_name, organization_name)
+    const displayFieldName = `${columnName}_name`
+    if (row[displayFieldName]) {
+      return row[displayFieldName]
+    }
+    
+    // Fallback to searching in dropdown data
+    const data = dropdownData[columnName] || []
+    const option = data.find(item => item[fieldConfig.valueField] == value)
+    return option ? option[fieldConfig.displayField] : value
+  }
+
+  // Render cell content with potential linking, checkboxes, dropdowns etc.
   const renderCellContent = (row, columnName, isEditing) => {
     const value = row[columnName]
     const config = TABLE_FIELD_CONFIG[tableName] || {}
@@ -475,11 +713,31 @@ function AdminTableEditor() {
             }}
             className="boolean-checkbox"
           />
-          <span className="checkbox-label">
-            {value ? 'Yes' : 'No'}
-          </span>
         </label>
       )
+    }
+
+    // Handle dropdown fields - show display text instead of ID
+    if (config.dropdownFields && config.dropdownFields[columnName]) {
+      const fieldConfig = config.dropdownFields[columnName]
+      const displayText = getDropdownDisplayText(row, columnName, fieldConfig, value)
+      
+      // Return as link if it should link to another entity
+      if (linkTo && value) {
+        return (
+          <Link 
+            to={linkTo} 
+            className="entity-link"
+            onClick={(e) => e.stopPropagation()} // Prevent cell editing
+            title={`Go to ${getEntityLink(columnName, value)} table`}
+          >
+            {displayText}
+            <Icon name="external-link" size={12} className="link-icon" />
+          </Link>
+        )
+      }
+      
+      return <span className="cell-value">{displayText}</span>
     }
     
     // Format the display value
@@ -509,6 +767,49 @@ function AdminTableEditor() {
     
     return <span className="cell-value">{displayValue}</span>
   }
+
+  // Column resizing functions
+  const handleResizeStart = (columnName, e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    
+    setResizing({
+      column: columnName,
+      startX: e.clientX,
+      startWidth: e.target.parentElement.offsetWidth
+    })
+  }
+
+  const handleResizeMove = (e) => {
+    if (!resizing) return
+    
+    const deltaX = e.clientX - resizing.startX
+    const newWidth = Math.max(60, resizing.startWidth + deltaX) // Minimum width of 60px
+    
+    setColumnWidths(prev => ({
+      ...prev,
+      [resizing.column]: newWidth
+    }))
+  }
+
+  const handleResizeEnd = () => {
+    setResizing(null)
+  }
+
+  // Add global mouse event listeners for column resizing
+  useEffect(() => {
+    if (resizing) {
+      document.addEventListener('mousemove', handleResizeMove)
+      document.addEventListener('mouseup', handleResizeEnd)
+      document.body.style.cursor = 'col-resize'
+      
+      return () => {
+        document.removeEventListener('mousemove', handleResizeMove)
+        document.removeEventListener('mouseup', handleResizeEnd)
+        document.body.style.cursor = 'default'
+      }
+    }
+  }, [resizing])
 
   return (
     <div className="admin-table-editor-page">
@@ -604,36 +905,44 @@ function AdminTableEditor() {
                     }).map(col => {
                       const config = TABLE_FIELD_CONFIG[tableName] || {}
                       return (
-                      <th 
-                        key={col} 
-                        className={`
-                          ${col === primaryKey || col.endsWith('_id') || col === 'id' ? 'readonly-column' : ''}
-                          sortable-header
-                          ${sortColumn === col ? 'sorted' : ''}
-                          ${config.noWrapFields?.includes(col) ? 'no-wrap-column' : ''}
-                        `}
-                        onClick={() => handleSort(col)}
-                      >
-                        <div className="header-content">
-                          <span>{col}</span>
-                          <div className="header-icons">
-                            {(col === primaryKey || col.endsWith('_id') || col === 'id') && <Icon name="lock" size={12} />}
-                            <div className="sort-indicators">
-                              {sortColumn === col && (
-                                <Icon 
-                                  name={sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'} 
-                                  size={12} 
-                                  className="sort-icon"
-                                />
-                              )}
-                              {sortColumn !== col && (
-                                <Icon name="chevron-up" size={10} className="sort-placeholder" />
-                              )}
+                        <th 
+                          key={col} 
+                          className={`
+                            ${col === primaryKey || col.endsWith('_id') || col === 'id' ? 'readonly-column' : ''}
+                            sortable-header
+                            ${sortColumn === col ? 'sorted' : ''}
+                            ${config.noWrapFields?.includes(col) ? 'no-wrap-column' : ''}
+                            resizable-column
+                          `}
+                          style={{ width: columnWidths[col] ? `${columnWidths[col]}px` : undefined }}
+                          onClick={() => handleSort(col)}
+                        >
+                          <div className="header-content">
+                            <span>{col}</span>
+                            <div className="header-icons">
+                              {(col === primaryKey || col.endsWith('_id') || col === 'id') && <Icon name="lock" size={12} />}
+                              <div className="sort-indicators">
+                                {sortColumn === col && (
+                                  <Icon 
+                                    name={sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'} 
+                                    size={12} 
+                                    className="sort-icon"
+                                  />
+                                )}
+                                {sortColumn !== col && (
+                                  <Icon name="chevron-up" size={10} className="sort-placeholder" />
+                                )}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </th>
-                    ))}
+                          <div 
+                            className="resize-handle"
+                            onMouseDown={(e) => handleResizeStart(col, e)}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        </th>
+                      )
+                    })}
                     <th className="actions-column">
                       <Icon name="trash" size={16} />
                     </th>
@@ -661,18 +970,33 @@ function AdminTableEditor() {
                               ${isSaving ? 'saving-cell' : ''}
                               ${config.noWrapFields?.includes(col) ? 'no-wrap-column' : ''}
                             `}
+                            style={{ width: columnWidths[col] ? `${columnWidths[col]}px` : undefined }}
                             onClick={() => !isReadonly && handleCellClick(rowIndex, col, row[col])}
                           >
                             {isEditing ? (
-                              <input
-                                type="text"
-                                value={editValue}
-                                onChange={(e) => setEditValue(e.target.value)}
-                                onKeyDown={(e) => handleCellKeyDown(e, rowIndex, col)}
-                                onBlur={() => handleCellSave(rowIndex, col, editValue)}
-                                className="cell-input"
-                                autoFocus
-                              />
+                              config.dropdownFields && config.dropdownFields[col] ? (
+                                renderDropdownInput(
+                                  col,
+                                  config.dropdownFields[col],
+                                  editValue,
+                                  (newValue) => {
+                                    setEditValue(newValue)
+                                    // Auto-save on dropdown change
+                                    handleCellSave(rowIndex, col, newValue)
+                                  },
+                                  row
+                                )
+                              ) : (
+                                <input
+                                  type="text"
+                                  value={editValue}
+                                  onChange={(e) => setEditValue(e.target.value)}
+                                  onKeyDown={(e) => handleCellKeyDown(e, rowIndex, col)}
+                                  onBlur={() => handleCellSave(rowIndex, col, editValue)}
+                                  className="cell-input"
+                                  autoFocus
+                                />
+                              )
                             ) : (
                               <div className="cell-content">
                                 {isSaving && <Icon name="activity" size={12} className="saving-spinner" />}
@@ -716,13 +1040,31 @@ function AdminTableEditor() {
                                 </span>
                               </div>
                             ) : (
-                              <input
-                                type="text"
-                                value={newRow[col] || ''}
-                                onChange={(e) => setNewRow({...newRow, [col]: e.target.value})}
-                                placeholder={`Enter ${col}...`}
-                                className="cell-input new-cell-input"
-                              />
+                              config.dropdownFields && config.dropdownFields[col] ? (
+                                <select
+                                  value={newRow[col] || ''}
+                                  onChange={(e) => setNewRow({...newRow, [col]: e.target.value})}
+                                  className="dropdown-input new-cell-input"
+                                >
+                                  <option value="">Select {col}...</option>
+                                  {getDropdownOptions(col, config.dropdownFields[col], null).map(option => (
+                                    <option 
+                                      key={option[config.dropdownFields[col].valueField]} 
+                                      value={option[config.dropdownFields[col].valueField]}
+                                    >
+                                      {option[config.dropdownFields[col].displayField]}
+                                    </option>
+                                  ))}
+                                </select>
+                              ) : (
+                                <input
+                                  type="text"
+                                  value={newRow[col] || ''}
+                                  onChange={(e) => setNewRow({...newRow, [col]: e.target.value})}
+                                  placeholder={`Enter ${col}...`}
+                                  className="cell-input new-cell-input"
+                                />
+                              )
                             )}
                           </td>
                         )

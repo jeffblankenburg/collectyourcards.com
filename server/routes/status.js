@@ -132,7 +132,6 @@ router.get('/endpoints/status', async (req, res) => {
       // Mock endpoints (placeholder)
       { method: 'ALL', path: '/api/cards/*', status: 'mock', description: 'Card management (not implemented)' },
       { method: 'ALL', path: '/api/collection/*', status: 'mock', description: 'Collection management (not implemented)' },
-      { method: 'ALL', path: '/api/admin/*', status: 'mock', description: 'Admin panel (not implemented)' },
       { method: 'ALL', path: '/api/import/*', status: 'mock', description: 'Spreadsheet import (not implemented)' },
       { method: 'ALL', path: '/api/ebay/*', status: 'mock', description: 'eBay integration (not implemented)' }
     ]
@@ -258,7 +257,6 @@ router.get('/status', async (req, res) => {
       { name: 'Auth', path: './auth' },
       { name: 'Cards', path: './cards' },
       { name: 'Collection', path: './collection' },
-      { name: 'Admin', path: './admin' },
       { name: 'Import', path: './import' },
       { name: 'eBay', path: './ebay' },
       { name: 'Search', path: './search' }
