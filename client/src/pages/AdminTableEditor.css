@@ -517,6 +517,71 @@
   opacity: 1;
 }
 
+/* Boolean checkboxes */
+.checkbox-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.checkbox-wrapper:hover {
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.boolean-checkbox {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 3px;
+  background: transparent;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.boolean-checkbox:checked {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  border-color: #10b981;
+}
+
+.boolean-checkbox:checked::before {
+  content: '✓';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-size: 10px;
+  font-weight: bold;
+}
+
+.boolean-checkbox:hover {
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.checkbox-label {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.8);
+  user-select: none;
+}
+
+/* No-wrap columns for important fields */
+.no-wrap-column {
+  white-space: nowrap !important;
+  min-width: 200px;
+}
+
+.no-wrap-column .cell-value {
+  white-space: nowrap !important;
+  overflow: visible !important;
+  text-overflow: initial !important;
+}
+
 .auto-generated {
   color: rgba(34, 197, 94, 0.7);
   font-style: italic;

@@ -448,13 +448,38 @@ function AdminTableEditor() {
     return targetTable ? `/admin/table/${targetTable}` : null
   }
 
-  // Render cell content with potential linking
+  // Render cell content with potential linking, checkboxes, etc.
   const renderCellContent = (row, columnName, isEditing) => {
     const value = row[columnName]
+    const config = TABLE_FIELD_CONFIG[tableName] || {}
     const linkTo = getEntityLink(columnName, value)
     
     if (isEditing) {
       return null // Input will be rendered separately
+    }
+    
+    // Handle boolean fields with checkboxes
+    if (config.booleanFields?.includes(columnName)) {
+      return (
+        <label className="checkbox-wrapper" onClick={(e) => e.stopPropagation()}>
+          <input
+            type="checkbox"
+            checked={Boolean(value)}
+            onChange={(e) => {
+              const newValue = e.target.checked
+              handleCellSave(
+                tableData.findIndex(r => r[primaryKey] === row[primaryKey]),
+                columnName,
+                newValue
+              )
+            }}
+            className="boolean-checkbox"
+          />
+          <span className="checkbox-label">
+            {value ? 'Yes' : 'No'}
+          </span>
+        </label>
+      )
     }
     
     // Format the display value
@@ -576,13 +601,16 @@ function AdminTableEditor() {
                     {columns.filter(col => {
                       const config = TABLE_FIELD_CONFIG[tableName] || {}
                       return !config.hiddenFields?.includes(col)
-                    }).map(col => (
+                    }).map(col => {
+                      const config = TABLE_FIELD_CONFIG[tableName] || {}
+                      return (
                       <th 
                         key={col} 
                         className={`
                           ${col === primaryKey || col.endsWith('_id') || col === 'id' ? 'readonly-column' : ''}
                           sortable-header
                           ${sortColumn === col ? 'sorted' : ''}
+                          ${config.noWrapFields?.includes(col) ? 'no-wrap-column' : ''}
                         `}
                         onClick={() => handleSort(col)}
                       >
@@ -631,6 +659,7 @@ function AdminTableEditor() {
                               ${isReadonly ? 'readonly-cell' : 'editable-cell'}
                               ${isEditing ? 'editing-cell' : ''}
                               ${isSaving ? 'saving-cell' : ''}
+                              ${config.noWrapFields?.includes(col) ? 'no-wrap-column' : ''}
                             `}
                             onClick={() => !isReadonly && handleCellClick(rowIndex, col, row[col])}
                           >
@@ -676,7 +705,10 @@ function AdminTableEditor() {
                         const isReadonly = col === primaryKey || col.endsWith('_id') || col === 'id' || config.readonlyFields?.includes(col)
                         
                         return (
-                          <td key={col} className={isReadonly ? 'readonly-cell' : 'editable-cell'}>
+                          <td key={col} className={`
+                            ${isReadonly ? 'readonly-cell' : 'editable-cell'}
+                            ${config.noWrapFields?.includes(col) ? 'no-wrap-column' : ''}
+                          `}>
                             {isReadonly ? (
                               <div className="cell-content">
                                 <span className="cell-value">
