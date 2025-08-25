@@ -20,7 +20,10 @@ import SeriesDetail from './pages/SeriesDetail.jsx'
 import Admin from './pages/Admin.jsx'
 import AdminUsers from './pages/AdminUsers.jsx'
 import AdminTeams from './pages/AdminTeams.jsx'
+import AdminSets from './pages/AdminSets.jsx'
+import AdminCards from './pages/AdminCards.jsx'
 import SpreadsheetIngestion from './pages/SpreadsheetIngestion.jsx'
+import SpreadsheetImport from './pages/SpreadsheetImport.jsx'
 import './index.css'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
@@ -83,10 +86,58 @@ ReactDOM.createRoot(document.getElementById('root')).render(
                 } 
               />
               <Route 
+                path="/admin/sets" 
+                element={
+                  <ProtectedRoute>
+                    <AdminSets />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/admin/sets/:year" 
+                element={
+                  <ProtectedRoute>
+                    <AdminSets />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/admin/sets/:year/:setSlug" 
+                element={
+                  <ProtectedRoute>
+                    <AdminSets />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/admin/sets/:year/:setSlug/:seriesSlug" 
+                element={
+                  <ProtectedRoute>
+                    <AdminSets />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/admin/cards/:year/:setSlug/:seriesSlug" 
+                element={
+                  <ProtectedRoute>
+                    <AdminCards />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
                 path="/admin/ingestion" 
                 element={
                   <ProtectedRoute>
                     <SpreadsheetIngestion />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/admin/import" 
+                element={
+                  <ProtectedRoute>
+                    <SpreadsheetImport />
                   </ProtectedRoute>
                 } 
               />

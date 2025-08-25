@@ -157,6 +157,8 @@ if (config.environment === 'test') {
     { path: '/api/auth', file: './routes/auth', name: 'Auth' },
     { path: '/api/admin', file: './routes/admin-users', name: 'Admin Users' },
     { path: '/api/admin', file: './routes/admin-teams', name: 'Admin Teams' },
+    { path: '/api/admin', file: './routes/admin-sets', name: 'Admin Sets' },
+    { path: '/api/admin/cards', file: './routes/admin-cards', name: 'Admin Cards' },
     { path: '/api/cards', file: './routes/cards', name: 'Cards' },
     { path: '/api/collection', file: './routes/collection', name: 'Collection' },
     { path: '/api/import', file: './routes/import', name: 'Import' },
@@ -171,7 +173,9 @@ if (config.environment === 'test') {
     { path: '/api/series-by-set', file: './routes/series-by-set', name: 'Series By Set' },
     { path: '/api/user/cards', file: './routes/user-cards', name: 'User Cards' },
     { path: '/api/user/locations', file: './routes/user-locations', name: 'User Locations' },
-    { path: '/api/grading-agencies', file: './routes/grading-agencies', name: 'Grading Agencies' }
+    { path: '/api/grading-agencies', file: './routes/grading-agencies', name: 'Grading Agencies' },
+    { path: '/api/player-team-search', file: './routes/player-team-search', name: 'Player Team Search' },
+    { path: '/api/spreadsheet-import', file: './routes/spreadsheet-import', name: 'Spreadsheet Import' }
   ];
 
   console.log('📍 Loading API routes in production mode...');

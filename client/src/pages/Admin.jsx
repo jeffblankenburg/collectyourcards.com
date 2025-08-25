@@ -37,6 +37,18 @@ function Admin() {
             <h3>Team Management</h3>
             <p>View and manage team information</p>
           </Link>
+          
+          <Link to="/admin/sets" className="admin-card">
+            <Icon name="layers" size={48} />
+            <h3>Sets & Series</h3>
+            <p>Hierarchical navigation: Years → Sets → Series</p>
+          </Link>
+          
+          <Link to="/admin/import" className="admin-card">
+            <Icon name="upload" size={48} />
+            <h3>Spreadsheet Import</h3>
+            <p>Import card checklists from Excel spreadsheets</p>
+          </Link>
         </div>
       </div>
     </div>

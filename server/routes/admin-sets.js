@@ -1,0 +1,670 @@
+const express = require('express')
+const { PrismaClient } = require('@prisma/client')
+const { authMiddleware, requireAdmin } = require('../middleware/auth')
+const router = express.Router()
+const prisma = new PrismaClient()
+
+// Helper function to generate URL slug from set name
+function generateSlug(name) {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+}
+
+// Helper function to find series by slug, year, and set
+async function findSeriesBySlug(year, setSlug, seriesSlug) {
+  // First find the set
+  const set = await findSetBySlug(year, setSlug)
+  if (!set) return null
+  
+  // Then find series in that set
+  const series = await prisma.series.findMany({
+    where: { set: set.set_id },
+    include: {
+      set_series_setToset: {
+        select: {
+          name: true
+        }
+      }
+    }
+  })
+  
+  return series.find(s => generateSlug(s.name) === seriesSlug)
+}
+
+// Helper function to find set by slug and year
+async function findSetBySlug(year, slug) {
+  const sets = await prisma.set.findMany({
+    where: { year: parseInt(year) },
+    include: {
+      organization_set_organizationToorganization: {
+        select: {
+          name: true,
+          abbreviation: true
+        }
+      },
+      manufacturer_set_manufacturerTomanufacturer: {
+        select: {
+          name: true
+        }
+      }
+    }
+  })
+  
+  return sets.find(set => generateSlug(set.name) === slug)
+}
+
+// All routes require admin authentication
+router.use(authMiddleware)
+router.use(requireAdmin)
+
+// GET /api/admin/sets/years - Get list of unique years
+router.get('/sets/years', async (req, res) => {
+  try {
+    const years = await prisma.set.findMany({
+      select: {
+        year: true
+      },
+      where: {
+        year: {
+          not: null
+        }
+      },
+      distinct: ['year'],
+      orderBy: {
+        year: 'desc'
+      }
+    })
+
+    // Get counts for each year
+    const yearCounts = await Promise.all(
+      years.map(async (y) => {
+        const count = await prisma.set.count({
+          where: { year: y.year }
+        })
+        const seriesCount = await prisma.series.count({
+          where: {
+            set_series_setToset: {
+              year: y.year
+            }
+          }
+        })
+        return {
+          year: y.year,
+          setCount: count,
+          seriesCount: seriesCount
+        }
+      })
+    )
+
+    res.json({
+      years: yearCounts,
+      total: yearCounts.length
+    })
+
+  } catch (error) {
+    console.error('Error fetching years:', error)
+    res.status(500).json({
+      error: 'Database error',
+      message: 'Failed to fetch years',
+      details: error.message
+    })
+  }
+})
+
+// GET /api/admin/sets/by-year/:year - Get sets for a specific year
+router.get('/sets/by-year/:year', async (req, res) => {
+  try {
+    const { year } = req.params
+    const yearInt = parseInt(year)
+
+    if (!yearInt || isNaN(yearInt)) {
+      return res.status(400).json({
+        error: 'Invalid year',
+        message: 'Year must be a valid number'
+      })
+    }
+
+    const sets = await prisma.set.findMany({
+      where: {
+        year: yearInt
+      },
+      select: {
+        set_id: true,
+        name: true,
+        year: true,
+        card_count: true,
+        series_count: true,
+        is_complete: true,
+        organization_set_organizationToorganization: {
+          select: {
+            organization_id: true,
+            name: true,
+            abbreviation: true
+          }
+        },
+        manufacturer_set_manufacturerTomanufacturer: {
+          select: {
+            manufacturer_id: true,
+            name: true
+          }
+        },
+        series_series_setToset: {
+          select: {
+            series_id: true
+          }
+        }
+      },
+      orderBy: {
+        name: 'asc'
+      }
+    })
+
+    const serializedSets = sets.map(s => ({
+      set_id: s.set_id,
+      name: s.name,
+      slug: generateSlug(s.name),
+      year: s.year,
+      card_count: s.card_count || 0,
+      series_count: s.series_series_setToset?.length || 0,
+      is_complete: s.is_complete || false,
+      organization_id: s.organization_set_organizationToorganization?.organization_id || null,
+      organization_name: s.organization_set_organizationToorganization?.name || '',
+      organization: s.organization_set_organizationToorganization?.abbreviation || '',
+      manufacturer_id: s.manufacturer_set_manufacturerTomanufacturer?.manufacturer_id || null,
+      manufacturer: s.manufacturer_set_manufacturerTomanufacturer?.name || ''
+    }))
+
+    res.json({
+      sets: serializedSets,
+      total: serializedSets.length
+    })
+
+  } catch (error) {
+    console.error('Error fetching sets:', error)
+    res.status(500).json({
+      error: 'Database error',
+      message: 'Failed to fetch sets',
+      details: error.message
+    })
+  }
+})
+
+// GET /api/admin/series/by-set/:year/:setSlug - Get series for a specific set by slug
+router.get('/series/by-set/:year/:setSlug', async (req, res) => {
+  try {
+    const { year, setSlug } = req.params
+    
+    // Find the set by slug
+    const set = await findSetBySlug(year, setSlug)
+    
+    if (!set) {
+      return res.status(404).json({
+        error: 'Set not found',
+        message: `Set with slug '${setSlug}' not found in year ${year}`
+      })
+    }
+    
+    const setIdInt = set.set_id
+
+    const series = await prisma.series.findMany({
+      where: {
+        set: setIdInt
+      },
+      select: {
+        series_id: true,
+        name: true,
+        card_count: true,
+        card_entered_count: true,
+        is_base: true,
+        parallel_of_series: true,
+        min_print_run: true,
+        max_print_run: true,
+        print_run_display: true,
+        primary_color_name: true,
+        primary_color_hex: true,
+        photo_url: true,
+        front_image_path: true,
+        back_image_path: true
+      },
+      orderBy: [
+        { is_base: 'desc' },
+        { name: 'asc' }
+      ]
+    })
+
+    // Get parallel series names for display
+    const seriesWithParallels = await Promise.all(
+      series.map(async (s) => {
+        let parallelOfName = null
+        if (s.parallel_of_series) {
+          const parallelSeries = await prisma.series.findUnique({
+            where: { series_id: s.parallel_of_series },
+            select: { name: true }
+          })
+          parallelOfName = parallelSeries?.name || null
+        }
+        
+        return {
+          ...s,
+          series_id: Number(s.series_id),
+          parallel_of_series: s.parallel_of_series ? Number(s.parallel_of_series) : null,
+          parallel_of_name: parallelOfName
+        }
+      })
+    )
+
+    res.json({
+      series: seriesWithParallels,
+      total: seriesWithParallels.length
+    })
+
+  } catch (error) {
+    console.error('Error fetching series:', error)
+    res.status(500).json({
+      error: 'Database error',
+      message: 'Failed to fetch series',
+      details: error.message
+    })
+  }
+})
+
+// PUT /api/admin/sets/:id - Update set
+router.put('/sets/:id', async (req, res) => {
+  try {
+    const { id } = req.params
+    const { 
+      name, 
+      year,
+      organization,
+      manufacturer,
+      card_count,
+      series_count,
+      is_complete
+    } = req.body
+
+    // Validate set ID
+    const setId = parseInt(id)
+    if (!setId || isNaN(setId)) {
+      return res.status(400).json({
+        error: 'Invalid set ID',
+        message: 'Set ID must be a valid number'
+      })
+    }
+
+    // Check if set exists
+    const existingSet = await prisma.set.findUnique({
+      where: { set_id: setId },
+      select: {
+        set_id: true,
+        name: true,
+        year: true,
+        organization: true,
+        manufacturer: true,
+        card_count: true,
+        series_count: true,
+        is_complete: true
+      }
+    })
+
+    if (!existingSet) {
+      return res.status(404).json({
+        error: 'Set not found',
+        message: `Set with ID ${setId} does not exist`
+      })
+    }
+
+    // Prepare update data
+    const updateData = {
+      name: name?.trim() || null,
+      year: year ? parseInt(year) : null,
+      organization: organization ? parseInt(organization) : null,
+      manufacturer: manufacturer ? parseInt(manufacturer) : null,
+      card_count: card_count !== undefined ? parseInt(card_count) : existingSet.card_count,
+      series_count: series_count !== undefined ? parseInt(series_count) : existingSet.series_count,
+      is_complete: is_complete !== undefined ? is_complete : existingSet.is_complete
+    }
+
+    // Store old values for logging
+    const oldValues = JSON.stringify(existingSet)
+
+    // Update set
+    const updatedSet = await prisma.set.update({
+      where: { set_id: setId },
+      data: updateData,
+      select: {
+        set_id: true,
+        name: true,
+        year: true,
+        organization: true,
+        manufacturer: true,
+        card_count: true,
+        series_count: true,
+        is_complete: true
+      }
+    })
+
+    // Log admin action
+    try {
+      await prisma.admin_action_log.create({
+        data: {
+          user_id: BigInt(req.user.userId),
+          action_type: 'SET_UPDATED',
+          entity_type: 'set',
+          entity_id: setId.toString(),
+          old_values: oldValues,
+          new_values: JSON.stringify(updateData),
+          ip_address: req.ip,
+          user_agent: req.get('User-Agent'),
+          created: new Date()
+        }
+      })
+    } catch (logError) {
+      console.warn('Failed to log admin action:', logError.message)
+    }
+
+    res.json({
+      message: 'Set updated successfully',
+      set: updatedSet
+    })
+
+  } catch (error) {
+    console.error('Error updating set:', error)
+    res.status(500).json({
+      error: 'Database error',
+      message: 'Failed to update set',
+      details: error.message
+    })
+  }
+})
+
+// PUT /api/admin/series/:id - Update series (moved from admin-series.js)
+router.put('/series/:id', async (req, res) => {
+  try {
+    const { id } = req.params
+    const { 
+      name, 
+      set,
+      card_count,
+      card_entered_count,
+      is_base,
+      parallel_of_series,
+      min_print_run,
+      max_print_run,
+      print_run_display,
+      primary_color_name,
+      primary_color_hex,
+      photo_url,
+      front_image_path,
+      back_image_path
+    } = req.body
+
+    // Validate series ID
+    const seriesId = parseInt(id)
+    if (!seriesId || isNaN(seriesId)) {
+      return res.status(400).json({
+        error: 'Invalid series ID',
+        message: 'Series ID must be a valid number'
+      })
+    }
+
+    // Check if series exists
+    const existingSeries = await prisma.series.findUnique({
+      where: { series_id: BigInt(seriesId) },
+      select: {
+        series_id: true,
+        name: true,
+        set: true,
+        card_count: true,
+        card_entered_count: true,
+        is_base: true,
+        parallel_of_series: true,
+        min_print_run: true,
+        max_print_run: true,
+        print_run_display: true,
+        primary_color_name: true,
+        primary_color_hex: true,
+        photo_url: true,
+        front_image_path: true,
+        back_image_path: true
+      }
+    })
+
+    if (!existingSeries) {
+      return res.status(404).json({
+        error: 'Series not found',
+        message: `Series with ID ${seriesId} does not exist`
+      })
+    }
+
+    // Prepare update data
+    const updateData = {
+      name: name?.trim() || null,
+      set: set ? parseInt(set) : null,
+      card_count: card_count !== undefined ? parseInt(card_count) : existingSeries.card_count,
+      card_entered_count: card_entered_count !== undefined ? parseInt(card_entered_count) : existingSeries.card_entered_count,
+      is_base: is_base !== undefined ? is_base : existingSeries.is_base,
+      parallel_of_series: parallel_of_series ? BigInt(parallel_of_series) : null,
+      min_print_run: min_print_run !== undefined ? (min_print_run ? parseInt(min_print_run) : null) : existingSeries.min_print_run,
+      max_print_run: max_print_run !== undefined ? (max_print_run ? parseInt(max_print_run) : null) : existingSeries.max_print_run,
+      print_run_display: print_run_display?.trim() || null,
+      primary_color_name: primary_color_name?.trim() || null,
+      primary_color_hex: primary_color_hex?.trim() || null,
+      photo_url: photo_url?.trim() || null,
+      front_image_path: front_image_path?.trim() || null,
+      back_image_path: back_image_path?.trim() || null
+    }
+
+    // Validate color format if provided
+    const hexColorRegex = /^#[0-9A-Fa-f]{6}$/
+    if (updateData.primary_color_hex && !hexColorRegex.test(updateData.primary_color_hex)) {
+      return res.status(400).json({
+        error: 'Validation error',
+        message: 'Primary color must be a valid hex color (e.g., #FF0000)'
+      })
+    }
+
+    // Store old values for logging
+    const oldValues = JSON.stringify({
+      name: existingSeries.name,
+      set: existingSeries.set,
+      card_count: existingSeries.card_count,
+      card_entered_count: existingSeries.card_entered_count,
+      is_base: existingSeries.is_base,
+      parallel_of_series: existingSeries.parallel_of_series ? Number(existingSeries.parallel_of_series) : null,
+      min_print_run: existingSeries.min_print_run,
+      max_print_run: existingSeries.max_print_run,
+      print_run_display: existingSeries.print_run_display,
+      primary_color_name: existingSeries.primary_color_name,
+      primary_color_hex: existingSeries.primary_color_hex
+    })
+
+    // Update series
+    const updatedSeries = await prisma.series.update({
+      where: { series_id: BigInt(seriesId) },
+      data: updateData,
+      select: {
+        series_id: true,
+        name: true,
+        set: true,
+        card_count: true,
+        card_entered_count: true,
+        is_base: true,
+        parallel_of_series: true,
+        min_print_run: true,
+        max_print_run: true,
+        print_run_display: true,
+        primary_color_name: true,
+        primary_color_hex: true,
+        photo_url: true,
+        front_image_path: true,
+        back_image_path: true
+      }
+    })
+
+    // Log admin action
+    try {
+      await prisma.admin_action_log.create({
+        data: {
+          user_id: BigInt(req.user.userId),
+          action_type: 'SERIES_UPDATED',
+          entity_type: 'series',
+          entity_id: seriesId.toString(),
+          old_values: oldValues,
+          new_values: JSON.stringify(updateData),
+          ip_address: req.ip,
+          user_agent: req.get('User-Agent'),
+          created: new Date()
+        }
+      })
+    } catch (logError) {
+      console.warn('Failed to log admin action:', logError.message)
+    }
+
+    res.json({
+      message: 'Series updated successfully',
+      series: {
+        ...updatedSeries,
+        series_id: Number(updatedSeries.series_id),
+        parallel_of_series: updatedSeries.parallel_of_series ? Number(updatedSeries.parallel_of_series) : null
+      }
+    })
+
+  } catch (error) {
+    console.error('Error updating series:', error)
+    res.status(500).json({
+      error: 'Database error',
+      message: 'Failed to update series',
+      details: error.message
+    })
+  }
+})
+
+// GET /api/admin/organizations and manufacturers for dropdowns
+router.get('/organizations', async (req, res) => {
+  try {
+    const organizations = await prisma.organization.findMany({
+      select: {
+        organization_id: true,
+        name: true,
+        abbreviation: true
+      },
+      orderBy: {
+        name: 'asc'
+      }
+    })
+
+    res.json({
+      organizations,
+      total: organizations.length
+    })
+
+  } catch (error) {
+    console.error('Error fetching organizations:', error)
+    res.status(500).json({
+      error: 'Database error',
+      message: 'Failed to fetch organizations',
+      details: error.message
+    })
+  }
+})
+
+router.get('/manufacturers', async (req, res) => {
+  try {
+    const manufacturers = await prisma.manufacturer.findMany({
+      select: {
+        manufacturer_id: true,
+        name: true
+      },
+      orderBy: {
+        name: 'asc'
+      }
+    })
+
+    res.json({
+      manufacturers,
+      total: manufacturers.length
+    })
+
+  } catch (error) {
+    console.error('Error fetching manufacturers:', error)
+    res.status(500).json({
+      error: 'Database error',
+      message: 'Failed to fetch manufacturers',
+      details: error.message
+    })
+  }
+})
+
+// GET /api/admin/cards/by-series/:year/:setSlug/:seriesSlug - Get cards for a specific series
+router.get('/cards/by-series/:year/:setSlug/:seriesSlug', async (req, res) => {
+  try {
+    const { year, setSlug, seriesSlug } = req.params
+    
+    // Find the series by slug
+    const series = await findSeriesBySlug(year, setSlug, seriesSlug)
+    
+    if (!series) {
+      return res.status(404).json({
+        error: 'Series not found',
+        message: `Series with slug '${seriesSlug}' not found in set '${setSlug}' for year ${year}`
+      })
+    }
+
+    // Use a simpler approach - just get basic card data and let the frontend use the existing cards API
+    const cards = await prisma.card.findMany({
+      where: {
+        series: series.series_id
+      },
+      select: {
+        card_id: true,
+        card_number: true,
+        sort_order: true,
+        is_rookie_card: true,
+        year: true,
+        notes: true
+      },
+      orderBy: [
+        { sort_order: 'asc' },
+        { card_number: 'asc' }
+      ]
+    })
+
+    res.json({
+      cards: cards.map(card => ({
+        card_id: card.card_id,
+        card_number: card.card_number,
+        sort_order: card.sort_order,
+        player_name: '',
+        player_id: null,
+        team_name: '',
+        team_city: '',
+        team_abbreviation: '',
+        series_name: series.name || '',
+        series_color_name: series.primary_color_name || '',
+        series_color_hex: series.primary_color_hex || '',
+        is_rookie_card: card.is_rookie_card || false,
+        year: card.year,
+        notes: card.notes || ''
+      })),
+      total: cards.length,
+      series: {
+        series_id: Number(series.series_id),
+        name: series.name,
+        slug: seriesSlug,
+        set_name: series.set_series_setToset?.name || ''
+      }
+    })
+
+  } catch (error) {
+    console.error('Error fetching cards by series:', error)
+    res.status(500).json({
+      error: 'Database error',
+      message: 'Failed to fetch cards',
+      details: error.message
+    })
+  }
+})
+
+module.exports = router
