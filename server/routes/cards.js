@@ -1,10 +1,12 @@
 const express = require('express')
 const { PrismaClient } = require('@prisma/client')
+const { optionalAuthMiddleware } = require('../middleware/auth')
 const router = express.Router()
 const prisma = new PrismaClient()
 
 // GET /api/cards - Get cards with filtering and pagination
-router.get('/', async (req, res) => {
+router.get('/', optionalAuthMiddleware, async (req, res) => {
+  console.log('🎯 REAL CARDS ROUTE CALLED - not the mock!')
   try {
     const { 
       player_name, 
@@ -75,22 +77,41 @@ router.get('/', async (req, res) => {
     const countResult = await prisma.$queryRawUnsafe(countQuery)
     const total = Number(countResult[0].total)
 
-    // Get paginated cards
+    // Get paginated cards with user collection data
+    const userId = req.user?.id
+    console.log('Cards API - User ID:', userId, 'User:', req.user?.email)
+    const userCollectionJoin = userId ? `
+      LEFT JOIN user_card uc ON c.card_id = uc.card AND uc.[user] = ${userId}
+    ` : ''
+    
     const cardsQuery = `
       SELECT 
         c.card_id, c.card_number, c.is_rookie, c.is_autograph, c.is_relic, 
         c.print_run, c.sort_order, c.notes,
         s.name as series_name, s.series_id,
-        col.name as color, col.hex_value as hex_color
+        col.name as color, col.hex_value as hex_color,
+        ${userId ? 'ISNULL(COUNT(uc.user_card_id), 0) as user_card_count' : '0 as user_card_count'}
       FROM card c
       JOIN series s ON c.series = s.series_id
       LEFT JOIN color col ON c.color = col.color_id
+      ${userCollectionJoin}
       ${whereClause}
+      GROUP BY c.card_id, c.card_number, c.is_rookie, c.is_autograph, c.is_relic, 
+               c.print_run, c.sort_order, c.notes, s.name, s.series_id, 
+               col.name, col.hex_value
       ORDER BY s.name ASC, c.sort_order ASC
       OFFSET ${offsetNum} ROWS FETCH NEXT ${limitNum} ROWS ONLY
     `
     
+    console.log('Cards Query:', cardsQuery)
+    
     const cardResults = await prisma.$queryRawUnsafe(cardsQuery)
+    
+    // Debug: Show some sample results
+    console.log('Sample card results (first 3):')
+    cardResults.slice(0, 3).forEach(card => {
+      console.log(`Card ${card.card_number}: user_card_count = ${card.user_card_count}`)
+    })
 
     // Get player-team associations for these cards
     const cardIds = cardResults.map(card => Number(card.card_id))
@@ -161,6 +182,7 @@ router.get('/', async (req, res) => {
         print_run: serialized.print_run,
         sort_order: serialized.sort_order,
         notes: serialized.notes,
+        user_card_count: Number(serialized.user_card_count) || 0,
         card_player_teams: cardPlayerTeamMap[cardId] || [],
         series_rel: {
           series_id: serialized.series_id,

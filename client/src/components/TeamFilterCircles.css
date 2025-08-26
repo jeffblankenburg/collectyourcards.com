@@ -74,15 +74,15 @@
   position: absolute;
   bottom: -8px;
   right: -8px;
-  background: rgba(229, 231, 235, 0.9);
-  color: #1e293b;
+  background: rgba(55, 65, 81, 0.95);
+  color: rgba(255, 255, 255, 0.9);
   font-size: 0.7rem;
   font-weight: 600;
   padding: 0.15rem 0.35rem;
   border-radius: 10px;
   min-width: 20px;
   text-align: center;
-  border: 2px solid rgba(255, 255, 255, 0.8);
+  border: 2px solid rgba(255, 255, 255, 0.4);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 

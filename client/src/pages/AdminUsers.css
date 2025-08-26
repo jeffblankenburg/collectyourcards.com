@@ -176,11 +176,15 @@
   display: flex;
   flex-direction: column;
   width: 100%;
+  overflow-x: auto;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .table-header {
   display: grid;
-  grid-template-columns: 80px minmax(200px, 2fr) minmax(250px, 2fr) 1fr 1.5fr 1.5fr 1.5fr 100px;
+  grid-template-columns: 60px 180px auto 100px 100px 120px 120px 100px !important;
   gap: 1rem;
   padding: 1rem 1.5rem;
   background: rgba(255, 255, 255, 0.1);
@@ -192,14 +196,21 @@
   color: rgba(255, 255, 255, 0.8);
 }
 
+.table-header > div {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .user-row {
   display: grid;
-  grid-template-columns: 80px minmax(200px, 2fr) minmax(250px, 2fr) 1fr 1.5fr 1.5fr 1.5fr 100px;
+  grid-template-columns: 60px 180px auto 100px 100px 120px 120px 100px;
   gap: 1rem;
   padding: 1rem 1.5rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   transition: background-color 0.2s ease;
   cursor: pointer;
+  align-items: center;
 }
 
 .user-row:hover {
@@ -392,7 +403,7 @@
   
   .table-header,
   .user-row {
-    grid-template-columns: 60px 1fr 1fr 80px 80px;
+    grid-template-columns: 50px 120px 200px 80px 80px 100px 100px 80px;
     gap: 0.5rem;
   }
   

@@ -3,8 +3,9 @@
   background: #FFFF00;
   box-shadow: 0 2px 8px rgba(255, 255, 0, 0.3);
   position: sticky;
-  top: 0; /* Should stick right under main header */
-  z-index: 100;
+  top: 70px; /* Stick below the main header */
+  width: 100%;
+  z-index: 999;
 }
 
 .admin-nav-container {
@@ -116,6 +117,6 @@
 
 @media (max-width: 480px) {
   .admin-navigation {
-    top: 50px; /* Adjust for smaller main nav on mobile */
+    top: 60px; /* Adjust for smaller main nav on mobile */
   }
 }

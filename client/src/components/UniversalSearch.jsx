@@ -194,7 +194,19 @@ function UniversalSearch({ className = '' }) {
         navigate(`/teams/${result.id}`)
         break
       case 'series':
-        navigate(`/series/${result.id}`)
+        // Create series slug from series name
+        const seriesName = result.title || result.data?.series_name || ''
+        if (seriesName) {
+          const seriesSlug = seriesName
+            .toLowerCase()
+            .replace(/[^a-z0-9\s-]/g, '')
+            .replace(/\s+/g, '-')
+            .replace(/-+/g, '-')
+            .trim()
+          navigate(`/series/${seriesSlug}`)
+        } else {
+          console.error('Series name missing for navigation:', result)
+        }
         break
       case 'collection':
         navigate(`/collection?highlight=${result.id}`)
@@ -329,8 +341,43 @@ function UniversalSearch({ className = '' }) {
               <div className="result-content">
                 <div className="result-title">
                   {highlightQuery(result.title, query)}
+                  {result.type === 'player' && result.data?.teams && (
+                    <div className="result-teams-inline">
+                      {result.data.teams.map(team => (
+                        <div
+                          key={team.team_id}
+                          className="mini-team-circle"
+                          style={{
+                            '--primary-color': team.primary_color || '#666',
+                            '--secondary-color': team.secondary_color || '#999'
+                          }}
+                          title={team.name}
+                        >
+                          {team.abbreviation || '?'}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
+              {result.type === 'player' && result.data && (
+                <div className="result-card-count">
+                  <span className="card-count-number">{result.data.card_count || 0}</span>
+                  <span className="card-count-label">cards</span>
+                </div>
+              )}
+              {result.type === 'team' && result.data && (
+                <div className="result-card-count">
+                  <span className="card-count-number">{result.data.player_count || 0}</span>
+                  <span className="card-count-label">players</span>
+                </div>
+              )}
+              {result.type === 'series' && result.data && (
+                <div className="result-card-count">
+                  <span className="card-count-number">{result.data.card_count || 0}</span>
+                  <span className="card-count-label">cards</span>
+                </div>
+              )}
               {result.type === 'history' && (
                 <button
                   className="remove-history"

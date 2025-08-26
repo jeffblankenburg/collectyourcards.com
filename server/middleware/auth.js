@@ -138,8 +138,75 @@ const requireDataAdmin = requireRole('data_admin', 'admin', 'superadmin')
 // Super admin only middleware
 const requireSuperAdmin = requireRole('superadmin')
 
+// Optional authentication middleware - sets req.user if token exists, but doesn't require it
+const optionalAuthMiddleware = async (req, res, next) => {
+  try {
+    // Get token from header
+    const authHeader = req.header('Authorization')
+    console.log('Optional auth - Authorization header:', authHeader ? 'Present' : 'Missing')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.log('Optional auth - No valid auth header, proceeding without user')
+      req.user = null
+      return next()
+    }
+
+    const token = authHeader.replace('Bearer ', '')
+
+    // Verify JWT token
+    let decoded
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET)
+      console.log('JWT decoded:', { userId: decoded.userId, email: decoded.email })
+    } catch (jwtError) {
+      console.log('JWT verification failed:', jwtError.message)
+      req.user = null
+      return next()
+    }
+
+    // Get user from database
+    const userId = parseInt(decoded.userId) // Convert string to number
+    console.log('Looking up user with ID:', userId, typeof userId)
+    const user = await prisma.user.findUnique({
+      where: { user_id: userId },
+      select: {
+        user_id: true,
+        email: true,
+        first_name: true,
+        last_name: true,
+        role: true,
+        is_active: true,
+        is_verified: true
+      }
+    })
+
+    if (!user || !user.is_active) {
+      console.log('User not found or inactive:', { found: !!user, active: user?.is_active })
+      req.user = null
+      return next()
+    }
+
+    console.log('User found and active:', user.email)
+    // Add user info to request
+    req.user = {
+      id: user.user_id,
+      email: user.email,
+      firstName: user.first_name,
+      lastName: user.last_name,
+      role: user.role,
+      emailVerified: user.is_verified
+    }
+
+    next()
+  } catch (error) {
+    console.error('Optional auth middleware error:', error)
+    req.user = null
+    next()
+  }
+}
+
 module.exports = {
   authMiddleware,
+  optionalAuthMiddleware,
   requireRole,
   requireAdmin,
   requireDataAdmin,

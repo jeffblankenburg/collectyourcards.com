@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react'
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import axios from 'axios'
 import { useAuth } from '../contexts/AuthContext'
 import Icon from './Icon'
@@ -55,12 +55,8 @@ const UniversalCardTable = ({
     }
   }, [apiEndpoint]) // Removed initialCards dependency
 
-  // Load user card counts when cards change and user is authenticated
-  useEffect(() => {
-    if (isAuthenticated && displayedCards.length > 0) {
-      loadUserCardCounts()
-    }
-  }, [isAuthenticated, displayedCards])
+  // User card counts are now included in the card data from the API
+  // No separate loading needed
 
   const loadInitialData = async () => {
     if (!apiEndpoint || loading || loadingRef.current) return
@@ -75,6 +71,7 @@ const UniversalCardTable = ({
       url.searchParams.set('page', '1')
       
       // console.log('📥 Loading ALL data:', url.pathname + url.search)
+      console.log('Auth header being sent:', axios.defaults.headers.common['Authorization'])
       const response = await axios.get(url.pathname + url.search)
       
       const { cards: newCards, total } = response.data
@@ -98,28 +95,15 @@ const UniversalCardTable = ({
     }
   }
 
-  const loadUserCardCounts = async () => {
-    try {
-      const cardIds = displayedCards.map(card => card.card_id)
-      if (cardIds.length === 0) return
-
-      const response = await axios.post('/api/user/cards/counts', { card_ids: cardIds })
-      setUserCardCounts(response.data.counts || {})
-    } catch (err) {
-      console.error('Error loading user card counts:', err)
-      setUserCardCounts({})
-    }
-  }
-
   const handleAddCard = (card) => {
     setSelectedCard(card)
     setShowAddCardModal(true)
   }
 
   const handleCardAdded = () => {
-    // Refresh user card counts after adding a card
-    if (displayedCards.length > 0) {
-      loadUserCardCounts()
+    // Refresh the entire table data to get updated user counts
+    if (apiEndpoint) {
+      loadInitialData()
     }
   }
 
@@ -163,6 +147,37 @@ const UniversalCardTable = ({
     
     return result
   }, [cards, searchQuery, selectedTeamIds])
+
+  // Helper functions for sorting
+  const getPlayerName = useCallback((card) => {
+    // First check if player_names is already provided (from simplified API)
+    if (card.player_names) {
+      return card.player_names
+    }
+    
+    // Fall back to extracting from nested structure
+    const playerTeams = card.card_player_teams || []
+    if (playerTeams.length === 0) return ''
+    
+    const players = playerTeams.map(cpt => {
+      const player = cpt.player_team_rel?.player_rel
+      return player ? `${player.first_name} ${player.last_name}` : ''
+    }).filter(name => name)
+    
+    return players.join(' / ')
+  }, [])
+
+  const getTeamName = useCallback((card) => {
+    const playerTeams = card.card_player_teams || []
+    if (playerTeams.length === 0) return ''
+    
+    const teams = playerTeams.map(cpt => {
+      const team = cpt.player_team_rel?.team_rel
+      return team ? team.name : ''
+    }).filter(name => name)
+    
+    return [...new Set(teams)].join(' / ') // Remove duplicates
+  }, [])
 
   // Sort and paginate cards
   const sortedCards = useMemo(() => {
@@ -214,42 +229,12 @@ const UniversalCardTable = ({
     })
 
     return sorted
-  }, [filteredCards, sortField, sortDirection])
+  }, [filteredCards, sortField, sortDirection, getPlayerName, getTeamName])
 
   // Update displayed cards when sorting changes
   useEffect(() => {
     setDisplayedCards([...sortedCards])
   }, [sortedCards])
-
-  const getPlayerName = (card) => {
-    // First check if player_names is already provided (from simplified API)
-    if (card.player_names) {
-      return card.player_names
-    }
-    
-    // Fall back to extracting from nested structure
-    const playerTeams = card.card_player_teams || []
-    if (playerTeams.length === 0) return ''
-    
-    const players = playerTeams.map(cpt => {
-      const player = cpt.player_team_rel?.player_rel
-      return player ? `${player.first_name} ${player.last_name}` : ''
-    }).filter(name => name)
-    
-    return players.join(' / ')
-  }
-
-  const getTeamName = (card) => {
-    const playerTeams = card.card_player_teams || []
-    if (playerTeams.length === 0) return ''
-    
-    const teams = playerTeams.map(cpt => {
-      const team = cpt.player_team_rel?.team_rel
-      return team ? team.name : ''
-    }).filter(name => name)
-    
-    return [...new Set(teams)].join(' / ') // Remove duplicates
-  }
 
   const handleSort = (field) => {
     if (sortField === field) {
@@ -348,11 +333,11 @@ const UniversalCardTable = ({
 
   const SortIcon = ({ field }) => {
     if (sortField !== field) {
-      return <Icon name="trending" size={14} className="sort-icon neutral" />
+      return null // Don't show any icon for non-sorted columns
     }
     return (
       <Icon 
-        name={sortDirection === 'asc' ? 'trending' : 'trending'} 
+        name={sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'} 
         size={14} 
         className={`sort-icon active ${sortDirection}`}
       />
@@ -494,10 +479,27 @@ const UniversalCardTable = ({
             </tr>
           </thead>
           <tbody>
-            {displayedCards.map(card => (
+            {displayedCards.map(card => {
+              const isOwned = isAuthenticated && (card.user_card_count > 0)
+              const classNames = [
+                onCardClick ? 'clickable' : '',
+                isOwned ? 'owned-card' : ''
+              ].filter(Boolean).join(' ')
+              
+              if (card.card_number === 'CI-1') {
+                console.log('Card CI-1 debug:', {
+                  isAuthenticated,
+                  cardId: card.card_id,
+                  userCount: card.user_card_count,
+                  isOwned,
+                  classNames
+                })
+              }
+              
+              return (
               <tr 
                 key={card.card_id} 
-                className={onCardClick ? 'clickable' : ''}
+                className={classNames}
                 onClick={() => onCardClick && onCardClick(card)}
               >
                 <td className="card-number-cell">
@@ -566,7 +568,7 @@ const UniversalCardTable = ({
                 {isAuthenticated && (
                   <>
                     <td className="user-card-count-cell center">
-                      {userCardCounts[card.card_id] || 0}
+                      {card.user_card_count || 0}
                     </td>
                     <td className="action-cell center">
                       <button
@@ -583,7 +585,8 @@ const UniversalCardTable = ({
                   </>
                 )}
               </tr>
-            ))}
+              )
+            })}
           </tbody>
         </table>
 

@@ -196,6 +196,53 @@
   min-width: 0;
 }
 
+.result-teams-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: 0.5rem;
+  vertical-align: middle;
+}
+
+.mini-team-circle {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--primary-color, #666);
+  border: 1.5px solid var(--secondary-color, #999);
+  color: white;
+  font-size: 0.55rem;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+
+.result-card-count {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+  min-width: 50px;
+}
+
+.card-count-number {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #e5e7eb;
+  line-height: 1;
+}
+
+.card-count-label {
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
 .result-title {
   color: white;
   font-weight: 500;

@@ -2,141 +2,214 @@ import React, { useState, useEffect } from 'react'
 import axios from 'axios'
 import { useToast } from '../contexts/ToastContext'
 import Icon from '../components/Icon'
-import './AdminTeams.css' // Reuse existing admin styles
-import './AdminPlayers.css' // Additional styles for players
+import './AdminPlayers.css'
 
 function AdminPlayers() {
   const [players, setPlayers] = useState([])
-  const [filteredPlayers, setFilteredPlayers] = useState([])
   const [loading, setLoading] = useState(true)
+  const [searching, setSearching] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
-  const [showEditModal, setShowEditModal] = useState(false)
-  const [showAddModal, setShowAddModal] = useState(false)
-  const [showTeamModal, setShowTeamModal] = useState(false)
-  const [showReassignModal, setShowReassignModal] = useState(false)
+  const [isSearchMode, setIsSearchMode] = useState(false)
+  const [lastUpdated, setLastUpdated] = useState(null)
+  const [sortField, setSortField] = useState('player_id')
+  const [sortDirection, setSortDirection] = useState('asc')
   const [editingPlayer, setEditingPlayer] = useState(null)
-  const [editForm, setEditForm] = useState({
-    first_name: '',
-    last_name: '',
-    nick_name: '',
-    is_hof: false
-  })
-  const [playerTeams, setPlayerTeams] = useState([])
+  const [editForm, setEditForm] = useState({})
   const [availableTeams, setAvailableTeams] = useState([])
-  const [reassignForm, setReassignForm] = useState({
-    from_team_id: '',
-    to_team_id: ''
-  })
   const [saving, setSaving] = useState(false)
+  const [showTeamDropdown, setShowTeamDropdown] = useState(false)
+  const [showReassignModal, setShowReassignModal] = useState(false)
+  const [teamToRemove, setTeamToRemove] = useState(null)
+  const [reassignToTeam, setReassignToTeam] = useState('')
+  const [reassigning, setReassigning] = useState(false)
   const { addToast } = useToast()
 
   useEffect(() => {
     loadPlayers()
-    loadAvailableTeams()
   }, [])
 
-  useEffect(() => {
-    // Filter players based on search term
-    if (!searchTerm.trim()) {
-      setFilteredPlayers(players)
-    } else {
-      const filtered = players.filter(player => 
-        player.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        player.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        player.nick_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        `${player.first_name} ${player.last_name}`.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-      setFilteredPlayers(filtered)
-    }
-  }, [players, searchTerm])
-
-  const loadPlayers = async () => {
+  const loadPlayers = async (searchQuery = '') => {
     try {
-      setLoading(true)
-      const response = await axios.get('/api/admin/players?limit=100')
+      setLoading(!searchQuery) // Only show main loading for initial load
+      setSearching(!!searchQuery) // Show search loading for searches
+      
+      const params = new URLSearchParams()
+      params.append('limit', '100')
+      if (searchQuery.trim()) {
+        params.append('search', searchQuery.trim())
+      }
+
+      const response = await axios.get(`/api/admin/players?${params.toString()}`)
       setPlayers(response.data.players || [])
+      setLastUpdated(new Date())
+      setIsSearchMode(!!searchQuery.trim())
+      
     } catch (error) {
       console.error('Error loading players:', error)
-      addToast('Failed to load players', 'error')
+      addToast(`Failed to load players: ${error.response?.data?.message || error.message}`, 'error')
     } finally {
       setLoading(false)
+      setSearching(false)
     }
   }
 
-  const loadAvailableTeams = async () => {
+  const handleSearch = (e) => {
+    const value = e.target.value
+    setSearchTerm(value)
+    
+    // Debounce search
+    clearTimeout(window.playerSearchTimeout)
+    window.playerSearchTimeout = setTimeout(() => {
+      loadPlayers(value)
+    }, 300)
+  }
+
+  const handleRefresh = () => {
+    if (isSearchMode) {
+      loadPlayers(searchTerm)
+    } else {
+      loadPlayers()
+    }
+  }
+
+  const handleSort = (field) => {
+    let direction = 'asc'
+    if (sortField === field && sortDirection === 'asc') {
+      direction = 'desc'
+    }
+    setSortField(field)
+    setSortDirection(direction)
+  }
+
+  const getSortedPlayers = () => {
+    return [...players].sort((a, b) => {
+      let aValue, bValue
+      
+      switch (sortField) {
+        case 'player_id':
+          aValue = a.player_id
+          bValue = b.player_id
+          break
+        case 'name':
+          aValue = `${a.first_name || ''} ${a.last_name || ''}`.trim().toLowerCase()
+          bValue = `${b.first_name || ''} ${b.last_name || ''}`.trim().toLowerCase()
+          break
+        case 'card_count':
+          aValue = a.card_count || 0
+          bValue = b.card_count || 0
+          break
+        case 'is_hof':
+          aValue = a.is_hof ? 1 : 0
+          bValue = b.is_hof ? 1 : 0
+          break
+        case 'team_count':
+          aValue = a.teams?.length || 0
+          bValue = b.teams?.length || 0
+          break
+        default:
+          return 0
+      }
+
+      if (aValue < bValue) {
+        return sortDirection === 'asc' ? -1 : 1
+      }
+      if (aValue > bValue) {
+        return sortDirection === 'asc' ? 1 : -1
+      }
+      return 0
+    })
+  }
+
+  const loadTeams = async () => {
     try {
-      const response = await axios.get('/api/teams-list?limit=200')
+      const response = await axios.get('/api/admin/teams')
       setAvailableTeams(response.data.teams || [])
     } catch (error) {
       console.error('Error loading teams:', error)
+      addToast('Failed to load teams', 'error')
     }
   }
 
-  const loadPlayerTeams = async (playerId) => {
-    try {
-      const response = await axios.get(`/api/admin/players/${playerId}/teams`)
-      setPlayerTeams(response.data.teams || [])
-    } catch (error) {
-      console.error('Error loading player teams:', error)
-      addToast('Failed to load player teams', 'error')
-    }
-  }
-
-  const handleEditPlayer = (player) => {
+  const handleEditPlayer = async (player) => {
     setEditingPlayer(player)
     setEditForm({
       first_name: player.first_name || '',
       last_name: player.last_name || '',
       nick_name: player.nick_name || '',
+      birthdate: player.birthdate ? player.birthdate.split('T')[0] : '',
       is_hof: player.is_hof || false
     })
-    setShowEditModal(true)
-  }
-
-  const handleAddPlayer = () => {
-    setEditingPlayer(null)
-    setEditForm({
-      first_name: '',
-      last_name: '',
-      nick_name: '',
-      is_hof: false
-    })
-    setShowAddModal(true)
-  }
-
-  const handleManageTeams = async (player) => {
-    setEditingPlayer(player)
-    await loadPlayerTeams(player.player_id)
-    setShowTeamModal(true)
-  }
-
-  const handleReassignCards = (player) => {
-    setEditingPlayer(player)
-    setReassignForm({
-      from_team_id: '',
-      to_team_id: ''
-    })
-    setShowReassignModal(true)
+    
+    // Load teams if not already loaded
+    if (availableTeams.length === 0) {
+      await loadTeams()
+    }
+    
+    // Load detailed team data with card counts for this player
+    try {
+      const response = await axios.get(`/api/admin/players/${player.player_id}/teams`)
+      // Update the player object with detailed team data that includes card counts
+      const updatedPlayer = {
+        ...player,
+        teams: response.data.teams || []
+      }
+      setEditingPlayer(updatedPlayer)
+    } catch (error) {
+      console.error('Error loading player team details:', error)
+      // Continue with existing team data if detailed load fails
+    }
   }
 
   const handleCloseModal = () => {
-    setShowEditModal(false)
-    setShowAddModal(false)
-    setShowTeamModal(false)
-    setShowReassignModal(false)
     setEditingPlayer(null)
-    setEditForm({
-      first_name: '',
-      last_name: '',
-      nick_name: '',
-      is_hof: false
-    })
-    setPlayerTeams([])
-    setReassignForm({
-      from_team_id: '',
-      to_team_id: ''
-    })
+    setEditForm({})
     setSaving(false)
+    setShowTeamDropdown(false)
+    setShowReassignModal(false)
+    setTeamToRemove(null)
+    setReassignToTeam('')
+    setReassigning(false)
+  }
+
+  const handleReassignCards = async () => {
+    if (!editingPlayer || !teamToRemove || !reassignToTeam) return
+    
+    try {
+      setReassigning(true)
+      
+      // First reassign the cards
+      await axios.post(`/api/admin/players/${editingPlayer.player_id}/reassign-cards`, {
+        from_team_id: teamToRemove.team_id,
+        to_team_id: parseInt(reassignToTeam)
+      })
+      
+      // Then remove the team
+      await axios.delete(`/api/admin/players/${editingPlayer.player_id}/teams/${teamToRemove.team_id}`)
+      
+      addToast(`Reassigned ${teamToRemove.card_count} cards and removed team successfully`, 'success')
+      
+      // Reload detailed team data with updated card counts
+      const response = await axios.get(`/api/admin/players/${editingPlayer.player_id}/teams`)
+      const updatedPlayer = {
+        ...editingPlayer,
+        teams: response.data.teams || []
+      }
+      setEditingPlayer(updatedPlayer)
+      
+      // Close reassignment modal
+      setShowReassignModal(false)
+      setTeamToRemove(null)
+      setReassignToTeam('')
+      
+      // Reload main players list to keep it in sync
+      await loadPlayers()
+      
+    } catch (error) {
+      console.error('Error reassigning cards:', error)
+      addToast(error.response?.data?.message || 'Failed to reassign cards', 'error')
+    } finally {
+      setReassigning(false)
+    }
   }
 
   const handleFormChange = (field, value) => {
@@ -146,382 +219,507 @@ function AdminPlayers() {
     }))
   }
 
-  const handleSave = async () => {
-    if (!editForm.first_name.trim() || !editForm.last_name.trim()) {
-      addToast('First name and last name are required', 'error')
-      return
-    }
-
-    try {
-      setSaving(true)
-      
-      const playerData = {
-        first_name: editForm.first_name.trim(),
-        last_name: editForm.last_name.trim(),
-        nick_name: editForm.nick_name.trim() || null,
-        is_hof: editForm.is_hof
-      }
-
-      if (editingPlayer) {
-        // Update existing player
-        await axios.put(`/api/admin/players/${editingPlayer.player_id}`, playerData)
-        addToast('Player updated successfully', 'success')
-      } else {
-        // Create new player
-        await axios.post('/api/admin/players', playerData)
-        addToast('Player created successfully', 'success')
-      }
-      
-      await loadPlayers()
-      handleCloseModal()
-      
-    } catch (error) {
-      console.error('Error saving player:', error)
-      addToast(`Failed to ${editingPlayer ? 'update' : 'create'} player: ${error.response?.data?.message || error.message}`, 'error')
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const handleAddTeamToPlayer = async (teamId) => {
+  const handleAddTeam = async (teamId) => {
+    if (!editingPlayer || !teamId) return
+    
     try {
       await axios.post(`/api/admin/players/${editingPlayer.player_id}/teams`, {
         team_id: parseInt(teamId)
       })
-      addToast('Team added to player', 'success')
-      await loadPlayerTeams(editingPlayer.player_id)
+      
+      addToast('Team added successfully', 'success')
+      
+      // Reload detailed team data with card counts
+      const response = await axios.get(`/api/admin/players/${editingPlayer.player_id}/teams`)
+      const updatedPlayer = {
+        ...editingPlayer,
+        teams: response.data.teams || []
+      }
+      setEditingPlayer(updatedPlayer)
+      
+      // Reload main players list to keep it in sync
+      await loadPlayers()
     } catch (error) {
       console.error('Error adding team:', error)
-      addToast('Failed to add team', 'error')
+      addToast(error.response?.data?.message || 'Failed to add team', 'error')
     }
   }
 
-  const handleRemoveTeamFromPlayer = async (teamId) => {
+  const handleRemoveTeam = async (teamId, cardCount) => {
+    if (!editingPlayer || !teamId) return
+    
+    const teamToRemoveObj = editingPlayer.teams.find(t => t.team_id === teamId)
+    
+    // If there are cards assigned to this team, show reassignment modal
+    if (cardCount > 0) {
+      const otherTeams = editingPlayer.teams.filter(t => t.team_id !== teamId)
+      
+      if (otherTeams.length === 0) {
+        addToast('Cannot remove team: Player has cards assigned to this team and no other teams to reassign to. Add another team first.', 'error')
+        return
+      }
+      
+      // Show reassignment modal
+      setTeamToRemove(teamToRemoveObj)
+      setReassignToTeam('')
+      setShowReassignModal(true)
+      return
+    }
+    
+    // If no cards, proceed with direct removal
     try {
       await axios.delete(`/api/admin/players/${editingPlayer.player_id}/teams/${teamId}`)
-      addToast('Team removed from player', 'success')
-      await loadPlayerTeams(editingPlayer.player_id)
+      
+      addToast('Team removed successfully', 'success')
+      
+      // Reload detailed team data with card counts
+      const response = await axios.get(`/api/admin/players/${editingPlayer.player_id}/teams`)
+      const updatedPlayer = {
+        ...editingPlayer,
+        teams: response.data.teams || []
+      }
+      setEditingPlayer(updatedPlayer)
+      
+      // Reload main players list to keep it in sync
+      await loadPlayers()
     } catch (error) {
       console.error('Error removing team:', error)
-      addToast('Failed to remove team', 'error')
+      const errorMessage = error.response?.data?.message || 'Failed to remove team'
+      addToast(errorMessage, 'error')
     }
   }
 
-  const handleReassignCardsSubmit = async () => {
-    // Validate form inputs
-    if (!reassignForm.from_team_id || !reassignForm.to_team_id) {
-      addToast('Please select both source and destination teams', 'error')
-      return
-    }
-
-    if (reassignForm.from_team_id === reassignForm.to_team_id) {
-      addToast('Source and destination teams cannot be the same', 'error')
-      return
-    }
-
+  const handleSavePlayer = async () => {
+    if (!editingPlayer) return
+    
     try {
       setSaving(true)
-      const response = await axios.post(`/api/admin/players/${editingPlayer.player_id}/reassign-cards`, {
-        from_team_id: parseInt(reassignForm.from_team_id),
-        to_team_id: parseInt(reassignForm.to_team_id)
+      
+      await axios.put(`/api/admin/players/${editingPlayer.player_id}`, {
+        first_name: editForm.first_name.trim(),
+        last_name: editForm.last_name.trim(),
+        nick_name: editForm.nick_name.trim() || null,
+        birthdate: editForm.birthdate || null,
+        is_hof: editForm.is_hof
       })
       
-      const { cardsReassigned } = response.data
-      addToast(`Successfully reassigned ${cardsReassigned} cards`, 'success')
+      addToast('Player updated successfully', 'success')
       handleCloseModal()
       
+      // Reload players to get updated data
+      loadPlayers()
     } catch (error) {
-      console.error('Error reassigning cards:', error)
-      addToast(`Failed to reassign cards: ${error.response?.data?.message || error.message}`, 'error')
+      console.error('Error updating player:', error)
+      addToast(error.response?.data?.message || 'Failed to update player', 'error')
     } finally {
       setSaving(false)
     }
   }
 
-  if (loading) {
-    return (
-      <div className="admin-teams-page">
-        <div className="loading-state">
-          <Icon name="activity" size={24} className="spinning" />
-          <span>Loading players...</span>
+
+  const getTeamCircles = (player) => {
+    if (!player.teams || player.teams.length === 0) {
+      return (
+        <div 
+          className="team-circle-base team-circle-sm no-teams" 
+          title="No teams assigned"
+        >
+          —
         </div>
+      )
+    }
+    
+    return (
+      <div className="player-teams">
+        {player.teams.map(team => (
+          <div
+            key={team.team_id}
+            className="team-circle-base team-circle-sm"
+            style={{
+              '--primary-color': team.primary_color || '#666',
+              '--secondary-color': team.secondary_color || '#999'
+            }}
+            title={`${team.city ? team.city + ' ' : ''}${team.name || 'Unknown Team'}`}
+          >
+            {team.abbreviation || '?'}
+          </div>
+        ))}
       </div>
     )
   }
 
+  const getPlayerName = (player) => {
+    const firstName = player.first_name || ''
+    const lastName = player.last_name || ''
+    const nickname = player.nick_name || ''
+    
+    // If we have both first and last name, and a nickname, return JSX with styling
+    if (firstName && lastName && nickname) {
+      return (
+        <>
+          {firstName} <span className="player-nickname-inline">"{nickname}"</span> {lastName}
+        </>
+      )
+    }
+    
+    // If we have first and last name but no nickname, format as "First Last"
+    if (firstName && lastName) {
+      return `${firstName} ${lastName}`
+    }
+    
+    // If we only have nickname, use that
+    if (nickname) {
+      return nickname
+    }
+    
+    // Fallback to any available name or unknown
+    return `${firstName} ${lastName}`.trim() || 'Unknown Player'
+  }
+
   return (
-    <div className="admin-teams-page">
+    <div className="admin-players-page">
       <div className="admin-header">
         <div className="admin-title">
-          <Icon name="users" size={32} />
-          <h1>Player Management</h1>
+          <Icon name="user" size={32} />
+          <h1>Player Administration</h1>
         </div>
-        
-        <div className="header-actions">
+
+        <div className="admin-controls">
           <div className="search-box">
             <Icon name="search" size={20} />
             <input
               type="text"
-              placeholder="Search players..."
+              placeholder="Search players by name..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={handleSearch}
             />
+            {searching && <Icon name="activity" size={16} className="search-spinner spinning" />}
           </div>
-          
-          <button 
-            className="add-btn"
-            onClick={handleAddPlayer}
-          >
-            <Icon name="plus" size={20} />
-            Add Player
-          </button>
         </div>
       </div>
 
-      <div className="content-area">
-        <div className="stats-summary">
-          <div className="stat-item">
-            <span className="stat-number">{filteredPlayers.length}</span>
-            <span className="stat-label">Players Shown</span>
+      <div className="players-content">
+        {loading ? (
+          <div className="loading-state">
+            <Icon name="activity" size={24} className="spinning" />
+            <span>Loading players...</span>
           </div>
-          <div className="stat-item">
-            <span className="stat-number">{players.length}</span>
-            <span className="stat-label">Total Players</span>
-          </div>
-        </div>
+        ) : (
+          <>
+            <div className="section-header">
+              <div className="section-info">
+                <h2>
+                  {isSearchMode 
+                    ? `Search Results (${players.length})` 
+                    : `Most Recently Viewed Players (${players.length})`
+                  }
+                </h2>
+              </div>
+            </div>
 
-        <div className="teams-table-container">
-          <table className="teams-table">
-            <thead>
-              <tr>
-                <th style={{width: '80px'}}>ID</th>
-                <th style={{width: '200px'}}>Name</th>
-                <th style={{width: '150px'}}>Nickname</th>
-                <th style={{width: '80px'}}>HOF</th>
-                <th style={{width: '100px'}}>Card Count</th>
-                <th style={{width: '120px'}}>Team Count</th>
-                <th style={{width: '200px'}}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredPlayers.map(player => (
-                <tr key={player.player_id}>
-                  <td className="center">{player.player_id}</td>
-                  <td>
-                    <div className="player-name">
-                      {player.first_name} {player.last_name}
-                      {player.is_hof && <Icon name="trophy" size={16} className="hof-icon" title="Hall of Fame" />}
+            <div className="players-table">
+              <div className="table-header">
+                <div 
+                  className={`col-header sortable ${sortField === 'player_id' ? 'active' : ''}`}
+                  onClick={() => handleSort('player_id')}
+                >
+                  ID
+                  {sortField === 'player_id' && (
+                    <Icon 
+                      name={sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'} 
+                      size={14} 
+                      className="sort-icon" 
+                    />
+                  )}
+                </div>
+                <div 
+                  className={`col-header sortable ${sortField === 'name' ? 'active' : ''}`}
+                  onClick={() => handleSort('name')}
+                >
+                  Player
+                  {sortField === 'name' && (
+                    <Icon 
+                      name={sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'} 
+                      size={14} 
+                      className="sort-icon" 
+                    />
+                  )}
+                </div>
+                <div 
+                  className={`col-header sortable ${sortField === 'card_count' ? 'active' : ''}`}
+                  onClick={() => handleSort('card_count')}
+                >
+                  Cards
+                  {sortField === 'card_count' && (
+                    <Icon 
+                      name={sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'} 
+                      size={14} 
+                      className="sort-icon" 
+                    />
+                  )}
+                </div>
+                <div 
+                  className={`col-header sortable ${sortField === 'is_hof' ? 'active' : ''}`}
+                  onClick={() => handleSort('is_hof')}
+                >
+                  HOF
+                  {sortField === 'is_hof' && (
+                    <Icon 
+                      name={sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'} 
+                      size={14} 
+                      className="sort-icon" 
+                    />
+                  )}
+                </div>
+                <div className="col-header">Actions</div>
+              </div>
+              
+              {getSortedPlayers().map(player => (
+                <div 
+                  key={player.player_id} 
+                  className="player-row"
+                  onDoubleClick={() => handleEditPlayer(player)}
+                  title="Double-click to edit player"
+                >
+                  <div className="col-id">{player.player_id}</div>
+                  <div className="col-player">
+                    <div className="player-info">
+                      <div className="player-name">{getPlayerName(player)}</div>
+                      {getTeamCircles(player)}
                     </div>
-                  </td>
-                  <td>{player.nick_name || '-'}</td>
-                  <td className="center">
-                    {player.is_hof ? 
-                      <Icon name="check" size={16} className="success-icon" /> : 
-                      <span className="muted">-</span>
-                    }
-                  </td>
-                  <td className="center">{player.card_count?.toLocaleString() || 0}</td>
-                  <td className="center">{player.team_count || 0}</td>
-                  <td className="action-cell">
-                    <button
+                  </div>
+                  <div className="col-cards">{player.card_count || 0}</div>
+                  <div className="col-hof">
+                    {player.is_hof && (
+                      <div className="hof-badge" title="Hall of Fame">
+                        <Icon name="star" size={16} />
+                      </div>
+                    )}
+                  </div>
+                  <div className="col-actions">
+                    <button 
                       className="edit-btn"
-                      onClick={() => handleEditPlayer(player)}
                       title="Edit player"
+                      onClick={() => handleEditPlayer(player)}
                     >
                       <Icon name="edit" size={16} />
                     </button>
-                    <button
-                      className="teams-btn"
-                      onClick={() => handleManageTeams(player)}
-                      title="Manage teams"
-                    >
-                      <Icon name="shield" size={16} />
-                    </button>
-                    <button
-                      className="reassign-btn"
-                      onClick={() => handleReassignCards(player)}
-                      title="Reassign cards"
-                      disabled={!player.card_count}
-                    >
-                      <Icon name="shuffle" size={16} />
-                    </button>
-                  </td>
-                </tr>
+                  </div>
+                </div>
               ))}
-            </tbody>
-          </table>
-          
-          {filteredPlayers.length === 0 && !loading && (
-            <div className="empty-state">
-              <Icon name="users" size={48} />
-              <p>No players found</p>
-              {searchTerm && <p>Try adjusting your search criteria</p>}
+
+              {players.length === 0 && (
+                <div className="empty-state">
+                  <Icon name="search" size={48} />
+                  <h3>No players found</h3>
+                  <p>
+                    {isSearchMode 
+                      ? `No players match "${searchTerm}". Try a different search term.`
+                      : 'No recently viewed players found. Players will appear here after users visit their detail pages.'
+                    }
+                  </p>
+                </div>
+              )}
             </div>
-          )}
-        </div>
+          </>
+        )}
       </div>
 
-      {/* Add Player Modal */}
-      {showAddModal && (
-        <div className="modal-overlay" onClick={handleCloseModal}>
-          <div className="edit-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>Add New Player</h3>
-              <button className="close-btn" onClick={handleCloseModal}>
-                <Icon name="x" size={20} />
-              </button>
-            </div>
-            
-            <div className="modal-content">
-              <form className="edit-form" onSubmit={(e) => e.preventDefault()}>
-                <div className="form-row">
-                  <label className="form-label">First Name *</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={editForm.first_name}
-                    onChange={(e) => handleFormChange('first_name', e.target.value)}
-                    placeholder="Enter first name"
-                    required
-                  />
-                </div>
-                
-                <div className="form-row">
-                  <label className="form-label">Last Name *</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={editForm.last_name}
-                    onChange={(e) => handleFormChange('last_name', e.target.value)}
-                    placeholder="Enter last name"
-                    required
-                  />
-                </div>
-                
-                <div className="form-row">
-                  <label className="form-label">Nickname</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={editForm.nick_name}
-                    onChange={(e) => handleFormChange('nick_name', e.target.value)}
-                    placeholder="Enter nickname (optional)"
-                  />
-                </div>
-
-                <div className="form-row">
-                  <label className="checkbox-item">
-                    <input
-                      type="checkbox"
-                      checked={editForm.is_hof}
-                      onChange={(e) => handleFormChange('is_hof', e.target.checked)}
-                    />
-                    <span>Hall of Fame</span>
-                  </label>
-                </div>
-              </form>
-            </div>
-            
-            <div className="modal-actions">
-              <button className="cancel-btn" onClick={handleCloseModal} disabled={saving}>
-                Cancel
-              </button>
-              <button 
-                className="save-btn" 
-                onClick={handleSave}
-                disabled={saving || !editForm.first_name.trim() || !editForm.last_name.trim()}
-              >
-                {saving ? (
-                  <>
-                    <Icon name="activity" size={16} className="spinning" />
-                    Creating...
-                  </>
-                ) : (
-                  <>
-                    <Icon name="plus" size={16} />
-                    Add Player
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Edit Player Modal */}
-      {showEditModal && editingPlayer && (
-        <div className="modal-overlay" onClick={handleCloseModal}>
-          <div className="edit-modal" onClick={(e) => e.stopPropagation()}>
+      {editingPlayer && (
+        <div className="modal-overlay">
+          <div className="edit-player-modal">
             <div className="modal-header">
-              <h3>Edit Player</h3>
-              <button className="close-btn" onClick={handleCloseModal}>
+              <h3>Edit Player #{editingPlayer.player_id}</h3>
+              <button 
+                className="close-btn" 
+                onClick={handleCloseModal}
+                type="button"
+              >
                 <Icon name="x" size={20} />
               </button>
             </div>
-            
+
             <div className="modal-content">
-              <form className="edit-form" onSubmit={(e) => e.preventDefault()}>
-                <div className="form-row">
-                  <label className="form-label">Player ID</label>
-                  <span className="form-value">{editingPlayer.player_id}</span>
-                </div>
-
-                <div className="form-row">
-                  <label className="form-label">First Name *</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={editForm.first_name}
-                    onChange={(e) => handleFormChange('first_name', e.target.value)}
-                    placeholder="Enter first name"
-                    required
-                  />
-                </div>
-                
-                <div className="form-row">
-                  <label className="form-label">Last Name *</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={editForm.last_name}
-                    onChange={(e) => handleFormChange('last_name', e.target.value)}
-                    placeholder="Enter last name"
-                    required
-                  />
-                </div>
-                
-                <div className="form-row">
-                  <label className="form-label">Nickname</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={editForm.nick_name}
-                    onChange={(e) => handleFormChange('nick_name', e.target.value)}
-                    placeholder="Enter nickname (optional)"
-                  />
-                </div>
-
-                <div className="form-row">
-                  <label className="checkbox-item">
+              <div className="edit-form">
+                {/* Player Details - Label/Input Layout */}
+                <div className="player-details-form">
+                  <div className="form-field-row">
+                    <label className="field-label">First Name</label>
                     <input
-                      type="checkbox"
-                      checked={editForm.is_hof}
-                      onChange={(e) => handleFormChange('is_hof', e.target.checked)}
+                      type="text"
+                      className="field-input"
+                      value={editForm.first_name || ''}
+                      onChange={(e) => handleFormChange('first_name', e.target.value)}
+                      placeholder="First name"
                     />
-                    <span>Hall of Fame</span>
-                  </label>
+                  </div>
+
+                  <div className="form-field-row">
+                    <label className="field-label">Last Name</label>
+                    <input
+                      type="text"
+                      className="field-input"
+                      value={editForm.last_name || ''}
+                      onChange={(e) => handleFormChange('last_name', e.target.value)}
+                      placeholder="Last name"
+                    />
+                  </div>
+
+                  <div className="form-field-row">
+                    <label className="field-label">Nickname</label>
+                    <input
+                      type="text"
+                      className="field-input"
+                      value={editForm.nick_name || ''}
+                      onChange={(e) => handleFormChange('nick_name', e.target.value)}
+                      placeholder="Optional"
+                    />
+                  </div>
+
+                  <div className="form-field-row">
+                    <label className="field-label">Birthdate</label>
+                    <input
+                      type="date"
+                      className="field-input"
+                      value={editForm.birthdate || ''}
+                      onChange={(e) => handleFormChange('birthdate', e.target.value)}
+                    />
+                  </div>
+
+                  <div className="form-field-row">
+                    <label className="field-label">Hall of Fame</label>
+                    <button
+                      type="button"
+                      className={`hof-toggle ${editForm.is_hof ? 'hof-active' : ''}`}
+                      onClick={() => handleFormChange('is_hof', !editForm.is_hof)}
+                    >
+                      <Icon name="star" size={16} />
+                      <span>Hall of Fame</span>
+                      {editForm.is_hof && <Icon name="check" size={16} className="hof-check" />}
+                    </button>
+                  </div>
                 </div>
-              </form>
+
+                {/* Teams Section */}
+                <div className="teams-section">
+                  <div className="teams-header">
+                    <h4>Teams ({editingPlayer.teams?.length || 0})</h4>
+                    <div className="add-team-container">
+                      <button
+                        type="button"
+                        className={`add-team-btn ${showTeamDropdown ? 'active' : ''}`}
+                        onClick={() => setShowTeamDropdown(!showTeamDropdown)}
+                      >
+                        <Icon name={showTeamDropdown ? 'x' : 'plus'} size={16} />
+                      </button>
+                      
+                      {showTeamDropdown && (
+                        <div className="team-dropdown">
+                          {availableTeams
+                            .filter(team => !editingPlayer.teams?.some(pt => pt.team_id === team.team_id))
+                            .map(team => (
+                              <button
+                                key={team.team_id}
+                                type="button"
+                                className="team-option"
+                                onClick={() => {
+                                  handleAddTeam(team.team_id)
+                                  setShowTeamDropdown(false)
+                                }}
+                              >
+                                <div
+                                  className="team-circle-base team-circle-xs"
+                                  style={{
+                                    '--primary-color': team.primary_color || '#666',
+                                    '--secondary-color': team.secondary_color || '#999'
+                                  }}
+                                >
+                                  {team.abbreviation}
+                                </div>
+                                <span>{team.name}</span>
+                              </button>
+                            ))
+                          }
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="team-warning">
+                    <Icon name="warning" size={16} />
+                    <span>WARNING: Changes to the team list happen immediately.</span>
+                  </div>
+                  
+                  <div className="teams-list">
+                    {editingPlayer.teams && editingPlayer.teams.length > 0 ? (
+                      editingPlayer.teams.map(team => (
+                        <div key={team.team_id} className="team-item">
+                          <div
+                            className="team-circle-base team-circle-sm"
+                            style={{
+                              '--primary-color': team.primary_color || '#666',
+                              '--secondary-color': team.secondary_color || '#999'
+                            }}
+                            title={team.name}
+                          >
+                            {team.abbreviation}
+                          </div>
+                          <div className="team-info">
+                            <span className="team-name">
+                              {team.name}
+                              {team.card_count > 0 && (
+                                <>
+                                  {' '}
+                                  <span style={{
+                                    fontSize: '0.65rem',
+                                    color: 'rgba(156, 163, 175, 0.9)',
+                                    fontWeight: '500',
+                                    backgroundColor: 'rgba(156, 163, 175, 0.15)',
+                                    padding: '2px 6px',
+                                    borderRadius: '10px',
+                                    display: 'inline-block'
+                                  }}>
+                                    {team.card_count}
+                                  </span>
+                                </>
+                              )}
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            className="remove-team-btn"
+                            onClick={() => handleRemoveTeam(team.team_id, team.card_count || 0)}
+                            title={`Remove ${team.name}${team.card_count > 0 ? ` (${team.card_count} cards will need reassignment)` : ''}`}
+                          >
+                            <Icon name="minus" size={14} />
+                          </button>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="no-teams-message">
+                        No teams assigned
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
-            
+
             <div className="modal-actions">
-              <button className="cancel-btn" onClick={handleCloseModal} disabled={saving}>
+              <button 
+                type="button" 
+                className="cancel-btn" 
+                onClick={handleCloseModal}
+                disabled={saving}
+              >
                 Cancel
               </button>
               <button 
+                type="button" 
                 className="save-btn" 
-                onClick={handleSave}
-                disabled={saving || !editForm.first_name.trim() || !editForm.last_name.trim()}
+                onClick={handleSavePlayer}
+                disabled={saving || (!editForm.first_name?.trim() && !editForm.last_name?.trim() && !editForm.nick_name?.trim())}
               >
                 {saving ? (
                   <>
@@ -529,10 +727,7 @@ function AdminPlayers() {
                     Saving...
                   </>
                 ) : (
-                  <>
-                    <Icon name="check" size={16} />
-                    Save Changes
-                  </>
+                  'Save Changes'
                 )}
               </button>
             </div>
@@ -540,159 +735,76 @@ function AdminPlayers() {
         </div>
       )}
 
-      {/* Manage Teams Modal */}
-      {showTeamModal && editingPlayer && (
-        <div className="modal-overlay" onClick={handleCloseModal}>
-          <div className="edit-modal large-modal" onClick={(e) => e.stopPropagation()}>
+      {/* Card Reassignment Modal */}
+      {showReassignModal && teamToRemove && (
+        <div className="modal-overlay">
+          <div className="reassign-modal">
             <div className="modal-header">
-              <h3>Manage Teams - {editingPlayer.first_name} {editingPlayer.last_name}</h3>
-              <button className="close-btn" onClick={handleCloseModal}>
+              <h3>Reassign Cards</h3>
+              <button 
+                className="close-btn" 
+                onClick={() => setShowReassignModal(false)}
+                type="button"
+              >
                 <Icon name="x" size={20} />
               </button>
             </div>
-            
-            <div className="modal-content">
-              <div className="teams-section">
-                <h4>Current Teams</h4>
-                <div className="current-teams">
-                  {playerTeams.length === 0 ? (
-                    <p className="muted">No teams assigned</p>
-                  ) : (
-                    playerTeams.map(team => (
-                      <div key={team.team_id} className="team-item">
-                        <div 
-                          className="mini-team-circle"
-                          style={{ 
-                            '--primary-color': team.primary_color,
-                            '--secondary-color': team.secondary_color 
-                          }}
-                        >
-                          {team.abbreviation}
-                        </div>
-                        <span className="team-name">{team.name}</span>
-                        <button
-                          className="remove-btn"
-                          onClick={() => handleRemoveTeamFromPlayer(team.team_id)}
-                          title="Remove team"
-                        >
-                          <Icon name="x" size={14} />
-                        </button>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
 
-              <div className="teams-section">
-                <h4>Add Team</h4>
-                <div className="available-teams">
-                  {availableTeams
-                    .filter(team => !playerTeams.some(pt => pt.team_id === team.team_id))
-                    .map(team => (
-                      <button
-                        key={team.team_id}
-                        className="team-add-btn"
-                        onClick={() => handleAddTeamToPlayer(team.team_id)}
-                      >
-                        <div 
-                          className="mini-team-circle"
-                          style={{ 
-                            '--primary-color': team.primary_color,
-                            '--secondary-color': team.secondary_color 
-                          }}
-                        >
-                          {team.abbreviation}
-                        </div>
-                        <span className="team-name">{team.name}</span>
-                        <Icon name="plus" size={16} />
-                      </button>
-                    ))}
-                </div>
-              </div>
-            </div>
-            
-            <div className="modal-actions">
-              <button className="cancel-btn" onClick={handleCloseModal}>
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Reassign Cards Modal */}
-      {showReassignModal && editingPlayer && (
-        <div className="modal-overlay" onClick={handleCloseModal}>
-          <div className="edit-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>Reassign Cards - {editingPlayer.first_name} {editingPlayer.last_name}</h3>
-              <button className="close-btn" onClick={handleCloseModal}>
-                <Icon name="x" size={20} />
-              </button>
-            </div>
-            
             <div className="modal-content">
               <div className="reassign-info">
-                <p>This will reassign ALL cards for this player from one team to another.</p>
-                <p className="warning">⚠️ This action cannot be undone!</p>
+                <p>
+                  <strong>{editingPlayer.first_name} {editingPlayer.last_name}</strong> has{' '}
+                  <span className="card-count">{teamToRemove.card_count} cards</span>{' '}
+                  assigned to <strong>{teamToRemove.name}</strong>.
+                </p>
+                <p>
+                  Before removing this team, you must reassign these cards to another team that {editingPlayer.first_name} {editingPlayer.last_name} is already assigned to.
+                </p>
               </div>
 
-              <form className="edit-form" onSubmit={(e) => e.preventDefault()}>
-                <div className="form-row">
-                  <label className="form-label">From Team *</label>
-                  <select
-                    className="form-input"
-                    value={reassignForm.from_team_id}
-                    onChange={(e) => setReassignForm(prev => ({ ...prev, from_team_id: e.target.value }))}
-                    required
-                  >
-                    <option value="">Select source team...</option>
-                    {availableTeams.map(team => (
+              <div className="reassign-form">
+                <label className="reassign-label">Reassign cards to:</label>
+                <select 
+                  className="reassign-select"
+                  value={reassignToTeam}
+                  onChange={(e) => setReassignToTeam(e.target.value)}
+                  disabled={reassigning}
+                >
+                  <option value="">Select a team...</option>
+                  {editingPlayer.teams
+                    .filter(team => team.team_id !== teamToRemove.team_id)
+                    .map(team => (
                       <option key={team.team_id} value={team.team_id}>
-                        {team.name} ({team.abbreviation})
+                        {team.name} ({team.card_count} cards)
                       </option>
-                    ))}
-                  </select>
-                </div>
-                
-                <div className="form-row">
-                  <label className="form-label">To Team *</label>
-                  <select
-                    className="form-input"
-                    value={reassignForm.to_team_id}
-                    onChange={(e) => setReassignForm(prev => ({ ...prev, to_team_id: e.target.value }))}
-                    required
-                  >
-                    <option value="">Select destination team...</option>
-                    {availableTeams.map(team => (
-                      <option key={team.team_id} value={team.team_id}>
-                        {team.name} ({team.abbreviation})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </form>
+                    ))
+                  }
+                </select>
+              </div>
             </div>
-            
+
             <div className="modal-actions">
-              <button className="cancel-btn" onClick={handleCloseModal} disabled={saving}>
+              <button 
+                type="button" 
+                className="cancel-btn" 
+                onClick={() => setShowReassignModal(false)}
+                disabled={reassigning}
+              >
                 Cancel
               </button>
               <button 
-                className="save-btn danger-btn" 
-                onClick={handleReassignCardsSubmit}
-                disabled={saving || !reassignForm.from_team_id || !reassignForm.to_team_id}
+                type="button" 
+                className="reassign-btn" 
+                onClick={handleReassignCards}
+                disabled={reassigning || !reassignToTeam}
               >
-                {saving ? (
+                {reassigning ? (
                   <>
                     <Icon name="activity" size={16} className="spinning" />
                     Reassigning...
                   </>
                 ) : (
-                  <>
-                    <Icon name="move" size={16} />
-                    Reassign Cards
-                  </>
+                  `Reassign ${teamToRemove.card_count} Cards & Remove Team`
                 )}
               </button>
             </div>

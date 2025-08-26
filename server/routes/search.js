@@ -406,31 +406,55 @@ async function searchPlayers(query, limit) {
     
     const results = await prisma.$queryRawUnsafe(`
       SELECT TOP ${limit}
-        player_id,
-        first_name,
-        last_name,
-        nick_name,
-        card_count,
-        is_hof
-      FROM player
+        p.player_id,
+        p.first_name,
+        p.last_name,
+        p.nick_name,
+        p.card_count,
+        p.is_hof,
+        STRING_AGG(CONVERT(varchar(max), CONCAT(t.team_Id, '|', t.name, '|', t.abbreviation, '|', ISNULL(t.primary_color, ''), '|', ISNULL(t.secondary_color, ''))), '~') as teams_data
+      FROM player p
+      LEFT JOIN player_team pt ON p.player_id = pt.player
+      LEFT JOIN team t ON pt.team = t.team_Id
       WHERE ${whereClause}
-      ORDER BY card_count DESC
+      GROUP BY p.player_id, p.first_name, p.last_name, p.nick_name, p.card_count, p.is_hof
+      ORDER BY p.card_count DESC
     `)
     
     console.log(`Found ${results.length} players for "${query}"`)
     
-    return results.map(player => ({
-      type: 'player',
-      id: player.player_id.toString(),
-      title: `${player.first_name} ${player.last_name}${player.nick_name ? ` "${player.nick_name}"` : ''}${player.is_hof ? ' • Hall of Fame' : ''}`,
-      subtitle: null,
-      description: null,
-      relevanceScore: calculatePlayerRelevance(player, query),
-      data: {
-        ...player,
-        player_id: player.player_id.toString() // Convert BigInt to string
+    return results.map(player => {
+      // Parse teams data from STRING_AGG result
+      let teams = []
+      if (player.teams_data) {
+        const teamStrings = player.teams_data.split('~')
+        teams = teamStrings.map(teamStr => {
+          const [team_id, name, abbreviation, primary_color, secondary_color] = teamStr.split('|')
+          return {
+            team_id: Number(team_id),
+            name: name || null,
+            abbreviation: abbreviation || null,
+            primary_color: primary_color || null,
+            secondary_color: secondary_color || null
+          }
+        }).filter(team => team.team_id) // Filter out any malformed entries
       }
-    }))
+
+      return {
+        type: 'player',
+        id: player.player_id.toString(),
+        title: `${player.first_name} ${player.last_name}${player.nick_name ? ` "${player.nick_name}"` : ''}${player.is_hof ? ' • Hall of Fame' : ''}`,
+        subtitle: null,
+        description: null,
+        relevanceScore: calculatePlayerRelevance(player, query),
+        data: {
+          ...player,
+          player_id: player.player_id.toString(), // Convert BigInt to string
+          card_count: Number(player.card_count || 0),
+          teams: teams
+        }
+      }
+    })
   } catch (error) {
     console.error('Player search error:', error)
     return []
@@ -452,7 +476,8 @@ async function searchTeams(query, limit) {
         t.mascot,
         t.abbreviation,
         o.name as organization_name,
-        COUNT(DISTINCT c.card_id) as card_count
+        COUNT(DISTINCT c.card_id) as card_count,
+        COUNT(DISTINCT pt.player) as player_count
       FROM team t
       JOIN organization o ON t.organization = o.organization_id
       LEFT JOIN player_team pt ON t.team_id = pt.team
@@ -477,7 +502,9 @@ async function searchTeams(query, limit) {
       relevanceScore: calculateTeamRelevance(team, query),
       data: {
         ...team,
-        team_id: team.team_id.toString() // Convert BigInt to string
+        team_id: team.team_id.toString(), // Convert BigInt to string
+        card_count: Number(team.card_count || 0),
+        player_count: Number(team.player_count || 0)
       }
     }))
   } catch (error) {
@@ -497,10 +524,7 @@ async function searchSeries(query, limit) {
       SELECT TOP ${limit}
         s.series_id,
         s.name as series_name,
-        s.card_count,
-        st.name as set_name,
-        st.year as set_year,
-        m.name as manufacturer_name
+        s.card_count
       FROM series s
       JOIN [set] st ON s.[set] = st.set_id
       LEFT JOIN manufacturer m ON st.manufacturer = m.manufacturer_id
@@ -514,13 +538,14 @@ async function searchSeries(query, limit) {
     return results.map(series => ({
       type: 'series',
       id: series.series_id.toString(),
-      title: `${series.series_name} • ${series.set_name} • ${series.manufacturer_name}`,
+      title: series.series_name,
       subtitle: null,
       description: null,
       relevanceScore: 75,
       data: {
         ...series,
-        series_id: series.series_id.toString() // Convert BigInt to string
+        series_id: series.series_id.toString(), // Convert BigInt to string
+        card_count: Number(series.card_count || 0)
       }
     }))
   } catch (error) {

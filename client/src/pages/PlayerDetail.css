@@ -457,6 +457,7 @@
 .header-teams .team-filter-circles.compact .team-circle .team-abbreviation {
   font-size: 0.7rem;
   font-weight: 600;
+  color: white !important;
 }
 
 .header-teams .team-filter-circles.compact .team-card-count {
@@ -507,6 +508,7 @@
   
   .header-teams .team-filter-circles.compact .team-abbreviation {
     font-size: 0.65rem;
+    color: white !important;
   }
   
   .header-teams .team-filter-circles.compact .team-card-count {
