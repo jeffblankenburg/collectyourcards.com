@@ -18,57 +18,113 @@ router.get('/', async (req, res) => {
 
     console.log('Admin: Getting players list', { limit: limitNum, offset: offsetNum, search })
 
-    // Build search conditions
-    let searchCondition = ''
+    let players
+    
     if (search && search.trim()) {
+      // Search mode: search by player name - get players with their teams
       const searchTerm = search.trim()
-      searchCondition = `
+      players = await prisma.$queryRawUnsafe(`
+        SELECT 
+          p.player_id,
+          p.first_name,
+          p.last_name,
+          p.nick_name,
+          p.birthdate,
+          p.is_hof,
+          p.card_count,
+          NULL as last_viewed,
+          STRING_AGG(CONVERT(varchar(max), CONCAT(t.team_Id, '|', t.name, '|', t.city, '|', t.abbreviation, '|', ISNULL(t.primary_color, ''), '|', ISNULL(t.secondary_color, ''))), '~') as teams_data
+        FROM player p
+        LEFT JOIN player_team pt ON p.player_id = pt.player
+        LEFT JOIN team t ON pt.team = t.team_Id
         WHERE (
           p.first_name LIKE '%${searchTerm}%' COLLATE SQL_Latin1_General_CP1_CI_AS
           OR p.last_name LIKE '%${searchTerm}%' COLLATE SQL_Latin1_General_CP1_CI_AS
           OR p.nick_name LIKE '%${searchTerm}%' COLLATE SQL_Latin1_General_CP1_CI_AS
           OR CONCAT(p.first_name, ' ', p.last_name) LIKE '%${searchTerm}%' COLLATE SQL_Latin1_General_CP1_CI_AS
         )
-      `
+        GROUP BY p.player_id, p.first_name, p.last_name, p.nick_name, p.birthdate, p.is_hof, p.card_count
+        ORDER BY p.last_name, p.first_name
+        OFFSET ${offsetNum} ROWS
+        FETCH NEXT ${limitNum} ROWS ONLY
+      `)
+    } else {
+      // Default mode: most recently viewed players with their teams
+      players = await prisma.$queryRawUnsafe(`
+        SELECT 
+          p.player_id,
+          p.first_name,
+          p.last_name,
+          p.nick_name,
+          p.birthdate,
+          p.is_hof,
+          p.card_count,
+          MAX(up.created) as last_viewed,
+          STRING_AGG(CONVERT(varchar(max), CONCAT(t.team_Id, '|', t.name, '|', t.city, '|', t.abbreviation, '|', ISNULL(t.primary_color, ''), '|', ISNULL(t.secondary_color, ''))), '~') as teams_data
+        FROM user_player up 
+        LEFT JOIN player p ON p.player_id = up.player
+        LEFT JOIN player_team pt ON p.player_id = pt.player
+        LEFT JOIN team t ON pt.team = t.team_Id
+        WHERE p.player_id IS NOT NULL
+        GROUP BY p.player_id, p.first_name, p.last_name, p.nick_name, p.birthdate, p.is_hof, p.card_count
+        ORDER BY last_viewed DESC
+        OFFSET ${offsetNum} ROWS
+        FETCH NEXT ${limitNum} ROWS ONLY
+      `)
     }
 
-    // Get players with card counts and team counts
-    const players = await prisma.$queryRawUnsafe(`
-      SELECT 
-        p.player_id,
-        p.first_name,
-        p.last_name,
-        p.nick_name,
-        p.is_hof,
-        p.card_count,
-        COUNT(DISTINCT pt.team) as team_count
-      FROM player p
-      LEFT JOIN player_team pt ON p.player_id = pt.player
-      ${searchCondition}
-      GROUP BY p.player_id, p.first_name, p.last_name, p.nick_name, p.is_hof, p.card_count
-      ORDER BY p.last_name, p.first_name
-      OFFSET ${offsetNum} ROWS
-      FETCH NEXT ${limitNum} ROWS ONLY
-    `)
-
     // Get total count for pagination
-    const totalCountResult = await prisma.$queryRawUnsafe(`
-      SELECT COUNT(*) as total
-      FROM player p
-      ${searchCondition}
-    `)
-    const totalCount = Number(totalCountResult[0].total)
+    let totalCount = 0
+    if (search && search.trim()) {
+      const searchTerm = search.trim()
+      const totalCountResult = await prisma.$queryRawUnsafe(`
+        SELECT COUNT(*) as total
+        FROM player p
+        WHERE (
+          p.first_name LIKE '%${searchTerm}%' COLLATE SQL_Latin1_General_CP1_CI_AS
+          OR p.last_name LIKE '%${searchTerm}%' COLLATE SQL_Latin1_General_CP1_CI_AS
+          OR p.nick_name LIKE '%${searchTerm}%' COLLATE SQL_Latin1_General_CP1_CI_AS
+          OR CONCAT(p.first_name, ' ', p.last_name) LIKE '%${searchTerm}%' COLLATE SQL_Latin1_General_CP1_CI_AS
+        )
+      `)
+      totalCount = Number(totalCountResult[0].total)
+    } else {
+      // For recently viewed, we limit to 100 anyway
+      totalCount = Math.min(players.length, 100)
+    }
 
-    // Serialize BigInt values
-    const serializedPlayers = players.map(player => ({
-      player_id: Number(player.player_id),
-      first_name: player.first_name,
-      last_name: player.last_name,
-      nick_name: player.nick_name,
-      is_hof: Boolean(player.is_hof),
-      card_count: Number(player.card_count || 0),
-      team_count: Number(player.team_count || 0)
-    }))
+    // Serialize BigInt values and parse team data
+    const serializedPlayers = players.map(player => {
+      // Parse teams data from STRING_AGG result
+      let teams = []
+      if (player.teams_data) {
+        const teamStrings = player.teams_data.split('~')
+        teams = teamStrings.map(teamStr => {
+          const [team_id, name, city, abbreviation, primary_color, secondary_color] = teamStr.split('|')
+          return {
+            team_id: Number(team_id),
+            name: name || null,
+            city: city || null, 
+            abbreviation: abbreviation || null,
+            primary_color: primary_color || null,
+            secondary_color: secondary_color || null
+          }
+        }).filter(team => team.team_id) // Filter out any malformed entries
+      }
+
+      return {
+        player_id: Number(player.player_id),
+        first_name: player.first_name,
+        last_name: player.last_name,
+        nick_name: player.nick_name,
+        birthdate: player.birthdate,
+        is_hof: Boolean(player.is_hof),
+        card_count: Number(player.card_count || 0),
+        teams: teams,
+        team_count: teams.length,
+        last_viewed: player.last_viewed
+      }
+    })
 
     res.json({
       players: serializedPlayers,
@@ -111,6 +167,7 @@ router.get('/:id', async (req, res) => {
         first_name: player.first_name,
         last_name: player.last_name,
         nick_name: player.nick_name,
+        birthdate: player.birthdate,
         is_hof: Boolean(player.is_hof),
         card_count: Number(player.card_count || 0)
       }
@@ -137,24 +194,24 @@ router.get('/:id/teams', async (req, res) => {
 
     const teams = await prisma.$queryRawUnsafe(`
       SELECT 
-        t.team_id,
+        t.team_Id,
         t.name,
         t.abbreviation,
         t.primary_color,
         t.secondary_color,
         COUNT(DISTINCT c.card_id) as card_count
       FROM team t
-      JOIN player_team pt ON t.team_id = pt.team
+      JOIN player_team pt ON t.team_Id = pt.team
       LEFT JOIN card_player_team cpt ON pt.player_team_id = cpt.player_team
       LEFT JOIN card c ON cpt.card = c.card_id
       WHERE pt.player = ${playerId}
-      GROUP BY t.team_id, t.name, t.abbreviation, t.primary_color, t.secondary_color
+      GROUP BY t.team_Id, t.name, t.abbreviation, t.primary_color, t.secondary_color
       ORDER BY t.name
     `)
 
     // Serialize BigInt values
     const serializedTeams = teams.map(team => ({
-      team_id: Number(team.team_id),
+      team_id: Number(team.team_Id),
       name: team.name,
       abbreviation: team.abbreviation,
       primary_color: team.primary_color,
@@ -179,12 +236,12 @@ router.get('/:id/teams', async (req, res) => {
 // POST /api/admin/players - Create new player
 router.post('/', async (req, res) => {
   try {
-    const { first_name, last_name, nick_name, is_hof } = req.body
+    const { first_name, last_name, nick_name, birthdate, is_hof } = req.body
 
-    if (!first_name?.trim() || !last_name?.trim()) {
+    if (!first_name?.trim() && !last_name?.trim() && !nick_name?.trim()) {
       return res.status(400).json({ 
         error: 'Validation failed', 
-        message: 'First name and last name are required' 
+        message: 'At least one name field (first name, last name, or nickname) is required' 
       })
     }
 
@@ -206,9 +263,10 @@ router.post('/', async (req, res) => {
 
     const newPlayer = await prisma.player.create({
       data: {
-        first_name: first_name.trim(),
-        last_name: last_name.trim(),
+        first_name: first_name?.trim() || null,
+        last_name: last_name?.trim() || null,
         nick_name: nick_name?.trim() || null,
+        birthdate: birthdate ? new Date(birthdate) : null,
         is_hof: Boolean(is_hof),
         card_count: 0 // Start with 0 cards
       }
@@ -222,6 +280,7 @@ router.post('/', async (req, res) => {
         first_name: newPlayer.first_name,
         last_name: newPlayer.last_name,
         nick_name: newPlayer.nick_name,
+        birthdate: newPlayer.birthdate,
         is_hof: Boolean(newPlayer.is_hof),
         card_count: Number(newPlayer.card_count)
       },
@@ -242,16 +301,16 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const playerId = parseInt(req.params.id)
-    const { first_name, last_name, nick_name, is_hof } = req.body
+    const { first_name, last_name, nick_name, birthdate, is_hof } = req.body
 
     if (isNaN(playerId)) {
       return res.status(400).json({ error: 'Invalid player ID' })
     }
 
-    if (!first_name?.trim() || !last_name?.trim()) {
+    if (!first_name?.trim() && !last_name?.trim() && !nick_name?.trim()) {
       return res.status(400).json({ 
         error: 'Validation failed', 
-        message: 'First name and last name are required' 
+        message: 'At least one name field (first name, last name, or nickname) is required' 
       })
     }
 
@@ -284,9 +343,10 @@ router.put('/:id', async (req, res) => {
     const updatedPlayer = await prisma.player.update({
       where: { player_id: playerId },
       data: {
-        first_name: first_name.trim(),
-        last_name: last_name.trim(),
+        first_name: first_name?.trim() || null,
+        last_name: last_name?.trim() || null,
         nick_name: nick_name?.trim() || null,
+        birthdate: birthdate ? new Date(birthdate) : null,
         is_hof: Boolean(is_hof)
       }
     })
@@ -299,6 +359,7 @@ router.put('/:id', async (req, res) => {
         first_name: updatedPlayer.first_name,
         last_name: updatedPlayer.last_name,
         nick_name: updatedPlayer.nick_name,
+        birthdate: updatedPlayer.birthdate,
         is_hof: Boolean(updatedPlayer.is_hof),
         card_count: Number(updatedPlayer.card_count)
       },
@@ -489,8 +550,8 @@ router.post('/:id/reassign-cards', async (req, res) => {
 
     // Get team names for response
     const [fromTeam, toTeam] = await Promise.all([
-      prisma.team.findUnique({ where: { team_id: from_team_id } }),
-      prisma.team.findUnique({ where: { team_id: to_team_id } })
+      prisma.team.findUnique({ where: { team_Id: from_team_id } }),
+      prisma.team.findUnique({ where: { team_Id: to_team_id } })
     ])
 
     res.json({

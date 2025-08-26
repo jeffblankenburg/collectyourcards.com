@@ -18,6 +18,7 @@ router.get('/teams', async (req, res) => {
         city: true,
         mascot: true,
         abbreviation: true,
+        organization: true,
         primary_color: true,
         secondary_color: true,
         card_count: true,
@@ -38,6 +39,7 @@ router.get('/teams', async (req, res) => {
       team_id: Number(team.team_Id), // Map team_Id to team_id for frontend
       team_Id: undefined, // Remove the original field
       organization: team.organization_team_organizationToorganization?.abbreviation || '', // Map organization abbreviation
+      organization_id: team.organization ? Number(team.organization) : null, // Include organization_id for editing
       organization_team_organizationToorganization: undefined, // Remove the original nested field
       card_count: team.card_count,
       created: new Date() // Add a placeholder created date
@@ -62,7 +64,7 @@ router.get('/teams', async (req, res) => {
 router.put('/teams/:id', async (req, res) => {
   try {
     const { id } = req.params
-    const { name, city, mascot, abbreviation, primary_color, secondary_color } = req.body
+    const { name, city, mascot, abbreviation, organization_id, primary_color, secondary_color } = req.body
 
     // Validate team ID
     const teamId = parseInt(id)
@@ -231,6 +233,7 @@ router.get('/teams/:id', async (req, res) => {
         city: true,
         mascot: true,
         abbreviation: true,
+        organization: true,
         primary_color: true,
         secondary_color: true,
         card_count: true,
@@ -255,6 +258,7 @@ router.get('/teams/:id', async (req, res) => {
         team_id: Number(team.team_Id),
         team_Id: undefined,
         organization: team.organization_team_organizationToorganization?.abbreviation || '', // Map organization abbreviation
+        organization_id: team.organization ? Number(team.organization) : null, // Include organization_id for editing
         organization_team_organizationToorganization: undefined, // Remove the original nested field
         card_count: team.card_count,
         created: new Date()
@@ -266,6 +270,117 @@ router.get('/teams/:id', async (req, res) => {
     res.status(500).json({
       error: 'Database error',
       message: 'Failed to fetch team',
+      details: error.message
+    })
+  }
+})
+
+// POST /api/admin/teams - Create new team
+router.post('/teams', async (req, res) => {
+  try {
+    const { name, city, mascot, abbreviation, organization_id, primary_color, secondary_color } = req.body
+
+    // Validate required fields
+    if (!name || !name.trim()) {
+      return res.status(400).json({
+        error: 'Validation error',
+        message: 'Team name is required'
+      })
+    }
+
+    if (!abbreviation || !abbreviation.trim()) {
+      return res.status(400).json({
+        error: 'Validation error',
+        message: 'Team abbreviation is required'
+      })
+    }
+
+    if (!organization_id) {
+      return res.status(400).json({
+        error: 'Validation error',
+        message: 'Organization is required'
+      })
+    }
+
+    // Prepare team data
+    const teamData = {
+      name: name.trim(),
+      city: city ? city.trim() : null,
+      mascot: mascot ? mascot.trim() : null,
+      abbreviation: abbreviation.trim(),
+      organization: parseInt(organization_id),
+      primary_color: primary_color ? primary_color.trim() : null,
+      secondary_color: secondary_color ? secondary_color.trim() : null
+    }
+
+    // Validate hex colors if provided
+    const hexColorRegex = /^#[0-9A-Fa-f]{6}$/
+    if (teamData.primary_color && !hexColorRegex.test(teamData.primary_color)) {
+      return res.status(400).json({
+        error: 'Validation error',
+        message: 'Primary color must be a valid hex color (e.g., #FF0000)'
+      })
+    }
+
+    if (teamData.secondary_color && !hexColorRegex.test(teamData.secondary_color)) {
+      return res.status(400).json({
+        error: 'Validation error',
+        message: 'Secondary color must be a valid hex color (e.g., #FF0000)'
+      })
+    }
+
+    // Create team
+    const newTeam = await prisma.team.create({
+      data: teamData,
+      select: {
+        team_Id: true,
+        name: true,
+        city: true,
+        mascot: true,
+        abbreviation: true,
+        organization: true,
+        primary_color: true,
+        secondary_color: true
+      }
+    })
+
+    // Log admin action
+    try {
+      await prisma.admin_action_log.create({
+        data: {
+          user_id: BigInt(req.user.userId),
+          action_type: 'TEAM_CREATED',
+          entity_type: 'team',
+          entity_id: newTeam.team_Id.toString(),
+          old_values: null,
+          new_values: JSON.stringify(teamData),
+          ip_address: req.ip,
+          user_agent: req.get('User-Agent'),
+          created: new Date()
+        }
+      })
+    } catch (logError) {
+      console.warn('Failed to log admin action:', logError.message)
+      // Don't fail the request if logging fails
+    }
+
+    res.status(201).json({
+      message: 'Team created successfully',
+      team: {
+        ...newTeam,
+        team_id: Number(newTeam.team_Id),
+        team_Id: undefined,
+        organization_id: newTeam.organization,
+        card_count: 0,
+        created: new Date()
+      }
+    })
+
+  } catch (error) {
+    console.error('Error creating team:', error)
+    res.status(500).json({
+      error: 'Database error',
+      message: 'Failed to create team',
       details: error.message
     })
   }

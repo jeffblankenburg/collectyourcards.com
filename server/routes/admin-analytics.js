@@ -21,10 +21,10 @@ router.get('/users', async (req, res) => {
     const totalUsers = await prisma.user.count()
     
     // Active today (users with sessions today)
-    const activeToday = await prisma.userSession.groupBy({
+    const activeToday = await prisma.user_session.groupBy({
       by: ['user_id'],
       where: {
-        last_activity: {
+        last_accessed: {
           gte: todayStart
         }
       }
@@ -85,11 +85,11 @@ router.get('/collections', async (req, res) => {
     const todayStart = new Date(new Date().setHours(0, 0, 0, 0))
     
     // Total cards collected
-    const totalCardsCollected = await prisma.userCard.count()
+    const totalCardsCollected = await prisma.user_card.count()
     
     // Unique collectors
-    const uniqueCollectors = await prisma.userCard.groupBy({
-      by: ['user_id']
+    const uniqueCollectors = await prisma.user_card.groupBy({
+      by: ['user']
     })
     
     // Average cards per user
@@ -98,9 +98,9 @@ router.get('/collections', async (req, res) => {
       : 0
     
     // Recent additions (today)
-    const recentAdditions = await prisma.userCard.count({
+    const recentAdditions = await prisma.user_card.count({
       where: {
-        added_date: {
+        created: {
           gte: todayStart
         }
       }
@@ -109,8 +109,8 @@ router.get('/collections', async (req, res) => {
     // Most popular set (by number of collected cards)
     const popularSets = await prisma.$queryRaw`
       SELECT TOP 1 s.name, COUNT(*) as card_count
-      FROM UserCard uc
-      JOIN card c ON uc.card_id = c.card_id
+      FROM user_card uc
+      JOIN card c ON uc.card = c.card_id
       JOIN series sr ON c.series = sr.series_id
       JOIN [set] s ON sr.[set] = s.set_id
       GROUP BY s.set_id, s.name
@@ -144,7 +144,8 @@ router.get('/recent-activity', async (req, res) => {
     // Get recent user registrations
     const recentUsers = await prisma.user.findMany({
       select: {
-        username: true,
+        name: true,
+        email: true,
         created: true
       },
       orderBy: {
@@ -154,54 +155,27 @@ router.get('/recent-activity', async (req, res) => {
     })
     
     recentUsers.forEach(user => {
+      const displayName = user.name || user.email || 'Unknown User'
       activities.push({
         icon: 'user-plus',
-        description: `New user registered: ${user.username}`,
+        description: `New user registered: ${displayName}`,
         timestamp: user.created
       })
     })
     
     // Get recent card additions
-    const recentCards = await prisma.userCard.findMany({
-      select: {
-        added_date: true,
-        user: {
-          select: {
-            username: true
-          }
-        },
-        card: {
-          select: {
-            card_number: true
-          }
-        }
-      },
-      orderBy: {
-        added_date: 'desc'
-      },
-      take: 5
-    })
-    
-    recentCards.forEach(item => {
-      if (item.user && item.card) {
-        activities.push({
-          icon: 'plus-circle',
-          description: `${item.user.username} added card #${item.card.card_number}`,
-          timestamp: item.added_date
-        })
-      }
-    })
-    
-    // Get recent logins
-    const recentLogins = await prisma.userAuthLog.findMany({
-      where: {
-        event_type: 'LOGIN_SUCCESS'
-      },
+    const recentCards = await prisma.user_card.findMany({
       select: {
         created: true,
-        user: {
+        user_user_card_userTouser: {
           select: {
-            username: true
+            name: true,
+            email: true
+          }
+        },
+        card_user_card_cardTocard: {
+          select: {
+            card_number: true
           }
         }
       },
@@ -211,11 +185,36 @@ router.get('/recent-activity', async (req, res) => {
       take: 5
     })
     
+    recentCards.forEach(item => {
+      if (item.user_user_card_userTouser && item.card_user_card_cardTocard) {
+        activities.push({
+          icon: 'plus-circle',
+          description: `${item.user_user_card_userTouser.name || item.user_user_card_userTouser.email || 'User'} added card #${item.card_user_card_cardTocard.card_number}`,
+          timestamp: item.created
+        })
+      }
+    })
+    
+    // Get recent logins
+    const recentLogins = await prisma.user_auth_log.findMany({
+      where: {
+        event_type: 'LOGIN_SUCCESS'
+      },
+      select: {
+        created: true,
+        email: true
+      },
+      orderBy: {
+        created: 'desc'
+      },
+      take: 5
+    })
+    
     recentLogins.forEach(login => {
-      if (login.user) {
+      if (login.email) {
         activities.push({
           icon: 'log-in',
-          description: `${login.user.username} logged in`,
+          description: `${login.email} logged in`,
           timestamp: login.created
         })
       }

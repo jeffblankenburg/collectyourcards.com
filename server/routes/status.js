@@ -53,7 +53,7 @@ router.get('/database/status', async (req, res) => {
     }
     
     // Get record counts using raw queries with better error handling
-    const [cardsResult, playersResult, teamsResult, usersResult] = await Promise.all([
+    const [cardsResult, playersResult, teamsResult, usersResult, setsResult, seriesResult] = await Promise.all([
       prisma.$queryRaw`SELECT COUNT(*) as count FROM card`.catch(err => {
         console.error('Card count query failed:', err.message)
         return [{ count: 0 }]
@@ -69,6 +69,14 @@ router.get('/database/status', async (req, res) => {
       prisma.$queryRaw`SELECT COUNT(*) as count FROM [user]`.catch(err => {
         console.error('User count query failed:', err.message)
         return [{ count: 0 }]
+      }),
+      prisma.$queryRaw`SELECT COUNT(*) as count FROM [set]`.catch(err => {
+        console.error('Set count query failed:', err.message)
+        return [{ count: 0 }]
+      }),
+      prisma.$queryRaw`SELECT COUNT(*) as count FROM series`.catch(err => {
+        console.error('Series count query failed:', err.message)
+        return [{ count: 0 }]
       })
     ])
 
@@ -76,6 +84,8 @@ router.get('/database/status', async (req, res) => {
     const playersCount = Number(playersResult[0]?.count || 0)
     const teamsCount = Number(teamsResult[0]?.count || 0)
     const usersCount = Number(usersResult[0]?.count || 0)
+    const setsCount = Number(setsResult[0]?.count || 0)
+    const seriesCount = Number(seriesResult[0]?.count || 0)
 
     // Get table count
     const tables = await prisma.$queryRaw`
@@ -92,7 +102,9 @@ router.get('/database/status', async (req, res) => {
         cards: cardsCount,
         players: playersCount,
         teams: teamsCount,
-        users: usersCount
+        users: usersCount,
+        sets: setsCount,
+        series: seriesCount
       },
       dockerContainer: 'collect-cards-db',
       port: 1433

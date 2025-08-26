@@ -587,7 +587,7 @@ function AdminSets() {
         return parentSeries.series_id
       }
     })
-  }, [openDropdownSeriesId])
+  }, [])
 
   const getParallelsForSeries = (parentSeriesId) => {
     return series.filter(s => s.parallel_of_series === parentSeriesId)

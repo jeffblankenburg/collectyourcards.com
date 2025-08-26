@@ -198,40 +198,20 @@ function AdminUsers() {
       <div className="admin-header">
         <div className="admin-title">
           <Icon name="users" size={32} />
-          <h1>User Administration</h1>
+          <h1>Users</h1>
         </div>
-        
-        <div className="admin-stats">
-          <div className="stat">
-            <span className="stat-number">{users.length}</span>
-            <span className="stat-label">Total Users</span>
-          </div>
-          <div className="stat">
-            <span className="stat-number">{users.filter(u => u.is_active).length}</span>
-            <span className="stat-label">Active</span>
-          </div>
-          <div className="stat">
-            <span className="stat-number">{users.filter(u => u.is_verified).length}</span>
-            <span className="stat-label">Verified</span>
-          </div>
-        </div>
-      </div>
 
-      <div className="admin-controls">
-        <div className="search-box">
-          <Icon name="search" size={16} />
-          <input
-            type="text"
-            placeholder="Search users by name, email, or role..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+        <div className="admin-controls">
+          <div className="search-box">
+            <Icon name="search" size={20} />
+            <input
+              type="text"
+              placeholder="Search users by name, email, or role..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
         </div>
-        
-        <button className="refresh-btn" onClick={loadUsers} disabled={loading}>
-          <Icon name={loading ? "activity" : "refresh"} size={16} className={loading ? "spinning" : ""} />
-          Refresh
-        </button>
       </div>
 
       <div className="users-container">
