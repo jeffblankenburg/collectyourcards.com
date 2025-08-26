@@ -1,0 +1,321 @@
+/* 
+ * Unified Component Styles
+ * ========================
+ * Consistent, reusable component styles across the entire application
+ * Import this file in index.css to make these classes available globally
+ */
+
+/* ==========================================
+   TEAM CIRCLES - Unified Sizing System
+   ========================================== */
+
+/* Base team circle styles - ALL team circles should use this */
+.team-circle-base {
+  border-radius: 50%;
+  background: var(--primary-color, #333);
+  border: 2px solid var(--secondary-color, #666);
+  color: white;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-transform: uppercase;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+  cursor: default;
+  user-select: none;
+}
+
+/* Size variants - Use ONE of these with team-circle-base */
+.team-circle-xs {
+  width: 20px;
+  height: 20px;
+  font-size: 0.45rem;
+  border-width: 1.5px;
+}
+
+.team-circle-sm {
+  width: 24px;
+  height: 24px;
+  font-size: 0.5rem;
+  border-width: 2px;
+}
+
+.team-circle-md {
+  width: 32px;
+  height: 32px;
+  font-size: 0.65rem;
+  border-width: 2px;
+}
+
+.team-circle-lg {
+  width: 40px;
+  height: 40px;
+  font-size: 0.75rem;
+  border-width: 2px;
+}
+
+.team-circle-xl {
+  width: 48px;
+  height: 48px;
+  font-size: 0.85rem;
+  border-width: 3px;
+}
+
+.team-circle-2xl {
+  width: 60px;
+  height: 60px;
+  font-size: 1rem;
+  border-width: 3px;
+}
+
+.team-circle-3xl {
+  width: 80px;
+  height: 80px;
+  font-size: 1.25rem;
+  border-width: 3px;
+}
+
+/* Modifiers */
+.team-circle-clickable {
+  cursor: pointer;
+}
+
+.team-circle-clickable:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2);
+}
+
+.team-circle-selected {
+  border-color: #e5e7eb !important;
+  border-width: 3px;
+  transform: scale(1.05);
+}
+
+.team-circle-selected.team-circle-clickable:hover {
+  transform: scale(1.15);
+}
+
+/* Context-specific hover behaviors */
+.card-hover-effect:hover .team-circle-base {
+  transform: scale(1.05);
+}
+
+/* ==========================================
+   CARD LAYOUTS - Consistent card styles
+   ========================================== */
+
+.card-base {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  padding: 0.75rem;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(10px);
+}
+
+.card-interactive {
+  cursor: pointer;
+}
+
+.card-interactive:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(229, 231, 235, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+/* ==========================================
+   STAT BOXES - Unified stat display
+   ========================================== */
+
+.stat-box {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  padding: 0.5rem 0.75rem;
+  text-align: center;
+  min-width: 80px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.125rem;
+}
+
+.stat-number {
+  font-size: 1rem;
+  font-weight: 700;
+  color: white;
+  line-height: 1;
+}
+
+.stat-label {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.7);
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  line-height: 1;
+}
+
+/* ==========================================
+   GRIDS - Consistent grid layouts
+   ========================================== */
+
+.grid-responsive {
+  display: grid;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.grid-cards-sm {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.grid-cards-md {
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.grid-cards-lg {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+/* ==========================================
+   BADGES & TAGS
+   ========================================== */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.5rem;
+  border-radius: 3px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.badge-hof {
+  background: rgba(251, 191, 36, 0.2);
+  color: #fbbf24;
+  border: 1px solid rgba(251, 191, 36, 0.3);
+}
+
+.badge-rookie {
+  background: rgba(34, 197, 94, 0.2);
+  color: #22c55e;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.badge-auto {
+  background: rgba(59, 130, 246, 0.2);
+  color: #3b82f6;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.badge-relic {
+  background: rgba(168, 85, 247, 0.2);
+  color: #a855f7;
+  border: 1px solid rgba(168, 85, 247, 0.3);
+}
+
+/* ==========================================
+   RESPONSIVE UTILITIES
+   ========================================== */
+
+@media (max-width: 768px) {
+  .team-circle-sm {
+    width: 28px;
+    height: 28px;
+    font-size: 0.55rem;
+  }
+  
+  .team-circle-md {
+    width: 36px;
+    height: 36px;
+    font-size: 0.7rem;
+  }
+  
+  .team-circle-lg {
+    width: 44px;
+    height: 44px;
+    font-size: 0.8rem;
+  }
+  
+  .team-circle-xl {
+    width: 52px;
+    height: 52px;
+    font-size: 0.9rem;
+  }
+  
+  .grid-responsive {
+    gap: 0.75rem;
+  }
+  
+  .grid-cards-sm,
+  .grid-cards-md,
+  .grid-cards-lg {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .team-circle-lg {
+    width: 40px;
+    height: 40px;
+    font-size: 0.75rem;
+  }
+  
+  .team-circle-xl {
+    width: 48px;
+    height: 48px;
+    font-size: 0.85rem;
+  }
+  
+  .team-circle-2xl {
+    width: 56px;
+    height: 56px;
+    font-size: 0.95rem;
+  }
+  
+  .grid-responsive {
+    gap: 0.5rem;
+  }
+}
+
+/* ==========================================
+   USAGE GUIDELINES
+   ==========================================
+   
+   Team Circles:
+   -------------
+   - Always use team-circle-base + size class
+   - Example: <div class="team-circle-base team-circle-md">NYY</div>
+   - Add team-circle-clickable for interactive circles
+   - Add team-circle-selected for active/selected state
+   
+   Size Guidelines:
+   ----------------
+   - xs (20px): Inline references, very compact lists
+   - sm (24px): Compact lists, table cells
+   - md (32px): Standard lists, cards
+   - lg (40px): Featured items, landing pages
+   - xl (48px): Headers, detail pages
+   - 2xl (60px): Hero sections, large featured items
+   - 3xl (80px): Special feature, single team focus
+   
+   Cards:
+   ------
+   - Use card-base for all card-like containers
+   - Add card-interactive for clickable cards
+   
+   Stats:
+   ------
+   - Use stat-box for consistent stat displays
+   - Always include stat-number and stat-label
+   
+   Grids:
+   ------
+   - Use grid-responsive + size variant
+   - Automatically responsive, no custom breakpoints needed
+*/

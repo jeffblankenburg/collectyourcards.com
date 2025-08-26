@@ -138,6 +138,10 @@ function TeamsLanding() {
             <span className="stat-number">{team.card_count.toLocaleString()}</span>
             <span className="stat-label">Cards</span>
           </div>
+          <div className="stat-item">
+            <span className="stat-number">{team.player_count?.toLocaleString() || '0'}</span>
+            <span className="stat-label">Players</span>
+          </div>
         </div>
       </div>
     </div>

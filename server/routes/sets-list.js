@@ -18,14 +18,18 @@ router.get('/', async (req, res) => {
         st.set_id,
         st.name,
         st.manufacturer,
+        st.organization,
         st.year,
+        st.thumbnail,
         m.name as manufacturer_name,
+        o.abbreviation as organization,
         ISNULL(SUM(s.card_count), 0) as total_card_count,
         COUNT(s.series_id) as series_count
       FROM [set] st
       LEFT JOIN manufacturer m ON st.manufacturer = m.manufacturer_id
+      LEFT JOIN organization o ON st.organization = o.organization_id
       LEFT JOIN series s ON st.set_id = s.[set]
-      GROUP BY st.set_id, st.name, st.manufacturer, st.year, m.name
+      GROUP BY st.set_id, st.name, st.manufacturer, st.organization, st.year, st.thumbnail, m.name, o.abbreviation
       ORDER BY ISNULL(SUM(s.card_count), 0) DESC, st.name ASC
     `
 
@@ -37,6 +41,8 @@ router.get('/', async (req, res) => {
       name: set.name,
       year: Number(set.year || 0),
       manufacturer_name: set.manufacturer_name,
+      organization: set.organization,
+      thumbnail: set.thumbnail,
       total_card_count: Number(set.total_card_count),
       series_count: Number(set.series_count)
     }))

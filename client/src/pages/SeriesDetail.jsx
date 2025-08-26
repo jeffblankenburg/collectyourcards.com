@@ -240,15 +240,15 @@ function SeriesDetail() {
         {/* Series Header - Redesigned */}
         <header className="series-header-combined">
           {/* Color Strip for Parallels */}
-          {series.is_parallel && series.color_uniform && series.primary_color_hex && (
+          {series.is_parallel && series.color_uniform && series.color_hex_value && (
             <div 
               className="color-strip"
               style={{
-                backgroundColor: series.primary_color_hex,
-                color: getTextColor(series.primary_color_hex)
+                backgroundColor: series.color_hex_value,
+                color: getTextColor(series.color_hex_value)
               }}
             >
-              <span className="color-text">{series.primary_color_name}</span>
+              <span className="color-text">{series.color_name}</span>
             </div>
           )}
 
@@ -339,11 +339,11 @@ function SeriesDetail() {
                                   <span className="parallel-print-run-tag">{parallel.print_run_display}</span>
                                 )}
                               </div>
-                              {parallel.primary_color_hex && (
+                              {parallel.color_hex_value && (
                                 <div 
                                   className="parallel-color-stripe"
-                                  style={{ backgroundColor: parallel.primary_color_hex }}
-                                  title={parallel.primary_color_name}
+                                  style={{ backgroundColor: parallel.color_hex_value }}
+                                  title={parallel.color_name}
                                 />
                               )}
                             </div>

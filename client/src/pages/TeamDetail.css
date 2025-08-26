@@ -215,6 +215,14 @@
   filter: drop-shadow(0 2px 4px rgba(251, 191, 36, 0.3));
 }
 
+.nickname-section {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  flex: 1;
+}
+
 .player-nickname {
   color: rgba(255, 255, 255, 0.7);
   font-size: 0.9rem;

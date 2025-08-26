@@ -1,0 +1,121 @@
+/* Admin Navigation Styles - Alarming Yellow Design */
+.admin-navigation {
+  background: #FFFF00;
+  box-shadow: 0 2px 8px rgba(255, 255, 0, 0.3);
+  position: sticky;
+  top: 0; /* Should stick right under main header */
+  z-index: 100;
+}
+
+.admin-nav-container {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.admin-zone-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #000;
+  font-weight: 700;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 0.75rem 2rem;
+}
+
+.admin-zone-label svg {
+  color: #000;
+}
+
+.admin-nav-items {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  flex: 1;
+  justify-content: center;
+  padding: 0 2rem;
+}
+
+.admin-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  text-decoration: none;
+  color: #1f2937;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border-bottom: 3px solid transparent;
+  transition: all 0.2s ease;
+  position: relative;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.admin-nav-item:hover {
+  color: #000;
+  background: rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
+}
+
+.admin-nav-item.active {
+  color: #000;
+  background: rgba(0, 0, 0, 0.15);
+  font-weight: 700;
+}
+
+.admin-nav-item svg {
+  opacity: 0.9;
+}
+
+.admin-nav-item:hover svg,
+.admin-nav-item.active svg {
+  opacity: 1;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .admin-nav-container {
+    padding: 0 1rem;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .admin-zone-label {
+    font-size: 0.8rem;
+    padding: 0.25rem 0.75rem;
+  }
+  
+  .admin-nav-items {
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    justify-content: flex-start;
+    width: 100%;
+  }
+  
+  .admin-nav-items::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .admin-nav-item {
+    flex-shrink: 0;
+    padding: 0.75rem;
+    font-size: 0.8rem;
+  }
+  
+  .admin-nav-item span {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-navigation {
+    top: 50px; /* Adjust for smaller main nav on mobile */
+  }
+}

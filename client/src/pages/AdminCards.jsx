@@ -372,7 +372,7 @@ function AdminCards() {
           </Link>
           <Icon name="layers" size={32} />
           <h1>
-            {selectedSeries ? `${selectedSeries.name} Cards` : 'Admin Cards'}
+            {selectedSeries ? selectedSeries.name : 'Admin Cards'}
           </h1>
         </div>
         

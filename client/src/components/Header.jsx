@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
 import UniversalSearch from './UniversalSearch'
+import AdminNavigation from './AdminNavigation'
 import Icon from './Icon'
 import './Header.css'
 
@@ -66,6 +67,10 @@ function Header() {
       .toUpperCase()
   }
 
+  const isAdminPage = () => {
+    return location.pathname.startsWith('/admin')
+  }
+
   return (
     <header className="app-header">
       <div className="header-container">
@@ -100,8 +105,8 @@ function Header() {
             <span className="nav-text">Teams</span>
           </Link>
           <Link 
-            to="/series" 
-            className={`nav-link ${location.pathname.startsWith('/series') ? 'active' : ''}`}
+            to="/sets" 
+            className={`nav-link ${location.pathname.startsWith('/sets') ? 'active' : ''}`}
           >
             <Icon name="series" size={18} className="nav-icon" />
             <span className="nav-text">Sets</span>
@@ -126,8 +131,8 @@ function Header() {
               <span>Teams</span>
             </Link>
             <Link 
-              to="/series" 
-              className={`mobile-nav-link ${location.pathname.startsWith('/series') ? 'active' : ''}`}
+              to="/sets" 
+              className={`mobile-nav-link ${location.pathname.startsWith('/sets') ? 'active' : ''}`}
             >
               <Icon name="series" size={20} />
               <span>Sets</span>
@@ -240,6 +245,11 @@ function Header() {
           )}
         </div>
       </div>
+      
+      {/* Admin Navigation - Only show on admin pages for authorized users */}
+      {isAdminPage() && isAuthenticated && (user?.role === 'admin' || user?.role === 'superadmin') && (
+        <AdminNavigation />
+      )}
     </header>
   )
 }

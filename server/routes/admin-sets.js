@@ -1,8 +1,31 @@
 const express = require('express')
+const multer = require('multer')
+const { BlobServiceClient } = require('@azure/storage-blob')
 const { PrismaClient } = require('@prisma/client')
 const { authMiddleware, requireAdmin } = require('../middleware/auth')
 const router = express.Router()
 const prisma = new PrismaClient()
+
+// Configure multer for memory storage
+const upload = multer({ 
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    // Only allow image files
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true)
+    } else {
+      cb(new Error('Only image files are allowed'))
+    }
+  }
+})
+
+// Azure Storage configuration
+const AZURE_STORAGE_CONNECTION_STRING = process.env.AZURE_STORAGE_CONNECTION_STRING
+const SET_CONTAINER_NAME = 'set'
+const SERIES_CONTAINER_NAME = 'series'
 
 // Helper function to generate URL slug from set name
 function generateSlug(name) {
@@ -137,6 +160,7 @@ router.get('/sets/by-year/:year', async (req, res) => {
         card_count: true,
         series_count: true,
         is_complete: true,
+        thumbnail: true,
         organization_set_organizationToorganization: {
           select: {
             organization_id: true,
@@ -169,6 +193,7 @@ router.get('/sets/by-year/:year', async (req, res) => {
       card_count: s.card_count || 0,
       series_count: s.series_series_setToset?.length || 0,
       is_complete: s.is_complete || false,
+      thumbnail: s.thumbnail,
       organization_id: s.organization_set_organizationToorganization?.organization_id || null,
       organization_name: s.organization_set_organizationToorganization?.name || '',
       organization: s.organization_set_organizationToorganization?.abbreviation || '',
@@ -217,16 +242,23 @@ router.get('/series/by-set/:year/:setSlug', async (req, res) => {
         name: true,
         card_count: true,
         card_entered_count: true,
+        rookie_count: true,
         is_base: true,
         parallel_of_series: true,
+        color: true,
         min_print_run: true,
         max_print_run: true,
         print_run_display: true,
-        primary_color_name: true,
-        primary_color_hex: true,
-        photo_url: true,
+        color: true,
         front_image_path: true,
-        back_image_path: true
+        back_image_path: true,
+        color_series_colorTocolor: {
+          select: {
+            color_id: true,
+            name: true,
+            hex_value: true
+          }
+        }
       },
       orderBy: [
         { is_base: 'desc' },
@@ -250,7 +282,11 @@ router.get('/series/by-set/:year/:setSlug', async (req, res) => {
           ...s,
           series_id: Number(s.series_id),
           parallel_of_series: s.parallel_of_series ? Number(s.parallel_of_series) : null,
-          parallel_of_name: parallelOfName
+          parallel_of_name: parallelOfName,
+          rookie_count: Number(s.rookie_count || 0),
+          color_id: s.color ? Number(s.color) : null,
+          color_name: s.color_series_colorTocolor?.name || null,
+          color_hex_value: s.color_series_colorTocolor?.hex_value || null
         }
       })
     )
@@ -281,7 +317,8 @@ router.put('/sets/:id', async (req, res) => {
       manufacturer,
       card_count,
       series_count,
-      is_complete
+      is_complete,
+      thumbnail
     } = req.body
 
     // Validate set ID
@@ -390,6 +427,7 @@ router.put('/series/:id', async (req, res) => {
       card_entered_count,
       is_base,
       parallel_of_series,
+      color_id,
       min_print_run,
       max_print_run,
       print_run_display,
@@ -420,12 +458,10 @@ router.put('/series/:id', async (req, res) => {
         card_entered_count: true,
         is_base: true,
         parallel_of_series: true,
+        color: true,
         min_print_run: true,
         max_print_run: true,
         print_run_display: true,
-        primary_color_name: true,
-        primary_color_hex: true,
-        photo_url: true,
         front_image_path: true,
         back_image_path: true
       }
@@ -446,6 +482,7 @@ router.put('/series/:id', async (req, res) => {
       card_entered_count: card_entered_count !== undefined ? parseInt(card_entered_count) : existingSeries.card_entered_count,
       is_base: is_base !== undefined ? is_base : existingSeries.is_base,
       parallel_of_series: parallel_of_series ? BigInt(parallel_of_series) : null,
+      color: color_id !== undefined ? (color_id ? parseInt(color_id) : null) : existingSeries.color,
       min_print_run: min_print_run !== undefined ? (min_print_run ? parseInt(min_print_run) : null) : existingSeries.min_print_run,
       max_print_run: max_print_run !== undefined ? (max_print_run ? parseInt(max_print_run) : null) : existingSeries.max_print_run,
       print_run_display: print_run_display?.trim() || null,
@@ -492,12 +529,10 @@ router.put('/series/:id', async (req, res) => {
         card_entered_count: true,
         is_base: true,
         parallel_of_series: true,
+        color: true,
         min_print_run: true,
         max_print_run: true,
         print_run_display: true,
-        primary_color_name: true,
-        primary_color_hex: true,
-        photo_url: true,
         front_image_path: true,
         back_image_path: true
       }
@@ -662,6 +697,263 @@ router.get('/cards/by-series/:year/:setSlug/:seriesSlug', async (req, res) => {
     res.status(500).json({
       error: 'Database error',
       message: 'Failed to fetch cards',
+      details: error.message
+    })
+  }
+})
+
+// POST /api/admin/sets/upload-thumbnail - Upload thumbnail to Azure Storage
+router.post('/sets/upload-thumbnail', authMiddleware, requireAdmin, upload.single('thumbnail'), async (req, res) => {
+  try {
+    const { setId } = req.body
+    const file = req.file
+
+    if (!file) {
+      return res.status(400).json({
+        success: false,
+        message: 'No file provided'
+      })
+    }
+
+    if (!setId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Set ID is required'
+      })
+    }
+
+    // Validate file type
+    if (!file.mimetype.startsWith('image/')) {
+      return res.status(400).json({
+        success: false,
+        message: 'Only image files are allowed'
+      })
+    }
+
+    // Check if Azure Storage is configured
+    if (!AZURE_STORAGE_CONNECTION_STRING || AZURE_STORAGE_CONNECTION_STRING === 'your-azure-storage-connection-string-here') {
+      console.error('Azure Storage not configured. Please add AZURE_STORAGE_CONNECTION_STRING to .env file')
+      console.error('Format: DefaultEndpointsProtocol=https;AccountName=YOUR_ACCOUNT_NAME;AccountKey=YOUR_ACCOUNT_KEY;EndpointSuffix=core.windows.net')
+      return res.status(500).json({
+        success: false,
+        message: 'Azure Storage not configured. Please add AZURE_STORAGE_CONNECTION_STRING to .env file.'
+      })
+    }
+
+    // Create Azure Storage client
+    let blobServiceClient
+    try {
+      blobServiceClient = BlobServiceClient.fromConnectionString(AZURE_STORAGE_CONNECTION_STRING)
+    } catch (error) {
+      console.error('Invalid Azure Storage connection string:', error.message)
+      return res.status(500).json({
+        success: false,
+        message: 'Invalid Azure Storage configuration. Please check the connection string format.'
+      })
+    }
+    
+    const containerClient = blobServiceClient.getContainerClient(SET_CONTAINER_NAME)
+
+    // Ensure container exists
+    await containerClient.createIfNotExists({
+      access: 'blob' // Allow public read access to blobs
+    })
+
+    // Generate blob name using just the set_id for easy manual management
+    const fileExtension = file.originalname.split('.').pop()
+    const blobName = `${setId}.${fileExtension}`
+    
+    // Get blob client
+    const blockBlobClient = containerClient.getBlockBlobClient(blobName)
+
+    // Upload file to Azure Storage
+    await blockBlobClient.uploadData(file.buffer, {
+      blobHTTPHeaders: {
+        blobContentType: file.mimetype
+      }
+    })
+
+    // Get the public URL
+    const thumbnailUrl = blockBlobClient.url
+
+    // Update the set record with the new thumbnail URL
+    await prisma.set.update({
+      where: { set_id: parseInt(setId) },
+      data: { thumbnail: thumbnailUrl }
+    })
+
+    res.json({
+      success: true,
+      message: 'Thumbnail uploaded successfully',
+      thumbnailUrl: thumbnailUrl
+    })
+
+  } catch (error) {
+    console.error('Error uploading thumbnail:', error)
+    res.status(500).json({
+      success: false,
+      message: 'Failed to upload thumbnail',
+      details: error.message
+    })
+  }
+})
+
+// POST /api/admin/series/upload-images/:seriesId - Upload front/back images for a series
+router.post('/series/upload-images/:seriesId', authMiddleware, requireAdmin, upload.fields([
+  { name: 'front_image', maxCount: 1 },
+  { name: 'back_image', maxCount: 1 }
+]), async (req, res) => {
+  try {
+    const { seriesId } = req.params
+    const files = req.files
+
+    if (!files || (!files.front_image && !files.back_image)) {
+      return res.status(400).json({
+        success: false,
+        message: 'At least one image file is required'
+      })
+    }
+
+    if (!seriesId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Series ID is required'
+      })
+    }
+
+    // Validate series exists
+    const existingSeries = await prisma.series.findUnique({
+      where: { series_id: BigInt(seriesId) },
+      select: { series_id: true, name: true }
+    })
+
+    if (!existingSeries) {
+      return res.status(404).json({
+        success: false,
+        message: 'Series not found'
+      })
+    }
+
+    // Check if Azure Storage is configured
+    if (!AZURE_STORAGE_CONNECTION_STRING || AZURE_STORAGE_CONNECTION_STRING === 'your-azure-storage-connection-string-here') {
+      return res.status(500).json({
+        success: false,
+        message: 'Azure Storage not configured. Please add AZURE_STORAGE_CONNECTION_STRING to .env file.'
+      })
+    }
+
+    // Create Azure Storage client
+    let blobServiceClient
+    try {
+      blobServiceClient = BlobServiceClient.fromConnectionString(AZURE_STORAGE_CONNECTION_STRING)
+    } catch (error) {
+      console.error('Invalid Azure Storage connection string:', error.message)
+      return res.status(500).json({
+        success: false,
+        message: 'Invalid Azure Storage configuration. Please check the connection string format.'
+      })
+    }
+    
+    const containerClient = blobServiceClient.getContainerClient(SERIES_CONTAINER_NAME)
+
+    // Ensure container exists
+    await containerClient.createIfNotExists({
+      access: 'blob' // Allow public read access to blobs
+    })
+
+    const updateData = {}
+    const uploadResults = {}
+
+    // Process front image if provided
+    if (files.front_image && files.front_image[0]) {
+      const frontFile = files.front_image[0]
+      
+      // Validate file type
+      if (!frontFile.mimetype.startsWith('image/')) {
+        return res.status(400).json({
+          success: false,
+          message: 'Only image files are allowed'
+        })
+      }
+
+      const frontExtension = frontFile.originalname.split('.').pop()
+      const frontBlobName = `${seriesId}-front.${frontExtension}`
+      const frontBlockBlobClient = containerClient.getBlockBlobClient(frontBlobName)
+
+      // Upload front image to Azure Storage
+      await frontBlockBlobClient.uploadData(frontFile.buffer, {
+        blobHTTPHeaders: {
+          blobContentType: frontFile.mimetype
+        }
+      })
+
+      updateData.front_image_path = frontBlockBlobClient.url
+      uploadResults.front_image_url = frontBlockBlobClient.url
+    }
+
+    // Process back image if provided
+    if (files.back_image && files.back_image[0]) {
+      const backFile = files.back_image[0]
+      
+      // Validate file type
+      if (!backFile.mimetype.startsWith('image/')) {
+        return res.status(400).json({
+          success: false,
+          message: 'Only image files are allowed'
+        })
+      }
+
+      const backExtension = backFile.originalname.split('.').pop()
+      const backBlobName = `${seriesId}-back.${backExtension}`
+      const backBlockBlobClient = containerClient.getBlockBlobClient(backBlobName)
+
+      // Upload back image to Azure Storage
+      await backBlockBlobClient.uploadData(backFile.buffer, {
+        blobHTTPHeaders: {
+          blobContentType: backFile.mimetype
+        }
+      })
+
+      updateData.back_image_path = backBlockBlobClient.url
+      uploadResults.back_image_url = backBlockBlobClient.url
+    }
+
+    // Update the series record with the new image URLs
+    await prisma.series.update({
+      where: { series_id: BigInt(seriesId) },
+      data: updateData
+    })
+
+    // Log admin action
+    try {
+      await prisma.admin_action_log.create({
+        data: {
+          user_id: BigInt(req.user.userId),
+          action_type: 'SERIES_IMAGES_UPLOADED',
+          entity_type: 'series',
+          entity_id: seriesId.toString(),
+          old_values: null,
+          new_values: JSON.stringify(updateData),
+          ip_address: req.ip,
+          user_agent: req.get('User-Agent'),
+          created: new Date()
+        }
+      })
+    } catch (logError) {
+      console.warn('Failed to log admin action:', logError.message)
+    }
+
+    res.json({
+      success: true,
+      message: 'Images uploaded successfully',
+      ...uploadResults
+    })
+
+  } catch (error) {
+    console.error('Error uploading series images:', error)
+    res.status(500).json({
+      success: false,
+      message: 'Failed to upload images',
       details: error.message
     })
   }

@@ -1,0 +1,184 @@
+/* Public Sets Page - Font Size Fixes */
+
+/* Ensure base font size is set properly */
+.admin-sets-page {
+  font-size: 14px;
+}
+
+/* Reduce series card height to eliminate empty space */
+.admin-sets-page .series-card {
+  height: 180px !important;
+}
+
+.admin-sets-page .series-content {
+  padding: 0.75rem 1rem !important;
+  padding-right: 1.5rem !important; /* Make room for right stripe */
+  padding-top: 0.5rem !important;
+  padding-bottom: 0 !important; /* No bottom padding - let parallel stripe handle spacing */
+}
+
+.admin-sets-page .series-parallel-stripe {
+  height: 18px !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+  margin-top: auto !important; /* Push to bottom of card */
+}
+
+.admin-sets-page .series-parallel-stripe.has-content {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.admin-sets-page .series-parallel-stripe.empty {
+  background: transparent !important;
+  border-top: none !important;
+}
+
+.admin-sets-page .series-header {
+  height: 42px !important; /* Fixed height for row 1 - title and badges */
+  margin-bottom: 0.5rem !important;
+}
+
+.admin-sets-page .series-info {
+  height: 20px !important; /* Fixed height for row 2 - info/spacer */
+  margin-bottom: 0.5rem !important;
+}
+
+.admin-sets-page .series-stats {
+  height: 42px !important; /* Fixed height for row 3 - stats */
+  margin-top: 0 !important;
+  margin-bottom: 0.75rem !important; /* Add space under stats boxes */
+}
+
+/* Fix header title font sizes */
+.admin-sets-page .admin-title h1 {
+  font-size: 2.5rem !important;
+  font-weight: 700 !important;
+}
+
+/* Fix search box font size */
+.admin-sets-page .search-box input {
+  font-size: 0.875rem !important;
+}
+
+/* Fix year card font sizes */
+.admin-sets-page .year-number {
+  font-size: 2rem !important;
+  font-weight: 700 !important;
+}
+
+.admin-sets-page .year-stat-number {
+  font-size: 1.25rem !important;
+  font-weight: 700 !important;
+}
+
+.admin-sets-page .year-stat-label {
+  font-size: 0.6875rem !important;
+  font-weight: 500 !important;
+}
+
+/* Fix set card font sizes */
+.admin-sets-page .set-name {
+  font-size: 1rem !important;
+  font-weight: 600 !important;
+}
+
+.admin-sets-page .set-stat-number {
+  font-size: 1.25rem !important;
+  font-weight: 700 !important;
+}
+
+.admin-sets-page .set-stat-label {
+  font-size: 0.6875rem !important;
+  font-weight: 500 !important;
+}
+
+.admin-sets-page .complete-badge {
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+}
+
+.admin-sets-page .manufacturer-tag,
+.admin-sets-page .org-abbreviation {
+  font-size: 0.75rem !important;
+  font-weight: 500 !important;
+}
+
+/* Fix series card font sizes */
+.admin-sets-page .series-name {
+  font-size: 1rem !important;
+  font-weight: 600 !important;
+}
+
+.admin-sets-page .series-stat-number {
+  font-size: 1.25rem !important;
+  font-weight: 700 !important;
+}
+
+.admin-sets-page .series-stat-label {
+  font-size: 0.6875rem !important;
+  font-weight: 500 !important;
+}
+
+.admin-sets-page .base-badge {
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+}
+
+.admin-sets-page .series-parallel-stripe {
+  font-size: 0.625rem !important;
+  font-weight: 600 !important;
+}
+
+.admin-sets-page .series-color-stripe-right {
+  font-size: 0.625rem !important;
+  font-weight: 600 !important;
+}
+
+/* Fix button font sizes */
+.admin-sets-page .collapse-parallels-btn {
+  font-size: 0.875rem !important;
+  font-weight: 500 !important;
+}
+
+/* Fix dropdown menu font sizes */
+.parallels-dropdown-menu .parallel-name-compact {
+  font-size: 0.8rem !important;
+  font-weight: 400 !important;
+}
+
+.parallels-dropdown-menu .parallel-print-run-tag {
+  font-size: 0.7rem !important;
+  font-weight: 600 !important;
+}
+
+/* Fix loading state font size */
+.admin-sets-page .loading-state {
+  font-size: 1rem !important;
+}
+
+.admin-sets-page .loading-state span {
+  font-size: 1rem !important;
+}
+
+/* Fix empty state font size */
+.admin-sets-page .empty-state p {
+  font-size: 1rem !important;
+}
+
+/* Ensure all text elements have proper line height */
+.admin-sets-page * {
+  line-height: normal;
+}
+
+/* Fix any button text sizes */
+.admin-sets-page button {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+/* Ensure proper font family inheritance */
+.admin-sets-page {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+}

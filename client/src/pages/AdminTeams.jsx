@@ -152,29 +152,24 @@ function AdminTeams() {
         <div className="admin-title">
           <Icon name="shield" size={32} />
           <h1>Team Administration</h1>
-        </div>
-        
-        <div className="admin-stats">
-          <div className="stat">
-            <span className="stat-number">{teams.length}</span>
-            <span className="stat-label">Total Teams</span>
-          </div>
-          <div className="stat">
-            <span className="stat-number">{filteredTeams.length}</span>
-            <span className="stat-label">Filtered</span>
+          <div className="admin-stats">
+            <div className="stat">
+              <span className="stat-number">{teams.length}</span>
+              <span className="stat-label">Teams</span>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="admin-controls">
-        <div className="search-box">
-          <Icon name="search" size={20} />
-          <input
-            type="text"
-            placeholder="Search teams by name, city, mascot, abbreviation, or organization..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+        <div className="admin-controls">
+          <div className="search-box">
+            <Icon name="search" size={20} />
+            <input
+              type="text"
+              placeholder="Search teams by name, city, mascot, abbreviation, or organization..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
         </div>
       </div>
 

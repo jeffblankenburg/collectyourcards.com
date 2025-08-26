@@ -50,7 +50,7 @@ function TeamDetail() {
         // Calculate additional stats for the team
         const teamStats = {
           total_cards: foundTeam.card_count || 0,
-          total_players: teamPlayers.length,
+          total_players: foundTeam.player_count || 0,
           rookie_cards: 0, // TODO: Calculate from API
           autograph_cards: 0, // TODO: Calculate from API
           relic_cards: 0, // TODO: Calculate from API
@@ -117,18 +117,8 @@ function TeamDetail() {
               {player.first_name} {player.last_name}
               {player.is_hof && <Icon name="trophy" size={16} className="hof-icon" />}
             </h3>
-            {player.nick_name && (
-              <p className="player-nickname">"{player.nick_name}"</p>
-            )}
           </div>
           
-          <div className="player-stats">
-            <div className="card-count">
-              <span className="count-number">{player.card_count.toLocaleString()}</span>
-              <span className="count-label">Cards</span>
-            </div>
-          </div>
-
           <div className="player-teams">
             {player.teams?.map(playerTeam => (
               <div
@@ -144,6 +134,18 @@ function TeamDetail() {
                 {playerTeam.abbreviation}
               </div>
             ))}
+          </div>
+
+          <div className="player-stats">
+            {player.nick_name && (
+              <div className="nickname-section">
+                <p className="player-nickname">"{player.nick_name}"</p>
+              </div>
+            )}
+            <div className="card-count">
+              <span className="count-number">{player.card_count.toLocaleString()}</span>
+              <span className="count-label">Cards</span>
+            </div>
           </div>
         </div>
       </div>
@@ -227,7 +229,7 @@ function TeamDetail() {
             <div className="section-header">
               <h3>
                 <Icon name="users" size={20} />
-                Players ({players.length})
+                Players ({team.player_count?.toLocaleString() || players.length})
               </h3>
             </div>
             <div className="players-grid">

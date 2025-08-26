@@ -27,31 +27,14 @@
 }
 
 
-/* Players Grid */
+/* Players Grid - Using unified grid system */
 .players-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
+  /* Remove custom grid - now using unified classes */
 }
 
-
-/* Player Card */
+/* Player Card - Using unified card system */
 .player-card {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 6px;
-  padding: 0.75rem;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  backdrop-filter: blur(10px);
-}
-
-.player-card:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(229, 231, 235, 0.3);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  /* Remove custom card styles - now using unified classes */
 }
 
 
@@ -138,40 +121,11 @@
 .player-teams {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.25rem;
   flex-wrap: wrap;
 }
 
-.mini-team-circle {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: var(--primary-color, #333);
-  border: 2px solid var(--secondary-color, #666);
-  color: white;
-  font-size: 0.6rem;
-  font-weight: bold;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-transform: uppercase;
-  flex-shrink: 0;
-  transition: transform 0.2s ease;
-}
-
-.player-card:hover .mini-team-circle {
-  transform: scale(1.1);
-}
-
-.mini-team-circle.clickable {
-  cursor: pointer;
-  position: relative;
-}
-
-.mini-team-circle.clickable:hover {
-  transform: scale(1.2);
-  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2);
-}
+/* Team circles now use unified classes - remove all custom styles */
 
 /* Loading and Error States */
 .loading-container,

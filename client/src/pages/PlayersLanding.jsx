@@ -121,7 +121,7 @@ function PlayersLanding() {
 
     return (
       <div 
-        className="player-card"
+        className="card-base card-interactive card-hover-effect"
         onClick={() => handlePlayerClick(player)}
       >
         <div className="player-card-content">
@@ -132,23 +132,11 @@ function PlayersLanding() {
             </h3>
           </div>
           
-          <div className="player-stats">
-            {player.nick_name && (
-              <div className="nickname-section">
-                <p className="player-nickname">"{player.nick_name}"</p>
-              </div>
-            )}
-            <div className="card-count">
-              <span className="count-number">{player.card_count.toLocaleString()}</span>
-              <span className="count-label">Cards</span>
-            </div>
-          </div>
-
           <div className="player-teams">
             {player.teams?.map(team => (
               <div
                 key={team.team_id}
-                className="mini-team-circle clickable"
+                className="team-circle-base team-circle-sm team-circle-clickable"
                 style={{
                   '--primary-color': team.primary_color || '#666',
                   '--secondary-color': team.secondary_color || '#999'
@@ -159,6 +147,18 @@ function PlayersLanding() {
                 {team.abbreviation}
               </div>
             ))}
+          </div>
+
+          <div className="player-stats">
+            {player.nick_name && (
+              <div className="nickname-section">
+                <p className="player-nickname">"{player.nick_name}"</p>
+              </div>
+            )}
+            <div className="card-count">
+              <span className="count-number">{player.card_count.toLocaleString()}</span>
+              <span className="count-label">Cards</span>
+            </div>
           </div>
         </div>
       </div>
@@ -192,7 +192,7 @@ function PlayersLanding() {
 
   return (
     <div className="players-landing">
-      <div className="players-grid">
+      <div className="grid-responsive grid-cards-md">
         {players.map(player => (
           <PlayerCard key={player.player_id} player={player} />
         ))}

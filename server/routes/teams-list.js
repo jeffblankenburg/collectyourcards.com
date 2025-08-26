@@ -32,6 +32,7 @@ router.get('/', async (req, res) => {
             t.primary_color,
             t.secondary_color,
             t.card_count,
+            t.player_count,
             org.name as organization_name,
             org.abbreviation as organization_abbreviation,
             ut.created as last_visited
@@ -49,7 +50,7 @@ router.get('/', async (req, res) => {
       }
     }
 
-    // Get top teams by pre-calculated card count (much faster!)
+    // Get top teams by pre-calculated card and player counts (much faster!)
     const topTeamsQuery = `
       SELECT TOP ${limitNum}
         t.team_id,
@@ -59,6 +60,7 @@ router.get('/', async (req, res) => {
         t.primary_color,
         t.secondary_color,
         t.card_count,
+        t.player_count,
         org.name as organization_name,
         org.abbreviation as organization_abbreviation
       FROM team t
@@ -69,7 +71,7 @@ router.get('/', async (req, res) => {
 
     const topTeams = await prisma.$queryRawUnsafe(topTeamsQuery)
 
-    // Serialize BigInt values (using pre-calculated card_count)
+    // Serialize BigInt values (using pre-calculated card_count and player_count)
     const serializedTeams = topTeams.map(team => ({
       team_id: Number(team.team_id),
       name: team.name,
@@ -79,7 +81,8 @@ router.get('/', async (req, res) => {
       secondary_color: team.secondary_color,
       organization_name: team.organization_name,
       organization_abbreviation: team.organization_abbreviation,
-      card_count: Number(team.card_count)
+      card_count: Number(team.card_count),
+      player_count: Number(team.player_count)
     }))
 
     // If we have recently viewed teams, merge them with regular results
@@ -97,6 +100,7 @@ router.get('/', async (req, res) => {
         organization_name: team.organization_name,
         organization_abbreviation: team.organization_abbreviation,
         card_count: Number(team.card_count),
+        player_count: Number(team.player_count),
         last_visited: team.last_visited
       }))
 

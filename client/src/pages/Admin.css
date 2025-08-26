@@ -6,14 +6,16 @@
   color: white;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: center;
   padding: 2rem;
+  padding-top: 4rem;
 }
 
 .admin-content {
   text-align: center;
-  max-width: 800px;
+  max-width: 1400px;
+  width: 100%;
 }
 
 .admin-content h1 {
@@ -35,8 +37,8 @@
 
 .admin-menu {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 2rem;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1.5rem;
   margin-top: 2rem;
 }
 
@@ -44,7 +46,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 3rem 2rem;
+  padding: 2rem 1.5rem;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 16px;

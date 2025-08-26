@@ -25,10 +25,20 @@ function AdminSets() {
   const [editForm, setEditForm] = useState({})
   const [organizations, setOrganizations] = useState([])
   const [manufacturers, setManufacturers] = useState([])
+  const [colors, setColors] = useState([])
+  const [colorDropdownOpen, setColorDropdownOpen] = useState(false)
+  const colorDropdownRef = useRef(null)
   const [saving, setSaving] = useState(false)
   const [parallelsCollapsed, setParallelsCollapsed] = useState(false)
   const [openDropdownSeriesId, setOpenDropdownSeriesId] = useState(null)
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 })
+  const [uploadingThumbnail, setUploadingThumbnail] = useState(false)
+  const [selectedFile, setSelectedFile] = useState(null)
+  const [uploadingImages, setUploadingImages] = useState(false)
+  const [selectedFrontImage, setSelectedFrontImage] = useState(null)
+  const [selectedBackImage, setSelectedBackImage] = useState(null)
+  const [frontImagePreview, setFrontImagePreview] = useState(null)
+  const [backImagePreview, setBackImagePreview] = useState(null)
   const { addToast } = useToast()
   const dropdownRef = useRef(null)
   const activeParallelsBoxRef = useRef(null)
@@ -45,6 +55,7 @@ function AdminSets() {
   useEffect(() => {
     loadOrganizations()
     loadManufacturers()
+    loadColors()
     
     // Load data based on URL parameters
     if (setSlug) {
@@ -112,6 +123,23 @@ function AdminSets() {
     }
   }, [openDropdownSeriesId])
 
+  // Close color dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (colorDropdownRef.current && !colorDropdownRef.current.contains(event.target)) {
+        setColorDropdownOpen(false)
+      }
+    }
+
+    if (colorDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [colorDropdownOpen])
+
   useEffect(() => {
     // Filter based on current view and search term
     if (!year && !setSlug) {
@@ -150,7 +178,7 @@ function AdminSets() {
       } else {
         const filtered = seriesToFilter.filter(s => 
           s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (s.primary_color_name && s.primary_color_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          (s.color_name && s.color_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
           (s.print_run_display && s.print_run_display.toLowerCase().includes(searchTerm.toLowerCase()))
         )
         setFilteredSeries(filtered)
@@ -250,6 +278,16 @@ function AdminSets() {
     }
   }
 
+  const loadColors = async () => {
+    try {
+      const response = await axios.get('/api/admin/colors')
+      console.log('Loaded colors:', response.data.colors)
+      setColors(response.data.colors || [])
+    } catch (error) {
+      console.error('Error loading colors:', error)
+    }
+  }
+
 
   // Navigation is now handled by React Router, no need for click handlers
 
@@ -261,30 +299,54 @@ function AdminSets() {
       year: set.year || '',
       organization: set.organization_id || '',
       manufacturer: set.manufacturer_id || '',
-      is_complete: set.is_complete || false
+      is_complete: set.is_complete || false,
+      thumbnail: set.thumbnail || ''
     })
+    setSelectedFile(null)
     setShowEditModal(true)
   }
 
   const handleEditSeries = (seriesData) => {
+    console.log('Editing series data:', seriesData)
+    console.log('Series color_id:', seriesData.color_id, 'type:', typeof seriesData.color_id)
+    console.log('Series color field:', seriesData.color, 'type:', typeof seriesData.color)
     setEditingItem(seriesData)
     setEditType('series')
-    setEditForm({
+    const formData = {
       name: seriesData.name || '',
       card_count: seriesData.card_count || 0,
       card_entered_count: seriesData.card_entered_count || 0,
       is_base: seriesData.is_base || false,
       parallel_of_series: seriesData.parallel_of_series || '',
-      min_print_run: seriesData.min_print_run || '',
-      max_print_run: seriesData.max_print_run || '',
-      print_run_display: seriesData.print_run_display || '',
-      primary_color_name: seriesData.primary_color_name || '',
-      primary_color_hex: seriesData.primary_color_hex || '',
-      photo_url: seriesData.photo_url || '',
+      color_id: seriesData.color_id || null,
       front_image_path: seriesData.front_image_path || '',
       back_image_path: seriesData.back_image_path || ''
-    })
+    }
+    console.log('Setting form data:', formData)
+    setEditForm(formData)
+    setSelectedFrontImage(null)
+    setSelectedBackImage(null)
     setShowEditModal(true)
+  }
+
+  const handleFrontImageSelect = (file) => {
+    setSelectedFrontImage(file)
+    if (file) {
+      const previewUrl = URL.createObjectURL(file)
+      setFrontImagePreview(previewUrl)
+    } else {
+      setFrontImagePreview(null)
+    }
+  }
+
+  const handleBackImageSelect = (file) => {
+    setSelectedBackImage(file)
+    if (file) {
+      const previewUrl = URL.createObjectURL(file)
+      setBackImagePreview(previewUrl)
+    } else {
+      setBackImagePreview(null)
+    }
   }
 
   const handleCloseModal = () => {
@@ -293,6 +355,20 @@ function AdminSets() {
     setEditType('')
     setEditForm({})
     setSaving(false)
+    setSelectedFile(null)
+    setUploadingThumbnail(false)
+    setSelectedFrontImage(null)
+    setSelectedBackImage(null)
+    
+    // Clean up preview URLs to prevent memory leaks
+    if (frontImagePreview) {
+      URL.revokeObjectURL(frontImagePreview)
+      setFrontImagePreview(null)
+    }
+    if (backImagePreview) {
+      URL.revokeObjectURL(backImagePreview)
+      setBackImagePreview(null)
+    }
   }
 
   const handleFormChange = (field, value) => {
@@ -309,6 +385,78 @@ function AdminSets() {
     }
   }
 
+  const handleThumbnailUpload = async (file) => {
+    if (!file) return null
+    
+    try {
+      setUploadingThumbnail(true)
+      
+      const formData = new FormData()
+      formData.append('thumbnail', file)
+      formData.append('setId', editingItem.set_id)
+      
+      const response = await axios.post('/api/admin/sets/upload-thumbnail', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      })
+      
+      if (response.data.success) {
+        addToast('Thumbnail uploaded successfully', 'success')
+        return response.data.thumbnailUrl
+      } else {
+        throw new Error(response.data.message || 'Upload failed')
+      }
+    } catch (error) {
+      console.error('Error uploading thumbnail:', error)
+      addToast(`Failed to upload thumbnail: ${error.response?.data?.message || error.message}`, 'error')
+      return null
+    } finally {
+      setUploadingThumbnail(false)
+    }
+  }
+
+  const handleSeriesImagesUpload = async (frontFile, backFile) => {
+    if (!frontFile && !backFile) return { front_image_path: null, back_image_path: null }
+    
+    try {
+      setUploadingImages(true)
+      
+      const formData = new FormData()
+      if (frontFile) {
+        formData.append('front_image', frontFile)
+      }
+      if (backFile) {
+        formData.append('back_image', backFile)
+      }
+      
+      const response = await axios.post(`/api/admin/series/upload-images/${editingItem.series_id}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      })
+      
+      if (response.data.success) {
+        const uploadMessage = []
+        if (frontFile) uploadMessage.push('front image')
+        if (backFile) uploadMessage.push('back image')
+        addToast(`Series ${uploadMessage.join(' and ')} uploaded successfully`, 'success')
+        return {
+          front_image_path: response.data.front_image_url || null,
+          back_image_path: response.data.back_image_url || null
+        }
+      } else {
+        throw new Error(response.data.message || 'Upload failed')
+      }
+    } catch (error) {
+      console.error('Error uploading series images:', error)
+      addToast(`Failed to upload series images: ${error.response?.data?.message || error.message}`, 'error')
+      return { front_image_path: null, back_image_path: null }
+    } finally {
+      setUploadingImages(false)
+    }
+  }
+
   const handleSave = async () => {
     if (!editingItem) return
 
@@ -316,12 +464,23 @@ function AdminSets() {
       setSaving(true)
       
       if (editType === 'set') {
+        // Upload thumbnail if a new file was selected
+        let thumbnailUrl = editForm.thumbnail
+        if (selectedFile) {
+          thumbnailUrl = await handleThumbnailUpload(selectedFile)
+          if (!thumbnailUrl) {
+            // Upload failed, don't proceed with save
+            return
+          }
+        }
+        
         const updateData = {
           name: editForm.name.trim(),
           year: parseInt(editForm.year) || null,
           organization: editForm.organization || null,
           manufacturer: editForm.manufacturer || null,
-          is_complete: editForm.is_complete
+          is_complete: editForm.is_complete,
+          thumbnail: thumbnailUrl
         }
 
         await axios.put(`/api/admin/sets/${editingItem.set_id}`, updateData)
@@ -330,21 +489,21 @@ function AdminSets() {
         await loadSetsForYear(year)
         
       } else if (editType === 'series') {
+        // Handle image uploads first if any files were selected
+        let imageUploadResults = { front_image_path: null, back_image_path: null }
+        if (selectedFrontImage || selectedBackImage) {
+          imageUploadResults = await handleSeriesImagesUpload(selectedFrontImage, selectedBackImage)
+        }
+        
         const updateData = {
           name: editForm.name.trim(),
           set: selectedSet.set_id,
           card_count: parseInt(editForm.card_count) || 0,
-          card_entered_count: parseInt(editForm.card_entered_count) || 0,
           is_base: editForm.is_base,
           parallel_of_series: editForm.parallel_of_series || null,
-          min_print_run: editForm.min_print_run ? parseInt(editForm.min_print_run) : null,
-          max_print_run: editForm.max_print_run ? parseInt(editForm.max_print_run) : null,
-          print_run_display: editForm.print_run_display.trim(),
-          primary_color_name: editForm.primary_color_name.trim(),
-          primary_color_hex: editForm.primary_color_hex.trim(),
-          photo_url: editForm.photo_url.trim(),
-          front_image_path: editForm.front_image_path.trim(),
-          back_image_path: editForm.back_image_path.trim()
+          color_id: editForm.color_id || null,
+          front_image_path: imageUploadResults.front_image_path || editForm.front_image_path?.trim() || null,
+          back_image_path: imageUploadResults.back_image_path || editForm.back_image_path?.trim() || null
         }
 
         await axios.put(`/api/admin/series/${editingItem.series_id}`, updateData)
@@ -463,6 +622,19 @@ function AdminSets() {
     return parallelName
   }
 
+  // Function to remove set name from series name
+  const getCleanSeriesName = (seriesName) => {
+    if (!seriesName || !selectedSet) return seriesName
+    
+    // Remove the set name from the beginning of the series name
+    const setName = selectedSet.name
+    if (seriesName.startsWith(setName)) {
+      return seriesName.substring(setName.length).trim()
+    }
+    
+    return seriesName
+  }
+
 
   return (
     <div className="admin-sets-page">
@@ -558,44 +730,55 @@ function AdminSets() {
                       title="Click to view series, double-click to edit"
                     >
                       <div className="set-id-stripe">SET_ID: {set.set_id}</div>
-                      <div className="set-header">
-                        <div className="set-title-row">
-                          <div className="set-name">{set.name}</div>
-                          {set.is_complete && <span className="complete-badge">Complete</span>}
-                        </div>
-                        <button 
-                          className="edit-btn"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleEditSet(set)
-                          }}
-                          title="Edit set"
-                        >
-                          <Icon name="edit" size={14} />
-                        </button>
-                      </div>
-                      <div className="set-content">
-                        <div className="set-stats">
-                          <div className="set-stat-box">
-                            <div className="set-stat-number">{set.series_count || 0}</div>
-                            <div className="set-stat-label">SERIES</div>
-                          </div>
-                          <div className="set-stat-box">
-                            <div className="set-stat-number">{set.card_count || 0}</div>
-                            <div className="set-stat-label">CARDS</div>
-                          </div>
-                        </div>
-                        <div className="set-tags">
-                          {set.manufacturer && (
-                            <div className="set-manufacturer">
-                              <span className="manufacturer-tag">{set.manufacturer}</span>
-                            </div>
+                      <div className="set-card-body">
+                        <div className="set-thumbnail">
+                          {set.thumbnail ? (
+                            <img src={set.thumbnail} alt={`${set.name} thumbnail`} />
+                          ) : (
+                            <Icon name="series" size={20} />
                           )}
-                          {set.organization && (
-                            <div className="set-organization">
-                              <span className="org-abbreviation">{set.organization}</span>
+                        </div>
+                        <div className="set-main">
+                        <div className="set-header">
+                          <div className="set-title-row">
+                            <div className="set-name">{set.name}</div>
+                            {set.is_complete && <span className="complete-badge">Complete</span>}
+                          </div>
+                          <button 
+                            className="edit-btn"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleEditSet(set)
+                            }}
+                            title="Edit set"
+                          >
+                            <Icon name="edit" size={14} />
+                          </button>
+                        </div>
+                        <div className="set-content">
+                          <div className="set-stats">
+                            <div className="set-stat-box">
+                              <div className="set-stat-number">{set.series_count || 0}</div>
+                              <div className="set-stat-label">SERIES</div>
                             </div>
-                          )}
+                            <div className="set-stat-box">
+                              <div className="set-stat-number">{set.card_count || 0}</div>
+                              <div className="set-stat-label">CARDS</div>
+                            </div>
+                          </div>
+                          <div className="set-tags">
+                            {set.manufacturer && (
+                              <div className="set-manufacturer">
+                                <span className="manufacturer-tag">{set.manufacturer}</span>
+                              </div>
+                            )}
+                            {set.organization && (
+                              <div className="set-organization">
+                                <span className="org-abbreviation">{set.organization}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
                         </div>
                       </div>
                     </div>
@@ -627,9 +810,10 @@ function AdminSets() {
                       <div className="series-id-stripe">SERIES_ID: {s.series_id}</div>
                       <div className="series-content">
                         <div className="series-header">
-                          <div className="series-name">{s.name}</div>
+                          <div className="series-name">
+                            {s.name === selectedSet?.name ? 'Base Set' : getCleanSeriesName(s.name)}
+                          </div>
                           <div className="series-badges">
-                            {s.is_base && <span className="base-badge">BASE</span>}
                             <button 
                               className="edit-btn"
                               onClick={(e) => {
@@ -694,25 +878,25 @@ function AdminSets() {
                       </div>
                       {/* Bottom parallel stripe - always show for alignment */}
                       <div 
-                        className="series-parallel-stripe"
+                        className={`series-parallel-stripe ${s.parallel_of_name ? 'has-content' : 'empty'}`}
                         title={s.parallel_of_name ? `Parallel of series ID: ${s.parallel_of_series}` : undefined}
                       >
-                        {s.parallel_of_name && getCleanParallelName(s.parallel_of_name).toUpperCase()}
+                        {s.parallel_of_name && (getCleanParallelName(s.parallel_of_name).trim() || 'BASE').toUpperCase()}
                       </div>
                       {/* Right color stripe - only show when color data exists */}
-                      {s.primary_color_hex && (
+                      {s.color_hex_value && (
                         <div 
                           className="series-color-stripe-right"
                           style={{ 
-                            backgroundColor: s.primary_color_hex,
-                            color: isLightColor(s.primary_color_hex) ? '#000000' : '#ffffff',
-                            textShadow: isLightColor(s.primary_color_hex) 
+                            backgroundColor: s.color_hex_value,
+                            color: isLightColor(s.color_hex_value) ? '#000000' : '#ffffff',
+                            textShadow: isLightColor(s.color_hex_value) 
                               ? '0 1px 1px rgba(255, 255, 255, 0.8)' 
                               : '0 1px 1px rgba(0, 0, 0, 0.8)'
                           }}
                         >
                           {(() => {
-                            const colorName = s.primary_color_name || ''
+                            const colorName = s.color_name || ''
                             const printRun = s.print_run_display || (s.min_print_run && s.max_print_run ? `${s.min_print_run}-${s.max_print_run}` : '')
                             const displayText = [colorName, printRun].filter(Boolean).join(' ')
                             return displayText
@@ -766,11 +950,11 @@ function AdminSets() {
                   <span className="parallel-print-run-tag">{parallel.print_run_display}</span>
                 )}
               </div>
-              {parallel.primary_color_hex && (
+              {parallel.color_hex_value && (
                 <div 
                   className="parallel-color-stripe"
-                  style={{ backgroundColor: parallel.primary_color_hex }}
-                  title={parallel.primary_color_name}
+                  style={{ backgroundColor: parallel.color_hex_value }}
+                  title={parallel.color_name}
                 />
               )}
             </div>
@@ -784,7 +968,7 @@ function AdminSets() {
         <div className="modal-overlay" onClick={handleCloseModal}>
           <div className="edit-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>Edit {editType === 'set' ? 'Set' : 'Series'}</h3>
+              <h3>Edit {editType === 'set' ? 'Set' : 'Series'}{editingItem && ` #${editType === 'set' ? editingItem.set_id : editingItem.series_id}`}</h3>
               <button className="close-btn" onClick={handleCloseModal}>
                 <Icon name="x" size={20} />
               </button>
@@ -796,11 +980,6 @@ function AdminSets() {
                 {editType === 'set' ? (
                   <>
                     <div className="form-section">
-                      <div className="form-row">
-                        <label className="form-label">ID</label>
-                        <span className="form-value">{editingItem.set_id}</span>
-                      </div>
-
                       <div className="form-row">
                         <label className="form-label">Name</label>
                         <input
@@ -871,16 +1050,48 @@ function AdminSets() {
                           <span>Set is complete</span>
                         </label>
                       </div>
+
+                      <div className="form-row">
+                        <label className="form-label">Thumbnail</label>
+                        <div className="thumbnail-section">
+                          {editForm.thumbnail && (
+                            <div className="current-thumbnail">
+                              <img src={editForm.thumbnail} alt="Current thumbnail" />
+                              <span>Current thumbnail</span>
+                            </div>
+                          )}
+                          <div 
+                            className="thumbnail-upload"
+                            onClick={() => document.getElementById('thumbnail-input').click()}
+                          >
+                            <input
+                              id="thumbnail-input"
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => {
+                                const file = e.target.files[0]
+                                setSelectedFile(file)
+                                if (file) {
+                                  const previewUrl = URL.createObjectURL(file)
+                                  handleFormChange('thumbnail', previewUrl)
+                                }
+                              }}
+                              className="file-input"
+                            />
+                            <span className="upload-text">
+                              {selectedFile ? selectedFile.name : 'Choose image file...'}
+                            </span>
+                            {uploadingThumbnail && (
+                              <span className="upload-status">Uploading...</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </>
                 ) : (
                   <>
                     <div className="form-section">
-                      <div className="form-row">
-                        <label className="form-label">ID</label>
-                        <span className="form-value">{editingItem.series_id}</span>
-                      </div>
-
                       <div className="form-row">
                         <label className="form-label">Name</label>
                         <input
@@ -907,169 +1118,216 @@ function AdminSets() {
 
                       <div className="form-row">
                         <label className="form-label">Parallel Of</label>
-                        <input
-                          type="text"
+                        <select
                           className="form-input"
-                          value={editForm.parallel_of_series}
-                          onChange={(e) => handleFormChange('parallel_of_series', e.target.value)}
+                          value={editForm.parallel_of_series || ''}
+                          onChange={(e) => handleFormChange('parallel_of_series', e.target.value || null)}
                           onKeyDown={handleKeyDown}
-                          placeholder="Series ID if this is a parallel"
-                        />
+                        >
+                          <option value="">Not a parallel</option>
+                          {series.filter(s => !s.parallel_of_series && s.series_id !== editingItem?.series_id).map(s => (
+                            <option key={s.series_id} value={s.series_id}>
+                              {s.name === selectedSet?.name ? 'Base Set' : getCleanSeriesName(s.name)}
+                            </option>
+                          ))}
+                        </select>
                       </div>
                     </div>
 
                     <div className="form-section">
                       <h4>Card Counts</h4>
                       
-                      <div className="form-row">
-                        <label className="form-label">Total Cards</label>
-                        <input
-                          type="number"
-                          className="form-input"
-                          value={editForm.card_count}
-                          onChange={(e) => handleFormChange('card_count', e.target.value)}
-                          onKeyDown={handleKeyDown}
-                          min="0"
-                        />
-                      </div>
-
-                      <div className="form-row">
-                        <label className="form-label">Cards Entered</label>
-                        <input
-                          type="number"
-                          className="form-input"
-                          value={editForm.card_entered_count}
-                          onChange={(e) => handleFormChange('card_entered_count', e.target.value)}
-                          onKeyDown={handleKeyDown}
-                          min="0"
-                        />
+                      <div className="form-row-inline">
+                        <div className="form-field">
+                          <label className="form-label">Total</label>
+                          <input
+                            type="number"
+                            className="form-input"
+                            value={editForm.card_count}
+                            onChange={(e) => handleFormChange('card_count', e.target.value)}
+                            onKeyDown={handleKeyDown}
+                            min="0"
+                          />
+                        </div>
+                        <div className="form-field">
+                          <label className="form-label">Entered</label>
+                          <span className="form-value">{editForm.card_entered_count || 0}</span>
+                        </div>
                       </div>
                     </div>
 
-                    <div className="form-section">
-                      <h4>Print Run</h4>
-                      
-                      <div className="form-row">
-                        <label className="form-label">Min Print Run</label>
-                        <input
-                          type="number"
-                          className="form-input"
-                          value={editForm.min_print_run}
-                          onChange={(e) => handleFormChange('min_print_run', e.target.value)}
-                          onKeyDown={handleKeyDown}
-                          placeholder="Minimum print run"
-                          min="0"
-                        />
-                      </div>
-
-                      <div className="form-row">
-                        <label className="form-label">Max Print Run</label>
-                        <input
-                          type="number"
-                          className="form-input"
-                          value={editForm.max_print_run}
-                          onChange={(e) => handleFormChange('max_print_run', e.target.value)}
-                          onKeyDown={handleKeyDown}
-                          placeholder="Maximum print run"
-                          min="0"
-                        />
-                      </div>
-
-                      <div className="form-row">
-                        <label className="form-label">Display Text</label>
-                        <input
-                          type="text"
-                          className="form-input"
-                          value={editForm.print_run_display}
-                          onChange={(e) => handleFormChange('print_run_display', e.target.value)}
-                          onKeyDown={handleKeyDown}
-                          placeholder="e.g., /99, 1 of 1"
-                        />
-                      </div>
-                    </div>
 
                     <div className="form-section">
                       <h4>Color</h4>
                       
                       <div className="form-row">
-                        <label className="form-label">Color Name</label>
-                        <input
-                          type="text"
-                          className="form-input"
-                          value={editForm.primary_color_name}
-                          onChange={(e) => handleFormChange('primary_color_name', e.target.value)}
-                          onKeyDown={handleKeyDown}
-                          placeholder="e.g., Gold, Silver"
-                        />
-                      </div>
-
-                      <div className="form-row">
-                        <label className="form-label">Color Hex</label>
-                        <div className="color-field">
+                        <label className="form-label">Color</label>
+                        <div className="color-dropdown" ref={colorDropdownRef}>
                           <div 
-                            className="color-preview" 
-                            style={{ backgroundColor: editForm.primary_color_hex }}
-                            onClick={() => document.getElementById('color-picker').click()}
-                            title="Primary color"
-                          />
-                          <input
-                            id="color-picker"
-                            type="color"
-                            style={{ display: 'none' }}
-                            value={editForm.primary_color_hex || '#000000'}
-                            onChange={(e) => handleFormChange('primary_color_hex', e.target.value)}
-                          />
-                          <input
-                            type="text"
-                            className="color-text-input"
-                            value={editForm.primary_color_hex || ''}
-                            onChange={(e) => handleFormChange('primary_color_hex', e.target.value)}
-                            onKeyDown={handleKeyDown}
-                            placeholder="#000000"
-                            maxLength={7}
-                          />
+                            className="custom-color-select"
+                            onClick={() => setColorDropdownOpen(!colorDropdownOpen)}
+                          >
+                            <div className="selected-color-display">
+                              {editForm.color_id && colors.length > 0 && (() => {
+                                const selectedColor = colors.find(c => c.color_id == editForm.color_id)
+                                return selectedColor ? (
+                                  <>
+                                    <div 
+                                      className="color-swatch-small"
+                                      style={{ backgroundColor: selectedColor.hex_value }}
+                                    />
+                                    <span>{selectedColor.name}</span>
+                                  </>
+                                ) : null
+                              })() || <span>No color</span>}
+                            </div>
+                            <Icon name="chevron-down" size={16} />
+                          </div>
+                          {colorDropdownOpen && (
+                            <div className="custom-color-options">
+                              <div 
+                                className={`color-option ${!editForm.color_id ? 'selected' : ''}`}
+                                onClick={() => {
+                                  handleFormChange('color_id', null)
+                                  setColorDropdownOpen(false)
+                                }}
+                              >
+                                <span className="color-option-text">No color</span>
+                              </div>
+                              {colors.map(color => (
+                                <div 
+                                  key={color.color_id}
+                                  className={`color-option ${editForm.color_id == color.color_id ? 'selected' : ''}`}
+                                  onClick={() => {
+                                    handleFormChange('color_id', color.color_id)
+                                    setColorDropdownOpen(false)
+                                  }}
+                                >
+                                  <div 
+                                    className="color-swatch-small"
+                                    style={{ backgroundColor: color.hex_value }}
+                                  />
+                                  <span className="color-option-text">{color.name}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
 
                     <div className="form-section">
                       <h4>Images</h4>
-                      
-                      <div className="form-row">
-                        <label className="form-label">Photo URL</label>
-                        <input
-                          type="text"
-                          className="form-input"
-                          value={editForm.photo_url}
-                          onChange={(e) => handleFormChange('photo_url', e.target.value)}
-                          onKeyDown={handleKeyDown}
-                          placeholder="Photo URL"
-                        />
-                      </div>
 
                       <div className="form-row">
                         <label className="form-label">Front Image</label>
-                        <input
-                          type="text"
-                          className="form-input"
-                          value={editForm.front_image_path}
-                          onChange={(e) => handleFormChange('front_image_path', e.target.value)}
-                          onKeyDown={handleKeyDown}
-                          placeholder="Front image path"
-                        />
+                        <div className="image-upload-section">
+                          {/* Show current image from database */}
+                          {editForm.front_image_path && !frontImagePreview && (
+                            <div className="current-image-preview">
+                              <img 
+                                src={editForm.front_image_path} 
+                                alt="Current front image" 
+                                className="image-preview"
+                              />
+                            </div>
+                          )}
+                          
+                          {/* Show preview of newly selected image */}
+                          {frontImagePreview && (
+                            <div className="new-image-preview">
+                              <img 
+                                src={frontImagePreview} 
+                                alt="Front image preview" 
+                                className="image-preview"
+                              />
+                              <span className="new-image-label">New</span>
+                            </div>
+                          )}
+                          
+                          <div className="file-upload-wrapper">
+                            <input
+                              type="file"
+                              id="front-image-upload"
+                              accept="image/*"
+                              onChange={(e) => handleFrontImageSelect(e.target.files[0] || null)}
+                              className="file-input-hidden"
+                            />
+                            <label htmlFor="front-image-upload" className="file-upload-button">
+                              <span className="upload-text">
+                                {selectedFrontImage ? selectedFrontImage.name : 'Choose front image...'}
+                              </span>
+                            </label>
+                            {selectedFrontImage && (
+                              <button
+                                type="button"
+                                onClick={() => handleFrontImageSelect(null)}
+                                className="clear-image-btn"
+                              >
+                                Clear
+                              </button>
+                            )}
+                          </div>
+                        </div>
                       </div>
 
                       <div className="form-row">
                         <label className="form-label">Back Image</label>
-                        <input
-                          type="text"
-                          className="form-input"
-                          value={editForm.back_image_path}
-                          onChange={(e) => handleFormChange('back_image_path', e.target.value)}
-                          onKeyDown={handleKeyDown}
-                          placeholder="Back image path"
-                        />
+                        <div className="image-upload-section">
+                          {/* Show current image from database */}
+                          {editForm.back_image_path && !backImagePreview && (
+                            <div className="current-image-preview">
+                              <img 
+                                src={editForm.back_image_path} 
+                                alt="Current back image" 
+                                className="image-preview"
+                              />
+                            </div>
+                          )}
+                          
+                          {/* Show preview of newly selected image */}
+                          {backImagePreview && (
+                            <div className="new-image-preview">
+                              <img 
+                                src={backImagePreview} 
+                                alt="Back image preview" 
+                                className="image-preview"
+                              />
+                              <span className="new-image-label">New</span>
+                            </div>
+                          )}
+                          
+                          <div className="file-upload-wrapper">
+                            <input
+                              type="file"
+                              id="back-image-upload"
+                              accept="image/*"
+                              onChange={(e) => handleBackImageSelect(e.target.files[0] || null)}
+                              className="file-input-hidden"
+                            />
+                            <label htmlFor="back-image-upload" className="file-upload-button">
+                              <span className="upload-text">
+                                {selectedBackImage ? selectedBackImage.name : 'Choose back image...'}
+                              </span>
+                            </label>
+                            {selectedBackImage && (
+                              <button
+                                type="button"
+                                onClick={() => handleBackImageSelect(null)}
+                                className="clear-image-btn"
+                              >
+                                Clear
+                              </button>
+                            )}
+                          </div>
+                        </div>
                       </div>
+
+                      {uploadingImages && (
+                        <div className="upload-status-message">
+                          <span>Uploading images...</span>
+                        </div>
+                      )}
                     </div>
                   </>
                 )}

@@ -15,15 +15,15 @@ import PlayerDetail from './pages/PlayerDetail.jsx'
 import PlayersLanding from './pages/PlayersLanding.jsx'
 import TeamsLanding from './pages/TeamsLanding.jsx'
 import TeamDetail from './pages/TeamDetail.jsx'
-import SeriesLanding from './pages/SeriesLanding.jsx'
+import PublicSets from './pages/PublicSets.jsx'
 import SeriesDetail from './pages/SeriesDetail.jsx'
 import Admin from './pages/Admin.jsx'
 import AdminUsers from './pages/AdminUsers.jsx'
 import AdminTeams from './pages/AdminTeams.jsx'
+import AdminPlayers from './pages/AdminPlayers.jsx'
 import AdminSets from './pages/AdminSets.jsx'
 import AdminCards from './pages/AdminCards.jsx'
 import SpreadsheetIngestion from './pages/SpreadsheetIngestion.jsx'
-import SpreadsheetImport from './pages/SpreadsheetImport.jsx'
 import './index.css'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
@@ -59,7 +59,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
               <Route path="/players/:playerSlug" element={<PlayerDetail />} />
               <Route path="/teams" element={<TeamsLanding />} />
               <Route path="/teams/:teamSlug" element={<TeamDetail />} />
-              <Route path="/series" element={<SeriesLanding />} />
+              <Route path="/sets" element={<PublicSets />} />
+              <Route path="/sets/:year" element={<PublicSets />} />
+              <Route path="/sets/:year/:setSlug" element={<PublicSets />} />
               <Route path="/series/:seriesSlug" element={<SeriesDetail />} />
               <Route 
                 path="/admin" 
@@ -82,6 +84,14 @@ ReactDOM.createRoot(document.getElementById('root')).render(
                 element={
                   <ProtectedRoute>
                     <AdminTeams />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/admin/players" 
+                element={
+                  <ProtectedRoute>
+                    <AdminPlayers />
                   </ProtectedRoute>
                 } 
               />
@@ -130,14 +140,6 @@ ReactDOM.createRoot(document.getElementById('root')).render(
                 element={
                   <ProtectedRoute>
                     <SpreadsheetIngestion />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/admin/import" 
-                element={
-                  <ProtectedRoute>
-                    <SpreadsheetImport />
                   </ProtectedRoute>
                 } 
               />

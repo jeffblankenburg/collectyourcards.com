@@ -23,12 +23,14 @@ router.get('/', async (req, res) => {
         s.print_run_variations,
         s.min_print_run,
         s.max_print_run,
-        s.primary_color_name,
-        s.primary_color_hex,
+        s.color as color_id,
+        c.name as color_name,
+        c.hex_value as color_hex_value,
         s.front_image_path,
         s.back_image_path
       FROM series s
       LEFT JOIN series parent_s ON s.parallel_of_series = parent_s.series_id
+      LEFT JOIN color c ON s.color = c.color_id
       ORDER BY s.name DESC
     `
 
@@ -64,9 +66,10 @@ router.get('/', async (req, res) => {
         parent_series_name: series.parent_series_name,
         print_run_display: printRunDisplay,
         print_run_uniform: printRunVars <= 1,
-        color_uniform: !!series.primary_color_name,
-        primary_color_name: series.primary_color_name,
-        primary_color_hex: series.primary_color_hex,
+        color_uniform: !!series.color_name,
+        color_id: series.color_id ? Number(series.color_id) : null,
+        color_name: series.color_name,
+        color_hex_value: series.color_hex_value,
         front_image_path: series.front_image_path,
         back_image_path: series.back_image_path
       }

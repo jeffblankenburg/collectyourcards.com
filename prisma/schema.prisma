@@ -71,11 +71,12 @@ model card_variation {
 }
 
 model color {
-  color_id               Int      @id(map: "PK_color") @default(autoincrement())
-  name                   String?  @db.NVarChar(Max)
-  hex_value              String?  @db.NVarChar(Max)
-  created                DateTime @default(now(), map: "DEFAULT_color_created") @db.DateTime
-  card_card_colorTocolor card[]   @relation("card_colorTocolor")
+  color_id                      Int      @id(map: "PK_color") @default(autoincrement())
+  name                          String?  @db.NVarChar(Max)
+  hex_value                     String?  @db.NVarChar(Max)
+  created                       DateTime @default(now(), map: "DEFAULT_color_created") @db.DateTime
+  card_card_colorTocolor        card[]   @relation("card_colorTocolor")
+  series_series_colorTocolor    series[] @relation("series_colorTocolor")
 }
 
 model duplicate_detection_job {
@@ -341,7 +342,7 @@ model series {
   name                 String?  @db.NVarChar(Max)
   set                  Int?
   card_count           Int      @default(0, map: "DEFAULT_series_card_count")
-  photo_url            String?  @db.NVarChar(Max)
+  rookie_count         Int?     @default(0)
   created              DateTime @default(now(), map: "DEFAULT_series_created") @db.DateTime
   card_entered_count   Int?     @default(0, map: "DF__series__card_ent__3493CFA7")
   is_base              Boolean? @default(false, map: "DEFAULT_series_is_base")
@@ -352,12 +353,12 @@ model series {
   max_print_run        Int?
   print_run_variations Int?
   print_run_display    String?  @db.NVarChar(50)
-  primary_color_name   String?  @db.NVarChar(100)
-  primary_color_hex    String?  @db.NVarChar(10)
-  color_variations     Int?
+  color                Int?
   set_series_setToset  set?     @relation("series_setToset", fields: [set], references: [set_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_series_set")
+  color_series_colorTocolor color? @relation("series_colorTocolor", fields: [color], references: [color_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_series_color")
 
   @@index([set], map: "IX_series_set")
+  @@index([color], map: "IX_series_color")
 }
 
 model set {
@@ -370,6 +371,7 @@ model set {
   card_count                                  Int?          @default(0, map: "DF__set__card_count__3864608B")
   series_count                                Int?          @default(0, map: "DF__set__series_coun__395884C4")
   is_complete                                 Boolean?      @default(false, map: "DEFAULT_set_is_complete")
+  thumbnail                                   String?       @db.NVarChar(Max)
   series_series_setToset                      series[]      @relation("series_setToset")
   manufacturer_set_manufacturerTomanufacturer manufacturer? @relation("set_manufacturerTomanufacturer", fields: [manufacturer], references: [manufacturer_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_set_manufacturer")
   organization_set_organizationToorganization organization? @relation("set_organizationToorganization", fields: [organization], references: [organization_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_set_organization")
@@ -399,10 +401,12 @@ model team {
   primary_color                                String?       @db.NVarChar(Max)
   secondary_color                              String?       @db.NVarChar(Max)
   card_count                                   Int?          @default(0, map: "DF__team__card_count__3B40CD36")
+  player_count                                 Int?          @default(0, map: "DF__team__player_cou__54CB950F")
   player_team_player_team_teamToteam           player_team[] @relation("player_team_teamToteam")
   organization_team_organizationToorganization organization? @relation("team_organizationToorganization", fields: [organization], references: [organization_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_team_organization")
   user_team_user_team_teamToteam               user_team[]   @relation("user_team_teamToteam")
 
+  @@index([player_count(sort: Desc)], map: "idx_team_player_count")
   @@map("team")
 }
 
@@ -425,11 +429,10 @@ model user {
   role                                 String?        @default("user", map: "DF__user__role__01D345B0") @db.NVarChar(50)
   updated_at                           DateTime?      @db.DateTime
   verification_token                   String?        @db.NVarChar(500)
-  staging_data_staging_data_userTouser staging_data[]  @relation("staging_data_userTouser")
-  user_card_user_card_userTouser       user_card[]     @relation("user_card_userTouser")
-  user_player_user_player_userTouser   user_player[]   @relation("user_player_userTouser")
-  user_session_user_session_userTouser user_session[]  @relation("user_session_userTouser")
-  user_team_user_team_userTouser       user_team[]     @relation("user_team_userTouser")
+  staging_data_staging_data_userTouser staging_data[] @relation("staging_data_userTouser")
+  user_card_user_card_userTouser       user_card[]    @relation("user_card_userTouser")
+  user_player_user_player_userTouser   user_player[]  @relation("user_player_userTouser")
+  user_team_user_team_userTouser       user_team[]    @relation("user_team_userTouser")
 
   @@map("user")
 }
@@ -555,7 +558,6 @@ model user_session {
   ip_address    String?   @db.VarChar(45)
   user_agent    String?   @db.VarChar(500)
   token_hash    String?   @db.NVarChar(500)
-  user          user      @relation("user_session_userTouser", fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_user_session_user")
 
   @@index([expires_at], map: "idx_user_session_expires")
   @@index([session_token], map: "idx_user_session_token")
@@ -565,11 +567,11 @@ model user_session {
 
 model user_team {
   user_team_id              BigInt    @id(map: "PK_user_team") @default(autoincrement())
-  user                      BigInt?
-  team                      Int?
+  user                      BigInt
+  team                      Int
   created                   DateTime? @default(now(), map: "DEFAULT_user_team_created") @db.DateTime
-  team_user_team_teamToteam team?     @relation("user_team_teamToteam", fields: [team], references: [team_Id], onDelete: NoAction, onUpdate: NoAction, map: "FK_user_team_team")
-  user_user_team_userTouser user?     @relation("user_team_userTouser", fields: [user], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_user_team_user")
+  team_user_team_teamToteam team      @relation("user_team_teamToteam", fields: [team], references: [team_Id], onUpdate: NoAction, map: "FK_user_team_team")
+  user_user_team_userTouser user      @relation("user_team_userTouser", fields: [user], references: [user_id], onUpdate: NoAction, map: "FK_user_team_user")
 
   @@index([created], map: "IX_user_team_created")
   @@index([team], map: "IX_user_team_team")
