@@ -7,8 +7,10 @@ import {
   BarChart3,
   TrendingUp,
   User,
+  UserPlus,
   HelpCircle,
   LogOut,
+  LogIn,
   Target,
   DollarSign,
   Smartphone,
@@ -25,6 +27,8 @@ import {
   Menu,
   X,
   Plus,
+  PlusCircle,
+  Minus,
   ChevronDown,
   ChevronUp,
   ChevronRight,
@@ -32,6 +36,7 @@ import {
   Lock,
   Check,
   ExternalLink,
+  Monitor,
   // New icons for admin tables
   Heart,
   Map,
@@ -82,6 +87,8 @@ const iconMap = {
   'import': FileSpreadsheet,
   'analytics': BarChart3,
   'trending': TrendingUp,
+  'layers': Layers,
+  'users': Users,
   
   // Search & Discovery
   'search': Search,
@@ -118,11 +125,15 @@ const iconMap = {
   
   // Status & Alerts
   'success': CheckCircle,
+  'check-circle': CheckCircle,
   'error': XCircle,
+  'x-circle': XCircle,
   'warning': AlertTriangle,
+  'alert-circle': AlertCircle,
   'info': Info,
   'activity': Activity,
   'clock': Clock,
+  'circle': Circle,
   
   // Form & Interaction
   'eye': Eye,
@@ -131,7 +142,12 @@ const iconMap = {
   'menu': Menu,
   'close': X,
   'plus': Plus,
+  'plus-circle': PlusCircle,
+  'minus': Minus,
   'add': Plus,
+  'user-plus': UserPlus,
+  'monitor': Monitor,
+  'log-in': LogIn,
   'arrow-down': ChevronDown,
   'arrow-up': ChevronUp,
   'arrow-right': ChevronRight,
@@ -162,11 +178,9 @@ const iconMap = {
   'trash': Trash2,
   
   // Groups & Teams
-  'users': Users,
   'flag': Flag,
   
   // Player Stats Icons
-  'layers': Layers,
   'edit': Edit,
   'shield': Shield,
   'hash': Hash,

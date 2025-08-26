@@ -9,3 +9,8 @@
   flex: 1;
   padding-top: 0; /* Header is sticky, so no extra padding needed */
 }
+
+.app-main.with-admin-nav {
+  padding-top: 0; /* No extra padding needed since admin nav is now in document flow */
+}
+

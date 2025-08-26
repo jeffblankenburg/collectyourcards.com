@@ -1,5 +1,5 @@
 const express = require('express')
-const { PrismaClient } = require('@prisma/client')
+const { PrismaClient, Prisma } = require('@prisma/client')
 const { authMiddleware } = require('../middleware/auth')
 const router = express.Router()
 const prisma = new PrismaClient()
@@ -27,13 +27,16 @@ router.post('/counts', async (req, res) => {
 
     console.log('Getting card counts for user:', userId, 'cards:', card_ids.length)
 
+    // Convert card_ids to integers for proper SQL binding
+    const cardIdNumbers = card_ids.map(id => parseInt(id))
+
     const counts = await prisma.$queryRaw`
       SELECT 
         card,
         COUNT(*) as count
       FROM user_card 
       WHERE [user] = ${BigInt(parseInt(userId))} 
-      AND card IN (${card_ids.join(',')})
+      AND card IN (${Prisma.join(cardIdNumbers)})
       GROUP BY card
     `
 

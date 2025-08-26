@@ -246,8 +246,8 @@ function Header() {
         </div>
       </div>
       
-      {/* Admin Navigation - Only show on admin pages for authorized users */}
-      {isAdminPage() && isAuthenticated && (user?.role === 'admin' || user?.role === 'superadmin') && (
+      {/* Admin Navigation - Only show on admin pages for authorized admin users */}
+      {isAdminPage() && isAuthenticated && ['admin', 'superadmin', 'data_admin'].includes(user?.role) && (
         <AdminNavigation />
       )}
     </header>
