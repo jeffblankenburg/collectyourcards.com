@@ -129,3 +129,26 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Generated files
+client/src/generated/
+*/prisma/client/
+
+# Build artifacts
+*.zip
+webapp-logs.zip
+
+# Local database backups
+database_backups/
+
+# Azure Function local settings (contains secrets)
+azure-functions/*/local.settings.json

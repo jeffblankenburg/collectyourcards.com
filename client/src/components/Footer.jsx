@@ -28,23 +28,29 @@ function Footer() {
                 <Link to="/dashboard" className={`footer-link ${isActive('/dashboard') ? 'active' : ''}`}>
                   <Icon name="home" size={16} /> Dashboard
                 </Link>
-                <Link to="/collections" className={`footer-link ${isActive('/collections') ? 'active' : ''}`}>
-                  <Icon name="collections" size={16} /> Collections
+                <Link to="/collection" className={`footer-link ${isActive('/collection') ? 'active' : ''}`}>
+                  <Icon name="collections" size={16} /> Collection
                 </Link>
-                <Link to="/import" className={`footer-link ${isActive('/import') ? 'active' : ''}`}>
-                  <Icon name="import" size={16} /> Import
+                <Link to="/players" className={`footer-link ${isActive('/players') ? 'active' : ''}`}>
+                  <Icon name="user" size={16} /> Players
                 </Link>
-                <Link to="/analytics" className={`footer-link ${isActive('/analytics') ? 'active' : ''}`}>
-                  <Icon name="analytics" size={16} /> Analytics
+                <Link to="/teams" className={`footer-link ${isActive('/teams') ? 'active' : ''}`}>
+                  <Icon name="shield" size={16} /> Teams
+                </Link>
+                <Link to="/sets" className={`footer-link ${isActive('/sets') ? 'active' : ''}`}>
+                  <Icon name="layers" size={16} /> Sets
                 </Link>
               </>
             ) : (
               <>
-                <Link to="/features" className={`footer-link ${isActive('/features') ? 'active' : ''}`}>
-                  Features
+                <Link to="/players" className={`footer-link ${isActive('/players') ? 'active' : ''}`}>
+                  <Icon name="user" size={16} /> Players
                 </Link>
-                <Link to="/pricing" className={`footer-link ${isActive('/pricing') ? 'active' : ''}`}>
-                  Pricing
+                <Link to="/teams" className={`footer-link ${isActive('/teams') ? 'active' : ''}`}>
+                  <Icon name="shield" size={16} /> Teams
+                </Link>
+                <Link to="/sets" className={`footer-link ${isActive('/sets') ? 'active' : ''}`}>
+                  <Icon name="layers" size={16} /> Sets
                 </Link>
               </>
             )}
@@ -66,11 +72,11 @@ function Footer() {
               </>
             ) : (
               <>
-                <Link to="/login" className="footer-link">
+                <Link to="/auth/login" className="footer-link">
                   <Icon name="user" size={16} /> Sign In
                 </Link>
-                <Link to="/register" className="footer-link">
-                  <Icon name="collections" size={16} /> Create Account
+                <Link to="/auth/signup" className="footer-link">
+                  <Icon name="user-plus" size={16} /> Create Account
                 </Link>
               </>
             )}
@@ -93,16 +99,16 @@ function Footer() {
           </div>
         </div>
 
-        {/* Legal */}
+        {/* About */}
         <div className="footer-section">
-          <h4>Legal</h4>
+          <h4>About</h4>
           <div className="footer-links">
-            <Link to="/privacy" className="footer-link">
-              Privacy Policy
+            <Link to="/attributions" className="footer-link">
+              <Icon name="info" size={16} /> Attributions
             </Link>
-            <Link to="/terms" className="footer-link">
-              Terms of Service
-            </Link>
+            <a href="https://github.com/jeffblankenburg/collectyourcards.com" target="_blank" rel="noopener noreferrer" className="footer-link">
+              <Icon name="external-link" size={16} /> Source Code
+            </a>
           </div>
         </div>
       </div>
