@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import axios from 'axios'
 import Icon from '../components/Icon'
+import { PlayerCard } from '../components/cards'
 import './PlayersLanding.css'
 
 function PlayersLanding() {
@@ -76,6 +77,15 @@ function PlayersLanding() {
     }
   }
 
+  const handleTeamClick = (teamId) => {
+    // Find the player and handle click with team filter
+    // This is called from within PlayerCard when team circle is clicked
+    const currentPlayer = players.find(p => p.teams?.some(t => t.team_id === teamId))
+    if (currentPlayer) {
+      handlePlayerClick(currentPlayer, teamId)
+    }
+  }
+
   const trackPlayerVisit = async (player) => {
     try {
       // Track visit on backend
@@ -113,55 +123,20 @@ function PlayersLanding() {
     }
   }
 
-  const PlayerCard = ({ player }) => {
-    const handleTeamClick = (e, teamId) => {
-      e.stopPropagation()
-      handlePlayerClick(player, teamId)
+  // Custom PlayerCard wrapper that handles tracking
+  const PlayerCardWithTracking = ({ player }) => {
+    // Create a custom onClick handler that includes tracking
+    const handleCustomPlayerClick = () => {
+      handlePlayerClick(player)
     }
 
+    // Pass the custom onClick and team click handler to the unified component
     return (
-      <div 
-        className="card-base card-interactive card-hover-effect"
-        onClick={() => handlePlayerClick(player)}
-      >
-        <div className="player-card-content">
-          <div className="player-info">
-            <h3 className="player-name">
-              {player.first_name} {player.last_name}
-              {player.is_hof && <Icon name="trophy" size={16} className="hof-icon" />}
-            </h3>
-          </div>
-          
-          <div className="player-teams">
-            {player.teams?.map(team => (
-              <div
-                key={team.team_id}
-                className="team-circle-base team-circle-sm team-circle-clickable"
-                style={{
-                  '--primary-color': team.primary_color || '#666',
-                  '--secondary-color': team.secondary_color || '#999'
-                }}
-                title={`${team.name} (${team.card_count} cards)`}
-                onClick={(e) => handleTeamClick(e, team.team_id)}
-              >
-                {team.abbreviation}
-              </div>
-            ))}
-          </div>
-
-          <div className="player-stats">
-            {player.nick_name && (
-              <div className="nickname-section">
-                <p className="player-nickname">"{player.nick_name}"</p>
-              </div>
-            )}
-            <div className="card-count">
-              <span className="count-number">{player.card_count.toLocaleString()}</span>
-              <span className="count-label">Cards</span>
-            </div>
-          </div>
-        </div>
-      </div>
+      <PlayerCard 
+        player={player}
+        onTeamClick={handleTeamClick}
+        customOnClick={handleCustomPlayerClick}
+      />
     )
   }
 
@@ -192,9 +167,9 @@ function PlayersLanding() {
 
   return (
     <div className="players-landing">
-      <div className="grid-responsive grid-cards-md">
+      <div className="players-landing-grid">
         {players.map(player => (
-          <PlayerCard key={player.player_id} player={player} />
+          <PlayerCardWithTracking key={player.player_id} player={player} />
         ))}
       </div>
     </div>

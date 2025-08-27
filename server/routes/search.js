@@ -475,6 +475,8 @@ async function searchTeams(query, limit) {
         t.city,
         t.mascot,
         t.abbreviation,
+        t.primary_color,
+        t.secondary_color,
         o.name as organization_name,
         COUNT(DISTINCT c.card_id) as card_count,
         COUNT(DISTINCT pt.player) as player_count
@@ -487,7 +489,7 @@ async function searchTeams(query, limit) {
          OR t.city LIKE '${searchPattern}'
          OR t.mascot LIKE '${searchPattern}'
          OR t.abbreviation LIKE '${searchPattern}'
-      GROUP BY t.team_id, t.name, t.city, t.mascot, t.abbreviation, o.name
+      GROUP BY t.team_id, t.name, t.city, t.mascot, t.abbreviation, t.primary_color, t.secondary_color, o.name
       ORDER BY card_count DESC
     `)
     

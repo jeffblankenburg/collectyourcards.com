@@ -1,0 +1,54 @@
+/* CardResult Component Styles */
+
+.card-result-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  gap: 1rem;
+}
+
+/* Card Info */
+.card-info {
+  flex: 1;
+}
+
+.card-number {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem 0;
+  color: #fb923c;
+}
+
+.card-player {
+  font-size: 1.125rem;
+  font-weight: 500;
+  margin: 0 0 0.25rem 0;
+  color: white;
+}
+
+.card-series {
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.6);
+  margin: 0 0 1rem 0;
+}
+
+/* Card Badges */
+.card-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+/* Use unified badge classes from components.css */
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .card-number {
+    font-size: 1.3rem;
+  }
+  
+  .card-player {
+    font-size: 1rem;
+  }
+}

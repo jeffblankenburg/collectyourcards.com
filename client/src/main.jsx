@@ -17,6 +17,7 @@ import TeamsLanding from './pages/TeamsLanding.jsx'
 import TeamDetail from './pages/TeamDetail.jsx'
 import PublicSets from './pages/PublicSets.jsx'
 import SeriesDetail from './pages/SeriesDetail.jsx'
+import SearchResults from './pages/SearchResults.jsx'
 import Admin from './pages/Admin.jsx'
 import AdminUsers from './pages/AdminUsers.jsx'
 import AdminTeams from './pages/AdminTeams.jsx'
@@ -35,6 +36,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Layout>
             <Routes>
               <Route path="/" element={<App />} />
+              <Route path="/search" element={<SearchResults />} />
               <Route path="/status" element={<Status />} />
               <Route path="/auth/:mode" element={<Auth />} />
               <Route path="/login" element={<Auth />} />

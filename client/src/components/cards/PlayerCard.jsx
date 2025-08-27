@@ -1,0 +1,97 @@
+import React from 'react'
+import { useNavigate } from 'react-router-dom'
+import Icon from '../Icon'
+import './PlayerCard.css'
+
+function PlayerCard({ player, showBadge = false, onTeamClick = null, customOnClick = null }) {
+  const navigate = useNavigate()
+
+  const handlePlayerClick = () => {
+    if (customOnClick) {
+      customOnClick()
+    } else {
+      const slug = `${player.first_name}-${player.last_name}`
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .trim()
+      navigate(`/players/${slug}`)
+    }
+  }
+
+  const handleTeamClick = (e, teamId) => {
+    e.stopPropagation()
+    if (onTeamClick) {
+      onTeamClick(teamId)
+    } else {
+      // Default team navigation
+      navigate(`/teams/${teamId}`)
+    }
+  }
+
+  return (
+    <div 
+      className="playercard-container"
+      onClick={handlePlayerClick}
+    >
+      {showBadge && (
+        <div className="playercard-result-type-badge playercard-result-type-badge-player">
+          <Icon name="user" size={14} />
+          Player
+        </div>
+      )}
+      
+      <div className="playercard-content">
+        <div className="playercard-name-section">
+          <h3 className="playercard-name">
+            {player.first_name} {player.last_name}
+          </h3>
+          <div className="playercard-nickname-header">
+            {player.nick_name ? (
+              <p className="playercard-nickname-text">"{player.nick_name}"</p>
+            ) : (
+              <p className="playercard-nickname-text playercard-nickname-placeholder">&nbsp;</p>
+            )}
+          </div>
+        </div>
+        
+        <div className="playercard-teams">
+          {player.teams?.map(team => (
+            <div
+              key={team.team_id}
+              className="playercard-team-circle"
+              style={{
+                '--primary-color': team.primary_color || '#666',
+                '--secondary-color': team.secondary_color || '#999'
+              }}
+              title={`${team.name} (${team.card_count || 0} cards)`}
+              onClick={(e) => handleTeamClick(e, team.team_id)}
+            >
+              {team.abbreviation}
+            </div>
+          ))}
+        </div>
+
+        <div className="playercard-stats">
+          <div className="playercard-count">
+            <span className="playercard-count-number">{(player.card_count || 0).toLocaleString()}</span>
+            <span className="playercard-count-label">Cards</span>
+          </div>
+          <div className="playercard-rc-count">
+            <span className="playercard-rc-count-number">{(player.rc_count || 0).toLocaleString()}</span>
+            <span className="playercard-rc-count-label">Rookies</span>
+          </div>
+          {player.is_hof && (
+            <div className="playercard-hof-box">
+              <Icon name="user" size={14} className="playercard-hof-box-icon" />
+              <span className="playercard-hof-label">HOF</span>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default PlayerCard

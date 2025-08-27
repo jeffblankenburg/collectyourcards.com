@@ -1,0 +1,291 @@
+/* PlayerCard - Completely Isolated Stylesheet with Unique Class Names */
+
+/* Main Container */
+.playercard-container {
+  position: relative;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  padding: 0.75rem;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(10px);
+  cursor: pointer;
+  height: 210px;
+  display: flex;
+  flex-direction: column;
+}
+
+.playercard-container:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(229, 231, 235, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+/* Badge */
+.playercard-result-type-badge {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.375rem 0.75rem;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  z-index: 1;
+}
+
+.playercard-result-type-badge-player {
+  background: rgba(59, 130, 246, 0.9);
+  color: white;
+}
+
+/* Card Content */
+.playercard-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+/* Player Name Section - At the very top */
+.playercard-name-section {
+  display: block;
+  margin: 0;
+  padding: 0 0 0.5rem 0;
+}
+
+.playercard-name {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0;
+  padding: 0;
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  line-height: 1.2;
+}
+
+.playercard-hof-icon {
+  color: #fbbf24;
+}
+
+/* Nickname Header - Reserved space below name */
+.playercard-nickname-header {
+  min-height: 1.2rem;
+  margin-top: 0.25rem;
+}
+
+.playercard-nickname-text {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-style: italic;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.playercard-nickname-placeholder {
+  visibility: hidden;
+}
+
+/* Team Circles */
+.playercard-teams {
+  display: flex;
+  align-items: flex-start;
+  column-gap: 0.15rem;
+  row-gap: 0.05rem;
+  flex-wrap: wrap;
+  margin: 0;
+  flex: 1;
+  line-height: 0;
+}
+
+.playercard-team-circle {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--primary-color, #666);
+  border: 2px solid var(--secondary-color, #999);
+  color: white;
+  font-weight: bold;
+  font-size: 0.55rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-transform: uppercase;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+  cursor: pointer;
+  user-select: none;
+}
+
+.playercard-team-circle:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2);
+}
+
+/* Player Stats Section */
+.playercard-stats {
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-start;
+  gap: 0.5rem;
+  padding: 0.75rem 0 0 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  margin-top: auto;
+  flex-shrink: 0;
+}
+
+/* HOF Box */
+.playercard-hof-box {
+  position: relative;
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.15) 0%, rgba(245, 158, 11, 0.15) 100%);
+  border: 1px solid rgba(251, 191, 36, 0.4);
+  border-radius: 4px;
+  padding: 0.5rem 0.75rem;
+  text-align: center;
+  min-width: 70px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.125rem;
+  flex-shrink: 0;
+  color: #fbbf24;
+  box-shadow: 0 0 20px rgba(251, 191, 36, 0.1);
+  overflow: hidden;
+}
+
+.playercard-hof-box::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, transparent 30%, rgba(251, 191, 36, 0.1) 50%, transparent 70%);
+  animation: playercard-shimmer 2s infinite;
+}
+
+.playercard-hof-box-icon {
+  color: #fbbf24;
+  position: relative;
+  z-index: 1;
+}
+
+.playercard-hof-label {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: #fbbf24;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  line-height: 1;
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes playercard-shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Card Count */
+.playercard-count {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  padding: 0.5rem 0.75rem;
+  text-align: center;
+  min-width: 70px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.125rem;
+  flex-shrink: 0;
+}
+
+.playercard-count-number {
+  font-size: 1rem;
+  font-weight: 700;
+  color: white;
+  line-height: 1;
+}
+
+.playercard-count-label {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.7);
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  line-height: 1;
+}
+
+/* RC Count */
+.playercard-rc-count {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  padding: 0.5rem 0.75rem;
+  text-align: center;
+  min-width: 70px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.125rem;
+  flex-shrink: 0;
+}
+
+.playercard-rc-count-number {
+  font-size: 1rem;
+  font-weight: 700;
+  color: white;
+  line-height: 1;
+}
+
+.playercard-rc-count-label {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.7);
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  line-height: 1;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .playercard-name {
+    font-size: 1.2rem;
+  }
+  
+  .playercard-count-number {
+    font-size: 1.3rem;
+  }
+
+  .playercard-team-circle {
+    width: 28px;
+    height: 28px;
+    font-size: 0.55rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .playercard-container {
+    padding: 0.5rem;
+  }
+
+  .playercard-name {
+    font-size: 1.1rem;
+  }
+
+  .playercard-team-circle {
+    width: 26px;
+    height: 26px;
+    font-size: 0.5rem;
+  }
+}

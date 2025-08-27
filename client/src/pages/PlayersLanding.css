@@ -27,21 +27,23 @@
 }
 
 
-/* Players Grid - Using unified grid system */
-.players-grid {
-  /* Remove custom grid - now using unified classes */
+/* Players Landing Grid - Using unified grid system */
+.players-landing-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 250px);
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  justify-content: center;
 }
 
 /* Player Card - Using unified card system */
-.player-card {
-  /* Remove custom card styles - now using unified classes */
-}
+/* All player card styles now use unified PlayerCard component */
 
 
 .player-card-content {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: .5rem;
   height: 100%;
 }
 

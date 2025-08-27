@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import axios from 'axios'
 import Icon from '../components/Icon'
+import { TeamCard } from '../components/cards'
 import './TeamsLanding.css'
 
 function TeamsLanding() {
@@ -107,45 +108,21 @@ function TeamsLanding() {
     }
   }
 
-  const TeamCard = ({ team }) => (
-    <div 
-      className="team-card"
-      onClick={() => handleTeamClick(team)}
-    >
-      <div className="team-card-content">
-        <div className="team-visual">
-          <div
-            className="team-circle-large"
-            style={{
-              '--primary-color': team.primary_color || '#666',
-              '--secondary-color': team.secondary_color || '#999'
-            }}
-            title={team.name}
-          >
-            {team.abbreviation}
-          </div>
-        </div>
+  // Custom TeamCard wrapper that handles tracking
+  const TeamCardWithTracking = ({ team }) => {
+    // Create a custom onClick handler that includes tracking
+    const handleCustomTeamClick = () => {
+      handleTeamClick(team)
+    }
 
-        <div className="team-info">
-          <h3 className="team-name">{team.name}</h3>
-          {team.organization_abbreviation && (
-            <p className="team-organization">{team.organization_abbreviation}</p>
-          )}
-        </div>
-        
-        <div className="team-stats">
-          <div className="stat-item">
-            <span className="stat-number">{team.card_count.toLocaleString()}</span>
-            <span className="stat-label">Cards</span>
-          </div>
-          <div className="stat-item">
-            <span className="stat-number">{team.player_count?.toLocaleString() || '0'}</span>
-            <span className="stat-label">Players</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
+    // Pass the custom onClick handler to the unified component
+    return (
+      <TeamCard 
+        team={team}
+        customOnClick={handleCustomTeamClick}
+      />
+    )
+  }
 
   if (loading) {
     return (
@@ -174,9 +151,9 @@ function TeamsLanding() {
 
   return (
     <div className="teams-landing">
-      <div className="teams-grid">
+      <div className="grid-responsive grid-cards-md">
         {teams.map(team => (
-          <TeamCard key={team.team_id} team={team} />
+          <TeamCardWithTracking key={team.team_id} team={team} />
         ))}
       </div>
     </div>

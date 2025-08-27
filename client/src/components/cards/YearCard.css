@@ -1,0 +1,197 @@
+/* YearCard - Completely Isolated Stylesheet with Unique Class Names */
+
+/* Main Container */
+.yearcard-container {
+  position: relative;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  padding: 0.75rem;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(10px);
+  cursor: pointer;
+  height: 210px;
+  display: flex;
+  flex-direction: column;
+}
+
+.yearcard-container:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(229, 231, 235, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+/* Badge */
+.yearcard-result-type-badge {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.375rem 0.75rem;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  z-index: 1;
+}
+
+.yearcard-result-type-badge-year {
+  background: rgba(251, 146, 60, 0.9);
+  color: white;
+}
+
+/* Card Content */
+.yearcard-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+/* Year Name Section - At the very top */
+.yearcard-name-section {
+  display: block;
+  margin: 0;
+  padding: 0 0 0.5rem 0;
+}
+
+.yearcard-name {
+  font-size: 5rem;
+  font-weight: 700;
+  margin: 0;
+  padding: 0;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  line-height: 1;
+  text-align: center;
+}
+
+/* Subtitle Header - Reserved space below name */
+.yearcard-subtitle-header {
+  min-height: 1.2rem;
+  margin-top: 0.25rem;
+}
+
+.yearcard-subtitle-text {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-style: italic;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.yearcard-subtitle-placeholder {
+  visibility: hidden;
+}
+
+/* Middle Space with Top-Aligned Year */
+.yearcard-middle-space {
+  flex: 1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+/* Year Stats Section */
+.yearcard-stats {
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-start;
+  gap: 0.5rem;
+  padding: 0.75rem 0 0 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  margin-top: auto;
+  flex-shrink: 0;
+}
+
+/* Card Count */
+.yearcard-count {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  padding: 0.5rem 0.75rem;
+  text-align: center;
+  min-width: 70px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.125rem;
+  flex-shrink: 0;
+}
+
+.yearcard-count-number {
+  font-size: 1rem;
+  font-weight: 700;
+  color: white;
+  line-height: 1;
+}
+
+.yearcard-count-label {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.7);
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  line-height: 1;
+}
+
+/* Set Count */
+.yearcard-set-count {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  padding: 0.5rem 0.75rem;
+  text-align: center;
+  min-width: 70px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.125rem;
+  flex-shrink: 0;
+}
+
+.yearcard-set-count-number {
+  font-size: 1rem;
+  font-weight: 700;
+  color: white;
+  line-height: 1;
+}
+
+.yearcard-set-count-label {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.7);
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  line-height: 1;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .yearcard-name {
+    font-size: 2.5rem;
+  }
+  
+  .yearcard-count-number, .yearcard-set-count-number {
+    font-size: 1.3rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .yearcard-container {
+    padding: 0.5rem;
+  }
+
+  .yearcard-name {
+    font-size: 2.2rem;
+  }
+}

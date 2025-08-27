@@ -1,5 +1,4 @@
-/* Import unified component styles */
-@import './styles/components.css';
+/* Components now have completely independent styles - no unified imports */
 
 * {
   margin: 0;
