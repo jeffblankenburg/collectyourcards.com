@@ -24,6 +24,7 @@ import AdminPlayers from './pages/AdminPlayers.jsx'
 import AdminSets from './pages/AdminSets.jsx'
 import AdminCards from './pages/AdminCards.jsx'
 import SpreadsheetIngestion from './pages/SpreadsheetIngestion.jsx'
+import CollectionDashboard from './pages/CollectionDashboard.jsx'
 import './index.css'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
@@ -52,6 +53,14 @@ ReactDOM.createRoot(document.getElementById('root')).render(
                 element={
                   <ProtectedRoute>
                     <Profile />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/collection" 
+                element={
+                  <ProtectedRoute>
+                    <CollectionDashboard />
                   </ProtectedRoute>
                 } 
               />

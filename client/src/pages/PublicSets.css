@@ -60,20 +60,38 @@
   font-size: 0.875rem !important;
 }
 
-/* Fix year card font sizes */
+/* Fix year card font sizes and sizing */
 .admin-sets-page .year-number {
   font-size: 2rem !important;
   font-weight: 700 !important;
 }
 
+.admin-sets-page .year-stats {
+  justify-content: center !important;
+  gap: 0.5rem !important;
+}
+
+.admin-sets-page .year-stat-box {
+  flex: 0 1 auto !important;
+  min-width: 60px !important;
+  max-width: 80px !important;
+  padding: 0.4rem 0.5rem !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
 .admin-sets-page .year-stat-number {
-  font-size: 1.25rem !important;
+  font-size: 1rem !important;
   font-weight: 700 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
 }
 
 .admin-sets-page .year-stat-label {
-  font-size: 0.6875rem !important;
+  font-size: 0.625rem !important;
   font-weight: 500 !important;
+  white-space: nowrap !important;
 }
 
 /* Fix set card font sizes */

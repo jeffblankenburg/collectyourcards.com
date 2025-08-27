@@ -73,7 +73,8 @@ import {
   // Additional icons for player stats
   Edit,
   Hash,
-  Grid3X3
+  Grid3X3,
+  List
 } from 'lucide-react'
 
 // Icon mapping for consistent usage across the app
@@ -184,7 +185,8 @@ const iconMap = {
   'edit': Edit,
   'shield': Shield,
   'hash': Hash,
-  'collection': Grid3X3
+  'collection': Grid3X3,
+  'list': List
 }
 
 // Custom card icon component - vertically-oriented rectangle with rounded corners

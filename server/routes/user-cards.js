@@ -62,6 +62,7 @@ router.post('/', async (req, res) => {
     const userId = req.user.user_id
     const {
       card_id,
+      random_code,
       serial_number,
       user_location,
       notes,
@@ -100,6 +101,7 @@ router.post('/', async (req, res) => {
       INSERT INTO user_card (
         [user], 
         card, 
+        random_code,
         serial_number, 
         purchase_price, 
         estimated_value, 
@@ -113,6 +115,7 @@ router.post('/', async (req, res) => {
       ) VALUES (
         ${BigInt(parseInt(userId))},
         ${card_id},
+        ${random_code},
         ${serial_number},
         ${purchase_price},
         ${estimated_value},
@@ -217,6 +220,120 @@ router.get('/', async (req, res) => {
     res.status(500).json({
       error: 'Database error',
       message: 'Failed to get user collection'
+    })
+  }
+})
+
+// PUT /api/user/cards/:userCardId - Update a user's card
+router.put('/:userCardId', async (req, res) => {
+  try {
+    const userId = req.user?.userId
+    const { userCardId } = req.params
+    
+    if (!userId) {
+      return res.status(401).json({
+        error: 'Authentication error',
+        message: 'User ID not found in authentication token'
+      })
+    }
+
+    console.log('Updating user card:', { userId, userCardId, body: req.body })
+
+    // Verify the user_card belongs to this user
+    const existingCard = await prisma.$queryRaw`
+      SELECT user_card_id 
+      FROM user_card 
+      WHERE user_card_id = ${parseInt(userCardId)} 
+      AND [user] = ${BigInt(parseInt(userId))}
+    `
+
+    if (existingCard.length === 0) {
+      return res.status(404).json({
+        error: 'Card not found',
+        message: 'User card not found or does not belong to you'
+      })
+    }
+
+    // Extract and validate the update data
+    const {
+      random_code,
+      serial_number,
+      user_location,
+      notes,
+      aftermarket_autograph,
+      purchase_price,
+      estimated_value,
+      current_value,
+      grading_agency,
+      grade
+    } = req.body
+
+    // Build update data object for simpler approach
+    const updateData = {}
+    
+    if (random_code !== undefined) updateData.random_code = random_code || null
+    if (serial_number !== undefined) updateData.serial_number = serial_number
+    if (user_location !== undefined) updateData.user_location = user_location || null
+    if (notes !== undefined) updateData.notes = notes || null
+    if (aftermarket_autograph !== undefined) updateData.aftermarket_autograph = aftermarket_autograph ? 1 : 0
+    if (purchase_price !== undefined) updateData.purchase_price = purchase_price || null
+    if (estimated_value !== undefined) updateData.estimated_value = estimated_value || null
+    if (current_value !== undefined) updateData.current_value = current_value || null
+    if (grading_agency !== undefined) updateData.grading_agency = grading_agency || null
+    if (grade !== undefined) updateData.grade = grade || null
+
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({
+        error: 'No updates provided',
+        message: 'At least one field must be provided for update'
+      })
+    }
+
+    console.log('Updating user card:', { userId, userCardId, updateData })
+
+    // Use individual field updates with proper parameter binding
+    const updates = []
+    if (updateData.random_code !== undefined) {
+      await prisma.$queryRaw`UPDATE user_card SET random_code = ${updateData.random_code} WHERE user_card_id = ${parseInt(userCardId)} AND [user] = ${BigInt(parseInt(userId))}`
+    }
+    if (updateData.serial_number !== undefined) {
+      await prisma.$queryRaw`UPDATE user_card SET serial_number = ${updateData.serial_number} WHERE user_card_id = ${parseInt(userCardId)} AND [user] = ${BigInt(parseInt(userId))}`
+    }
+    if (updateData.user_location !== undefined) {
+      await prisma.$queryRaw`UPDATE user_card SET user_location = ${updateData.user_location} WHERE user_card_id = ${parseInt(userCardId)} AND [user] = ${BigInt(parseInt(userId))}`
+    }
+    if (updateData.notes !== undefined) {
+      await prisma.$queryRaw`UPDATE user_card SET notes = ${updateData.notes} WHERE user_card_id = ${parseInt(userCardId)} AND [user] = ${BigInt(parseInt(userId))}`
+    }
+    if (updateData.aftermarket_autograph !== undefined) {
+      await prisma.$queryRaw`UPDATE user_card SET aftermarket_autograph = ${updateData.aftermarket_autograph} WHERE user_card_id = ${parseInt(userCardId)} AND [user] = ${BigInt(parseInt(userId))}`
+    }
+    if (updateData.purchase_price !== undefined) {
+      await prisma.$queryRaw`UPDATE user_card SET purchase_price = ${updateData.purchase_price} WHERE user_card_id = ${parseInt(userCardId)} AND [user] = ${BigInt(parseInt(userId))}`
+    }
+    if (updateData.estimated_value !== undefined) {
+      await prisma.$queryRaw`UPDATE user_card SET estimated_value = ${updateData.estimated_value} WHERE user_card_id = ${parseInt(userCardId)} AND [user] = ${BigInt(parseInt(userId))}`
+    }
+    if (updateData.current_value !== undefined) {
+      await prisma.$queryRaw`UPDATE user_card SET current_value = ${updateData.current_value} WHERE user_card_id = ${parseInt(userCardId)} AND [user] = ${BigInt(parseInt(userId))}`
+    }
+    if (updateData.grading_agency !== undefined) {
+      await prisma.$queryRaw`UPDATE user_card SET grading_agency = ${updateData.grading_agency} WHERE user_card_id = ${parseInt(userCardId)} AND [user] = ${BigInt(parseInt(userId))}`
+    }
+    if (updateData.grade !== undefined) {
+      await prisma.$queryRaw`UPDATE user_card SET grade = ${updateData.grade} WHERE user_card_id = ${parseInt(userCardId)} AND [user] = ${BigInt(parseInt(userId))}`
+    }
+
+    res.json({
+      message: 'Card updated successfully',
+      user_card_id: parseInt(userCardId)
+    })
+
+  } catch (error) {
+    console.error('Error updating user card:', error)
+    res.status(500).json({
+      error: 'Database error',
+      message: 'Failed to update card'
     })
   }
 })

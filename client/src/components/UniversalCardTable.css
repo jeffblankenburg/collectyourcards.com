@@ -117,6 +117,15 @@
   overflow: hidden;
 }
 
+.cards-table th.action-header {
+  position: sticky;
+  right: 0;
+  background: rgba(30, 41, 59, 0.95);
+  backdrop-filter: blur(10px);
+  z-index: 6;
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+}
+
 .cards-table th.center {
   text-align: center;
 }
@@ -241,9 +250,13 @@
   align-items: center;
   gap: 0.25rem;
   white-space: nowrap;
-  margin: 0;
+  margin: 0 0.5rem 0 0;
   padding: 0;
   border-bottom: none !important; /* Override AdminPlayers.css border */
+}
+
+.cards-table .player-row:last-child {
+  margin-right: 0;
 }
 
 .player-cell .player-name {
@@ -368,10 +381,16 @@
 }
 
 .action-cell {
-  width: 45px;
-  min-width: 45px;
-  max-width: 45px;
+  width: 80px;
+  min-width: 80px;
+  max-width: 80px;
   padding: 0.1rem 0.25rem;
+  position: sticky;
+  right: 0;
+  background: rgba(30, 41, 59, 0.95);
+  backdrop-filter: blur(10px);
+  z-index: 3;
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .add-card-btn {
@@ -610,4 +629,231 @@
 .add-card-btn:hover {
   background: rgba(255, 255, 255, 0.2);
   border-color: rgba(255, 255, 255, 0.3);
+}
+
+.edit-card-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  padding: 0.4rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.edit-card-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Collection-specific column styles */
+.random-code-cell {
+  min-width: 100px;
+}
+
+.random-code-label {
+  display: inline-block;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.9);
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+/* Action buttons styling */
+.action-buttons {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  align-items: center;
+}
+
+.edit-card-btn,
+.delete-card-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  padding: 0.4rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.edit-card-btn:hover {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: rgba(59, 130, 246, 0.4);
+}
+
+.delete-card-btn:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+/* Delete confirmation modal styling */
+.delete-confirm-modal {
+  background: white;
+  border-radius: 12px;
+  padding: 0;
+  max-width: 500px;
+  width: 90vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+.delete-confirm-modal .modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.delete-confirm-modal .modal-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.delete-confirm-modal .modal-content {
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.delete-confirm-modal .warning-icon {
+  margin-bottom: 1rem;
+}
+
+.delete-confirm-modal .delete-message h4 {
+  margin: 0 0 1rem 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.delete-confirm-modal .card-details {
+  background: #f9fafb;
+  border-radius: 8px;
+  padding: 1rem;
+  margin: 1rem 0;
+  text-align: left;
+}
+
+.delete-confirm-modal .card-details p {
+  margin: 0.5rem 0;
+  font-size: 0.875rem;
+  color: #374151;
+}
+
+.delete-confirm-modal .warning-text {
+  color: #ef4444;
+  font-weight: 500;
+  margin: 1rem 0 0 0;
+  font-size: 0.875rem;
+}
+
+.delete-confirm-modal .modal-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  padding: 1rem 1.5rem 1.5rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.delete-confirm-modal .btn-cancel {
+  padding: 0.5rem 1rem;
+  border: 1px solid #d1d5db;
+  background: white;
+  color: #374151;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.delete-confirm-modal .btn-cancel:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.delete-confirm-modal .btn-delete {
+  padding: 0.5rem 1rem;
+  border: 1px solid #ef4444;
+  background: #ef4444;
+  color: white;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.delete-confirm-modal .btn-delete:hover:not(:disabled) {
+  background: #dc2626;
+  border-color: #dc2626;
+}
+
+.delete-confirm-modal .btn-delete:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.purchase-price-cell,
+.estimated-value-cell,
+.current-value-cell {
+  color: #22c55e;
+  font-weight: 500;
+  min-width: 120px;
+}
+
+.location-cell {
+  min-width: 150px;
+}
+
+.location-tag-small {
+  display: inline-block;
+  background: rgba(59, 130, 246, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  color: #93bbfc;
+  padding: 0.15rem 0.4rem;
+  border-radius: 3px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.grade-cell {
+  min-width: 120px;
+}
+
+.grade-info {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.9);
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  display: inline-block;
+}
+
+.aftermarket-auto-cell {
+  min-width: 80px;
+}
+
+.aftermarket-auto-indicator {
+  color: #10b981;
+  font-weight: bold;
+  font-size: 1rem;
 }

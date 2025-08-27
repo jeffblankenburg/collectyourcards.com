@@ -73,7 +73,7 @@ router.get('/', async (req, res) => {
 // POST /api/user/locations - Create a new location
 router.post('/', async (req, res) => {
   try {
-    const userId = req.user.user_id
+    const userId = req.user.userId
     const { location, is_dashboard = true } = req.body
 
     if (!location || location.trim() === '') {
@@ -110,7 +110,7 @@ router.post('/', async (req, res) => {
 // PUT /api/user/locations/:locationId - Update a location
 router.put('/:locationId', async (req, res) => {
   try {
-    const userId = req.user.user_id
+    const userId = req.user.userId
     const { locationId } = req.params
     const { location, is_dashboard } = req.body
 
@@ -148,26 +148,58 @@ router.put('/:locationId', async (req, res) => {
 // DELETE /api/user/locations/:locationId - Delete a location
 router.delete('/:locationId', async (req, res) => {
   try {
-    const userId = req.user.user_id
+    const userId = req.user.userId
     const { locationId } = req.params
+    const { reassign_to } = req.body
 
-    console.log('Deleting user location:', { userId, locationId })
+    console.log('Deleting user location:', { userId, locationId, reassign_to })
 
     // Check if location has cards
     const cardCount = await prisma.$queryRaw`
       SELECT COUNT(*) as count 
-      FROM user_cards 
+      FROM user_card 
       WHERE user_location = ${parseInt(locationId)} 
       AND [user] = ${BigInt(parseInt(userId))}
     `
 
-    if (Number(cardCount[0].count) > 0) {
+    const hasCards = Number(cardCount[0].count) > 0
+
+    if (hasCards && !reassign_to) {
       return res.status(400).json({
         error: 'Location has cards',
-        message: 'Cannot delete location that contains cards. Move cards to another location first.'
+        message: 'Cannot delete location that contains cards. Provide reassign_to location ID.'
       })
     }
 
+    // If there are cards and reassign_to is provided, reassign them
+    if (hasCards && reassign_to) {
+      // Verify reassign_to location belongs to user
+      const targetLocation = await prisma.$queryRaw`
+        SELECT user_location_id 
+        FROM user_location 
+        WHERE user_location_id = ${parseInt(reassign_to)} 
+        AND [user] = ${BigInt(parseInt(userId))}
+      `
+
+      if (targetLocation.length === 0) {
+        return res.status(400).json({
+          error: 'Invalid target location',
+          message: 'The target location does not exist or does not belong to you.'
+        })
+      }
+
+      // Reassign all cards to the new location
+      await prisma.$queryRaw`
+        UPDATE user_card 
+        SET user_location = ${parseInt(reassign_to)}
+        WHERE user_location = ${parseInt(locationId)} 
+        AND [user] = ${BigInt(parseInt(userId))}
+      `
+
+      console.log(`Reassigned ${cardCount[0].count} cards from location ${locationId} to ${reassign_to}`)
+    }
+
+    // Now delete the location
     const deleteResult = await prisma.$queryRaw`
       DELETE FROM user_location 
       WHERE user_location_id = ${parseInt(locationId)} 
@@ -175,7 +207,8 @@ router.delete('/:locationId', async (req, res) => {
     `
 
     res.json({
-      message: 'Location deleted successfully'
+      message: hasCards ? 'Cards reassigned and location deleted successfully' : 'Location deleted successfully',
+      cards_reassigned: hasCards ? Number(cardCount[0].count) : 0
     })
 
   } catch (error) {

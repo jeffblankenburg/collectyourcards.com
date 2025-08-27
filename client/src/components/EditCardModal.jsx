@@ -2,13 +2,13 @@ import React, { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import axios from 'axios'
 import Icon from './Icon'
-import './AddCardModal.css'
+import './EditCardModal.css'
 
-const AddCardModal = ({ 
+const EditCardModal = ({ 
   isOpen, 
   onClose, 
   card, 
-  onCardAdded 
+  onCardUpdated 
 }) => {
   const { user } = useAuth()
   const [loading, setLoading] = useState(false)
@@ -17,22 +17,12 @@ const AddCardModal = ({
   const [showPricing, setShowPricing] = useState(true)
   const [showGrading, setShowGrading] = useState(false)
   
-  // Function to generate 4-character random code
-  const generateRandomCode = () => {
-    const chars = '0123456789abcdefghijkmnopqrstuvwxyzABCDEFGHJKMNOPQRSTUVWXYZ'
-    let result = ''
-    for (let i = 0; i < 4; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length))
-    }
-    return result
-  }
-
   const [formData, setFormData] = useState({
-    random_code: generateRandomCode(),
+    random_code: '',
     serial_number: '',
     user_location: '',
     notes: '',
-    aftermarket_auto: false,
+    aftermarket_autograph: false,
     purchase_price: '',
     estimated_value: '',
     grading_agency: '',
@@ -41,28 +31,48 @@ const AddCardModal = ({
   })
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && card) {
       loadLocations()
       loadGradingAgencies()
-      resetForm()
     }
-  }, [isOpen])
+  }, [isOpen, card])
 
-  const resetForm = () => {
-    setFormData({
-      random_code: generateRandomCode(),
-      serial_number: '',
-      user_location: '',
-      notes: '',
-      aftermarket_auto: false,
-      purchase_price: '',
-      estimated_value: '',
-      grading_agency: '',
-      grade: '',
-      grade_id: ''
-    })
-    setShowPricing(true)
-    setShowGrading(false)
+  // Populate form after locations and grading agencies are loaded
+  useEffect(() => {
+    if (isOpen && card && locations.length > 0 && gradingAgencies.length > 0) {
+      populateForm()
+    }
+  }, [isOpen, card, locations, gradingAgencies])
+
+  const populateForm = () => {
+    if (card) {
+      // For collection cards, we need to find the user_location from the location_name
+      const userLocationId = locations.find(loc => loc.location === card.location_name)?.user_location_id || ''
+      
+      console.log('Populating form with card data:', card)
+      console.log('Available grading agencies:', gradingAgencies)
+      console.log('Card grading agency:', card.grading_agency)
+      
+      const newFormData = {
+        random_code: card.random_code || '',
+        serial_number: card.serial_number || '',
+        user_location: userLocationId,
+        notes: card.notes || '',
+        aftermarket_autograph: card.aftermarket_autograph || false,
+        purchase_price: card.purchase_price || '',
+        estimated_value: card.estimated_value || '',
+        grading_agency: card.grading_agency ? String(card.grading_agency) : '',
+        grade: card.grade || '',
+        grade_id: card.grade_id || ''
+      }
+      
+      console.log('Setting form data:', newFormData)
+      setFormData(newFormData)
+      
+      // Show sections if they have data
+      setShowPricing(!!(card.purchase_price || card.estimated_value))
+      setShowGrading(!!(card.grade || card.grading_agency))
+    }
   }
 
   const loadLocations = async () => {
@@ -73,7 +83,6 @@ const AddCardModal = ({
       setLocations(response.data.locations || [])
     } catch (err) {
       console.error('Error loading locations:', err.response?.data || err.message)
-      // Set empty array if request fails
       setLocations([])
     }
   }
@@ -101,7 +110,6 @@ const AddCardModal = ({
 
     try {
       const submitData = {
-        card_id: card.card_id,
         ...formData,
         serial_number: formData.serial_number ? parseInt(formData.serial_number) : null,
         user_location: formData.user_location || null,
@@ -111,13 +119,16 @@ const AddCardModal = ({
         grade: formData.grade || null
       }
 
-      await axios.post('/api/user/cards', submitData)
+      console.log('Updating user_card:', submitData)
+
+      // Update the existing user_card record
+      await axios.put(`/api/user/cards/${card.user_card_id}`, submitData)
       
-      if (onCardAdded) onCardAdded()
+      onCardUpdated()
       onClose()
     } catch (err) {
-      console.error('Error adding card:', err)
-      // Handle error - could show a toast notification
+      console.error('Error updating card:', err)
+      console.error('Response data:', err.response?.data)
     } finally {
       setLoading(false)
     }
@@ -125,9 +136,9 @@ const AddCardModal = ({
 
   if (!isOpen || !card) return null
 
-  const hasSerial = card.print_run && card.print_run > 0
+  const hasSerial = card.print_run && card.print_run > 1
 
-  // Calculate text color based on background brightness (for parallel colors)
+  // Calculate text color based on background brightness
   const getTextColorForBackground = (hexColor) => {
     if (!hexColor) return '#ffffff'
     
@@ -152,7 +163,7 @@ const AddCardModal = ({
         {/* Card Header */}
         <div className="card-header">
           <button className="modal-close" onClick={onClose}>
-            <Icon name="close" size={20} />
+            <Icon name="x" size={20} />
           </button>
           
           <div className="card-info">
@@ -203,29 +214,14 @@ const AddCardModal = ({
             <div className="form-grid">
               <div className="form-group">
                 <label>Random Code</label>
-                <div className="input-with-button" style={{ display: 'flex', alignItems: 'center' }}>
-                  <input
-                    type="text"
-                    name="random_code"
-                    value={formData.random_code}
-                    onChange={handleInputChange}
-                    placeholder="Auto-generated"
-                    className="random-code-input"
-                    style={{ width: 'calc(100% - 44px)', marginRight: '8px' }}
-                  />
-                  <button
-                    type="button"
-                    className="edit-card-btn"
-                    onClick={() => setFormData(prev => ({
-                      ...prev,
-                      random_code: generateRandomCode()
-                    }))}
-                    title="Generate new random code"
-                    style={{ flexShrink: 0 }}
-                  >
-                    <Icon name="refresh" size={16} style={{color: 'white'}} />
-                  </button>
-                </div>
+                <input
+                  type="text"
+                  name="random_code"
+                  value={formData.random_code}
+                  onChange={handleInputChange}
+                  placeholder="Enter random code"
+                  className="random-code-input"
+                />
               </div>
 
               {hasSerial && (
@@ -272,13 +268,14 @@ const AddCardModal = ({
                   rows="2"
                 />
               </div>
+
               <div className="form-group">
                 <label></label>
                 <label className="checkbox-label">
                   <input
                     type="checkbox"
-                    name="aftermarket_auto"
-                    checked={formData.aftermarket_auto}
+                    name="aftermarket_autograph"
+                    checked={formData.aftermarket_autograph}
                     onChange={handleInputChange}
                   />
                   <span>Aftermarket Autograph</span>
@@ -294,7 +291,7 @@ const AddCardModal = ({
               onClick={() => setShowPricing(!showPricing)}
             >
               <h4>Pricing Information</h4>
-              <Icon name={showPricing ? "arrow-up" : "arrow-down"} size={18} />
+              <Icon name={showPricing ? "chevron-up" : "chevron-down"} size={18} />
             </div>
             
             {showPricing && (
@@ -315,7 +312,7 @@ const AddCardModal = ({
                       />
                     </div>
                   </div>
-
+                  
                   <div className="form-group">
                     <label>Estimated Value</label>
                     <div className="price-input">
@@ -331,6 +328,7 @@ const AddCardModal = ({
                       />
                     </div>
                   </div>
+                  
                 </div>
               </div>
             )}
@@ -343,19 +341,19 @@ const AddCardModal = ({
               onClick={() => setShowGrading(!showGrading)}
             >
               <h4>Grading Information</h4>
-              <Icon name={showGrading ? "arrow-up" : "arrow-down"} size={18} />
+              <Icon name={showGrading ? "chevron-up" : "chevron-down"} size={18} />
             </div>
             
             {showGrading && (
               <div className="collapsible-content">
                 <div className="form-group">
-                  <label>Grading Agency</label>
+                  <label>Grading Company</label>
                   <select
                     name="grading_agency"
                     value={formData.grading_agency}
                     onChange={handleInputChange}
                   >
-                    <option value="">Select a grading agency</option>
+                    <option value="">Not Graded</option>
                     {gradingAgencies.map(agency => (
                       <option key={agency.grading_agency_id} value={agency.grading_agency_id}>
                         {agency.display_name}
@@ -363,7 +361,7 @@ const AddCardModal = ({
                     ))}
                   </select>
                 </div>
-
+                
                 {formData.grading_agency && (
                   <div className="form-group">
                     <label>Grade</label>
@@ -372,7 +370,7 @@ const AddCardModal = ({
                       name="grade"
                       value={formData.grade}
                       onChange={handleInputChange}
-                      placeholder="e.g., 10, 9.5, PSA 10"
+                      placeholder="10, 9.5, etc."
                     />
                   </div>
                 )}
@@ -395,26 +393,17 @@ const AddCardModal = ({
 
           {/* Form Actions */}
           <div className="form-actions">
-            <button
-              type="button"
-              className="add-modal-btn add-modal-btn-secondary"
-              onClick={onClose}
-              disabled={loading}
-            >
+            <button type="button" className="edit-modal-btn btn-cancel" onClick={onClose}>
               Cancel
             </button>
-            <button
-              type="submit"
-              className="add-modal-btn add-modal-btn-primary"
-              disabled={loading}
-            >
+            <button type="submit" className="edit-modal-btn btn-submit" disabled={loading}>
               {loading ? (
                 <>
                   <Icon name="activity" size={16} className="spinner" />
-                  Adding...
+                  Updating...
                 </>
               ) : (
-                'Add Card'
+                'Update Card'
               )}
             </button>
           </div>
@@ -424,4 +413,4 @@ const AddCardModal = ({
   )
 }
 
-export default AddCardModal
+export default EditCardModal

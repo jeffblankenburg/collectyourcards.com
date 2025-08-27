@@ -1,4 +1,4 @@
-/* Add Card Modal Styles */
+/* Edit Card Modal Styles */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -142,7 +142,7 @@
 
 .form-group label {
   text-align: right;
-  margin: 0;
+  margin-bottom: 0;
   font-weight: 500;
   color: #cbd5e1;
   font-size: 0.85rem;
@@ -166,7 +166,7 @@
   .form-group label {
     text-align: left;
     justify-self: start;
-    margin: 0;
+    margin-bottom: 0.25rem;
   }
 }
 
@@ -364,11 +364,6 @@
   border-color: rgba(255, 255, 255, 0.2);
 }
 
-/* Ensure all labels have no margin */
-label {
-  margin: 0 !important;
-}
-
 .checkbox-label input[type="checkbox"] {
   width: 18px;
   height: 18px;
@@ -480,7 +475,7 @@ label {
   border-radius: 0;
 }
 
-.add-modal-btn {
+.edit-modal-btn {
   padding: 0.75rem 1.5rem;
   border-radius: 8px;
   border: 1px solid;
@@ -495,30 +490,30 @@ label {
   backdrop-filter: blur(10px);
 }
 
-.add-modal-btn:disabled {
+.edit-modal-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-.add-modal-btn-secondary {
+.btn-cancel {
   background: rgba(71, 85, 105, 0.4);
   color: #cbd5e1;
   border-color: rgba(255, 255, 255, 0.15);
 }
 
-.add-modal-btn-secondary:hover:not(:disabled) {
+.btn-cancel:hover:not(:disabled) {
   background: rgba(71, 85, 105, 0.6);
   border-color: rgba(255, 255, 255, 0.25);
   color: #e2e8f0;
 }
 
-.add-modal-btn-primary {
+.btn-submit {
   background: rgba(59, 130, 246, 0.8);
   color: white;
   border-color: rgba(59, 130, 246, 0.5);
 }
 
-.add-modal-btn-primary:hover:not(:disabled) {
+.btn-submit:hover:not(:disabled) {
   background: rgba(37, 99, 235, 0.9);
   border-color: rgba(37, 99, 235, 0.6);
 }
@@ -560,7 +555,7 @@ label {
     flex-direction: column;
   }
   
-  .add-modal-btn {
+  .edit-modal-btn {
     justify-content: center;
   }
   

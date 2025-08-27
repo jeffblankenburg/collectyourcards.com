@@ -22,6 +22,8 @@ router.get('/', async (req, res) => {
       Object.keys(agency).forEach(key => {
         serialized[key] = typeof agency[key] === 'bigint' ? Number(agency[key]) : agency[key]
       })
+      // Add combined display name with abbreviation
+      serialized.display_name = `${serialized.name} (${serialized.abbreviation})`
       return serialized
     })
 
