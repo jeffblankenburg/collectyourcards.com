@@ -1,0 +1,10 @@
+{
+  "name": "daily-series-update",
+  "version": "1.0.0",
+  "description": "Daily series metadata update function",
+  "main": "index.js",
+  "dependencies": {
+    "@azure/functions": "^4.5.1",
+    "mssql": "^10.0.2"
+  }
+}

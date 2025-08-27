@@ -43,6 +43,10 @@ function AdminDashboard() {
   })
   
   const [recentActivity, setRecentActivity] = useState([])
+  const [spreadsheetQueue, setSpreadsheetQueue] = useState({
+    queue_length: 0,
+    jobs: []
+  })
   const [loading, setLoading] = useState(true)
 
   // Check if user has admin privileges
@@ -59,9 +63,16 @@ function AdminDashboard() {
 
   useEffect(() => {
     loadDashboardData()
-    // Refresh health status every 30 seconds
+    loadSpreadsheetQueue()
+    
+    // Refresh health status and queue every 30 seconds
     const healthInterval = setInterval(checkSystemHealth, 30000)
-    return () => clearInterval(healthInterval)
+    const queueInterval = setInterval(loadSpreadsheetQueue, 10000) // More frequent for queue
+    
+    return () => {
+      clearInterval(healthInterval)
+      clearInterval(queueInterval)
+    }
   }, [])
 
   const loadDashboardData = async () => {
@@ -185,6 +196,16 @@ function AdminDashboard() {
       }
     } catch (error) {
       console.error('Failed to load database stats:', error)
+    }
+  }
+
+  const loadSpreadsheetQueue = async () => {
+    try {
+      const response = await axios.get('/api/spreadsheet-generation/queue')
+      setSpreadsheetQueue(response.data)
+    } catch (error) {
+      console.error('Failed to load spreadsheet queue:', error)
+      // Don't show error toast for this since it runs frequently
     }
   }
 
@@ -403,6 +424,76 @@ function AdminDashboard() {
                 </div>
               ))
             )}
+          </div>
+        </div>
+
+        {/* Spreadsheet Generation Queue */}
+        <div className="dashboard-section spreadsheet-queue">
+          <h2>
+            <Icon name="import" size={20} />
+            Spreadsheet Generation Queue
+            {spreadsheetQueue.queue_length > 0 && (
+              <span className="queue-badge">{spreadsheetQueue.queue_length}</span>
+            )}
+          </h2>
+          
+          {spreadsheetQueue.queue_length === 0 ? (
+            <div className="no-queue-items">
+              <Icon name="check-circle" size={24} className="success-icon" />
+              <p>No jobs in queue</p>
+              <span className="queue-status">All spreadsheet generation jobs are complete</span>
+            </div>
+          ) : (
+            <div className="queue-list">
+              {spreadsheetQueue.jobs.map(job => (
+                <div key={job.queue_id} className={`queue-item ${job.status}`}>
+                  <div className="queue-item-header">
+                    <div className="queue-item-title">
+                      <Icon name={job.status === 'processing' ? 'activity' : 'clock'} 
+                            size={14} 
+                            className={job.status === 'processing' ? 'spinning' : ''} />
+                      <span className="set-name">{job.set_name}</span>
+                      <span className="set-year">({job.set_year})</span>
+                    </div>
+                    <div className="queue-item-status">
+                      <span className={`status-badge ${job.status}`}>
+                        {job.status.charAt(0).toUpperCase() + job.status.slice(1)}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="queue-item-details">
+                    <span className="queue-detail">
+                      <Icon name="target" size={12} />
+                      Priority: {job.priority}
+                    </span>
+                    <span className="queue-detail">
+                      <Icon name="clock" size={12} />
+                      Queued: {formatTimeAgo(job.queued_at)}
+                    </span>
+                    {job.started_at && (
+                      <span className="queue-detail">
+                        <Icon name="activity" size={12} />
+                        Started: {formatTimeAgo(job.started_at)}
+                      </span>
+                    )}
+                    {job.retry_count > 0 && (
+                      <span className="queue-detail retry">
+                        <Icon name="refresh-cw" size={12} />
+                        Retries: {job.retry_count}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          
+          <div className="queue-footer">
+            <span className="refresh-info">
+              <Icon name="refresh-cw" size={12} />
+              Updates every 10 seconds
+            </span>
           </div>
         </div>
 

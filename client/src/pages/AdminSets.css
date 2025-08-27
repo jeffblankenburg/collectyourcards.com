@@ -161,11 +161,13 @@
   background: rgba(255, 255, 255, 0.9);
   border-color: rgba(255, 255, 255, 0.3);
   color: #1f2937;
+  cursor: pointer;
 }
 
 .action-button.secondary:hover:not(:disabled) {
   background: white;
   border-color: rgba(255, 255, 255, 0.5);
+  color: #1f2937;
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(255, 255, 255, 0.2);
 }

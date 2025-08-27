@@ -1,0 +1,24 @@
+{
+  "name": "collectyourcards-functions",
+  "version": "1.0.0",
+  "description": "Background processing functions for CollectYourCards.com",
+  "main": "index.js",
+  "scripts": {
+    "start": "func start",
+    "test": "echo \"No tests yet\" && exit 0"
+  },
+  "dependencies": {
+    "@azure/functions": "^4.5.1",
+    "@azure/storage-blob": "^12.24.0",
+    "@prisma/client": "^6.14.0",
+    "dotenv": "^16.4.5",
+    "exceljs": "^4.4.0"
+  },
+  "devDependencies": {
+    "azure-functions-core-tools": "^4.0.5961",
+    "prisma": "^6.14.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

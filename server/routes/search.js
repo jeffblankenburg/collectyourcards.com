@@ -443,7 +443,7 @@ async function searchPlayers(query, limit) {
       return {
         type: 'player',
         id: player.player_id.toString(),
-        title: `${player.first_name} ${player.last_name}${player.nick_name ? ` "${player.nick_name}"` : ''}${player.is_hof ? ' • Hall of Fame' : ''}`,
+        title: `${player.first_name}${player.nick_name ? ` "${player.nick_name}"` : ''} ${player.last_name}`,
         subtitle: null,
         description: null,
         relevanceScore: calculatePlayerRelevance(player, query),

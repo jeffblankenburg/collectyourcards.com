@@ -182,7 +182,7 @@ if (config.environment === 'test') {
     { path: '/api/user/collection/cards', file: './routes/user-collection-cards', name: 'User Collection Cards' },
     { path: '/api/grading-agencies', file: './routes/grading-agencies', name: 'Grading Agencies' },
     { path: '/api/player-team-search', file: './routes/player-team-search', name: 'Player Team Search' },
-    { path: '/api/spreadsheet-import', file: './routes/spreadsheet-import', name: 'Spreadsheet Import' }
+    { path: '/api/spreadsheet-generation', file: './routes/spreadsheet-generation', name: 'Spreadsheet Generation' }
   ];
 
   console.log('📍 Loading API routes in production mode...');

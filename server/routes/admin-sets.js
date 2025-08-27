@@ -474,33 +474,39 @@ router.put('/series/:id', async (req, res) => {
       })
     }
 
-    // Prepare update data
+    // Prepare update data - excluding fields that need special handling
     const updateData = {
       name: name?.trim() || null,
-      set: set ? parseInt(set) : null,
       card_count: card_count !== undefined ? parseInt(card_count) : existingSeries.card_count,
       card_entered_count: card_entered_count !== undefined ? parseInt(card_entered_count) : existingSeries.card_entered_count,
       is_base: is_base !== undefined ? is_base : existingSeries.is_base,
       parallel_of_series: parallel_of_series ? BigInt(parallel_of_series) : null,
-      color: color_id !== undefined ? (color_id ? parseInt(color_id) : null) : existingSeries.color,
       min_print_run: min_print_run !== undefined ? (min_print_run ? parseInt(min_print_run) : null) : existingSeries.min_print_run,
       max_print_run: max_print_run !== undefined ? (max_print_run ? parseInt(max_print_run) : null) : existingSeries.max_print_run,
       print_run_display: print_run_display?.trim() || null,
-      primary_color_name: primary_color_name?.trim() || null,
-      primary_color_hex: primary_color_hex?.trim() || null,
-      photo_url: photo_url?.trim() || null,
       front_image_path: front_image_path?.trim() || null,
       back_image_path: back_image_path?.trim() || null
     }
-
-    // Validate color format if provided
-    const hexColorRegex = /^#[0-9A-Fa-f]{6}$/
-    if (updateData.primary_color_hex && !hexColorRegex.test(updateData.primary_color_hex)) {
-      return res.status(400).json({
-        error: 'Validation error',
-        message: 'Primary color must be a valid hex color (e.g., #FF0000)'
-      })
+    
+    // Handle foreign key relationships properly
+    if (set !== undefined) {
+      updateData.set_series_setToset = {
+        connect: { set_id: parseInt(set) }
+      }
     }
+    
+    if (color_id !== undefined) {
+      if (color_id) {
+        updateData.color_series_colorTocolor = {
+          connect: { color_id: parseInt(color_id) }
+        }
+      } else {
+        updateData.color_series_colorTocolor = {
+          disconnect: true
+        }
+      }
+    }
+
 
     // Store old values for logging
     const oldValues = JSON.stringify({
@@ -513,8 +519,8 @@ router.put('/series/:id', async (req, res) => {
       min_print_run: existingSeries.min_print_run,
       max_print_run: existingSeries.max_print_run,
       print_run_display: existingSeries.print_run_display,
-      primary_color_name: existingSeries.primary_color_name,
-      primary_color_hex: existingSeries.primary_color_hex
+      front_image_path: existingSeries.front_image_path,
+      back_image_path: existingSeries.back_image_path
     })
 
     // Update series

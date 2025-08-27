@@ -201,8 +201,8 @@
     sans-serif;
 }
 
-/* Download button styling */
-.admin-sets-page .action-button.secondary {
+/* Download button styling - only for download buttons */
+.download-button.secondary {
   background: #6b7280 !important;
   border-color: #6b7280 !important;
   color: white !important;
@@ -210,7 +210,7 @@
   opacity: 0.7 !important;
 }
 
-.admin-sets-page .action-button.secondary:hover {
+.download-button.secondary:hover {
   background: #6b7280 !important;
   border-color: #6b7280 !important;
   opacity: 0.7 !important;

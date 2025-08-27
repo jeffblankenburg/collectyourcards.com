@@ -419,7 +419,7 @@ function PublicSets() {
           {setSlug && selectedSet && (
             <>
               <button 
-                className={`action-button ${spreadsheetStatus?.blob_url ? 'primary' : 'secondary'}`}
+                className={spreadsheetStatus?.blob_url ? 'action-button primary' : 'download-button secondary'}
                 onClick={() => downloadMasterSetSpreadsheet()}
                 title={
                   spreadsheetStatus?.blob_url 
