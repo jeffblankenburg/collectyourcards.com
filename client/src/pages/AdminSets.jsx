@@ -39,6 +39,7 @@ function AdminSets() {
   const [selectedBackImage, setSelectedBackImage] = useState(null)
   const [frontImagePreview, setFrontImagePreview] = useState(null)
   const [backImagePreview, setBackImagePreview] = useState(null)
+  const [generatingSpreadsheet, setGeneratingSpreadsheet] = useState(false)
   const { addToast } = useToast()
   const dropdownRef = useRef(null)
   const activeParallelsBoxRef = useRef(null)
@@ -559,6 +560,34 @@ function AdminSets() {
     return Math.round((cardEnteredCount / cardCount) * 100)
   }
 
+  // Generate spreadsheet for current set
+  const handleGenerateSpreadsheet = async () => {
+    if (!selectedSet || generatingSpreadsheet) return
+    
+    try {
+      setGeneratingSpreadsheet(true)
+      addToast('Queueing spreadsheet generation...', 'info')
+      
+      const response = await axios.post(`/api/spreadsheet-generation/queue/${selectedSet.set_id}`, {
+        priority: 10 // High priority for manual requests
+      })
+      
+      if (response.data.queue_id) {
+        addToast(`Spreadsheet generation queued for ${selectedSet.name}. Processing will complete in the background.`, 'success')
+      } else {
+        addToast(response.data.message || 'Spreadsheet generation queued', 'success')
+      }
+    } catch (error) {
+      console.error('Error queueing spreadsheet generation:', error)
+      addToast(
+        error.response?.data?.message || 'Failed to queue spreadsheet generation', 
+        'error'
+      )
+    } finally {
+      setGeneratingSpreadsheet(false)
+    }
+  }
+
   // Helper functions for parallel handling
   const getParallelCount = (parentSeriesId) => {
     return series.filter(s => s.parallel_of_series === parentSeriesId).length
@@ -660,13 +689,33 @@ function AdminSets() {
         
         <div className="header-controls">
           {setSlug && selectedSet && (
-            <button 
-              className="collapse-parallels-btn"
-              onClick={() => setParallelsCollapsed(!parallelsCollapsed)}
-            >
-              <Icon name={parallelsCollapsed ? "eye" : "eye-off"} size={16} />
-              {parallelsCollapsed ? "Show Parallels" : "Collapse Parallels"}
-            </button>
+            <>
+              <button 
+                className="action-button primary"
+                onClick={handleGenerateSpreadsheet}
+                disabled={generatingSpreadsheet}
+                title="Generate Excel spreadsheet for this set"
+              >
+                {generatingSpreadsheet ? (
+                  <>
+                    <Icon name="activity" size={16} className="spinning" />
+                    Queueing...
+                  </>
+                ) : (
+                  <>
+                    <Icon name="import" size={16} />
+                    Generate Checklist
+                  </>
+                )}
+              </button>
+              <button 
+                className="collapse-parallels-btn"
+                onClick={() => setParallelsCollapsed(!parallelsCollapsed)}
+              >
+                <Icon name={parallelsCollapsed ? "eye" : "eye-off"} size={16} />
+                {parallelsCollapsed ? "Show Parallels" : "Collapse Parallels"}
+              </button>
+            </>
           )}
           <div className="search-box">
             <Icon name="search" size={20} />

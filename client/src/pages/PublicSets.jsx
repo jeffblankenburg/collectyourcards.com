@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import axios from 'axios'
 import { useToast } from '../contexts/ToastContext'
+import { useAuth } from '../contexts/AuthContext'
 import Icon from '../components/Icon'
 import './AdminSets.css' // Use the same CSS as AdminSets
 import './PublicSets.css' // Additional styles for public version
@@ -10,6 +11,7 @@ import './PublicSets.css' // Additional styles for public version
 function PublicSets() {
   const { year, setSlug, seriesSlug } = useParams()
   const navigate = useNavigate()
+  const { isAuthenticated } = useAuth()
   const [years, setYears] = useState([])
   const [filteredYears, setFilteredYears] = useState([])
   const [sets, setSets] = useState([])
@@ -19,6 +21,8 @@ function PublicSets() {
   const [selectedSet, setSelectedSet] = useState(null)
   const [selectedSeries, setSelectedSeries] = useState(null)
   const [loading, setLoading] = useState(false)
+  const [downloadLoading, setDownloadLoading] = useState(false)
+  const [spreadsheetStatus, setSpreadsheetStatus] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [parallelsCollapsed, setParallelsCollapsed] = useState(false)
   const [openDropdownSeriesId, setOpenDropdownSeriesId] = useState(null)
@@ -221,6 +225,8 @@ function PublicSets() {
       
       if (foundSet) {
         setSelectedSet(foundSet)
+        // Check spreadsheet availability
+        checkSpreadsheetStatus(foundSet.set_id)
       }
     } catch (error) {
       console.error('Error loading set:', error)
@@ -244,8 +250,16 @@ function PublicSets() {
         // Now get series for this set
         const response = await axios.get(`/api/series-by-set/${foundSet.set_id}`)
         const seriesData = response.data.series || []
-        setSeries(seriesData)
-        setFilteredSeries(seriesData)
+        
+        // Sort series alphabetically by name
+        const sortedSeries = [...seriesData].sort((a, b) => {
+          const nameA = a.name || ''
+          const nameB = b.name || ''
+          return nameA.localeCompare(nameB)
+        })
+        
+        setSeries(sortedSeries)
+        setFilteredSeries(sortedSeries)
       }
     } catch (error) {
       console.error('Error loading series:', error)
@@ -253,6 +267,29 @@ function PublicSets() {
     } finally {
       setLoading(false)
     }
+  }
+
+  // Check spreadsheet availability status
+  const checkSpreadsheetStatus = async (setId) => {
+    try {
+      const response = await axios.get(`/api/spreadsheet-generation/status/${setId}`)
+      setSpreadsheetStatus(response.data)
+    } catch (error) {
+      console.error('Error checking spreadsheet status:', error)
+      setSpreadsheetStatus(null)
+    }
+  }
+
+  // Download master set spreadsheet from blob storage
+  const downloadMasterSetSpreadsheet = () => {
+    if (!spreadsheetStatus?.blob_url) {
+      addToast('Spreadsheet is not available for download', 'error')
+      return
+    }
+    
+    // Direct download from blob storage
+    window.open(spreadsheetStatus.blob_url, '_blank')
+    addToast('Download started', 'success')
   }
 
   // Function to determine if a color is light or dark
@@ -380,13 +417,33 @@ function PublicSets() {
         
         <div className="header-controls">
           {setSlug && selectedSet && (
-            <button 
-              className="collapse-parallels-btn"
-              onClick={() => setParallelsCollapsed(!parallelsCollapsed)}
-            >
-              <Icon name={parallelsCollapsed ? "eye" : "eye-off"} size={16} />
-              {parallelsCollapsed ? "Show Parallels" : "Collapse Parallels"}
-            </button>
+            <>
+              <button 
+                className={`action-button ${spreadsheetStatus?.blob_url ? 'primary' : 'secondary'}`}
+                onClick={() => downloadMasterSetSpreadsheet()}
+                title={
+                  spreadsheetStatus?.blob_url 
+                    ? `Download complete set spreadsheet (${spreadsheetStatus.format?.toUpperCase() || 'XLSX'}, ${Math.round(spreadsheetStatus.file_size / 1024)}KB)`
+                    : 'Spreadsheet not available - will be generated soon'
+                }
+                disabled={!spreadsheetStatus?.blob_url}
+              >
+                <Icon name="import" size={16} />
+                {spreadsheetStatus?.blob_url ? 'Download Master Set' : 'Not Available Yet'}
+                {spreadsheetStatus?.generated_at && (
+                  <span className="download-meta">
+                    ({spreadsheetStatus.format?.toUpperCase() || 'XLSX'})
+                  </span>
+                )}
+              </button>
+              <button 
+                className="collapse-parallels-btn"
+                onClick={() => setParallelsCollapsed(!parallelsCollapsed)}
+              >
+                <Icon name={parallelsCollapsed ? "eye" : "eye-off"} size={16} />
+                {parallelsCollapsed ? "Show Parallels" : "Collapse Parallels"}
+              </button>
+            </>
           )}
           <div className="search-box">
             <Icon name="search" size={20} />

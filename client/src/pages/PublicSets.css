@@ -200,3 +200,25 @@
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
 }
+
+/* Download button styling */
+.admin-sets-page .action-button.secondary {
+  background: #6b7280 !important;
+  border-color: #6b7280 !important;
+  color: white !important;
+  cursor: not-allowed !important;
+  opacity: 0.7 !important;
+}
+
+.admin-sets-page .action-button.secondary:hover {
+  background: #6b7280 !important;
+  border-color: #6b7280 !important;
+  opacity: 0.7 !important;
+}
+
+.admin-sets-page .download-meta {
+  font-size: 0.75rem !important;
+  font-weight: 400 !important;
+  opacity: 0.8 !important;
+  margin-left: 0.25rem !important;
+}
