@@ -691,7 +691,7 @@ function AdminSets() {
           {setSlug && selectedSet && (
             <>
               <button 
-                className="action-button primary"
+                className="action-button secondary"
                 onClick={handleGenerateSpreadsheet}
                 disabled={generatingSpreadsheet}
                 title="Generate Excel spreadsheet for this set"

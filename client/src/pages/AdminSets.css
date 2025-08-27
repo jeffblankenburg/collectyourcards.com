@@ -157,6 +157,19 @@
   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
+.action-button.secondary {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #1f2937;
+}
+
+.action-button.secondary:hover:not(:disabled) {
+  background: white;
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.2);
+}
+
 .action-button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
