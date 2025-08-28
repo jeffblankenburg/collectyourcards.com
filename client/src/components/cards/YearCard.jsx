@@ -30,7 +30,8 @@ function YearCard({ year, showBadge = false, customOnClick = null }) {
         
         <div className="yearcard-middle-space">
           <h3 className="yearcard-name">
-            {year.year}
+            <span className="yearcard-century">{String(year.year).substring(0, 2)}</span>
+            <span className="yearcard-decade">{String(year.year).substring(2)}</span>
           </h3>
         </div>
 

@@ -1,25 +1,28 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import axios from 'axios'
+import { useAuth } from '../contexts/AuthContext'
 import UniversalCardTable from '../components/UniversalCardTable'
 import Icon from '../components/Icon'
 import './SeriesDetail.css'
 
 
 function SeriesDetail() {
-  const { seriesSlug } = useParams()
+  const { seriesSlug, year, setSlug } = useParams()
   const navigate = useNavigate()
+  const { isAuthenticated } = useAuth()
   const [series, setSeries] = useState(null)
   const [stats, setStats] = useState({})
   const [parallels, setParallels] = useState([])
   const [showParallels, setShowParallels] = useState(false)
+  const [collectionCompletion, setCollectionCompletion] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const parallelsRef = useRef(null)
 
   useEffect(() => {
     fetchSeriesData()
-  }, [seriesSlug])
+  }, [seriesSlug, year, setSlug])
 
   // Close parallels dropdown when clicking outside
   useEffect(() => {
@@ -42,20 +45,42 @@ function SeriesDetail() {
     try {
       setLoading(true)
       
-      // For now, we'll get series data from the series list and find the matching one
-      // In a real implementation, you'd have a series-by-slug endpoint
-      const response = await axios.get('/api/series-list')
-      const seriesList = response.data.series || []
+      let seriesList = []
       
-      // Find series by slug (recreate slug logic from SeriesLanding)
+      if (year && setSlug) {
+        // If we have year and setSlug, get series for that specific set
+        // First get the set ID
+        const setsResponse = await axios.get('/api/sets-list')
+        const allSets = setsResponse.data.sets || []
+        const foundSet = allSets.find(set => {
+          const setYear = set.year || parseInt(set.name.split(' ')[0])
+          const slug = set.name
+            .toLowerCase()
+            .replace(/'/g, '') // Remove apostrophes completely
+            .replace(/[^a-z0-9]+/g, '-') // Replace other special chars with hyphens
+            .replace(/^-|-$/g, '') // Remove leading/trailing hyphens
+          return setYear === parseInt(year) && slug === setSlug
+        })
+        
+        if (foundSet) {
+          // Get series for this set
+          const seriesResponse = await axios.get(`/api/series-by-set/${foundSet.set_id}`)
+          seriesList = seriesResponse.data.series || []
+        }
+      } else {
+        // Fallback to getting all series (for /series/:seriesSlug route)
+        const response = await axios.get('/api/series-list')
+        seriesList = response.data.series || []
+      }
+      
+      // Find series by slug (recreate slug logic matching the one used in SeriesCard)
       const foundSeries = seriesList.find(s => {
         if (!s.name) return false
         const slug = s.name
           .toLowerCase()
-          .replace(/[^a-z0-9\s-]/g, '')
-          .replace(/\s+/g, '-')
-          .replace(/-+/g, '-')
-          .trim()
+          .replace(/'/g, '') // Remove apostrophes completely
+          .replace(/[^a-z0-9]+/g, '-') // Replace other special chars with hyphens
+          .replace(/^-|-$/g, '') // Remove leading/trailing hyphens
         return slug === seriesSlug
       })
 
@@ -67,6 +92,8 @@ function SeriesDetail() {
         
         // Get related parallels
         await fetchRelatedParallels(foundSeries, seriesList)
+        
+        // Collection completion will be calculated by UniversalCardTable
         
         setError(null)
       } else {
@@ -172,6 +199,7 @@ function SeriesDetail() {
     }
   }
 
+
   // Memoize the API endpoint for cards
   const apiEndpoint = useMemo(() => {
     if (!series) return null
@@ -240,15 +268,21 @@ function SeriesDetail() {
         {/* Series Header - Redesigned */}
         <header className="series-header-combined">
           {/* Color Strip for Parallels */}
-          {series.is_parallel && series.color_uniform && series.color_hex_value && (
+          {(series.color_hex_value || series.color_name) && (
             <div 
               className="color-strip"
               style={{
-                backgroundColor: series.color_hex_value,
-                color: getTextColor(series.color_hex_value)
+                backgroundColor: series.color_hex_value || '#ec4899',
+                color: getTextColor(series.color_hex_value || '#ec4899')
               }}
             >
-              <span className="color-text">{series.color_name}</span>
+              <span className="color-text">
+                {series.color_name || 'Parallel'}{series.print_run_display && (
+                  <>
+                    &nbsp;&nbsp;{series.print_run_display}
+                  </>
+                )}
+              </span>
             </div>
           )}
 
@@ -258,9 +292,6 @@ function SeriesDetail() {
               <div className="series-title-section">
                 <div className="series-title-line">
                   <h1 className="series-name">{series.name}</h1>
-                  {series.print_run_display && (
-                    <span className="print-run-badge">{series.print_run_display}</span>
-                  )}
                 </div>
                 
                 {/* Card Images in same column as title */}
@@ -295,6 +326,22 @@ function SeriesDetail() {
               {/* Stats and Parallels */}
               <div className="series-stats-section">
                 <div className="series-stats-grid">
+                  {/* Collection Completion for Authenticated Users */}
+                  {isAuthenticated && collectionCompletion && (
+                    <div className="stat-compact completion-stat">
+                      <span 
+                        className="stat-value"
+                        style={{
+                          color: collectionCompletion.percentage === 100 ? '#10b981' : 
+                                collectionCompletion.percentage >= 90 ? '#f59e0b' : '#ef4444'
+                        }}
+                      >
+                        {collectionCompletion.percentage}%
+                      </span>
+                      <span className="stat-label">Complete</span>
+                    </div>
+                  )}
+                  
                   <div className="stat-compact">
                     <span className="stat-value">{stats.total_cards?.toLocaleString() || 0}</span>
                     <span className="stat-label">Cards</span>
@@ -368,6 +415,15 @@ function SeriesDetail() {
             defaultSort="sort_order"
             downloadFilename={`${series.name.replace(/[^a-z0-9]/gi, '_')}_${series.year}_cards`}
             showSearch={true}
+            onCollectionDataLoaded={isAuthenticated ? (data) => {
+              const { totalCards, ownedCount } = data
+              const percentage = totalCards > 0 ? Math.round((ownedCount / totalCards) * 100) : 0
+              setCollectionCompletion({
+                percentage,
+                owned: ownedCount,
+                total: totalCards
+              })
+            } : null}
           />
         )}
 

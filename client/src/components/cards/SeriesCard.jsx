@@ -46,7 +46,7 @@ function SeriesCard({ series, showBadge = false, customOnClick = null }) {
           }}
         >
           <div className="seriescard-stripe-text">
-            {series.color_name}{series.print_run_display ? `  /${series.print_run_display}` : ''}
+            {series.color_name}{series.print_run_display ? `  ${series.print_run_display}` : ''}
           </div>
         </div>
       )}
@@ -75,6 +75,13 @@ function SeriesCard({ series, showBadge = false, customOnClick = null }) {
           {/* Empty space in middle */}
         </div>
 
+        {/* Parallel parent name - shown above stats */}
+        {series.parallel_parent_name && (
+          <div className="seriescard-parallel-parent">
+            {series.parallel_parent_name.replace(series.set_name || '', '').trim()}
+          </div>
+        )}
+
         <div className="seriescard-stats">
           <div className="seriescard-count">
             <span className="seriescard-count-number">{(series.card_count || 0).toLocaleString()}</span>
@@ -84,6 +91,12 @@ function SeriesCard({ series, showBadge = false, customOnClick = null }) {
             <span className="seriescard-rc-count-number">{(series.rc_count || 0).toLocaleString()}</span>
             <span className="seriescard-rc-count-label">Rookies</span>
           </div>
+          {series.parallel_count > 0 && (
+            <div className="seriescard-parallel-count">
+              <span className="seriescard-parallel-count-number">{series.parallel_count}</span>
+              <span className="seriescard-parallel-count-label">Parallels</span>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -11,12 +11,27 @@ function PlayersLanding() {
   const navigate = useNavigate()
   
   const [players, setPlayers] = useState([])
+  const [filteredPlayers, setFilteredPlayers] = useState([])
+  const [searchTerm, setSearchTerm] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
   useEffect(() => {
     loadPlayersData()
   }, [isAuthenticated])
+
+  // Filter players based on search term
+  useEffect(() => {
+    if (!searchTerm.trim()) {
+      setFilteredPlayers(players)
+    } else {
+      const filtered = players.filter(player =>
+        `${player.first_name} ${player.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (player.nick_name && player.nick_name.toLowerCase().includes(searchTerm.toLowerCase()))
+      )
+      setFilteredPlayers(filtered)
+    }
+  }, [players, searchTerm])
 
   const loadPlayersData = async () => {
     try {
@@ -43,6 +58,7 @@ function PlayersLanding() {
       // Non-authenticated users see players sorted by card count (default)
       
       setPlayers(playersList)
+      setFilteredPlayers(playersList)
       setError(null)
     } catch (err) {
       console.error('Error loading players:', err)
@@ -168,9 +184,35 @@ function PlayersLanding() {
   return (
     <div className="players-landing">
       <div className="players-landing-grid">
-        {players.map(player => (
+        {/* Header as grid items */}
+        <div className="grid-header-title">
+          <Icon name="users" size={32} />
+          <h1>Players</h1>
+        </div>
+        <div className="grid-header-search">
+          <div className="search-box">
+            <Icon name="search" size={20} />
+            <input
+              type="text"
+              placeholder="Search players..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              autoFocus
+            />
+          </div>
+        </div>
+        {/* Force new row after header */}
+        <div className="grid-row-break"></div>
+        {/* Player cards */}
+        {filteredPlayers.map(player => (
           <PlayerCardWithTracking key={player.player_id} player={player} />
         ))}
+        {filteredPlayers.length === 0 && players.length > 0 && (
+          <div className="empty-state">
+            <Icon name="search" size={48} />
+            <p>No players found matching "{searchTerm}"</p>
+          </div>
+        )}
       </div>
     </div>
   )

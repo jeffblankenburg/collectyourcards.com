@@ -5,6 +5,7 @@ import axios from 'axios'
 import { useToast } from '../contexts/ToastContext'
 import { useAuth } from '../contexts/AuthContext'
 import Icon from '../components/Icon'
+import { YearCard, SetCard, SeriesCard } from '../components/cards'
 import './AdminSets.css' // Use the same CSS as AdminSets
 import './PublicSets.css' // Additional styles for public version
 
@@ -36,8 +37,9 @@ function PublicSets() {
   const generateSlug = (name) => {
     return name
       .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-|-$/g, '')
+      .replace(/'/g, '') // Remove apostrophes completely
+      .replace(/[^a-z0-9]+/g, '-') // Replace other special chars with hyphens
+      .replace(/^-|-$/g, '') // Remove leading/trailing hyphens
   }
 
   useEffect(() => {
@@ -135,8 +137,13 @@ function PublicSets() {
       let seriesToFilter = series
       
       if (parallelsCollapsed) {
-        // Only show series that are not parallels (parallel_of_series is null)
-        seriesToFilter = series.filter(s => !s.parallel_of_series)
+        // Only show series that are not parallels
+        // A series is considered a parallel if it has color info OR a parent series
+        seriesToFilter = series.filter(s => 
+          !s.color_name && 
+          !s.color_hex_value && 
+          !s.parent_series_id
+        )
       }
       
       if (!searchTerm.trim()) {
@@ -159,16 +166,17 @@ function PublicSets() {
       const response = await axios.get('/api/sets-list')
       const setsData = response.data.sets || []
       
-      // Group sets by year and count series
+      // Group sets by year and count series and cards
       const yearStats = {}
       setsData.forEach(set => {
         const setYear = set.year || parseInt(set.name.split(' ')[0])
         if (setYear && setYear >= 1900 && setYear <= new Date().getFullYear() + 10) {
           if (!yearStats[setYear]) {
-            yearStats[setYear] = { year: setYear, setCount: 0, seriesCount: 0 }
+            yearStats[setYear] = { year: setYear, setCount: 0, seriesCount: 0, cardCount: 0 }
           }
           yearStats[setYear].setCount += 1
           yearStats[setYear].seriesCount += set.series_count || 0
+          yearStats[setYear].cardCount += set.total_card_count || set.card_count || 0
         }
       })
       
@@ -318,8 +326,9 @@ function PublicSets() {
   }
 
   // Helper functions for parallel handling
-  const getParallelCount = (parentSeriesId) => {
-    return series.filter(s => s.parallel_of_series === parentSeriesId).length
+  const getParallelCount = (seriesId) => {
+    // Count how many series have this series as their parent
+    return series.filter(s => s.parent_series_id === seriesId).length
   }
 
   const handleParallelsClick = useCallback((parentSeries, event) => {
@@ -348,7 +357,7 @@ function PublicSets() {
   }, [openDropdownSeriesId])
 
   const getParallelsForSeries = (parentSeriesId) => {
-    return series.filter(s => s.parallel_of_series === parentSeriesId)
+    return series.filter(s => s.parent_series_id === parentSeriesId)
   }
 
   // Function to update dropdown position based on current parallels box position
@@ -395,72 +404,6 @@ function PublicSets() {
 
   return (
     <div className="admin-sets-page">
-      <div className="admin-header">
-        <div className="admin-title">
-          {(year || setSlug || seriesSlug) && (
-            <Link 
-              to={seriesSlug ? `/sets/${year}/${setSlug}` : setSlug ? `/sets/${year}` : '/sets'} 
-              className="back-button"
-              title="Go back"
-            >
-              <Icon name="arrow-left" size={24} />
-            </Link>
-          )}
-          <Icon name="layers" size={32} />
-          <h1>
-            {seriesSlug && selectedSeries ? selectedSeries.name :
-             setSlug && selectedSet ? selectedSet.name : 
-             year ? `${year} Sets` : 
-             'Sets & Series'}
-          </h1>
-        </div>
-        
-        <div className="header-controls">
-          {setSlug && selectedSet && (
-            <>
-              <button 
-                className={spreadsheetStatus?.blob_url ? 'action-button primary' : 'download-button secondary'}
-                onClick={() => downloadMasterSetSpreadsheet()}
-                title={
-                  spreadsheetStatus?.blob_url 
-                    ? `Download complete set spreadsheet (${spreadsheetStatus.format?.toUpperCase() || 'XLSX'}, ${Math.round(spreadsheetStatus.file_size / 1024)}KB)`
-                    : 'Spreadsheet not available - will be generated soon'
-                }
-                disabled={!spreadsheetStatus?.blob_url}
-              >
-                <Icon name="import" size={16} />
-                {spreadsheetStatus?.blob_url ? 'Download Master Set' : 'Not Available Yet'}
-                {spreadsheetStatus?.generated_at && (
-                  <span className="download-meta">
-                    ({spreadsheetStatus.format?.toUpperCase() || 'XLSX'})
-                  </span>
-                )}
-              </button>
-              <button 
-                className="collapse-parallels-btn"
-                onClick={() => setParallelsCollapsed(!parallelsCollapsed)}
-              >
-                <Icon name={parallelsCollapsed ? "eye" : "eye-off"} size={16} />
-                {parallelsCollapsed ? "Show Parallels" : "Collapse Parallels"}
-              </button>
-            </>
-          )}
-          <div className="search-box">
-            <Icon name="search" size={20} />
-            <input
-              type="text"
-              placeholder={
-                setSlug ? "Search series..." :
-                year ? "Search sets..." : 
-                "Search years..."
-              }
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-        </div>
-      </div>
-
       <div className="content-area">
         {loading ? (
           <div className="loading-state">
@@ -471,25 +414,36 @@ function PublicSets() {
           <>
             {/* Years Grid */}
             {!year && !setSlug && (
-              <div className="years-grid">
+              <div className="years-grid-unified">
+                {/* Header as grid items */}
+                <div className="grid-header-title">
+                  <Icon name="layers" size={32} />
+                  <h1>Sets & Series</h1>
+                </div>
+                <div className="grid-header-search">
+                  <div className="search-box">
+                    <Icon name="search" size={20} />
+                    <input
+                      type="text"
+                      placeholder="Search years..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      autoFocus
+                    />
+                  </div>
+                </div>
+                {/* Force new row after header */}
+                <div className="grid-row-break"></div>
+                {/* Year cards */}
                 {filteredYears.map(y => (
-                  <Link 
-                    key={y.year} 
-                    to={`/sets/${y.year}`}
-                    className="year-card"
-                  >
-                    <div className="year-number">{y.year}</div>
-                    <div className="year-stats">
-                      <div className="year-stat-box">
-                        <div className="year-stat-number">{y.setCount}</div>
-                        <div className="year-stat-label">SETS</div>
-                      </div>
-                      <div className="year-stat-box">
-                        <div className="year-stat-number">{y.seriesCount}</div>
-                        <div className="year-stat-label">SERIES</div>
-                      </div>
-                    </div>
-                  </Link>
+                  <YearCard 
+                    key={y.year}
+                    year={{
+                      year: y.year,
+                      card_count: y.cardCount, // Total cards across all sets in this year
+                      set_count: y.setCount
+                    }}
+                  />
                 ))}
               </div>
             )}
@@ -497,56 +451,48 @@ function PublicSets() {
             {/* Sets Grid */}
             {year && !setSlug && (
               <div className="sets-list">
-                <div className="sets-grid">
-                  {filteredSets.map(set => (
-                    <div 
-                      key={set.set_id} 
-                      className="set-card"
-                      onClick={() => navigate(`/sets/${year}/${set.slug}`)}
-                      title="Click to view series"
+                <div className="sets-grid-unified">
+                  {/* Header as grid items */}
+                  <div className="grid-header-title-with-back">
+                    <Link 
+                      to="/sets" 
+                      className="back-button"
+                      title="Go back"
                     >
-                      <div className="set-card-body">
-                        <div className="set-thumbnail">
-                          {set.thumbnail ? (
-                            <img src={set.thumbnail} alt={`${set.name} thumbnail`} />
-                          ) : (
-                            <Icon name="series" size={20} />
-                          )}
-                        </div>
-                        <div className="set-main">
-                        <div className="set-header">
-                          <div className="set-title-row">
-                            <div className="set-name">{set.name}</div>
-                            {set.is_complete && <span className="complete-badge">Complete</span>}
-                          </div>
-                        </div>
-                        <div className="set-content">
-                          <div className="set-stats">
-                            <div className="set-stat-box">
-                              <div className="set-stat-number">{set.series_count || 0}</div>
-                              <div className="set-stat-label">SERIES</div>
-                            </div>
-                            <div className="set-stat-box">
-                              <div className="set-stat-number">{set.total_card_count || set.card_count || 0}</div>
-                              <div className="set-stat-label">CARDS</div>
-                            </div>
-                          </div>
-                          <div className="set-tags">
-                            {set.manufacturer_name && (
-                              <div className="set-manufacturer">
-                                <span className="manufacturer-tag">{set.manufacturer_name}</span>
-                              </div>
-                            )}
-                            {set.organization && (
-                              <div className="set-organization">
-                                <span className="org-abbreviation">{set.organization}</span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                        </div>
-                      </div>
+                      <Icon name="arrow-left" size={24} />
+                    </Link>
+                    <Icon name="layers" size={32} />
+                    <h1>{year} Sets</h1>
+                  </div>
+                  <div className="grid-header-search-sets">
+                    <div className="search-box">
+                      <Icon name="search" size={20} />
+                      <input
+                        type="text"
+                        placeholder="Search sets..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        autoFocus
+                      />
                     </div>
+                  </div>
+                  {/* Force new row after header */}
+                  <div className="grid-row-break"></div>
+                  {/* Set cards */}
+                  {filteredSets.map(set => (
+                    <SetCard 
+                      key={set.set_id}
+                      set={{
+                        name: set.name,
+                        year: set.year || parseInt(year),
+                        card_count: set.total_card_count || set.card_count || 0,
+                        series_count: set.series_count || 0,
+                        manufacturer: set.manufacturer_name,
+                        organization: set.organization,
+                        thumbnail: set.thumbnail,
+                        slug: set.slug
+                      }}
+                    />
                   ))}
                 </div>
               </div>
@@ -555,92 +501,76 @@ function PublicSets() {
             {/* Series Grid */}
             {setSlug && selectedSet && (
               <div className="series-list">
-                <div className="series-grid">
-                  {filteredSeries.map(s => (
-                    <div 
-                      key={s.series_id} 
-                      className="series-card-container"
+                <div className="series-grid-unified">
+                  {/* Header as grid items */}
+                  <div className="grid-header-title-with-back">
+                    <Link 
+                      to={`/sets/${year}`}
+                      className="back-button"
+                      title="Go back"
                     >
-                      <div 
-                        className="series-card"
-                        onClick={(e) => {
-                          // Don't navigate if clicking on parallels box
-                          if (!e.target.closest('.parallels-box-wrapper')) {
-                            navigate(`/series/${generateSlug(s.name)}`)
-                          }
-                        }}
-                        title="Click to view cards"
+                      <Icon name="arrow-left" size={24} />
+                    </Link>
+                    <Icon name="layers" size={32} />
+                    <h1>{selectedSet.name}</h1>
+                  </div>
+                  <div className="grid-header-controls">
+                    {spreadsheetStatus?.blob_url && (
+                      <button 
+                        className="action-button primary"
+                        onClick={() => downloadMasterSetSpreadsheet()}
+                        title={`Download complete set spreadsheet (${spreadsheetStatus.format?.toUpperCase() || 'XLSX'}, ${Math.round(spreadsheetStatus.file_size / 1024)}KB)`}
                       >
-                      <div className="series-content">
-                        <div className="series-header">
-                          <div className="series-name">
-                            {s.name === selectedSet?.name ? 'Base Set' : getCleanSeriesName(s.name)}
-                          </div>
-                          <div className="series-badges">
-                          </div>
-                        </div>
-                        
-                        <div className="series-info">
-                          {/* Parallel info moved to bottom stripe */}
-                        </div>
-                        
-                        <div className="series-stats">
-                          <div className="series-stat-box">
-                            <div className="series-stat-number">{s.card_count || 0}</div>
-                            <div className="series-stat-label">CARDS</div>
-                          </div>
-                          <div className="series-stat-box">
-                            <div className="series-stat-number">{s.rookie_count || 0}</div>
-                            <div className="series-stat-label">ROOKIES</div>
-                          </div>
-                          {getParallelCount(s.series_id) > 0 && (
-                            // Show parallel count for parent series
-                            <div className="parallels-box-wrapper">
-                              <div 
-                                className="series-stat-box clickable-stat-box"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  handleParallelsClick(s, e)
-                                }}
-                                title="Click to view parallels"
-                              >
-                                <div className="series-stat-number">{getParallelCount(s.series_id)}</div>
-                                <div className="series-stat-label">PARALLELS</div>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      {/* Bottom parallel stripe - always show for alignment */}
-                      <div 
-                        className={`series-parallel-stripe ${s.parent_series_name ? 'has-content' : 'empty'}`}
-                        title={s.parent_series_name ? `Parallel of: ${s.parent_series_name}` : undefined}
-                      >
-                        {s.parent_series_name && (getCleanParallelName(s.parent_series_name).trim() || 'BASE').toUpperCase()}
-                      </div>
-                      {/* Right color stripe - only show when color data exists */}
-                      {s.color_hex_value && (
-                        <div 
-                          className="series-color-stripe-right"
-                          style={{ 
-                            backgroundColor: s.color_hex_value,
-                            color: isLightColor(s.color_hex_value) ? '#000000' : '#ffffff',
-                            textShadow: isLightColor(s.color_hex_value) 
-                              ? '0 1px 1px rgba(255, 255, 255, 0.8)' 
-                              : '0 1px 1px rgba(0, 0, 0, 0.8)'
-                          }}
-                        >
-                          {(() => {
-                            const colorName = s.color_name || ''
-                            const printRun = s.print_run_display || (s.min_print_run && s.max_print_run ? `${s.min_print_run}-${s.max_print_run}` : '')
-                            const displayText = [colorName, printRun].filter(Boolean).join(' ')
-                            return displayText
-                          })()}
-                        </div>
-                      )}
-                      </div>
+                        <Icon name="import" size={16} />
+                        Download Master Set
+                      </button>
+                    )}
+                  </div>
+                  <div className="grid-header-search-series">
+                    <button 
+                      className="collapse-parallels-btn"
+                      onClick={() => setParallelsCollapsed(!parallelsCollapsed)}
+                    >
+                      <Icon name={parallelsCollapsed ? "eye" : "eye-off"} size={16} />
+                      {parallelsCollapsed ? "Show Parallels" : "Collapse Parallels"}
+                    </button>
+                    <div className="search-box">
+                      <Icon name="search" size={20} />
+                      <input
+                        type="text"
+                        placeholder="Search series..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        autoFocus
+                      />
                     </div>
-                  ))}
+                  </div>
+                  {/* Force new row after header */}
+                  <div className="grid-row-break"></div>
+                  {/* Series cards */}
+                  {filteredSeries.map(s => {
+                    const parallelCount = getParallelCount(s.series_id)
+                    return (
+                      <SeriesCard 
+                        key={s.series_id}
+                        series={{
+                          name: s.name === selectedSet?.name ? 'Base Set' : getCleanSeriesName(s.name),
+                          set_name: selectedSet?.name,
+                          card_count: s.card_count || 0,
+                          rc_count: s.rookie_count || 0,
+                          color_name: s.color_name,
+                          color_hex: s.color_hex_value,
+                          print_run_display: s.print_run_display || (s.min_print_run && s.max_print_run ? `${s.min_print_run}-${s.max_print_run}` : ''),
+                          parallel_of: (s.color_name && s.color_hex_value) || s.parent_series_id ? true : false,
+                          parallel_parent_name: s.parent_series_name,
+                          parallel_count: parallelCount,
+                          slug: generateSlug(s.name),
+                          set_slug: setSlug,
+                          year: year
+                        }}
+                      />
+                    )
+                  })}
                   {filteredSeries.length === 0 && series.length > 0 && (
                     <div className="empty-state">
                       <Icon name="search" size={48} />

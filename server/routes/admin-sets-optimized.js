@@ -20,8 +20,9 @@ const PAGE_CACHE_DURATION = 60 * 1000 // 1 minute for page data
 function generateSlug(name) {
   return name
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '')
+    .replace(/'/g, '') // Remove apostrophes completely
+    .replace(/[^a-z0-9]+/g, '-') // Replace other special chars with hyphens
+    .replace(/^-|-$/g, '') // Remove leading/trailing hyphens
 }
 
 // GET /api/admin/sets-optimized/static-data - Get all static dropdown data in one call

@@ -231,7 +231,9 @@ function SearchResults() {
             rc_count: 15,
             is_base: false,
             parallel_of: true,
+            parallel_parent_name: '2023 Topps Chrome Base',
             print_run_display: '199',
+            parallel_count: 0,
             slug: '2023-topps-chrome-platinum'
           },
           {
@@ -243,7 +245,24 @@ function SearchResults() {
             rc_count: 28,
             is_base: true,
             parallel_of: false,
+            parallel_count: 5,
             slug: '2022-topps-base'
+          },
+          {
+            type: 'series',
+            series_id: '3',
+            name: '2023 Topps Chrome Gold Refractor',
+            set_name: '2023 Topps Chrome',
+            color_name: 'Gold',
+            color_hex: '#FFD700',
+            card_count: 330,
+            rc_count: 12,
+            is_base: false,
+            parallel_of: true,
+            parallel_parent_name: '2023 Topps Chrome Base',
+            print_run_display: '50',
+            parallel_count: 0,
+            slug: '2023-topps-chrome-gold-refractor'
           }
         ],
         cards: []

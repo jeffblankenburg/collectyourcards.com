@@ -222,3 +222,168 @@
   opacity: 0.8 !important;
   margin-left: 0.25rem !important;
 }
+
+/* Years Grid - Using unified card system with centering */
+.years-grid-unified {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 270px);
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  justify-content: center;
+}
+
+/* Grid header items - Force to stay on first row */
+.grid-header-title {
+  grid-column: 1 / span 2; /* Start at column 1, span 2 columns */
+  grid-row: 1; /* Force first row */
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 0;
+  margin-bottom: 1rem;
+  white-space: nowrap; /* Prevent text wrapping */
+}
+
+.grid-header-title h1,
+.grid-header-title-with-back h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin: 0;
+  background: linear-gradient(135deg, #e5e7eb 0%, #f3f4f6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.grid-header-spacer {
+  display: none; /* Not needed with new spanning approach */
+}
+
+.years-grid-unified .grid-header-search,
+.grid-header-search {
+  grid-column: 3 / -1 !important; /* From column 3 to the end */
+  grid-row: 1 !important; /* Force first row */
+  display: flex !important;
+  justify-content: flex-end !important;
+  align-items: center !important;
+  padding: 1rem 0 !important;
+  margin-bottom: 1rem !important;
+}
+
+/* Force a row break after header */
+.grid-row-break {
+  grid-column: 1 / -1; /* Span entire grid width */
+  height: 0; /* No visible height */
+  margin: 0;
+  padding: 0;
+}
+
+.sets-grid-unified .grid-header-title-with-back,
+.grid-header-title-with-back {
+  grid-column: 1 / span 2; /* Start at column 1, span 2 columns */
+  grid-row: 1; /* Force first row */
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 0;
+  margin-bottom: 1rem;
+  white-space: nowrap; /* Prevent text wrapping */
+}
+
+.sets-grid-unified .grid-header-search-sets,
+.grid-header-search-sets {
+  grid-column: 3 / -1; /* From column 3 to the end */
+  grid-row: 1; /* Force first row */
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 1rem 0;
+  margin-bottom: 1rem;
+}
+
+.series-grid-unified .grid-header-controls,
+.grid-header-controls {
+  grid-column: 1 / span 2; /* Start at column 1, span 2 columns */
+  grid-row: 1; /* Force first row */
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem 0;
+  margin-bottom: 1rem;
+  white-space: nowrap; /* Prevent text wrapping */
+}
+
+.series-grid-unified .grid-header-search-series,
+.grid-header-search-series {
+  grid-column: 3 / -1; /* From column 3 to the end */
+  grid-row: 1; /* Force first row */
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.5rem; /* Space between collapse button and search box */
+  padding: 1rem 0;
+  margin-bottom: 1rem;
+}
+
+/* Sets grid with headers - Using card size of 270px to match other unified grids */
+.sets-grid-unified {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 270px);
+  gap: 0.5rem;
+  justify-content: center;
+  margin-bottom: 0.5rem;
+}
+
+/* Series grid with headers */
+.series-grid-unified {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 270px);
+  gap: 0.5rem;
+  justify-content: center;
+  margin-bottom: 0.5rem;
+}
+
+/* Responsive adjustments for grid headers */
+@media (min-width: 850px) {
+  .grid-header-spacer {
+    display: block;
+  }
+  
+  .grid-header-title {
+    grid-column: span 2;
+  }
+  
+  .grid-header-search {
+    grid-column: span 1;
+    justify-content: flex-end;
+  }
+}
+
+@media (min-width: 1120px) {
+  .grid-header-title {
+    grid-column: span 2;
+  }
+  
+  .grid-header-search {
+    grid-column: span 2;
+  }
+}
+
+/* Ensure search box styling - Override AdminSets.css */
+.grid-header-search .search-box,
+.grid-header-search-sets .search-box,
+.grid-header-search-series .search-box {
+  width: 100%;
+  max-width: 300px;
+  flex-shrink: 1; /* Override flex-shrink: 0 from AdminSets.css */
+}
+
+/* Ensure the grid header search boxes override AdminSets.css */
+.years-grid-unified .search-box,
+.sets-grid-unified .search-box,
+.series-grid-unified .search-box {
+  width: 100% !important;
+  max-width: 300px !important;
+  flex-shrink: 1 !important;
+}
+

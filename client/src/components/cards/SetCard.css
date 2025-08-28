@@ -77,6 +77,42 @@
 /* Middle Space */
 .setcard-middle-space {
   flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Thumbnail - shown only for short titles */
+.setcard-thumbnail {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.setcard-thumbnail img {
+  max-width: 100%;
+  width: auto;
+  border-radius: 4px;
+  object-fit: contain;
+}
+
+/* Large thumbnail for 1-line titles */
+.setcard-thumbnail-large {
+  height: 90px;
+}
+
+.setcard-thumbnail-large img {
+  height: 90px;
+}
+
+/* Small thumbnail for 2-line titles */
+.setcard-thumbnail-small {
+  height: 60px;
+}
+
+.setcard-thumbnail-small img {
+  height: 60px;
 }
 
 /* Set Stats Section */

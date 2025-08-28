@@ -30,10 +30,91 @@
 /* Players Landing Grid - Using unified grid system */
 .players-landing-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, 250px);
+  grid-template-columns: repeat(auto-fill, 270px);
   gap: 0.5rem;
   margin-bottom: 0.5rem;
   justify-content: center;
+}
+
+/* Grid header items - Force to stay on first row */
+.players-landing-grid .grid-header-title {
+  grid-column: 1 / span 2; /* Start at column 1, span 2 columns */
+  grid-row: 1; /* Force first row */
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 0;
+  margin-bottom: 1rem;
+  white-space: nowrap; /* Prevent text wrapping */
+}
+
+.players-landing-grid .grid-header-title h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin: 0;
+  background: linear-gradient(135deg, #e5e7eb 0%, #f3f4f6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.players-landing-grid .grid-header-search {
+  grid-column: 3 / -1; /* From column 3 to the end */
+  grid-row: 1; /* Force first row */
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 1rem 0;
+  margin-bottom: 1rem;
+}
+
+.players-landing-grid .search-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  max-width: 300px;
+}
+
+.players-landing-grid .search-box svg {
+  position: absolute;
+  left: 1rem;
+  color: rgba(255, 255, 255, 0.4);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.players-landing-grid .search-box input {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 0.75rem 1rem 0.75rem 3rem;
+  font-size: 0.875rem;
+  color: white;
+  transition: all 0.2s ease;
+}
+
+.players-landing-grid .search-box input:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.players-landing-grid .search-box input:focus {
+  outline: none;
+  border-color: #60a5fa;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.players-landing-grid .search-box input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Force a row break after header */
+.players-landing-grid .grid-row-break {
+  grid-column: 1 / -1; /* Span entire grid width */
+  height: 0; /* No visible height */
+  margin: 0;
+  padding: 0;
 }
 
 /* Player Card - Using unified card system */

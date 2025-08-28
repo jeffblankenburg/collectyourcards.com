@@ -370,6 +370,18 @@
   white-space: nowrap;
 }
 
+.cards-table th.owned-header {
+  position: sticky;
+  right: 80px; /* Width of action column */
+  background: rgba(30, 41, 59, 0.95);
+  backdrop-filter: blur(10px);
+  z-index: 6;
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  width: 45px;
+  min-width: 45px;
+  max-width: 45px;
+}
+
 .user-card-count-cell {
   color: #22c55e;
   font-weight: 600;
@@ -378,6 +390,12 @@
   max-width: 45px;
   padding: 0.1rem 0.25rem;
   font-size: 0.9rem;
+  position: sticky;
+  right: 80px; /* Width of action column */
+  background: rgba(30, 41, 59, 0.95);
+  backdrop-filter: blur(10px);
+  z-index: 3;
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .action-cell {

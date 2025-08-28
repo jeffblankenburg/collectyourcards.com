@@ -73,6 +73,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
               <Route path="/sets" element={<PublicSets />} />
               <Route path="/sets/:year" element={<PublicSets />} />
               <Route path="/sets/:year/:setSlug" element={<PublicSets />} />
+              <Route path="/sets/:year/:setSlug/:seriesSlug" element={<SeriesDetail />} />
               <Route path="/series/:seriesSlug" element={<SeriesDetail />} />
               <Route 
                 path="/admin" 

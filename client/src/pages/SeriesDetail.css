@@ -118,7 +118,8 @@
 }
 
 .series-stats-grid {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 1rem;
 }
 
@@ -131,6 +132,10 @@
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 8px;
   min-width: 80px;
+}
+
+.stat-compact.completion-stat {
+  grid-column: 1 / -1; /* Span both columns */
 }
 
 .stat-value {
@@ -569,3 +574,4 @@
     align-items: center;
   }
 }
+

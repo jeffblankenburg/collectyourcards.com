@@ -20,6 +20,17 @@ function SetCard({ set, showBadge = false, customOnClick = null }) {
     }
   }
 
+  // Determine thumbnail size based on title length
+  const getThumbnailSize = () => {
+    if (!set.name) return null
+    if (set.name.length <= 20) return 'large' // ~1 line = 90px
+    if (set.name.length <= 40) return 'small' // ~2 lines = 60px
+    return null // No thumbnail for longer titles
+  }
+  
+  const thumbnailSize = getThumbnailSize()
+  const showThumbnail = thumbnailSize !== null
+
   return (
     <div 
       className="setcard-container"
@@ -40,7 +51,11 @@ function SetCard({ set, showBadge = false, customOnClick = null }) {
         </div>
         
         <div className="setcard-middle-space">
-          {/* Empty space - background image handles the visual */}
+          {showThumbnail && set.thumbnail && (
+            <div className={`setcard-thumbnail setcard-thumbnail-${thumbnailSize}`}>
+              <img src={set.thumbnail} alt={`${set.name} thumbnail`} />
+            </div>
+          )}
         </div>
 
         <div className="setcard-stats">

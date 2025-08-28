@@ -11,12 +11,28 @@ function TeamsLanding() {
   const navigate = useNavigate()
   
   const [teams, setTeams] = useState([])
+  const [filteredTeams, setFilteredTeams] = useState([])
+  const [searchTerm, setSearchTerm] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
   useEffect(() => {
     loadTeamsData()
   }, [isAuthenticated])
+
+  // Filter teams based on search term
+  useEffect(() => {
+    if (!searchTerm.trim()) {
+      setFilteredTeams(teams)
+    } else {
+      const filtered = teams.filter(team =>
+        team.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (team.abbreviation && team.abbreviation.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (team.organization_abbreviation && team.organization_abbreviation.toLowerCase().includes(searchTerm.toLowerCase()))
+      )
+      setFilteredTeams(filtered)
+    }
+  }, [teams, searchTerm])
 
   const loadTeamsData = async () => {
     try {
@@ -43,6 +59,7 @@ function TeamsLanding() {
       // Non-authenticated users see teams sorted by card count (default)
       
       setTeams(teamsList)
+      setFilteredTeams(teamsList)
       setError(null)
     } catch (err) {
       console.error('Error loading teams:', err)
@@ -151,10 +168,36 @@ function TeamsLanding() {
 
   return (
     <div className="teams-landing">
-      <div className="grid-responsive grid-cards-md">
-        {teams.map(team => (
+      <div className="teams-landing-grid">
+        {/* Header as grid items */}
+        <div className="grid-header-title">
+          <Icon name="shield" size={32} />
+          <h1>Teams</h1>
+        </div>
+        <div className="grid-header-search">
+          <div className="search-box">
+            <Icon name="search" size={20} />
+            <input
+              type="text"
+              placeholder="Search teams..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              autoFocus
+            />
+          </div>
+        </div>
+        {/* Force new row after header */}
+        <div className="grid-row-break"></div>
+        {/* Team cards */}
+        {filteredTeams.map(team => (
           <TeamCardWithTracking key={team.team_id} team={team} />
         ))}
+        {filteredTeams.length === 0 && teams.length > 0 && (
+          <div className="empty-state">
+            <Icon name="search" size={48} />
+            <p>No teams found matching "{searchTerm}"</p>
+          </div>
+        )}
       </div>
     </div>
   )

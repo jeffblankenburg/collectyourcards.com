@@ -23,7 +23,8 @@ const UniversalCardTable = ({
   showOwned = true,
   showAddButtons = true,
   isCollectionView = false,
-  showCollectionColumns = false
+  showCollectionColumns = false,
+  onCollectionDataLoaded = null
 }) => {
   const { isAuthenticated } = useAuth()
   const [cards, setCards] = useState(initialCards)
@@ -83,6 +84,19 @@ const UniversalCardTable = ({
       setCards(cardsData)
       setTotalCardsCount(total || cardsData.length)
       
+      // Calculate collection completion for authenticated users
+      if (isAuthenticated && onCollectionDataLoaded && cardsData.length > 0) {
+        const totalCards = cardsData.length
+        const ownedCount = cardsData.filter(card => 
+          card.user_card_count && parseInt(card.user_card_count) > 0
+        ).length
+        
+        onCollectionDataLoaded({
+          totalCards,
+          ownedCount
+        })
+      }
+      
     } catch (error) {
       console.error('Error loading data:', error)
       setCards([])
@@ -91,7 +105,7 @@ const UniversalCardTable = ({
       setLoading(false)
       loadingRef.current = false
     }
-  }, [apiEndpoint])
+  }, [apiEndpoint, isAuthenticated, onCollectionDataLoaded])
 
   // Load initial data from API endpoint or use provided cards
   useEffect(() => {
@@ -689,7 +703,7 @@ const UniversalCardTable = ({
               )}
               {isAuthenticated && showOwned && (
                 <>
-                  <th className="center">
+                  <th className="center owned-header">
                     Owned
                   </th>
                   <th className="center">

@@ -101,6 +101,18 @@
   flex: 1;
 }
 
+/* Parallel Parent Name - shown above stats */
+.seriescard-parallel-parent {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  text-align: left;
+  margin-bottom: 0.25rem;
+  padding: 0;
+}
+
 /* Color Stripe */
 .seriescard-color-stripe {
   position: absolute;
@@ -205,6 +217,37 @@
   font-size: 0.6875rem;
   font-weight: 500;
   color: rgba(255, 255, 255, 0.7);
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  line-height: 1;
+}
+
+/* Parallel Count */
+.seriescard-parallel-count {
+  background: rgba(236, 72, 153, 0.2);
+  border: 1px solid rgba(236, 72, 153, 0.4);
+  border-radius: 4px;
+  padding: 0.5rem 0.75rem;
+  text-align: center;
+  min-width: 70px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.125rem;
+  flex-shrink: 0;
+}
+
+.seriescard-parallel-count-number {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #ec4899;
+  line-height: 1;
+}
+
+.seriescard-parallel-count-label {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: rgba(236, 72, 153, 0.8);
   text-transform: uppercase;
   letter-spacing: 0.025em;
   line-height: 1;
