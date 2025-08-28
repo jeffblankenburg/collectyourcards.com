@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
+import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { useAuth } from '../contexts/AuthContext'
 import Icon from './Icon'
@@ -13,6 +14,10 @@ const UniversalCardTable = ({
   showPlayer = true,
   showTeam = true,
   showSeries = true,
+  showColor = true,
+  showAttributes = true,
+  showDownload = true,
+  columnWidths: customColumnWidths = null,
   defaultSort = 'series_name',
   downloadFilename = 'cards',
   pageSize = 100,
@@ -27,6 +32,7 @@ const UniversalCardTable = ({
   onCollectionDataLoaded = null
 }) => {
   const { isAuthenticated } = useAuth()
+  const navigate = useNavigate()
   const [cards, setCards] = useState(initialCards)
   const [sortField, setSortField] = useState(defaultSort)
   const [sortDirection, setSortDirection] = useState('asc')
@@ -43,15 +49,30 @@ const UniversalCardTable = ({
   const [cardToDelete, setCardToDelete] = useState(null)
   const [deleting, setDeleting] = useState(false)
   // Removed infinite scroll state - no longer needed
-  const [columnWidths, setColumnWidths] = useState({
+  const [columnWidths, setColumnWidths] = useState(customColumnWidths || {
+    code: '100px',
     cardNumber: '100px',
     player: '200px',
     series: '300px',
     printRun: '100px',
     color: '120px',
     attributes: '120px',
-    notes: '200px'
+    purchasePrice: '120px',
+    estimatedValue: '120px',
+    currentValue: '120px',
+    location: '150px',
+    grade: '120px',
+    amAuto: '80px',
+    notes: '200px',
+    actions: '80px'
   })
+  
+  // Update column widths when customColumnWidths prop changes
+  useEffect(() => {
+    if (customColumnWidths) {
+      setColumnWidths(customColumnWidths)
+    }
+  }, [customColumnWidths])
   const [isResizing, setIsResizing] = useState(false)
   const [resizeColumn, setResizeColumn] = useState(null)
   const loadingRef = useRef(false)
@@ -175,6 +196,79 @@ const UniversalCardTable = ({
   const cancelDelete = () => {
     setShowDeleteConfirm(false)
     setCardToDelete(null)
+  }
+
+  const handleCardNumberClick = (card) => {
+    // Navigate to card detail page using simple URL format
+    if (card.card_number) {
+      // Get series slug from available data
+      let seriesSlug = ''
+      if (card.series_slug) {
+        seriesSlug = card.series_slug
+      } else if (card.series_rel?.name) {
+        // Create slug from series name (collection view)
+        seriesSlug = card.series_rel.name
+          .toLowerCase()
+          .replace(/'/g, '') // Remove apostrophes completely
+          .replace(/[^a-z0-9]+/g, '-') // Replace other special chars with hyphens
+          .replace(/^-|-$/g, '') // Remove leading/trailing hyphens
+      } else if (card.series_name) {
+        // Create slug from series_name field
+        seriesSlug = card.series_name
+          .toLowerCase()
+          .replace(/'/g, '') // Remove apostrophes completely
+          .replace(/[^a-z0-9]+/g, '-') // Replace other special chars with hyphens
+          .replace(/^-|-$/g, '') // Remove leading/trailing hyphens
+      }
+      
+      if (!seriesSlug) {
+        console.warn('No series information available for navigation:', card)
+        return
+      }
+      
+      // Get player name from available data
+      let playerName = ''
+      
+      if (card.card_player_teams && card.card_player_teams.length > 0) {
+        // From card_player_teams array
+        playerName = card.card_player_teams
+          .map(cpt => {
+            if (cpt.player?.name) {
+              return cpt.player.name
+            }
+            if (cpt.player?.first_name || cpt.player?.last_name) {
+              return `${cpt.player.first_name || ''} ${cpt.player.last_name || ''}`.trim()
+            }
+            return null
+          })
+          .filter(name => name)
+          .join(', ')
+      } else if (card.player_names) {
+        // From aggregated player_names
+        playerName = card.player_names
+      } else if (card.player_name) {
+        // From single player_name field
+        playerName = card.player_name
+      } else if (card.title) {
+        // Fallback to title
+        playerName = card.title
+      }
+      
+      if (!playerName) {
+        playerName = 'unknown'
+      }
+      
+      // Create player slug
+      const playerSlug = playerName
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .trim()
+      
+      console.log('Navigating to:', `/card/${seriesSlug}/${card.card_number}/${playerSlug}`)
+      navigate(`/card/${seriesSlug}/${card.card_number}/${playerSlug}`)
+    }
   }
 
   // Filter cards based on search query and selected teams
@@ -416,10 +510,10 @@ const UniversalCardTable = ({
         ...(showCollectionColumns ? ['Code'] : []),
         'Card #',
         ...(showPlayer ? ['Player(s)'] : []),
-        'Series',
+        ...(showSeries ? ['Series'] : []),
         showCollectionColumns ? 'Serial #' : 'Print Run',
-        'Color',
-        'Attributes',
+        ...(showColor ? ['Color'] : []),
+        ...(showAttributes ? ['Attributes'] : []),
         ...(showCollectionColumns ? [
           'Purchase Price',
           'Estimated Value', 
@@ -461,10 +555,10 @@ const UniversalCardTable = ({
             ...(showCollectionColumns ? [`"${card.random_code || ''}"`] : []),
             `"${card.card_number || ''}"`,
             ...(showPlayer ? [`"${getPlayerName(card)}"`] : []),
-            `"${card.series_rel?.name || ''}"`,
+            ...(showSeries ? [`"${card.series_rel?.name || ''}"`] : []),
             `"${serialPrintRun}"`,
-            `"${card.color_rel?.color || ''}"`,
-            `"${attributes}"`,
+            ...(showColor ? [`"${card.color_rel?.color || ''}"`] : []),
+            ...(showAttributes ? [`"${attributes}"`] : []),
             ...(showCollectionColumns ? [
               card.purchase_price ? `"${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(card.purchase_price)}"` : '""',
               card.estimated_value ? `"${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(card.estimated_value)}"` : '""',
@@ -556,7 +650,7 @@ const UniversalCardTable = ({
                 <th 
                   className="sortable resizable-header"
                   onClick={() => handleSort('random_code')}
-                  style={{ width: '100px' }}
+                  style={{ width: columnWidths.code }}
                 >
                   <div className="header-content">
                     Code <SortIcon field="random_code" />
@@ -591,19 +685,21 @@ const UniversalCardTable = ({
                   />
                 </th>
               )}
-              <th 
-                className="sortable resizable-header"
-                onClick={() => handleSort('series_name')}
-                style={{ width: columnWidths.series }}
-              >
-                <div className="header-content">
-                  Series <SortIcon field="series_name" />
-                </div>
-                <div 
-                  className={`resize-handle ${isResizing && resizeColumn === 'series' ? 'resizing' : ''}`}
-                  onMouseDown={(e) => handleResizeStart(e, 'series')}
-                />
-              </th>
+              {showSeries && (
+                <th 
+                  className="sortable resizable-header"
+                  onClick={() => handleSort('series_name')}
+                  style={{ width: columnWidths.series }}
+                >
+                  <div className="header-content">
+                    Series <SortIcon field="series_name" />
+                  </div>
+                  <div 
+                    className={`resize-handle ${isResizing && resizeColumn === 'series' ? 'resizing' : ''}`}
+                    onMouseDown={(e) => handleResizeStart(e, 'series')}
+                  />
+                </th>
+              )}
               <th 
                 className="sortable resizable-header"
                 onClick={() => handleSort(showCollectionColumns ? 'serial_number' : 'print_run')}
@@ -617,32 +713,36 @@ const UniversalCardTable = ({
                   onMouseDown={(e) => handleResizeStart(e, 'printRun')}
                 />
               </th>
-              <th 
-                className="sortable resizable-header"
-                onClick={() => handleSort('color')}
-                style={{ width: columnWidths.color }}
-              >
-                <div className="header-content">
-                  Color <SortIcon field="color" />
-                </div>
-                <div 
-                  className={`resize-handle ${isResizing && resizeColumn === 'color' ? 'resizing' : ''}`}
-                  onMouseDown={(e) => handleResizeStart(e, 'color')}
-                />
-              </th>
-              <th className="resizable-header" style={{ width: columnWidths.attributes }}>
-                Attributes
-                <div 
-                  className={`resize-handle ${isResizing && resizeColumn === 'attributes' ? 'resizing' : ''}`}
-                  onMouseDown={(e) => handleResizeStart(e, 'attributes')}
-                />
-              </th>
+              {showColor && (
+                <th 
+                  className="sortable resizable-header"
+                  onClick={() => handleSort('color')}
+                  style={{ width: columnWidths.color }}
+                >
+                  <div className="header-content">
+                    Color <SortIcon field="color" />
+                  </div>
+                  <div 
+                    className={`resize-handle ${isResizing && resizeColumn === 'color' ? 'resizing' : ''}`}
+                    onMouseDown={(e) => handleResizeStart(e, 'color')}
+                  />
+                </th>
+              )}
+              {showAttributes && (
+                <th className="resizable-header" style={{ width: columnWidths.attributes }}>
+                  Attributes
+                  <div 
+                    className={`resize-handle ${isResizing && resizeColumn === 'attributes' ? 'resizing' : ''}`}
+                    onMouseDown={(e) => handleResizeStart(e, 'attributes')}
+                  />
+                </th>
+              )}
               {showCollectionColumns && (
                 <>
                   <th 
                     className="sortable resizable-header"
                     onClick={() => handleSort('purchase_price')}
-                    style={{ width: '120px' }}
+                    style={{ width: columnWidths.purchasePrice }}
                   >
                     <div className="header-content">
                       Purchase $ <SortIcon field="purchase_price" />
@@ -651,7 +751,7 @@ const UniversalCardTable = ({
                   <th 
                     className="sortable resizable-header"
                     onClick={() => handleSort('estimated_value')}
-                    style={{ width: '120px' }}
+                    style={{ width: columnWidths.estimatedValue }}
                   >
                     <div className="header-content">
                       $ Value <SortIcon field="estimated_value" />
@@ -660,7 +760,7 @@ const UniversalCardTable = ({
                   <th 
                     className="sortable resizable-header"
                     onClick={() => handleSort('current_value')}
-                    style={{ width: '120px' }}
+                    style={{ width: columnWidths.currentValue }}
                   >
                     <div className="header-content">
                       Current Value <SortIcon field="current_value" />
@@ -669,7 +769,7 @@ const UniversalCardTable = ({
                   <th 
                     className="sortable resizable-header"
                     onClick={() => handleSort('location_name')}
-                    style={{ width: '150px' }}
+                    style={{ width: columnWidths.location }}
                   >
                     <div className="header-content">
                       Location <SortIcon field="location_name" />
@@ -678,13 +778,13 @@ const UniversalCardTable = ({
                   <th 
                     className="sortable resizable-header"
                     onClick={() => handleSort('grade')}
-                    style={{ width: '120px' }}
+                    style={{ width: columnWidths.grade }}
                   >
                     <div className="header-content">
                       Grade <SortIcon field="grade" />
                     </div>
                   </th>
-                  <th className="center" style={{ width: '80px' }}>
+                  <th className="center" style={{ width: columnWidths.amAuto }}>
                     AM Auto
                   </th>
                 </>
@@ -697,7 +797,7 @@ const UniversalCardTable = ({
                 />
               </th>
               {isAuthenticated && isCollectionView && (
-                <th className="center action-header" style={{ width: '80px' }}>
+                <th className="center action-header" style={{ width: columnWidths.actions }}>
                   Actions
                 </th>
               )}
@@ -746,7 +846,7 @@ const UniversalCardTable = ({
                     )}
                   </td>
                 )}
-                <td className="card-number-cell">
+                <td className="card-number-cell clickable-card-number" onClick={() => handleCardNumberClick(card)}>
                   {card.card_number}
                 </td>
                 {showPlayer && (
@@ -769,21 +869,23 @@ const UniversalCardTable = ({
                     ))}
                   </td>
                 )}
-                <td className="series-cell">
-                  {onSeriesClick ? (
-                    <span 
-                      className="series-link"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        onSeriesClick(card.series_rel)
-                      }}
-                    >
-                      {card.series_rel?.name}
-                    </span>
-                  ) : (
-                    card.series_rel?.name
-                  )}
-                </td>
+                {showSeries && (
+                  <td className="series-cell">
+                    {onSeriesClick ? (
+                      <span 
+                        className="series-link"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onSeriesClick(card.series_rel)
+                        }}
+                      >
+                        {card.series_rel?.name}
+                      </span>
+                    ) : (
+                      card.series_rel?.name
+                    )}
+                  </td>
+                )}
                 <td className="print-run-cell center">
                   {showCollectionColumns ? (
                     // Show serial number / print run for collection view
@@ -795,25 +897,29 @@ const UniversalCardTable = ({
                     card.print_run ? `/${card.print_run}` : ''
                   )}
                 </td>
-                <td className="color-cell">
-                  {card.color_rel?.color && (
-                    <span 
-                      className="color-tag" 
-                      style={{ 
-                        backgroundColor: card.color_rel.hex_color,
-                        color: getTextColor(card.color_rel.hex_color)
-                      }}
-                    >
-                      {card.color_rel.color}
-                    </span>
-                  )}
-                </td>
-                <td className="attributes-cell center">
-                  <div className="attribute-tags">
-                    {card.is_autograph && <span className="auto-tag">AUTO</span>}
-                    {card.is_relic && <span className="relic-tag">RELIC</span>}
-                  </div>
-                </td>
+                {showColor && (
+                  <td className="color-cell">
+                    {card.color_rel?.color && (
+                      <span 
+                        className="color-tag" 
+                        style={{ 
+                          backgroundColor: card.color_rel.hex_color,
+                          color: getTextColor(card.color_rel.hex_color)
+                        }}
+                      >
+                        {card.color_rel.color}
+                      </span>
+                    )}
+                  </td>
+                )}
+                {showAttributes && (
+                  <td className="attributes-cell center">
+                    <div className="attribute-tags">
+                      {card.is_autograph && <span className="auto-tag">AUTO</span>}
+                      {card.is_relic && <span className="relic-tag">RELIC</span>}
+                    </div>
+                  </td>
+                )}
                 {showCollectionColumns && (
                   <>
                     <td className="purchase-price-cell center">
@@ -932,25 +1038,27 @@ const UniversalCardTable = ({
           </span>
         </div>
         
-        <div className="table-actions">
-          <button 
-            className="action-button primary"
-            onClick={handleDownload}
-            disabled={loading || sortedCards.length === 0}
-          >
-            {loading ? (
-              <>
-                <Icon name="activity" size={16} className="spinner" />
-                Preparing...
-              </>
-            ) : (
-              <>
-                <Icon name="import" size={16} />
-                Download
-              </>
-            )}
-          </button>
-        </div>
+        {showDownload && (
+          <div className="table-actions">
+            <button 
+              className="action-button primary"
+              onClick={handleDownload}
+              disabled={loading || sortedCards.length === 0}
+            >
+              {loading ? (
+                <>
+                  <Icon name="activity" size={16} className="spinner" />
+                  Preparing...
+                </>
+              ) : (
+                <>
+                  <Icon name="import" size={16} />
+                  Download
+                </>
+              )}
+            </button>
+          </div>
+        )}
       </div>
       </div>
 

@@ -206,6 +206,23 @@ function SeriesDetail() {
     return `/api/cards?series_id=${series.series_id}`
   }, [series?.series_id])
 
+  const handleCardClick = (card) => {
+    // Generate the player names for URL
+    const playerNames = card.card_player_teams?.map(cpt => 
+      `${cpt.player?.first_name || ''} ${cpt.player?.last_name || ''}`.trim()
+    ).filter(name => name).join(', ') || 'unknown'
+    
+    // Use simple URL format for navigation with series
+    const playerSlug = playerNames
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .trim()
+    
+    navigate(`/card/${seriesSlug}/${card.card_number}/${playerSlug}`)
+  }
+
   if (loading) {
     return (
       <div className="series-detail-page">
@@ -415,6 +432,7 @@ function SeriesDetail() {
             defaultSort="sort_order"
             downloadFilename={`${series.name.replace(/[^a-z0-9]/gi, '_')}_${series.year}_cards`}
             showSearch={true}
+            onCardClick={handleCardClick}
             onCollectionDataLoaded={isAuthenticated ? (data) => {
               const { totalCards, ownedCount } = data
               const percentage = totalCards > 0 ? Math.round((ownedCount / totalCards) * 100) : 0

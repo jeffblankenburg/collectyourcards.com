@@ -172,7 +172,19 @@ function UniversalSearch({ className = '' }) {
     // Navigate based on result type
     switch (result.type) {
       case 'card':
-        navigate(`/cards/${result.id}`)
+        // Use new simple URL format: /card/:seriesSlug/:cardNumber/:playerName
+        if (result.data?.card_number && result.data?.player_names && result.data?.series_slug) {
+          const playerSlug = result.data.player_names
+            .toLowerCase()
+            .replace(/[^a-z0-9\s-]/g, '')
+            .replace(/\s+/g, '-')
+            .replace(/-+/g, '-')
+            .trim()
+          navigate(`/card/${result.data.series_slug}/${result.data.card_number}/${playerSlug}`)
+        } else {
+          // Fallback to search if data is missing
+          navigate(`/search?q=${encodeURIComponent(result.title)}`)
+        }
         break
       case 'player':
         // Create player slug from first and last name

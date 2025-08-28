@@ -238,6 +238,15 @@
   min-width: 100px;
 }
 
+.clickable-card-number {
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.clickable-card-number:hover {
+  text-decoration: underline;
+}
+
 .player-cell {
   color: #e5e7eb;
   min-width: 180px;

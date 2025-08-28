@@ -18,13 +18,14 @@ describe('Authentication Endpoints', () => {
   beforeEach(async () => {
     // Clean up test data
     try {
-      await prisma.userSession.deleteMany({})
-      await prisma.userAuthLog.deleteMany({})
+      await prisma.user_session.deleteMany({})
+      await prisma.user_auth_log.deleteMany({})
       await prisma.user.deleteMany({
         where: { email: { contains: 'test' } }
       })
     } catch (error) {
       // Tables might not exist in test environment, that's ok
+      console.log('Warning: Could not clean up test data:', error.message)
     }
 
     // Create a test user for login tests
@@ -38,13 +39,14 @@ describe('Authentication Endpoints', () => {
   afterEach(async () => {
     // Clean up test data
     try {
-      await prisma.userSession.deleteMany({})
-      await prisma.userAuthLog.deleteMany({})
+      await prisma.user_session.deleteMany({})
+      await prisma.user_auth_log.deleteMany({})
       await prisma.user.deleteMany({
         where: { email: { contains: 'test' } }
       })
     } catch (error) {
       // Ignore cleanup errors in test environment
+      console.log('Warning: Could not clean up test data in afterEach:', error.message)
     }
   })
 
@@ -468,13 +470,33 @@ describe('Authentication Endpoints', () => {
     })
 
     it('should return user profile with valid token', async () => {
-      if (!userToken) {
-        return // Skip if we don't have a valid token
-      }
+      // Create a verified user for this test
+      const hashedPassword = await bcrypt.hash(testUser.password, 12)
+      const user = await prisma.user.create({
+        data: {
+          email: 'profile-test@test.com',
+          password_hash: hashedPassword,
+          name: testUser.name,
+          role: 'user',
+          is_verified: true,
+          is_active: true
+        }
+      })
+
+      // Login to get a valid token
+      const loginResponse = await request(app)
+        .post('/api/auth/login')
+        .send({
+          email: 'profile-test@test.com',
+          password: testUser.password
+        })
+        .expect(200)
+
+      const token = loginResponse.body.token
 
       const response = await request(app)
         .get('/api/auth/profile')
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Authorization', `Bearer ${token}`)
         .expect(200)
 
       expect(response.body.user).toMatchObject({
@@ -505,13 +527,33 @@ describe('Authentication Endpoints', () => {
     })
 
     it('should logout successfully with valid token', async () => {
-      if (!userToken) {
-        return // Skip if we don't have a valid token
-      }
+      // Create a verified user for this test
+      const hashedPassword = await bcrypt.hash(testUser.password, 12)
+      const user = await prisma.user.create({
+        data: {
+          email: 'logout-test@test.com',
+          password_hash: hashedPassword,
+          name: testUser.name,
+          role: 'user',
+          is_verified: true,
+          is_active: true
+        }
+      })
+
+      // Login to get a valid token
+      const loginResponse = await request(app)
+        .post('/api/auth/login')
+        .send({
+          email: 'logout-test@test.com',
+          password: testUser.password
+        })
+        .expect(200)
+
+      const token = loginResponse.body.token
 
       const response = await request(app)
         .post('/api/auth/logout')
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Authorization', `Bearer ${token}`)
         .expect(200)
 
       expect(response.body.message).toBe('Logout successful')
@@ -528,13 +570,33 @@ describe('Authentication Endpoints', () => {
     })
 
     it('should logout all sessions with valid token', async () => {
-      if (!userToken) {
-        return // Skip if we don't have a valid token
-      }
+      // Create a verified user for this test
+      const hashedPassword = await bcrypt.hash(testUser.password, 12)
+      const user = await prisma.user.create({
+        data: {
+          email: 'logout-all-test@test.com',
+          password_hash: hashedPassword,
+          name: testUser.name,
+          role: 'user',
+          is_verified: true,
+          is_active: true
+        }
+      })
+
+      // Login to get a valid token
+      const loginResponse = await request(app)
+        .post('/api/auth/login')
+        .send({
+          email: 'logout-all-test@test.com',
+          password: testUser.password
+        })
+        .expect(200)
+
+      const token = loginResponse.body.token
 
       const response = await request(app)
         .post('/api/auth/logout-all')
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Authorization', `Bearer ${token}`)
         .expect(200)
 
       expect(response.body.message).toBe('All sessions logged out successfully')

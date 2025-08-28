@@ -2,9 +2,12 @@ const jwt = require('jsonwebtoken')
 
 // Mock PrismaClient before requiring auth middleware
 const mockPrisma = {
-  userSession: {
+  user_session: {
     findFirst: jest.fn(),
     update: jest.fn()
+  },
+  user: {
+    findUnique: jest.fn()
   },
   $disconnect: jest.fn()
 }
@@ -49,8 +52,9 @@ describe('Authentication Middleware', () => {
     jest.clearAllMocks()
     
     // Reset prisma mocks
-    mockPrisma.userSession.findFirst.mockReset()
-    mockPrisma.userSession.update.mockReset()
+    mockPrisma.user_session.findFirst.mockReset()
+    mockPrisma.user_session.update.mockReset()
+    mockPrisma.user.findUnique.mockReset()
   })
 
   afterAll(async () => {
@@ -104,7 +108,7 @@ describe('Authentication Middleware', () => {
       req.header.mockReturnValue(`Bearer ${token}`)
 
       // Mock Prisma to return no session
-      mockPrisma.userSession.findFirst.mockResolvedValue(null)
+      mockPrisma.user_session.findFirst.mockResolvedValue(null)
 
       await authMiddleware(req, res, next)
 
@@ -121,20 +125,24 @@ describe('Authentication Middleware', () => {
       const token = jwt.sign(payload, process.env.JWT_SECRET)
       req.header.mockReturnValue(`Bearer ${token}`)
 
-      // Mock session with inactive user
+      // Mock session
       const mockSession = {
         session_id: BigInt(1),
-        user: {
-          user_id: BigInt(1),
-          email: 'test@example.com',
-          name: 'Test User',
-          role: 'user',
-          is_active: false,
-          is_verified: true
-        }
+        user_id: BigInt(1)
       }
 
-      mockPrisma.userSession.findFirst.mockResolvedValue(mockSession)
+      // Mock inactive user
+      const mockUser = {
+        user_id: BigInt(1),
+        email: 'test@example.com',
+        name: 'Test User',
+        role: 'user',
+        is_active: false,
+        is_verified: true
+      }
+
+      mockPrisma.user_session.findFirst.mockResolvedValue(mockSession)
+      mockPrisma.user.findUnique.mockResolvedValue(mockUser)
 
       await authMiddleware(req, res, next)
 
@@ -151,20 +159,24 @@ describe('Authentication Middleware', () => {
       const token = jwt.sign(payload, process.env.JWT_SECRET)
       req.header.mockReturnValue(`Bearer ${token}`)
 
-      // Mock session with unverified user
+      // Mock session
       const mockSession = {
         session_id: BigInt(1),
-        user: {
-          user_id: BigInt(1),
-          email: 'test@example.com',
-          name: 'Test User',
-          role: 'user',
-          is_active: true,
-          is_verified: false
-        }
+        user_id: BigInt(1)
       }
 
-      mockPrisma.userSession.findFirst.mockResolvedValue(mockSession)
+      // Mock unverified user
+      const mockUser = {
+        user_id: BigInt(1),
+        email: 'test@example.com',
+        name: 'Test User',
+        role: 'user',
+        is_active: true,
+        is_verified: false
+      }
+
+      mockPrisma.user_session.findFirst.mockResolvedValue(mockSession)
+      mockPrisma.user.findUnique.mockResolvedValue(mockUser)
 
       await authMiddleware(req, res, next)
 
@@ -184,18 +196,22 @@ describe('Authentication Middleware', () => {
       // Mock valid session
       const mockSession = {
         session_id: BigInt(1),
-        user: {
-          user_id: BigInt(1),
-          email: 'test@example.com',
-          name: 'Test User',
-          role: 'user',
-          is_active: true,
-          is_verified: true
-        }
+        user_id: BigInt(1)
       }
 
-      mockPrisma.userSession.findFirst.mockResolvedValue(mockSession)
-      mockPrisma.userSession.update.mockResolvedValue({})
+      // Mock valid user
+      const mockUser = {
+        user_id: BigInt(1),
+        email: 'test@example.com',
+        name: 'Test User',
+        role: 'user',
+        is_active: true,
+        is_verified: true
+      }
+
+      mockPrisma.user_session.findFirst.mockResolvedValue(mockSession)
+      mockPrisma.user.findUnique.mockResolvedValue(mockUser)
+      mockPrisma.user_session.update.mockResolvedValue({})
 
       await authMiddleware(req, res, next)
 

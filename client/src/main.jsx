@@ -26,6 +26,7 @@ import AdminSets from './pages/AdminSets.jsx'
 import AdminCards from './pages/AdminCards.jsx'
 import SpreadsheetIngestion from './pages/SpreadsheetIngestion.jsx'
 import CollectionDashboard from './pages/CollectionDashboard.jsx'
+import CardDetail from './pages/CardDetail.jsx'
 import './index.css'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
@@ -74,6 +75,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
               <Route path="/sets/:year" element={<PublicSets />} />
               <Route path="/sets/:year/:setSlug" element={<PublicSets />} />
               <Route path="/sets/:year/:setSlug/:seriesSlug" element={<SeriesDetail />} />
+              <Route path="/sets/:year/:setSlug/:seriesSlug/:cardSlug" element={<CardDetail />} />
+              <Route path="/card/:seriesSlug/:cardNumber/:playerName" element={<CardDetail />} />
               <Route path="/series/:seriesSlug" element={<SeriesDetail />} />
               <Route 
                 path="/admin" 

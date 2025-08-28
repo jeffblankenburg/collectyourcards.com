@@ -224,12 +224,14 @@
 
 /* Parallel Count */
 .seriescard-parallel-count {
-  background: rgba(236, 72, 153, 0.2);
-  border: 1px solid rgba(236, 72, 153, 0.4);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 4px;
   padding: 0.5rem 0.75rem;
   text-align: center;
+  width: 70px;
   min-width: 70px;
+  max-width: 70px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -240,14 +242,14 @@
 .seriescard-parallel-count-number {
   font-size: 1rem;
   font-weight: 700;
-  color: #ec4899;
+  color: white;
   line-height: 1;
 }
 
 .seriescard-parallel-count-label {
   font-size: 0.6875rem;
   font-weight: 500;
-  color: rgba(236, 72, 153, 0.8);
+  color: rgba(255, 255, 255, 0.7);
   text-transform: uppercase;
   letter-spacing: 0.025em;
   line-height: 1;

@@ -3,7 +3,7 @@ import { useSearchParams, useNavigate, Link } from 'react-router-dom'
 import axios from 'axios'
 import { useAuth } from '../contexts/AuthContext'
 import Icon from '../components/Icon'
-import { PlayerCard, TeamCard, SetCard, SeriesCard, YearCard, CardResult } from '../components/cards'
+import { PlayerCard, TeamCard, SetCard, SeriesCard, YearCard, CardCard } from '../components/cards'
 import './SearchResults.css'
 
 function SearchResults() {
@@ -14,12 +14,12 @@ function SearchResults() {
   const searchQuery = searchParams.get('q') || ''
   
   const [results, setResults] = useState({
-    cards: [],
     players: [],
     teams: [],
     sets: [],
     series: [],
-    years: []
+    years: [],
+    cards: []
   })
   
   const [loading, setLoading] = useState(false)
@@ -35,11 +35,12 @@ function SearchResults() {
     } else {
       // Clear results if no query
       setResults({
-        cards: [],
         players: [],
         teams: [],
         sets: [],
-        series: []
+        series: [],
+        years: [],
+        cards: []
       })
       setTotalResults(0)
     }
@@ -50,8 +51,10 @@ function SearchResults() {
     const startTime = Date.now()
     
     try {
-      // TEMPORARY: Using fake data for mocking up card appearances
-      const fakeResults = {
+      // Show mock data for "jeffblankenburg" query, real data for everything else
+      if (query.toLowerCase() === 'jeffblankenburg') {
+        // Mock data for testing UI components
+        const fakeResults = {
         players: [
           {
             type: 'player',
@@ -265,31 +268,188 @@ function SearchResults() {
             slug: '2023-topps-chrome-gold-refractor'
           }
         ],
-        cards: []
+        cards: [
+          {
+            type: 'card',
+            card_id: '1',
+            card_number: 'T87-1',
+            player_name: 'Barry Bonds',
+            team_name: 'Pittsburgh Pirates',
+            team_abbreviation: 'PIT',
+            team_primary_color: '#27251F',
+            team_secondary_color: '#FDB827',
+            series_name: '1987 Topps Base',
+            set_name: '1987 Topps',
+            is_rookie: true,
+            is_autograph: false,
+            is_relic: false,
+            is_insert: false,
+            is_parallel: false,
+            print_run: null,
+            user_count: 3,
+            estimated_value: '25.00',
+            series_slug: '1987-topps-base'
+          },
+          {
+            type: 'card',
+            card_id: '2',
+            card_number: 'AU-JB',
+            player_name: 'Christian Encarnacion-Strand',
+            team_name: 'Minnesota Twins',
+            team_abbreviation: 'MIN',
+            team_primary_color: '#002B5C',
+            team_secondary_color: '#D31145',
+            series_name: '2024 Topps Update 24 All-Star Game Autographs',
+            set_name: '2024 Topps Update',
+            is_rookie: false,
+            is_autograph: true,
+            is_relic: false,
+            is_insert: true,
+            is_parallel: false,
+            print_run: null,
+            user_count: 1,
+            estimated_value: '150.00',
+            series_slug: '2024-topps-update-24-all-star-game-autographs'
+          },
+          {
+            type: 'card',
+            card_id: '3',
+            card_number: 'MB-17',
+            player_name: 'Mike Trout',
+            team_name: 'Los Angeles Angels',
+            team_abbreviation: 'LAA',
+            team_primary_color: '#003263',
+            team_secondary_color: '#BA0021',
+            series_name: '2023 Topps Chrome Gold Refractor',
+            set_name: '2023 Topps Chrome',
+            is_rookie: false,
+            is_autograph: false,
+            is_relic: true,
+            is_insert: false,
+            is_parallel: true,
+            print_run: 50,
+            serial_number: 17,
+            user_count: 0,
+            estimated_value: '89.99',
+            series_slug: '2023-topps-chrome-gold-refractor'
+          },
+          {
+            type: 'card',
+            card_id: '4',
+            card_number: 'CS-1',
+            title: 'Championship Celebration',
+            series_name: '2022 Topps Inserts',
+            set_name: '2022 Topps',
+            is_rookie: false,
+            is_autograph: false,
+            is_relic: false,
+            is_insert: true,
+            is_parallel: false,
+            print_run: 199,
+            user_count: 2,
+            estimated_value: '5.50',
+            series_slug: '2022-topps-inserts'
+          }
+        ]
       }
       
-      setResults(fakeResults)
-      
-      // Calculate total results
-      const total = 
-        fakeResults.cards.length +
-        fakeResults.players.length +
-        fakeResults.teams.length +
-        fakeResults.sets.length +
-        fakeResults.series.length +
-        fakeResults.years.length
-      
-      setTotalResults(total)
-      setSearchTime(Date.now() - startTime)
+        setResults(fakeResults)
+        
+        // Calculate total results
+        const total = 
+          fakeResults.cards.length +
+          fakeResults.players.length +
+          fakeResults.teams.length +
+          fakeResults.sets.length +
+          fakeResults.series.length +
+          fakeResults.years.length
+        
+        setTotalResults(total)
+        setSearchTime(Date.now() - startTime)
+        
+      } else {
+        // Real API call for all other queries
+        const response = await axios.get(`/api/search/universal?q=${encodeURIComponent(query)}&limit=50`)
+        const { results = [] } = response.data
+        
+        // Organize results by type
+        const organizedResults = {
+          players: [],
+          teams: [],
+          sets: [],
+          series: [],
+          years: [],
+          cards: []
+        }
+        
+        results.forEach(result => {
+          // Map API result types to our result categories
+          switch(result.type) {
+            case 'player':
+              organizedResults.players.push({
+                ...result.data,
+                type: 'player'
+              })
+              break
+            case 'team':
+              organizedResults.teams.push({
+                ...result.data,
+                type: 'team'
+              })
+              break
+            case 'series':
+              organizedResults.series.push({
+                ...result.data,
+                type: 'series'
+              })
+              break
+            case 'card':
+              organizedResults.cards.push({
+                ...result.data,
+                type: 'card',
+                // Map API fields to component fields
+                card_id: result.data.card_id,
+                card_number: result.data.card_number,
+                player_name: result.data.player_names || 'Unknown Player',
+                team_name: result.data.team_name,
+                team_abbreviation: result.data.team_abbreviation,
+                team_primary_color: result.data.team_primary_color,
+                team_secondary_color: result.data.team_secondary_color,
+                series_name: result.data.series_name,
+                set_name: result.data.set_name,
+                is_rookie: result.data.is_rookie,
+                is_autograph: result.data.is_autograph,
+                is_relic: result.data.is_relic,
+                is_insert: false, // Not available in database
+                is_parallel: result.data.is_parallel,
+                color_name: result.data.color_name,
+                color_hex: result.data.color_hex,
+                print_run: result.data.print_run,
+                serial_number: null, // Not available in database
+                estimated_value: '0.00', // TODO: Add to API when available
+                user_count: 0, // TODO: Add to API when available
+                series_slug: result.data.series_slug || `series-${result.data.series_id || result.id}`
+              })
+              break
+            default:
+              console.log('Unknown result type:', result.type)
+          }
+        })
+        
+        setResults(organizedResults)
+        setTotalResults(results.length)
+        setSearchTime(Date.now() - startTime)
+      }
       
     } catch (error) {
       console.error('Search failed:', error)
       setResults({
-        cards: [],
         players: [],
         teams: [],
         sets: [],
-        series: []
+        series: [],
+        years: [],
+        cards: []
       })
       setTotalResults(0)
     } finally {
@@ -365,8 +525,31 @@ function SearchResults() {
   }
 
   // Render result based on type
-  const renderResultCard = (result) => {
-    const key = `${result.type}-${result.id || result.player_id || result.team_id || result.set_id || result.series_id || result.year}`
+  const renderResultCard = (result, index) => {
+    // Generate more specific keys based on result type
+    let key
+    switch (result.type) {
+      case 'player':
+        key = `player-${result.id || result.player_id || index}`
+        break
+      case 'team':
+        key = `team-${result.id || result.team_id || index}`
+        break
+      case 'set':
+        key = `set-${result.id || result.set_id || index}`
+        break
+      case 'series':
+        key = `series-${result.id || result.series_id || index}`
+        break
+      case 'year':
+        key = `year-${result.id || result.year || index}`
+        break
+      case 'card':
+        key = `card-${result.id || result.card_id || result.data?.card_id || index}`
+        break
+      default:
+        key = `unknown-${result.type}-${index}`
+    }
     
     switch (result.type) {
       case 'player':
@@ -380,7 +563,7 @@ function SearchResults() {
       case 'year':
         return <YearCard key={key} year={result} showBadge={false} />
       case 'card':
-        return <CardResult key={key} card={result} showBadge={false} />
+        return <CardCard key={key} card={result} showBadge={false} />
       default:
         console.log('Unknown result type:', result.type)
         return null
@@ -535,7 +718,7 @@ function SearchResults() {
             </div>
           ) : (
             <div className="grid-responsive grid-cards-md">
-              {filteredResults.map(result => renderResultCard(result))}
+              {filteredResults.map((result, index) => renderResultCard(result, index))}
             </div>
           )}
         </div>

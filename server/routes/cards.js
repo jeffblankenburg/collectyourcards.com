@@ -6,7 +6,6 @@ const prisma = new PrismaClient()
 
 // GET /api/cards - Get cards with filtering and pagination
 router.get('/', optionalAuthMiddleware, async (req, res) => {
-  console.log('🎯 REAL CARDS ROUTE CALLED - not the mock!')
   try {
     const { 
       player_name, 
@@ -17,7 +16,6 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
       page = 1 
     } = req.query
 
-    console.log('Cards API request:', { player_name, team_id, series_name, series_id, limit, page })
 
     const limitNum = Math.min(parseInt(limit) || 100, 10000) // Cap at 10000 for loading all data
     const pageNum = parseInt(page) || 1
@@ -79,7 +77,6 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
 
     // Get paginated cards with user collection data
     const userId = req.user?.id
-    console.log('Cards API - User ID:', userId, 'User:', req.user?.email)
     const userCollectionJoin = userId ? `
       LEFT JOIN user_card uc ON c.card_id = uc.card AND uc.[user] = ${userId}
     ` : ''
@@ -103,15 +100,8 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
       OFFSET ${offsetNum} ROWS FETCH NEXT ${limitNum} ROWS ONLY
     `
     
-    console.log('Cards Query:', cardsQuery)
-    
     const cardResults = await prisma.$queryRawUnsafe(cardsQuery)
     
-    // Debug: Show some sample results
-    console.log('Sample card results (first 3):')
-    cardResults.slice(0, 3).forEach(card => {
-      console.log(`Card ${card.card_number}: user_card_count = ${card.user_card_count}`)
-    })
 
     // Get player-team associations for these cards
     const cardIds = cardResults.map(card => Number(card.card_id))

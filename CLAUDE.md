@@ -1,5 +1,8 @@
 # Claude Development Notes
 
+## Important Facts:
+- The database password is Password123
+
 ## STATUS PAGE (ALWAYS MAINTAIN)
 - **Hidden diagnostics page at /status** showing all system health metrics
 - Must be updated whenever new endpoints or monitorable entities are added

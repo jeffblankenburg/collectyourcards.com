@@ -326,9 +326,25 @@ function PublicSets() {
   }
 
   // Helper functions for parallel handling
-  const getParallelCount = (seriesId) => {
-    // Count how many series have this series as their parent
-    return series.filter(s => s.parent_series_id === seriesId).length
+  const getParallelCount = (targetSeries) => {
+    // Count how many series in this set are parallels of the target series
+    // A parallel has the same base name structure but different color/variant
+    if (!targetSeries.name) return 0
+    
+    // If this series is itself a parallel, don't count parallels for it
+    if (targetSeries.parallel_of_series || targetSeries.color_name) return 0
+    
+    // Count series that could be parallels of this base series
+    return series.filter(s => {
+      // Skip itself
+      if (s.series_id === targetSeries.series_id) return false
+      
+      // Must be marked as a parallel
+      if (!s.parallel_of_series) return false
+      
+      // Must have a parent name that matches this series
+      return s.parent_series_name === targetSeries.name
+    }).length
   }
 
   const handleParallelsClick = useCallback((parentSeries, event) => {
@@ -549,7 +565,16 @@ function PublicSets() {
                   <div className="grid-row-break"></div>
                   {/* Series cards */}
                   {filteredSeries.map(s => {
-                    const parallelCount = getParallelCount(s.series_id)
+                    const parallelCount = getParallelCount(s)
+                    // Debug what's actually in the data
+                    console.log('Series Debug:', {
+                      name: s.name,
+                      parallel_of_series: s.parallel_of_series,
+                      color_name: s.color_name,
+                      parent_series_name: s.parent_series_name,
+                      parallelCount: parallelCount,
+                      allSeriesNames: series.map(ser => ser.name)
+                    })
                     return (
                       <SeriesCard 
                         key={s.series_id}
@@ -561,7 +586,7 @@ function PublicSets() {
                           color_name: s.color_name,
                           color_hex: s.color_hex_value,
                           print_run_display: s.print_run_display || (s.min_print_run && s.max_print_run ? `${s.min_print_run}-${s.max_print_run}` : ''),
-                          parallel_of: (s.color_name && s.color_hex_value) || s.parent_series_id ? true : false,
+                          parallel_of: (s.color_name && s.color_hex_value) || s.parallel_of_series ? true : false,
                           parallel_parent_name: s.parent_series_name,
                           parallel_count: parallelCount,
                           slug: generateSlug(s.name),

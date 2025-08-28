@@ -70,7 +70,7 @@ const hashPassword = async (password) => {
 const logAuthEvent = async (email, eventType, success, errorMessage = null, userId = null, req = null) => {
   try {
     // Log to database
-    await prisma.userAuthLog.create({
+    await prisma.user_auth_log.create({
       data: {
         user_id: userId,
         email,
@@ -597,7 +597,7 @@ router.post('/reset-password',
       })
 
       // Invalidate all existing sessions
-      await prisma.userSession.deleteMany({
+      await prisma.user_session.deleteMany({
         where: { user_id: user.user_id }
       })
 
@@ -671,7 +671,7 @@ router.post('/logout', authMiddleware, async (req, res) => {
       const tokenHash = crypto.createHash('sha256').update(token).digest('hex')
       
       // Delete the session
-      await prisma.userSession.deleteMany({
+      await prisma.user_session.deleteMany({
         where: {
           user_id: BigInt(req.user.userId),
           token_hash: tokenHash
@@ -697,7 +697,7 @@ router.post('/logout', authMiddleware, async (req, res) => {
 router.post('/logout-all', authMiddleware, async (req, res) => {
   try {
     // Delete all sessions for the user
-    await prisma.userSession.deleteMany({
+    await prisma.user_session.deleteMany({
       where: { user_id: BigInt(req.user.userId) }
     })
 

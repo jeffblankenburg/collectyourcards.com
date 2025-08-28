@@ -3,6 +3,16 @@ const { PrismaClient } = require('@prisma/client')
 
 const router = express.Router()
 
+// Helper function to generate URL slug from name
+function generateSlug(name) {
+  if (!name) return 'unknown'
+  return name
+    .toLowerCase()
+    .replace(/'/g, '') // Remove apostrophes completely
+    .replace(/[^a-z0-9]+/g, '-') // Replace other special chars with hyphens
+    .replace(/^-|-$/g, '') // Remove leading/trailing hyphens
+}
+
 // Initialize Prisma with error handling for production
 let prisma
 let databaseAvailable = false
@@ -73,7 +83,7 @@ async function performIntelligentSearch(query, limit, category) {
   try {
     // Smart pattern recognition
     const patterns = analyzeSearchQuery(query)
-    console.log('Search patterns detected:', patterns)
+    console.log('Search patterns detected for query "' + query + '":', patterns)
     
     // Execute searches based on detected patterns with higher limits to ensure variety
     const searchLimit = Math.min(limit * 2, 30) // Get more results to filter and rank
@@ -128,6 +138,68 @@ async function performIntelligentSearch(query, limit, category) {
   }
 }
 
+// Comprehensive card number detection based on actual database patterns
+function detectCardNumber(query) {
+  const trimmedQuery = query.trim()
+  
+  // Test various card number patterns in order of specificity
+  const patterns = [
+    // Hyphenated formats (most specific first)
+    // Complex multi-segment: T87C2-39, 88ASA-VGO, IAJP-CR, 06AGA-CPJ, BTPA-74
+    {
+      regex: /^([A-Z0-9]{2,}[A-Z]{1,3}-[A-Z0-9]{1,3})\s*/i,
+      name: 'Complex hyphenated'
+    },
+    // Standard hyphenated: BD-9, BDC-171, CPA-JDL, BSA-SO, RA-NP, U-78
+    {
+      regex: /^([A-Z]{1,4}-[A-Z0-9]{1,4})\s*/i,
+      name: 'Standard hyphenated'
+    },
+    // Simple hyphenated: A-1, B-9, M-17
+    {
+      regex: /^([A-Z]-\d{1,3})\s*/i,
+      name: 'Simple hyphenated'
+    },
+    
+    // Alphanumeric without hyphens
+    // Letters + numbers: US110, US300, H78, H123, USC60
+    {
+      regex: /^([A-Z]{1,4}\d{1,4}[A-Z]?)\s*/i,
+      name: 'Letters + numbers'
+    },
+    // Numbers + letters: 1T, 10T, 57b, 141b
+    {
+      regex: /^(\d{1,4}[A-Z]{1,2})\s*/i,
+      name: 'Numbers + letters'
+    },
+    
+    // Pure numbers (least specific, check last)
+    // 1, 10, 100, 147, 600, etc.
+    {
+      regex: /^(\d{1,4})\s*/,
+      name: 'Pure numbers'
+    }
+  ]
+  
+  for (const pattern of patterns) {
+    const match = trimmedQuery.match(pattern.regex)
+    if (match) {
+      const cardNumber = match[1]
+      const remainingText = trimmedQuery.substring(match[0].length).trim()
+      
+      console.log(`Matched pattern "${pattern.name}" for "${cardNumber}", remaining: "${remainingText}"`)
+      
+      return {
+        cardNumber: cardNumber,
+        remainingText: remainingText,
+        patternType: pattern.name
+      }
+    }
+  }
+  
+  return null
+}
+
 // Analyze search query to detect patterns and intent
 function analyzeSearchQuery(query) {
   const patterns = {
@@ -142,14 +214,16 @@ function analyzeSearchQuery(query) {
   
   const lowerQuery = query.toLowerCase()
   
-  // Detect card numbers (various formats)
-  const cardNumberRegex = /^(\d+[a-zA-Z]*|[A-Z]+-\d+|RC-\d+|SP-\d+|BDC-\d+)\s*/
-  const cardNumberMatch = query.match(cardNumberRegex)
+  // Comprehensive card number detection based on actual database patterns
+  const cardNumberMatch = detectCardNumber(query)
+  console.log(`Card number detection for "${query}":`, cardNumberMatch)
+  
   if (cardNumberMatch) {
-    patterns.cardNumber = cardNumberMatch[1]
+    patterns.cardNumber = cardNumberMatch.cardNumber
     
     // Check if there's a player name after the card number
-    const remainingText = query.substring(cardNumberMatch[0].length).trim()
+    const remainingText = cardNumberMatch.remainingText
+    console.log(`Remaining text after card number "${cardNumberMatch.cardNumber}":`, `"${remainingText}"`)
     if (remainingText.length > 0) {
       patterns.playerName = remainingText
       patterns.cardNumberWithPlayer = true
@@ -188,7 +262,7 @@ function analyzeSearchQuery(query) {
   return patterns
 }
 
-// Search cards by number and player name using raw SQL
+// Search cards by number and player name using raw SQL with fallback logic
 async function searchCardsByNumberAndPlayer(cardNumber, playerName, limit) {
   try {
     console.log(`Searching cards by number "${cardNumber}" and player "${playerName}"`)
@@ -196,8 +270,17 @@ async function searchCardsByNumberAndPlayer(cardNumber, playerName, limit) {
     const cardPattern = `%${cardNumber}%`
     const playerPattern = `%${playerName}%`
     
-    const results = await prisma.$queryRawUnsafe(`
-      SELECT TOP ${limit}
+    console.log(`Card pattern: "${cardPattern}", Player pattern: "${playerPattern}"`)
+    
+    // Split player name for component matching
+    const nameParts = playerName.split(' ')
+    const firstName = nameParts[0]
+    const lastName = nameParts.slice(1).join(' ')
+    console.log(`Name parts: first="${firstName}", last="${lastName}"`)
+    
+    // Try the combined search first (card number + player name)
+    const combinedResults = await prisma.$queryRawUnsafe(`
+      SELECT TOP ${Math.floor(limit * 0.7)}
         c.card_id,
         c.card_number,
         c.is_rookie,
@@ -208,39 +291,144 @@ async function searchCardsByNumberAndPlayer(cardNumber, playerName, limit) {
         st.name as set_name,
         st.year as set_year,
         m.name as manufacturer_name,
-        STRING_AGG(CONCAT(p.first_name, ' ', p.last_name), ', ') as player_names
+        s.parallel_of_series,
+        col.name as color_name,
+        col.hex_value as color_hex,
+        STRING_AGG(CONCAT(p.first_name, ' ', p.last_name), ', ') as player_names,
+        STRING_AGG(CONVERT(varchar(max), CONCAT(t.team_id, '|', t.name, '|', t.abbreviation, '|', ISNULL(t.primary_color, ''), '|', ISNULL(t.secondary_color, ''))), '~') as teams_data
       FROM card c
       JOIN series s ON c.series = s.series_id
       JOIN [set] st ON s.[set] = st.set_id
-      JOIN manufacturer m ON st.manufacturer = m.manufacturer_id
+      LEFT JOIN manufacturer m ON st.manufacturer = m.manufacturer_id
+      LEFT JOIN color col ON s.color = col.color_id
       LEFT JOIN card_player_team cpt ON c.card_id = cpt.card
       LEFT JOIN player_team pt ON cpt.player_team = pt.player_team_id
       LEFT JOIN player p ON pt.player = p.player_id
+      LEFT JOIN team t ON pt.team = t.team_id
       WHERE c.card_number LIKE '${cardPattern}'
-        AND (p.first_name LIKE '${playerPattern}'
-             OR p.last_name LIKE '${playerPattern}'
-             OR p.nick_name LIKE '${playerPattern}')
+        AND (
+          -- Name combinations (most likely matches)
+          CONCAT(p.first_name, ' ', p.last_name) LIKE '${playerPattern}'
+          OR CONCAT(p.nick_name, ' ', p.last_name) LIKE '${playerPattern}' 
+          OR CONCAT(p.first_name, ' ', p.nick_name, ' ', p.last_name) LIKE '${playerPattern}'
+          OR p.nick_name LIKE '${playerPattern}'
+          -- Individual name components (for partial matches)
+          OR (p.first_name LIKE '%${firstName}%' AND p.last_name LIKE '%${lastName}%')
+        )
       GROUP BY c.card_id, c.card_number, c.is_rookie, c.is_autograph, c.is_relic, c.print_run,
-               s.name, st.name, st.year, m.name
+               s.name, st.name, st.year, m.name, s.parallel_of_series, col.name, col.hex_value
+      ORDER BY 
+        CASE WHEN c.card_number = '${cardNumber}' THEN 0 ELSE 1 END,  -- Exact matches first
+        s.name,  -- Then series name
+        STRING_AGG(p.last_name, ', ')  -- Then player last name
     `)
     
-    console.log(`Found ${results.length} cards for "${cardNumber} ${playerName}"`)
+    console.log(`Found ${combinedResults.length} cards for exact "${cardNumber} ${playerName}" match`)
     
-    return results.map(card => ({
-      type: 'card',
-      id: card.card_id.toString(),
-      title: `#${card.card_number} ${card.player_names || 'Unknown Player'} • ${card.series_name}`,
-      subtitle: null,
-      description: null,
-      relevanceScore: 95,
-      data: {
-        ...card,
-        card_id: card.card_id.toString() // Convert BigInt to string
-      }
-    }))
+    // If we have good results from the combined search, return them
+    if (combinedResults.length >= 5) {
+      return combinedResults.map(card => formatCardResult(card, 95))
+    }
+    
+    // Otherwise, implement fallback search strategy
+    console.log(`Combined search returned few results (${combinedResults.length}), implementing fallback strategy...`)
+    
+    const fallbackResults = []
+    
+    // Add any combined results we did find (highest relevance)
+    fallbackResults.push(...combinedResults.map(card => formatCardResult(card, 95)))
+    
+    // Search for cards with the card number pattern (regardless of player)
+    const cardOnlyResults = await searchCardsByNumber(cardNumber, Math.floor(limit * 0.4))
+    console.log(`Fallback: Found ${cardOnlyResults.length} cards with number "${cardNumber}"`)
+    
+    // Add card-only results with lower relevance score
+    fallbackResults.push(...cardOnlyResults.map(result => ({
+      ...result,
+      relevanceScore: 75, // Lower than exact matches
+      title: `${result.title} (Card #${cardNumber})`
+    })))
+    
+    // Search for the player (regardless of card number)
+    const playerOnlyResults = await searchPlayers(playerName, Math.floor(limit * 0.3))
+    console.log(`Fallback: Found ${playerOnlyResults.length} players matching "${playerName}"`)
+    
+    // Add player results with moderate relevance
+    fallbackResults.push(...playerOnlyResults.map(result => ({
+      ...result,
+      relevanceScore: 80, // Between card-only and exact matches
+      title: `${result.title} (Player)`
+    })))
+    
+    console.log(`Fallback search total: ${fallbackResults.length} results`)
+    
+    // Remove duplicates and limit results
+    return removeDuplicates(fallbackResults).slice(0, limit)
+    
   } catch (error) {
     console.error('Card number + player search error:', error)
     return []
+  }
+}
+
+// Helper function to format card results consistently
+function formatCardResult(card, relevanceScore) {
+  // Parse teams data from STRING_AGG result
+  let primaryTeam = null
+  if (card.teams_data) {
+    const teamStrings = card.teams_data.split('~')
+    const firstTeam = teamStrings[0]
+    if (firstTeam) {
+      const [team_id, name, abbreviation, primary_color, secondary_color] = firstTeam.split('|')
+      if (team_id) {
+        primaryTeam = {
+          team_id: Number(team_id),
+          name: name || null,
+          abbreviation: abbreviation || null,
+          primary_color: primary_color || null,
+          secondary_color: secondary_color || null
+        }
+      }
+    }
+  }
+
+  return {
+    type: 'card',
+    id: card.card_id.toString(),
+    title: `#${card.card_number} ${card.player_names || 'Unknown Player'} • ${card.series_name}`,
+    subtitle: null,
+    description: null,
+    relevanceScore: relevanceScore,
+    data: {
+      card_id: card.card_id.toString(),
+      card_number: card.card_number,
+      is_rookie: !!card.is_rookie,
+      is_autograph: !!card.is_autograph,
+      is_relic: !!card.is_relic,
+      is_parallel: !!card.parallel_of_series,
+      series_name: card.series_name,
+      set_name: card.set_name,
+      set_year: card.set_year ? Number(card.set_year) : null,
+      manufacturer_name: card.manufacturer_name,
+      parallel_of_series: card.parallel_of_series ? Number(card.parallel_of_series) : null,
+      color_name: card.color_name,
+      color_hex: card.color_hex,
+      player_names: card.player_names,
+      // Team data
+      team_name: primaryTeam?.name,
+      team_abbreviation: primaryTeam?.abbreviation,
+      team_primary_color: primaryTeam?.primary_color,
+      team_secondary_color: primaryTeam?.secondary_color,
+      // Convert BigInt fields to numbers
+      print_run: card.print_run ? Number(card.print_run) : null,
+      serial_number: null, // Not available in database
+      // Add navigation slugs for URLs
+      set_slug: generateSlug(card.set_name),
+      series_slug: generateSlug(card.series_name),
+      player_slug: generateSlug(card.player_names),
+      card_number_slug: card.card_number ? card.card_number.toLowerCase().replace(/[^a-z0-9-]/g, '') : 'unknown',
+      card_slug: `${card.card_number ? card.card_number.toLowerCase().replace(/[^a-z0-9-]/g, '') : 'unknown'}-${generateSlug(card.player_names)}`
+    }
   }
 }
 
@@ -263,33 +451,35 @@ async function searchCardsByNumber(cardNumber, limit) {
         st.name as set_name,
         st.year as set_year,
         m.name as manufacturer_name,
-        STRING_AGG(CONCAT(p.first_name, ' ', p.last_name), ', ') as player_names
+        s.parallel_of_series,
+        col.name as color_name,
+        col.hex_value as color_hex,
+        STRING_AGG(CONCAT(p.first_name, ' ', p.last_name), ', ') as player_names,
+        STRING_AGG(CONVERT(varchar(max), CONCAT(t.team_id, '|', t.name, '|', t.abbreviation, '|', ISNULL(t.primary_color, ''), '|', ISNULL(t.secondary_color, ''))), '~') as teams_data
       FROM card c
       JOIN series s ON c.series = s.series_id
       JOIN [set] st ON s.[set] = st.set_id
-      JOIN manufacturer m ON st.manufacturer = m.manufacturer_id
+      LEFT JOIN manufacturer m ON st.manufacturer = m.manufacturer_id
+      LEFT JOIN color col ON s.color = col.color_id
       LEFT JOIN card_player_team cpt ON c.card_id = cpt.card
       LEFT JOIN player_team pt ON cpt.player_team = pt.player_team_id
       LEFT JOIN player p ON pt.player = p.player_id
+      LEFT JOIN team t ON pt.team = t.team_id
       WHERE c.card_number LIKE '${cardPattern}'
       GROUP BY c.card_id, c.card_number, c.is_rookie, c.is_autograph, c.is_relic, c.print_run,
-               s.name, st.name, st.year, m.name
+               s.name, st.name, st.year, m.name, s.parallel_of_series, col.name, col.hex_value
+      ORDER BY 
+        CASE WHEN c.card_number = '${cardNumber}' THEN 0 ELSE 1 END,  -- Exact matches first
+        s.name,  -- Then series name
+        STRING_AGG(p.last_name, ', ')  -- Then player last name
     `)
     
     console.log(`Found ${results.length} cards for number "${cardNumber}"`)
     
-    return results.map(card => ({
-      type: 'card',
-      id: card.card_id.toString(),
-      title: `#${card.card_number} ${card.player_names || 'Unknown Player'} • ${card.series_name}`,
-      subtitle: null,
-      description: null,
-      relevanceScore: card.card_number === cardNumber ? 100 : 80,
-      data: {
-        ...card,
-        card_id: card.card_id.toString() // Convert BigInt to string
-      }
-    }))
+    return results.map(card => {
+      const relevanceScore = card.card_number === cardNumber ? 100 : 80
+      return formatCardResult(card, relevanceScore)
+    })
   } catch (error) {
     console.error('Card number search error:', error)
     return []
@@ -324,42 +514,28 @@ async function searchCardsByType(cardTypes, playerName, limit) {
         st.name as set_name,
         st.year as set_year,
         m.name as manufacturer_name,
-        STRING_AGG(CONCAT(p.first_name, ' ', p.last_name), ', ') as player_names
+        s.parallel_of_series,
+        col.name as color_name,
+        col.hex_value as color_hex,
+        STRING_AGG(CONCAT(p.first_name, ' ', p.last_name), ', ') as player_names,
+        STRING_AGG(CONVERT(varchar(max), CONCAT(t.team_id, '|', t.name, '|', t.abbreviation, '|', ISNULL(t.primary_color, ''), '|', ISNULL(t.secondary_color, ''))), '~') as teams_data
       FROM card c
       JOIN series s ON c.series = s.series_id
       JOIN [set] st ON s.[set] = st.set_id
-      JOIN manufacturer m ON st.manufacturer = m.manufacturer_id
+      LEFT JOIN manufacturer m ON st.manufacturer = m.manufacturer_id
+      LEFT JOIN color col ON s.color = col.color_id
       LEFT JOIN card_player_team cpt ON c.card_id = cpt.card
       LEFT JOIN player_team pt ON cpt.player_team = pt.player_team_id
       LEFT JOIN player p ON pt.player = p.player_id
+      LEFT JOIN team t ON pt.team = t.team_id
       WHERE (${typeConditionsSql}) ${playerCondition}
       GROUP BY c.card_id, c.card_number, c.is_rookie, c.is_autograph, c.is_relic, c.print_run,
-               s.name, st.name, st.year, m.name
+               s.name, st.name, st.year, m.name, s.parallel_of_series, col.name, col.hex_value
     `)
     
     console.log(`Found ${results.length} cards for types ${cardTypes.join(', ')}`)
     
-    return results.map(card => ({
-      type: 'card',
-      id: card.card_id.toString(),
-      title: `#${card.card_number} ${card.player_names || 'Unknown Player'} • ${card.series_name}`,
-      subtitle: null,
-      description: null,
-      relevanceScore: 85,
-      data: {
-        card_id: card.card_id.toString(),
-        card_number: card.card_number,
-        is_rookie: card.is_rookie,
-        is_autograph: card.is_autograph,
-        is_relic: card.is_relic,
-        print_run: card.print_run,
-        series_name: card.series_name,
-        set_name: card.set_name,
-        set_year: card.set_year,
-        manufacturer_name: card.manufacturer_name,
-        player_names: card.player_names
-      }
-    }))
+    return results.map(card => formatCardResult(card, 85))
   } catch (error) {
     console.error('Card type search error:', error)
     return []
@@ -372,35 +548,47 @@ async function searchPlayers(query, limit) {
     console.log('Searching players for:', query)
     
     const searchPattern = `%${query}%`
+    console.log('Player search pattern:', searchPattern)
+    
+    // Quick test: try to find a player with just "Christian"
+    const testQuery = await prisma.$queryRawUnsafe(`
+      SELECT TOP 5 first_name, last_name, nick_name 
+      FROM player 
+      WHERE first_name LIKE '%Christian%' AND last_name LIKE '%Encarnacion%'
+    `)
+    console.log('Test - Christian Encarnacion players:', testQuery)
     
     // Check if query contains spaces (likely full name)
     const queryParts = query.trim().split(/\s+/)
     let whereClause = ''
     
     if (queryParts.length >= 2) {
-      // Multi-word search - search for full name combinations
+      // Multi-word search - comprehensive fuzzy matching
       const firstName = queryParts[0]
       const lastName = queryParts.slice(1).join(' ')
       
       whereClause = `
+        -- Name combinations (most likely matches first)
         (CONCAT(first_name, ' ', last_name) LIKE '${searchPattern}')
-        OR (CONCAT(first_name, ' ', nick_name, ' ', last_name) LIKE '${searchPattern}')
         OR (CONCAT(nick_name, ' ', last_name) LIKE '${searchPattern}')
+        OR (CONCAT(first_name, ' ', nick_name, ' ', last_name) LIKE '${searchPattern}')
+        OR nick_name LIKE '${searchPattern}'
+        -- Individual name components
         OR (first_name LIKE '%${firstName}%' AND last_name LIKE '%${lastName}%')
         OR (nick_name LIKE '%${firstName}%' AND last_name LIKE '%${lastName}%')
         OR first_name LIKE '${searchPattern}'
         OR last_name LIKE '${searchPattern}'
-        OR nick_name LIKE '${searchPattern}'
       `
     } else {
-      // Single word search - search individual fields and name combinations
+      // Single word search
       whereClause = `
+        -- Individual fields and name combinations
         first_name LIKE '${searchPattern}'
         OR last_name LIKE '${searchPattern}'
         OR nick_name LIKE '${searchPattern}'
         OR CONCAT(first_name, ' ', last_name) LIKE '${searchPattern}'
-        OR CONCAT(first_name, ' ', nick_name, ' ', last_name) LIKE '${searchPattern}'
         OR CONCAT(nick_name, ' ', last_name) LIKE '${searchPattern}'
+        OR CONCAT(first_name, ' ', nick_name, ' ', last_name) LIKE '${searchPattern}'
       `
     }
     
@@ -526,10 +714,21 @@ async function searchSeries(query, limit) {
       SELECT TOP ${limit}
         s.series_id,
         s.name as series_name,
-        s.card_count
+        s.card_count,
+        s.rookie_count,
+        s.is_base,
+        s.parallel_of_series,
+        parent_s.name as parallel_parent_name,
+        st.name as set_name,
+        st.year as set_year,
+        m.name as manufacturer_name,
+        col.name as color_name,
+        col.hex_value as color_hex_value
       FROM series s
       JOIN [set] st ON s.[set] = st.set_id
       LEFT JOIN manufacturer m ON st.manufacturer = m.manufacturer_id
+      LEFT JOIN series parent_s ON s.parallel_of_series = parent_s.series_id
+      LEFT JOIN color col ON s.color = col.color_id
       WHERE s.name LIKE '${searchPattern}' COLLATE SQL_Latin1_General_CP1_CI_AS
          OR st.name LIKE '${searchPattern}' COLLATE SQL_Latin1_General_CP1_CI_AS
          OR m.name LIKE '${searchPattern}' COLLATE SQL_Latin1_General_CP1_CI_AS
@@ -537,7 +736,14 @@ async function searchSeries(query, limit) {
     
     console.log(`Found ${results.length} series for "${query}"`)
     
-    return results.map(series => ({
+    // Debug log the first result to see what we're getting
+    if (results.length > 0) {
+      console.log('First series result:', JSON.stringify(results[0], (key, value) => 
+        typeof value === 'bigint' ? value.toString() : value
+      , 2))
+    }
+    
+    const mappedResults = results.map(series => ({
       type: 'series',
       id: series.series_id.toString(),
       title: series.series_name,
@@ -545,11 +751,34 @@ async function searchSeries(query, limit) {
       description: null,
       relevanceScore: 75,
       data: {
-        ...series,
-        series_id: series.series_id.toString(), // Convert BigInt to string
-        card_count: Number(series.card_count || 0)
+        series_id: series.series_id.toString(),
+        name: series.series_name, // Map to expected field name
+        series_name: series.series_name,
+        card_count: Number(series.card_count || 0),
+        rookie_count: Number(series.rookie_count || 0), 
+        rc_count: Number(series.rookie_count || 0), // Alternative field name
+        is_base: !!series.is_base,
+        parallel_of_series: series.parallel_of_series ? Number(series.parallel_of_series) : null,
+        parallel_parent_name: series.parallel_parent_name,
+        set_name: series.set_name,
+        set_year: series.set_year ? Number(series.set_year) : null,
+        year: series.set_year ? Number(series.set_year) : null, // Alternative field name
+        manufacturer_name: series.manufacturer_name,
+        color_name: series.color_name,
+        color_hex_value: series.color_hex_value,
+        color_hex: series.color_hex_value, // Alternative field name
+        // Add navigation slugs
+        slug: generateSlug(series.series_name),
+        series_slug: generateSlug(series.series_name),
+        set_slug: generateSlug(series.set_name)
       }
     }))
+    
+    if (mappedResults.length > 0) {
+      console.log('First mapped series result:', JSON.stringify(mappedResults[0], null, 2))
+    }
+    
+    return mappedResults
   } catch (error) {
     console.error('Series search error:', error)
     return []
