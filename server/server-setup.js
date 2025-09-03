@@ -16,9 +16,12 @@ const config = {
 };
 
 // Trust proxy for Azure Web Apps (required for rate limiting)
+// Azure App Service uses specific proxy configuration
 if (config.environment === 'production') {
-  app.set('trust proxy', true);
-  console.log('✅ Express configured to trust proxy for Azure Web Apps');
+  // Azure App Service uses a single proxy hop
+  // Setting to 1 instead of true prevents bypassing rate limits
+  app.set('trust proxy', 1);
+  console.log('✅ Express configured to trust proxy (1 hop) for Azure Web Apps');
 }
 
 // Security middleware
@@ -35,14 +38,49 @@ const limiter = rateLimit({
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-  // Custom key generator for Azure Web Apps
+  // Custom key generator for Azure Web Apps - strips port from IP address
   keyGenerator: (req) => {
-    return req.ip || req.connection.remoteAddress || 'unknown';
+    // Get the IP address from various sources
+    let ip = req.ip || 
+             req.headers['x-forwarded-for']?.split(',')[0]?.trim() || 
+             req.connection.remoteAddress || 
+             'unknown';
+    
+    // Azure App Service may append port number - strip it
+    if (ip && ip.includes(':')) {
+      // Handle IPv6 addresses (contains multiple colons) vs IPv4 with port
+      const parts = ip.split(':');
+      if (parts.length === 2) {
+        // IPv4 with port (e.g., "23.245.114.100:55837")
+        ip = parts[0];
+      } else if (parts.length > 2) {
+        // IPv6 address - check if last part is a port number
+        const lastPart = parts[parts.length - 1];
+        if (!isNaN(lastPart)) {
+          // Remove the port from IPv6 address
+          ip = parts.slice(0, -1).join(':');
+        }
+      }
+    }
+    
+    return ip;
   },
   // Skip rate limiting if IP can't be determined or in development
   skip: (req) => {
-    const ip = req.ip || req.connection.remoteAddress;
+    // Extract IP using same logic as keyGenerator
+    let ip = req.ip || 
+             req.headers['x-forwarded-for']?.split(',')[0]?.trim() || 
+             req.connection.remoteAddress;
+    
     if (!ip || ip === 'unknown') return true;
+    
+    // Strip port if present
+    if (ip && ip.includes(':')) {
+      const parts = ip.split(':');
+      if (parts.length === 2) {
+        ip = parts[0];
+      }
+    }
     
     // Skip rate limiting for localhost/development
     if (config.environment === 'development' && 
