@@ -2,19 +2,28 @@ import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import axios from 'axios'
 import { useToast } from '../contexts/ToastContext'
+import { useAuth } from '../contexts/AuthContext'
 import Icon from '../components/Icon'
 import { SetCard } from '../components/cards'
+import EditSetModal from '../components/modals/EditSetModal'
 import './SetsPageScoped.css'
 
 function SetsPage() {
   const { year } = useParams()
   const navigate = useNavigate()
   const { addToast } = useToast()
+  const { user } = useAuth()
   
   const [sets, setSets] = useState([])
   const [filteredSets, setFilteredSets] = useState([])
   const [loading, setLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [editingSet, setEditingSet] = useState(null)
+  const [organizations, setOrganizations] = useState([])
+  const [manufacturers, setManufacturers] = useState([])
+  
+  const isAdmin = user && ['admin', 'superadmin', 'data_admin'].includes(user.role)
 
   // Helper function to generate URL slug (matching backend)
   const generateSlug = (name) => {
@@ -30,7 +39,13 @@ function SetsPage() {
       loadSetsForYear(year)
       document.title = `${year} Card Sets - Collect Your Cards`
     }
-  }, [year])
+    
+    // Load dropdown data for modal
+    if (isAdmin) {
+      loadOrganizations()
+      loadManufacturers()
+    }
+  }, [year, isAdmin])
 
   // Filter sets based on search term
   useEffect(() => {
@@ -72,6 +87,38 @@ function SetsPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const loadOrganizations = async () => {
+    try {
+      const response = await axios.get('/api/admin/organizations')
+      setOrganizations(response.data.organizations || [])
+    } catch (error) {
+      console.error('Error loading organizations:', error)
+    }
+  }
+
+  const loadManufacturers = async () => {
+    try {
+      const response = await axios.get('/api/admin/manufacturers')
+      setManufacturers(response.data.manufacturers || [])
+    } catch (error) {
+      console.error('Error loading manufacturers:', error)
+    }
+  }
+
+  const handleEditSet = (set) => {
+    setEditingSet(set)
+    setShowEditModal(true)
+  }
+
+  const handleCloseModal = () => {
+    setShowEditModal(false)
+    setEditingSet(null)
+  }
+
+  const handleSaveSuccess = () => {
+    loadSetsForYear(year)
   }
 
   return (
@@ -116,6 +163,7 @@ function SetsPage() {
                 <SetCard 
                   key={set.set_id}
                   set={{
+                    ...set,
                     name: set.name,
                     year: set.year || parseInt(year),
                     card_count: set.total_card_count || set.card_count || 0,
@@ -125,6 +173,7 @@ function SetsPage() {
                     thumbnail: set.thumbnail,
                     slug: set.slug
                   }}
+                  onEditClick={isAdmin ? handleEditSet : null}
                 />
               ))}
               {filteredSets.length === 0 && sets.length > 0 && (
@@ -137,6 +186,15 @@ function SetsPage() {
           </div>
         )}
       </div>
+      
+      <EditSetModal
+        isOpen={showEditModal}
+        onClose={handleCloseModal}
+        set={editingSet}
+        organizations={organizations}
+        manufacturers={manufacturers}
+        onSaveSuccess={handleSaveSuccess}
+      />
     </div>
   )
 }

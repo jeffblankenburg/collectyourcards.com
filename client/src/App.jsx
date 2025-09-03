@@ -65,18 +65,18 @@ function App() {
             <div className="home-page-feature-card">
               <Icon name="search" size={24} />
               <h4>Search Cards</h4>
-              <p>Find cards by number, player, team, or series</p>
+              <p>Find & add cards by number, player, team, or set</p>
             </div>
             <div className="home-page-feature-card">
               <Icon name="collections" size={24} />
-              <h4>Track Collections</h4>
-              <p>Organize and manage your card collection</p>
+              <h4>Track Your Collection</h4>
+              <p>Organize and manage your card collection your way</p>
             </div>
-            <div className="home-page-feature-card">
+            {/* <div className="home-page-feature-card">
               <Icon name="import" size={24} />
               <h4>Import Data</h4>
               <p>Upload spreadsheets to quickly build your collection</p>
-            </div>
+            </div> */}
             <div className="home-page-feature-card">
               <Icon name="chart" size={24} />
               <h4>View Analytics</h4>

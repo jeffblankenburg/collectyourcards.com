@@ -4,6 +4,7 @@ import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom'
 import axios from 'axios'
 import { useToast } from '../contexts/ToastContext'
 import Icon from '../components/Icon'
+import EditSetModal from '../components/modals/EditSetModal'
 import './AdminSetsScoped.css'
 
 function AdminSets() {
@@ -295,6 +296,10 @@ function AdminSets() {
     setShowEditModal(true)
   }
 
+  const handleSetSaveSuccess = () => {
+    loadSets()
+  }
+
   const handleEditSeries = (seriesData) => {
     console.log('Editing series data:', seriesData)
     console.log('Series color_id:', seriesData.color_id, 'type:', typeof seriesData.color_id)
@@ -447,66 +452,40 @@ function AdminSets() {
   }
 
   const handleSave = async () => {
-    if (!editingItem) return
+    if (!editingItem || editType !== 'series') return
 
     try {
       setSaving(true)
       
-      if (editType === 'set') {
-        // Upload thumbnail if a new file was selected
-        let thumbnailUrl = editForm.thumbnail
-        if (selectedFile) {
-          thumbnailUrl = await handleThumbnailUpload(selectedFile)
-          if (!thumbnailUrl) {
-            // Upload failed, don't proceed with save
-            return
-          }
-        }
-        
-        const updateData = {
-          name: editForm.name.trim(),
-          year: parseInt(editForm.year) || null,
-          organization: editForm.organization || null,
-          manufacturer: editForm.manufacturer || null,
-          is_complete: editForm.is_complete,
-          thumbnail: thumbnailUrl
-        }
-
-        await axios.put(`/api/admin/sets/${editingItem.set_id}`, updateData)
-        
-        // Reload sets
-        await loadSetsForYear(year)
-        
-      } else if (editType === 'series') {
-        // Handle image uploads first if any files were selected
-        let imageUploadResults = { front_image_path: null, back_image_path: null }
-        if (selectedFrontImage || selectedBackImage) {
-          imageUploadResults = await handleSeriesImagesUpload(selectedFrontImage, selectedBackImage)
-        }
-        
-        const updateData = {
-          name: editForm.name.trim(),
-          set: selectedSet.set_id,
-          card_count: parseInt(editForm.card_count) || 0,
-          is_base: editForm.is_base,
-          parallel_of_series: editForm.parallel_of_series || null,
-          color_id: editForm.color_id || null,
-          front_image_path: imageUploadResults.front_image_path || editForm.front_image_path?.trim() || null,
-          back_image_path: imageUploadResults.back_image_path || editForm.back_image_path?.trim() || null
-        }
-
-        await axios.put(`/api/admin/series/${editingItem.series_id}`, updateData)
-        
-        // Reload series
-        await loadSeriesForSet(year, setSlug)
+      // Handle series editing only (set editing now handled by EditSetModal component)
+      // Handle image uploads first if any files were selected
+      let imageUploadResults = { front_image_path: null, back_image_path: null }
+      if (selectedFrontImage || selectedBackImage) {
+        imageUploadResults = await handleSeriesImagesUpload(selectedFrontImage, selectedBackImage)
+      }
+      
+      const updateData = {
+        name: editForm.name.trim(),
+        set: selectedSet.set_id,
+        card_count: parseInt(editForm.card_count) || 0,
+        is_base: editForm.is_base,
+        parallel_of_series: editForm.parallel_of_series || null,
+        color_id: editForm.color_id || null,
+        front_image_path: imageUploadResults.front_image_path || editForm.front_image_path?.trim() || null,
+        back_image_path: imageUploadResults.back_image_path || editForm.back_image_path?.trim() || null
       }
 
-      addToast(`${editType === 'set' ? 'Set' : 'Series'} updated successfully`, 'success')
+      await axios.put(`/api/admin/series/${editingItem.series_id}`, updateData)
+      
+      // Reload series
+      await loadSeriesForSet(year, setSlug)
+
+      addToast('Series updated successfully', 'success')
       handleCloseModal()
       
     } catch (error) {
-      console.error(`Error updating ${editType}:`, error)
-      addToast(`Failed to update ${editType}: ${error.response?.data?.message || error.message}`, 'error')
+      console.error('Error updating series:', error)
+      addToast(`Failed to update series: ${error.response?.data?.message || error.message}`, 'error')
     } finally {
       setSaving(false)
     }
@@ -893,12 +872,24 @@ function AdminSets() {
         document.body
       )}
 
-      {/* Edit Modal */}
-      {showEditModal && editingItem && (
+      {/* Edit Set Modal */}
+      {showEditModal && editingItem && editType === 'set' && (
+        <EditSetModal
+          isOpen={true}
+          onClose={handleCloseModal}
+          set={editingItem}
+          organizations={organizations}
+          manufacturers={manufacturers}
+          onSaveSuccess={handleSetSaveSuccess}
+        />
+      )}
+
+      {/* Edit Series Modal */}
+      {showEditModal && editingItem && editType === 'series' && (
         <div className="modal-overlay" onClick={handleCloseModal}>
           <div className="edit-player-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>Edit {editType === 'set' ? 'Set' : 'Series'} #{editType === 'set' ? editingItem.set_id : editingItem.series_id}</h3>
+              <h3>Edit Series #{editingItem.series_id}</h3>
               <button className="close-btn" onClick={handleCloseModal}>
                 <Icon name="x" size={20} />
               </button>
@@ -907,108 +898,6 @@ function AdminSets() {
             <div className="modal-content">
               <div className="edit-form">
                 <div className="player-details-form">
-                
-                {editType === 'set' ? (
-                  <>
-                    <div className="form-field-row">
-                      <label className="field-label">Name</label>
-                      <input
-                        type="text"
-                        className="field-input"
-                        value={editForm.name}
-                        onChange={(e) => handleFormChange('name', e.target.value)}
-                        onKeyDown={handleKeyDown}
-                        placeholder="Set name"
-                      />
-                    </div>
-
-                    <div className="form-field-row">
-                      <label className="field-label">Year</label>
-                      <input
-                        type="number"
-                        className="field-input"
-                        value={editForm.year}
-                        onChange={(e) => handleFormChange('year', e.target.value)}
-                        onKeyDown={handleKeyDown}
-                        min="1900"
-                        max="2100"
-                      />
-                    </div>
-
-                    <div className="form-field-row">
-                      <label className="field-label">Organization</label>
-                      <select
-                        className="field-input"
-                        value={editForm.organization}
-                        onChange={(e) => handleFormChange('organization', e.target.value)}
-                        onKeyDown={handleKeyDown}
-                      >
-                        <option value="">Select organization...</option>
-                        {organizations.map(org => (
-                          <option key={org.organization_id} value={org.organization_id}>
-                            {org.name} ({org.abbreviation})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="form-field-row">
-                      <label className="field-label">Manufacturer</label>
-                      <select
-                        className="field-input"
-                        value={editForm.manufacturer}
-                        onChange={(e) => handleFormChange('manufacturer', e.target.value)}
-                        onKeyDown={handleKeyDown}
-                      >
-                        <option value="">Select manufacturer...</option>
-                        {manufacturers.map(mfg => (
-                          <option key={mfg.manufacturer_id} value={mfg.manufacturer_id}>
-                            {mfg.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="form-field-row">
-                      <label className="field-label">Complete</label>
-                      <button
-                        type="button"
-                        className={`hof-toggle ${editForm.is_complete ? 'hof-active' : ''}`}
-                        onClick={() => handleFormChange('is_complete', !editForm.is_complete)}
-                      >
-                        <Icon name="check-circle" size={16} />
-                        <span>Set is complete</span>
-                        {editForm.is_complete && <Icon name="check" size={16} className="hof-check" />}
-                      </button>
-                    </div>
-
-                    <div className="form-field-row">
-                      <label className="field-label">Thumbnail</label>
-                      <div className="thumbnail-upload" onClick={() => document.getElementById('thumbnail-input').click()}>
-                        <input
-                          id="thumbnail-input"
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => {
-                            const file = e.target.files[0]
-                            setSelectedFile(file)
-                            if (file) {
-                              const previewUrl = URL.createObjectURL(file)
-                              handleFormChange('thumbnail', previewUrl)
-                            }
-                          }}
-                          className="file-input"
-                          style={{ display: 'none' }}
-                        />
-                        <span className="upload-text">
-                          {selectedFile ? selectedFile.name : (editForm.thumbnail ? 'Change thumbnail...' : 'Choose image file...')}
-                        </span>
-                        {uploadingThumbnail && <span className="upload-status">Uploading...</span>}
-                      </div>
-                    </div>
-                  </>
-                ) : (
-                  <>
                     <div className="form-field-row">
                       <label className="field-label">Name</label>
                       <input
@@ -1129,8 +1018,6 @@ function AdminSets() {
                         <span style={{ color: '#fbbf24' }}>Uploading images...</span>
                       </div>
                     )}
-                  </>
-                )}
                 </div>
               </div>
             </div>

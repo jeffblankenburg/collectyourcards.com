@@ -4,7 +4,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import Icon from '../Icon'
 import './SetCard.css'
 
-function SetCard({ set, showBadge = false, customOnClick = null }) {
+function SetCard({ set, showBadge = false, customOnClick = null, onEditClick = null }) {
   const navigate = useNavigate()
   const { user } = useAuth()
   
@@ -81,7 +81,11 @@ function SetCard({ set, showBadge = false, customOnClick = null }) {
           className="setcard-admin-edit-btn"
           onClick={(e) => {
             e.stopPropagation()
-            navigate(`/admin/sets?search=${encodeURIComponent(set.name)}`)
+            if (onEditClick) {
+              onEditClick(set)
+            } else {
+              navigate(`/admin/sets?search=${encodeURIComponent(set.name)}`)
+            }
           }}
           title="Edit set (Admin)"
         >

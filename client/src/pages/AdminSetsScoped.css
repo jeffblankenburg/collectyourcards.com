@@ -1127,11 +1127,16 @@
 }
 
 .admin-sets-page .current-thumbnail img {
-  width: 60px;
-  height: 60px;
-  object-fit: cover;
+  max-width: 400px;
+  max-height: 250px;
+  object-fit: contain;
   border-radius: 6px;
   border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.admin-sets-page .thumbnail-label {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .admin-sets-page .thumbnail-upload {

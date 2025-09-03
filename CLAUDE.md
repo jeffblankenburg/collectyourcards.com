@@ -37,6 +37,36 @@
 - **TESTING REQUIREMENT**: Test every page at 320px, 768px, 1024px, and 1440px widths
 - **COMPONENT PRIORITY**: If a component doesn't fit on mobile, it should be hidden or redesigned, not cause overflow
 
+## 📱 MOBILE OPTIMIZATION ROADMAP (HIGH PRIORITY)
+*Target: Screens under 480px - Many card collectors are mobile-only users*
+
+### 🚨 Critical Mobile Features (Phase 1)
+- [ ] **Mobile-first navigation system** - Hamburger menu, touch-friendly nav
+- [ ] **Optimized card browsing experience** - Swipe gestures, infinite scroll, mobile card grid
+- [ ] **Simplified search interface** - Large search bar, voice search, filter optimization
+- [ ] **Mobile collection management** - Easy add/edit/delete with mobile-optimized forms
+- [ ] **Touch-optimized modals and forms** - Full-screen modals on mobile, simplified inputs
+
+### 📱 Mobile UX Enhancements (Phase 2)
+- [ ] **One-handed operation support** - Bottom navigation, thumb-friendly zones
+- [ ] **Enhanced touch targets** - 44px minimum, generous spacing
+- [ ] **Streamlined workflows** - Reduce steps for common tasks (add cards, search)
+- [ ] **Mobile-optimized image viewing** - Pinch zoom, full-screen gallery
+- [ ] **Offline-capable features** - Service worker, local storage, sync when online
+
+### ⚡ Mobile Performance (Phase 3)
+- [ ] **Reduced bundle sizes** - Code splitting, lazy loading
+- [ ] **Progressive image loading** - Blur placeholders, responsive images
+- [ ] **Touch gesture optimization** - Native scroll, smooth animations
+- [ ] **Mobile-specific caching** - Aggressive caching for mobile networks
+- [ ] **PWA capabilities** - Install prompt, splash screen, app-like experience
+
+### 📊 Mobile Analytics & Testing
+- [ ] **Mobile usage tracking** - Screen sizes, touch patterns, performance
+- [ ] **Mobile-specific error monitoring** - Touch events, orientation changes
+- [ ] **Performance benchmarks** - Load times on 3G/4G networks
+- [ ] **User testing** - Real collector feedback on mobile experience
+
 ## AUTHENTICATION SYSTEM (FULLY IMPLEMENTED)
 - **Complete user registration** with email verification via Azure Communication Services
 - **Secure login** with JWT tokens and session management
