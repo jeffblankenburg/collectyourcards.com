@@ -165,6 +165,7 @@ if (config.environment === 'test') {
     { path: '/api/admin/analytics', file: './routes/admin-analytics', name: 'Admin Analytics' },
     { path: '/api/admin/dashboard', file: './routes/admin-dashboard', name: 'Admin Dashboard' },
     { path: '/api/admin/colors', file: './routes/admin-colors', name: 'Admin Colors' },
+    { path: '/api/database-stats', file: './routes/database-stats', name: 'Database Stats' },
     { path: '/api/cards', file: './routes/cards', name: 'Cards' },
     { path: '/api/collection', file: './routes/collection', name: 'Collection' },
     { path: '/api/import', file: './routes/import', name: 'Import' },
@@ -368,6 +369,12 @@ if (config.environment === 'production') {
       message: `Route ${req.originalUrl} not found`
     });
   });
+}
+
+// Initialize daily stats refresh in production
+if (config.environment === 'production') {
+  const { dailyStatsRefresh } = require('./utils/daily-stats-refresh')
+  dailyStatsRefresh.start()
 }
 
 module.exports = {

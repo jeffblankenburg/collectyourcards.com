@@ -8,22 +8,30 @@ import './HomePage.css'
 
 function App() {
   const [healthData, setHealthData] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const [databaseStats, setDatabaseStats] = useState({ cards: 793740, players: 6965, teams: 135 })
   const { isAuthenticated } = useAuth()
 
   useEffect(() => {
     // Set page title
     document.title = 'Collect Your Cards - Sports Card Collection Manager'
     
-    // Test API connection
-    axios.get('/health')
-      .then(response => {
-        setHealthData(response.data)
-        setLoading(false)
+    // Load health data and database stats in parallel
+    Promise.all([
+      axios.get('/health'),
+      axios.get('/api/database-stats')
+    ])
+      .then(([healthResponse, statsResponse]) => {
+        setHealthData(healthResponse.data)
+        if (statsResponse.data?.stats) {
+          setDatabaseStats({
+            cards: statsResponse.data.stats.cards,
+            players: statsResponse.data.stats.players,
+            teams: statsResponse.data.stats.teams
+          })
+        }
       })
       .catch(error => {
         console.error('API connection failed:', error)
-        setLoading(false)
       })
   }, [])
 
@@ -32,7 +40,7 @@ function App() {
       <header className="home-page-header">        
         <div className="home-page-hero-search">
           <h3><Icon name="search" size={20} /> Search Our Database</h3>
-          <p>Search through 793,740 cards, 6,965 players, and 135 teams</p>
+          <p>Search through {databaseStats.cards.toLocaleString()} cards, {databaseStats.players.toLocaleString()} players, and {databaseStats.teams.toLocaleString()} teams</p>
           <UniversalSearch className="home-page-search" />
         </div>
 
