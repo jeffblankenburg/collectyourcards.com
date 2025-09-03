@@ -1,256 +1,453 @@
 const express = require('express')
-const router = express.Router()
-const { prisma } = require('../config/prisma-singleton')
+const { getPrismaClient, runBatchedQueries } = require('../utils/prisma-pool-manager')
 const { authMiddleware } = require('../middleware/auth')
-const jwt = require('jsonwebtoken')
+const router = express.Router()
 
-// GET /api/players-list - Get top players by card count, optionally filtered by team
+// Use global Prisma instance
+const prisma = getPrismaClient()
+
+// GET /api/players-list - Get paginated list of all players with their teams
 router.get('/', async (req, res) => {
   try {
-    const { limit = 50, team_id, include_most_visited = 'false' } = req.query
-    const limitNum = Math.min(parseInt(limit) || 50, 100)
-    const includeMostVisited = include_most_visited === 'true'
+    const { 
+      page = 1, 
+      limit = 50,
+      search,
+      sortBy = 'card_count',
+      sortOrder = 'desc'
+    } = req.query
+    
+    const currentPage = Math.max(1, parseInt(page))
+    const pageSize = Math.min(Math.max(1, parseInt(limit)), 100)
+    const offset = (currentPage - 1) * pageSize
 
-    console.log('Getting top players list with limit:', limitNum, team_id ? `filtered by team_id: ${team_id}` : '', includeMostVisited ? '(including most visited)' : '')
+    // Get user ID if authenticated
+    let userId = null
+    if (req.headers.authorization) {
+      try {
+        const authResult = await authMiddleware(req, res, () => {})
+        userId = req.user?.user_id
+      } catch (err) {
+        // User not authenticated, continue without user ID
+      }
+    }
 
-    let topPlayersQuery
+    // Build sort clause
+    const sortColumn = ['first_name', 'last_name', 'card_count', 'is_hof'].includes(sortBy) ? sortBy : 'card_count'
+    const sortDirection = sortOrder === 'asc' ? 'ASC' : 'DESC'
+
+    // Build where clause for search
+    let searchCondition = ''
+    if (search && search.trim()) {
+      const searchTerm = search.trim().replace(/'/g, "''")
+      searchCondition = `
+        WHERE (
+          p.first_name LIKE '%${searchTerm}%' 
+          OR p.last_name LIKE '%${searchTerm}%'
+          OR p.nick_name LIKE '%${searchTerm}%'
+          OR CONCAT(p.first_name, ' ', p.last_name) LIKE '%${searchTerm}%'
+        )
+      `
+    }
+
+    // First, get recently viewed or most visited players if user is logged in
     let recentlyViewedPlayers = []
     let mostVisitedPlayers = []
 
-    // For authenticated users, get their recently viewed players to include in results
-    const authHeader = req.headers.authorization
-    if (authHeader?.startsWith('Bearer ')) {
-      try {
-        const token = authHeader.substring(7)
-        const decoded = jwt.verify(token, process.env.JWT_SECRET)
-        const userId = BigInt(decoded.userId)
-
-        // Get user's recently viewed players (last 20), filtered by team if specified
-        let recentViewedQuery
-        if (team_id) {
-          // When filtering by team, only get recently viewed players that belong to that team
-          recentViewedQuery = `
-            SELECT TOP 20
-              p.player_id,
-              p.first_name,
-              p.last_name,
-              p.nick_name,
-              p.is_hof,
-              p.card_count,
-              up.created as last_visited
-            FROM user_player up
-            JOIN player p ON up.player = p.player_id
-            JOIN player_team pt ON p.player_id = pt.player
-            WHERE up.[user] = ${userId}
-            AND pt.team = ${parseInt(team_id)}
-            ORDER BY up.created DESC
-          `
-        } else {
-          // When not filtering by team, get all recently viewed players
-          recentViewedQuery = `
-            SELECT TOP 20
-              p.player_id,
-              p.first_name,
-              p.last_name,
-              p.nick_name,
-              p.is_hof,
-              p.card_count,
-              up.created as last_visited
-            FROM user_player up
-            JOIN player p ON up.player = p.player_id
-            WHERE up.[user] = ${userId}
-            ORDER BY up.created DESC
-          `
-        }
-        
-        recentlyViewedPlayers = await prisma.$queryRawUnsafe(recentViewedQuery)
-      } catch (jwtError) {
-        // JWT verification failed, continue without recent players
-        console.log('JWT verification failed for recently viewed players')
-      }
-    } else {
-      // For non-authenticated users, get globally most visited players
-      if (!team_id) {
-        const mostVisitedQuery = `
-          SELECT TOP 20
+    if (userId && currentPage === 1 && !search) {
+      // Get recently viewed players - OPTIMIZED SINGLE QUERY
+      const recentQuery = `
+        WITH RecentPlayers AS (
+          SELECT TOP 5
             p.player_id,
             p.first_name,
             p.last_name,
             p.nick_name,
             p.is_hof,
             p.card_count,
-            COUNT(up.user_player_id) as visit_count
-          FROM player p
-          LEFT JOIN user_player up ON p.player_id = up.player
-          WHERE p.card_count > 0
+            MAX(pv.viewed_at) as last_viewed
+          FROM player_views pv
+          JOIN player p ON pv.player_id = p.player_id
+          WHERE pv.user_id = ${userId}
+            AND pv.viewed_at >= DATEADD(day, -30, GETDATE())
           GROUP BY p.player_id, p.first_name, p.last_name, p.nick_name, p.is_hof, p.card_count
-          HAVING COUNT(up.user_player_id) > 0
-          ORDER BY COUNT(up.user_player_id) DESC, p.card_count DESC
-        `
-        
-        mostVisitedPlayers = await prisma.$queryRawUnsafe(mostVisitedQuery)
+          ORDER BY MAX(pv.viewed_at) DESC
+        )
+        SELECT * FROM RecentPlayers
+      `
+
+      try {
+        recentlyViewedPlayers = await prisma.$queryRawUnsafe(recentQuery)
+      } catch (err) {
+        console.error('Error fetching recently viewed players:', err)
+      }
+
+      // Get most visited players - OPTIMIZED SINGLE QUERY
+      const popularQuery = `
+        WITH PopularPlayers AS (
+          SELECT TOP 10
+            p.player_id,
+            p.first_name,
+            p.last_name,
+            p.nick_name,
+            p.is_hof,
+            p.card_count,
+            COUNT(pv.view_id) as view_count
+          FROM player_views pv
+          JOIN player p ON pv.player_id = p.player_id
+          WHERE pv.viewed_at >= DATEADD(day, -7, GETDATE())
+          GROUP BY p.player_id, p.first_name, p.last_name, p.nick_name, p.is_hof, p.card_count
+          ORDER BY COUNT(pv.view_id) DESC
+        )
+        SELECT * FROM PopularPlayers
+      `
+
+      try {
+        mostVisitedPlayers = await prisma.$queryRawUnsafe(popularQuery)
+      } catch (err) {
+        console.error('Error fetching most visited players:', err)
       }
     }
 
-    // Get top players by card count with their team information
+    // Get total count - OPTIMIZED
+    const countQuery = `
+      SELECT COUNT(DISTINCT p.player_id) as total
+      FROM player p
+      ${searchCondition}
+    `
     
-    if (team_id) {
-      // When filtering by team, get players for that team but with their TOTAL card count
-      topPlayersQuery = `
-        SELECT TOP ${limitNum}
+    const countResult = await prisma.$queryRawUnsafe(countQuery)
+    const totalCount = Number(countResult[0].total)
+
+    // Get top players with team information in a SINGLE OPTIMIZED QUERY
+    const playersQuery = `
+      WITH PlayerData AS (
+        SELECT 
           p.player_id,
           p.first_name,
           p.last_name,
           p.nick_name,
           p.is_hof,
-          (
-            SELECT COUNT(DISTINCT c2.card_id)
-            FROM card_player_team cpt2
-            JOIN card c2 ON cpt2.card = c2.card_id
-            JOIN player_team pt2 ON cpt2.player_team = pt2.player_team_id
-            WHERE pt2.player = p.player_id
-          ) as card_count
+          p.card_count
         FROM player p
-        JOIN player_team pt ON p.player_id = pt.player
+        ${searchCondition}
+        ORDER BY ${sortColumn} ${sortDirection}
+        OFFSET ${offset} ROWS
+        FETCH NEXT ${pageSize} ROWS ONLY
+      ),
+      PlayerTeams AS (
+        SELECT 
+          pd.player_id,
+          t.team_id,
+          t.name as team_name,
+          t.abbreviation,
+          t.primary_color,
+          t.secondary_color,
+          COUNT(DISTINCT c.card_id) as team_card_count
+        FROM PlayerData pd
+        JOIN player_team pt ON pd.player_id = pt.player
         JOIN card_player_team cpt ON pt.player_team_id = cpt.player_team
         JOIN card c ON cpt.card = c.card_id
-        WHERE pt.team = ${parseInt(team_id)}
-        GROUP BY p.player_id, p.first_name, p.last_name, p.nick_name, p.is_hof
-        ORDER BY card_count DESC
-      `
-    } else {
-      // Original query for all players
-      topPlayersQuery = `
-        SELECT TOP ${limitNum}
-          p.player_id,
-          p.first_name,
-          p.last_name,
-          p.nick_name,
-          p.is_hof,
-          COUNT(DISTINCT c.card_id) as card_count
-        FROM player p
-        JOIN player_team pt ON p.player_id = pt.player
-        JOIN card_player_team cpt ON pt.player_team_id = cpt.player_team
-        JOIN card c ON cpt.card = c.card_id
-        GROUP BY p.player_id, p.first_name, p.last_name, p.nick_name, p.is_hof
-        ORDER BY COUNT(DISTINCT c.card_id) DESC
-      `
-    }
+        JOIN team t ON pt.team = t.team_id
+        GROUP BY pd.player_id, t.team_id, t.name, t.abbreviation, t.primary_color, t.secondary_color
+      )
+      SELECT 
+        pd.*,
+        STRING_AGG(
+          CONCAT(
+            '{',
+            '"team_id":', pt.team_id, ',',
+            '"name":"', REPLACE(pt.team_name, '"', '\"'), '",',
+            '"abbreviation":"', ISNULL(pt.abbreviation, ''), '",',
+            '"primary_color":"', ISNULL(pt.primary_color, ''), '",',
+            '"secondary_color":"', ISNULL(pt.secondary_color, ''), '",',
+            '"card_count":', pt.team_card_count,
+            '}'
+          ),
+          '|||'
+        ) WITHIN GROUP (ORDER BY pt.team_card_count DESC) as teams_json
+      FROM PlayerData pd
+      LEFT JOIN PlayerTeams pt ON pd.player_id = pt.player_id
+      GROUP BY pd.player_id, pd.first_name, pd.last_name, pd.nick_name, pd.is_hof, pd.card_count
+      ORDER BY ${sortColumn} ${sortDirection}
+    `
 
-    const topPlayers = await prisma.$queryRawUnsafe(topPlayersQuery)
+    const playersWithTeams = await prisma.$queryRawUnsafe(playersQuery)
 
-    // Get team information for each player
-    const playersWithTeams = await Promise.all(
-      topPlayers.map(async (player) => {
-        const teamsQuery = `
-          SELECT DISTINCT 
-            t.team_id,
-            t.name as team_name,
-            t.abbreviation,
-            t.primary_color,
-            t.secondary_color,
-            COUNT(DISTINCT c.card_id) as team_card_count
-          FROM team t
-          JOIN player_team pt ON t.team_id = pt.team
-          JOIN card_player_team cpt ON pt.player_team_id = cpt.player_team
-          JOIN card c ON cpt.card = c.card_id
-          WHERE pt.player = ${player.player_id}
-          GROUP BY t.team_id, t.name, t.abbreviation, t.primary_color, t.secondary_color
-          ORDER BY COUNT(DISTINCT c.card_id) DESC
-        `
-
-        const teams = await prisma.$queryRawUnsafe(teamsQuery)
-
-        return {
-          player_id: Number(player.player_id),
-          first_name: player.first_name,
-          last_name: player.last_name,
-          nick_name: player.nick_name,
-          is_hof: player.is_hof,
-          card_count: Number(player.card_count),
-          teams: teams.map(team => ({
-            team_id: Number(team.team_id),
-            name: team.team_name,
-            abbreviation: team.abbreviation,
-            primary_color: team.primary_color,
-            secondary_color: team.secondary_color,
-            card_count: Number(team.team_card_count)
-          }))
-        }
-      })
-    )
-
-    // If we have recently viewed players or most visited players, merge them with regular results
-    let finalPlayersList = playersWithTeams
-    let priorityPlayers = recentlyViewedPlayers.length > 0 ? recentlyViewedPlayers : mostVisitedPlayers
-    
-    if (priorityPlayers.length > 0) {
-      // Get team information for priority players (recently viewed or most visited)
-      const priorityPlayersWithTeams = await Promise.all(
-        priorityPlayers.map(async (player) => {
-          const teamsQuery = `
-            SELECT DISTINCT 
-              t.team_id,
-              t.name as team_name,
-              t.abbreviation,
-              t.primary_color,
-              t.secondary_color,
-              COUNT(DISTINCT c.card_id) as team_card_count
-            FROM team t
-            JOIN player_team pt ON t.team_id = pt.team
-            JOIN card_player_team cpt ON pt.player_team_id = cpt.player_team
-            JOIN card c ON cpt.card = c.card_id
-            WHERE pt.player = ${player.player_id}
-            GROUP BY t.team_id, t.name, t.abbreviation, t.primary_color, t.secondary_color
-            ORDER BY COUNT(DISTINCT c.card_id) DESC
-          `
-
-          const teams = await prisma.$queryRawUnsafe(teamsQuery)
-
-          return {
-            player_id: Number(player.player_id),
-            first_name: player.first_name,
-            last_name: player.last_name,
-            nick_name: player.nick_name,
-            is_hof: player.is_hof,
-            card_count: Number(player.card_count),
-            last_visited: player.last_visited,
-            visit_count: player.visit_count ? Number(player.visit_count) : undefined,
-            teams: teams.map(team => ({
+    // Parse the aggregated team data
+    const formattedPlayers = playersWithTeams.map(player => ({
+      player_id: Number(player.player_id),
+      first_name: player.first_name,
+      last_name: player.last_name,
+      nick_name: player.nick_name,
+      is_hof: player.is_hof,
+      card_count: Number(player.card_count),
+      teams: player.teams_json ? 
+        player.teams_json.split('|||').map(teamStr => {
+          try {
+            const team = JSON.parse(teamStr)
+            return {
               team_id: Number(team.team_id),
-              name: team.team_name,
+              name: team.name,
               abbreviation: team.abbreviation,
               primary_color: team.primary_color,
               secondary_color: team.secondary_color,
-              card_count: Number(team.team_card_count)
-            }))
+              card_count: Number(team.card_count)
+            }
+          } catch (e) {
+            return null
           }
+        }).filter(Boolean) : []
+    }))
+
+    // If we have recently viewed or most visited players, get their teams and merge
+    let finalPlayersList = formattedPlayers
+    let priorityPlayers = recentlyViewedPlayers.length > 0 ? recentlyViewedPlayers : mostVisitedPlayers
+    
+    if (priorityPlayers.length > 0) {
+      // Get teams for priority players in a single query
+      const priorityPlayerIds = priorityPlayers.map(p => Number(p.player_id)).join(',')
+      
+      const priorityTeamsQuery = `
+        SELECT 
+          pt.player as player_id,
+          t.team_id,
+          t.name as team_name,
+          t.abbreviation,
+          t.primary_color,
+          t.secondary_color,
+          COUNT(DISTINCT c.card_id) as team_card_count
+        FROM player_team pt
+        JOIN card_player_team cpt ON pt.player_team_id = cpt.player_team
+        JOIN card c ON cpt.card = c.card_id
+        JOIN team t ON pt.team = t.team_id
+        WHERE pt.player IN (${priorityPlayerIds})
+        GROUP BY pt.player, t.team_id, t.name, t.abbreviation, t.primary_color, t.secondary_color
+        ORDER BY pt.player, COUNT(DISTINCT c.card_id) DESC
+      `
+
+      const priorityTeams = await prisma.$queryRawUnsafe(priorityTeamsQuery)
+      
+      // Map teams to players
+      const teamsMap = {}
+      priorityTeams.forEach(team => {
+        const playerId = Number(team.player_id)
+        if (!teamsMap[playerId]) {
+          teamsMap[playerId] = []
+        }
+        teamsMap[playerId].push({
+          team_id: Number(team.team_id),
+          name: team.team_name,
+          abbreviation: team.abbreviation,
+          primary_color: team.primary_color,
+          secondary_color: team.secondary_color,
+          card_count: Number(team.team_card_count)
         })
+      })
+
+      const priorityPlayersWithTeams = priorityPlayers.map(player => ({
+        player_id: Number(player.player_id),
+        first_name: player.first_name,
+        last_name: player.last_name,
+        nick_name: player.nick_name,
+        is_hof: player.is_hof,
+        card_count: Number(player.card_count),
+        teams: teamsMap[Number(player.player_id)] || [],
+        is_priority: true
+      }))
+
+      // Remove priority players from regular list to avoid duplicates
+      const priorityPlayerIdSet = new Set(priorityPlayers.map(p => Number(p.player_id)))
+      const filteredRegularPlayers = formattedPlayers.filter(
+        p => !priorityPlayerIdSet.has(p.player_id)
       )
 
-      // Create a set of priority player IDs
-      const priorityPlayerIds = new Set(priorityPlayersWithTeams.map(p => p.player_id))
-      
-      // Filter out priority players from regular results to avoid duplicates
-      const otherPlayers = playersWithTeams.filter(p => !priorityPlayerIds.has(p.player_id))
-      
-      // Combine: priority players first, then others
-      finalPlayersList = [...priorityPlayersWithTeams, ...otherPlayers]
+      // Combine priority and regular players
+      finalPlayersList = [...priorityPlayersWithTeams, ...filteredRegularPlayers]
     }
 
     res.json({
       players: finalPlayersList,
-      total: finalPlayersList.length,
-      recently_viewed_count: recentlyViewedPlayers.length,
-      most_visited_count: mostVisitedPlayers.length
+      pagination: {
+        current_page: currentPage,
+        total_pages: Math.ceil(totalCount / pageSize),
+        total_count: totalCount,
+        page_size: pageSize,
+        has_more: currentPage * pageSize < totalCount
+      },
+      priority_type: recentlyViewedPlayers.length > 0 ? 'recently_viewed' : 
+                      mostVisitedPlayers.length > 0 ? 'most_visited' : null
     })
-
   } catch (error) {
     console.error('Error fetching players list:', error)
-    res.status(500).json({
-      error: 'Database error',
-      message: 'Failed to fetch players list',
-      details: error.message
+    res.status(500).json({ 
+      error: 'Failed to fetch players list',
+      message: error.message 
+    })
+  }
+})
+
+// GET /api/players-list/alphabet - Get players grouped by first letter
+router.get('/alphabet', async (req, res) => {
+  try {
+    // Optimized query to get player counts by first letter
+    const alphabetQuery = `
+      SELECT 
+        UPPER(LEFT(last_name, 1)) as letter,
+        COUNT(DISTINCT player_id) as player_count,
+        SUM(card_count) as total_cards
+      FROM player
+      WHERE last_name IS NOT NULL AND last_name != ''
+      GROUP BY UPPER(LEFT(last_name, 1))
+      ORDER BY letter
+    `
+
+    const alphabetData = await prisma.$queryRawUnsafe(alphabetQuery)
+    
+    const formattedData = alphabetData.map(item => ({
+      letter: item.letter,
+      player_count: Number(item.player_count),
+      total_cards: Number(item.total_cards)
+    }))
+
+    res.json({
+      alphabet: formattedData
+    })
+  } catch (error) {
+    console.error('Error fetching alphabet data:', error)
+    res.status(500).json({ 
+      error: 'Failed to fetch alphabet data',
+      message: error.message 
+    })
+  }
+})
+
+// GET /api/players-list/by-letter/:letter - Get players by first letter
+router.get('/by-letter/:letter', async (req, res) => {
+  try {
+    const { letter } = req.params
+    const { 
+      page = 1, 
+      limit = 50,
+      sortBy = 'last_name',
+      sortOrder = 'asc'
+    } = req.query
+    
+    const currentPage = Math.max(1, parseInt(page))
+    const pageSize = Math.min(Math.max(1, parseInt(limit)), 100)
+    const offset = (currentPage - 1) * pageSize
+
+    // Build sort clause
+    const sortColumn = ['first_name', 'last_name', 'card_count', 'is_hof'].includes(sortBy) ? sortBy : 'last_name'
+    const sortDirection = sortOrder === 'desc' ? 'DESC' : 'ASC'
+
+    // Single optimized query to get players and their teams
+    const playersQuery = `
+      WITH PlayerData AS (
+        SELECT 
+          p.player_id,
+          p.first_name,
+          p.last_name,
+          p.nick_name,
+          p.is_hof,
+          p.card_count
+        FROM player p
+        WHERE UPPER(LEFT(p.last_name, 1)) = '${letter.toUpperCase()}'
+        ORDER BY ${sortColumn} ${sortDirection}
+        OFFSET ${offset} ROWS
+        FETCH NEXT ${pageSize} ROWS ONLY
+      ),
+      PlayerTeams AS (
+        SELECT 
+          pd.player_id,
+          t.team_id,
+          t.name as team_name,
+          t.abbreviation,
+          t.primary_color,
+          t.secondary_color,
+          COUNT(DISTINCT c.card_id) as team_card_count
+        FROM PlayerData pd
+        JOIN player_team pt ON pd.player_id = pt.player
+        JOIN card_player_team cpt ON pt.player_team_id = cpt.player_team
+        JOIN card c ON cpt.card = c.card_id
+        JOIN team t ON pt.team = t.team_id
+        GROUP BY pd.player_id, t.team_id, t.name, t.abbreviation, t.primary_color, t.secondary_color
+      )
+      SELECT 
+        pd.*,
+        STRING_AGG(
+          CONCAT(
+            '{',
+            '"team_id":', pt.team_id, ',',
+            '"name":"', REPLACE(pt.team_name, '"', '\"'), '",',
+            '"abbreviation":"', ISNULL(pt.abbreviation, ''), '",',
+            '"primary_color":"', ISNULL(pt.primary_color, ''), '",',
+            '"secondary_color":"', ISNULL(pt.secondary_color, ''), '",',
+            '"card_count":', pt.team_card_count,
+            '}'
+          ),
+          '|||'
+        ) WITHIN GROUP (ORDER BY pt.team_card_count DESC) as teams_json
+      FROM PlayerData pd
+      LEFT JOIN PlayerTeams pt ON pd.player_id = pt.player_id
+      GROUP BY pd.player_id, pd.first_name, pd.last_name, pd.nick_name, pd.is_hof, pd.card_count
+      ORDER BY ${sortColumn} ${sortDirection}
+    `
+
+    const playersWithTeams = await prisma.$queryRawUnsafe(playersQuery)
+
+    // Get total count
+    const countQuery = `
+      SELECT COUNT(DISTINCT player_id) as total
+      FROM player
+      WHERE UPPER(LEFT(last_name, 1)) = '${letter.toUpperCase()}'
+    `
+    
+    const countResult = await prisma.$queryRawUnsafe(countQuery)
+    const totalCount = Number(countResult[0].total)
+
+    // Parse the aggregated team data
+    const formattedPlayers = playersWithTeams.map(player => ({
+      player_id: Number(player.player_id),
+      first_name: player.first_name,
+      last_name: player.last_name,
+      nick_name: player.nick_name,
+      is_hof: player.is_hof,
+      card_count: Number(player.card_count),
+      teams: player.teams_json ? 
+        player.teams_json.split('|||').map(teamStr => {
+          try {
+            const team = JSON.parse(teamStr)
+            return {
+              team_id: Number(team.team_id),
+              name: team.name,
+              abbreviation: team.abbreviation,
+              primary_color: team.primary_color,
+              secondary_color: team.secondary_color,
+              card_count: Number(team.card_count)
+            }
+          } catch (e) {
+            return null
+          }
+        }).filter(Boolean) : []
+    }))
+
+    res.json({
+      letter: letter.toUpperCase(),
+      players: formattedPlayers,
+      pagination: {
+        current_page: currentPage,
+        total_pages: Math.ceil(totalCount / pageSize),
+        total_count: totalCount,
+        page_size: pageSize,
+        has_more: currentPage * pageSize < totalCount
+      }
+    })
+  } catch (error) {
+    console.error('Error fetching players by letter:', error)
+    res.status(500).json({ 
+      error: 'Failed to fetch players by letter',
+      message: error.message 
     })
   }
 })
