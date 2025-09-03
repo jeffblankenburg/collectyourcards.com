@@ -1,0 +1,657 @@
+/* Series Page Component - Completely Scoped Styles */
+/* All styles prefixed with .series-page for complete isolation */
+
+.series-page {
+  width: 100%;
+  min-height: calc(100vh - 140px);
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  color: white;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  font-size: 14px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+}
+
+/* Loading State */
+.series-page .loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 4rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 1rem !important;
+}
+
+.series-page .loading-state span {
+  font-size: 1rem !important;
+}
+
+.series-page .spinning {
+  animation: seriesSpinner 1s linear infinite;
+}
+
+@keyframes seriesSpinner {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Content Area */
+.series-page .content-area {
+  width: 100%;
+  flex: 1;
+}
+
+/* Set Detail Header */
+.series-page .set-detail-header {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  margin: 0 auto 1rem auto;
+  max-width: 1400px;
+}
+
+.series-page .set-header-content {
+  padding: 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 2rem;
+}
+
+.series-page .set-title-section {
+  flex: 1;
+}
+
+.series-page .set-title-line {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.series-page .set-name {
+  font-size: 2.5rem !important;
+  font-weight: 700 !important;
+  margin: 0;
+  color: white;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+
+.series-page .set-stats-and-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.75rem;
+}
+
+.series-page .set-stats {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.series-page .stat-box {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 70px;
+  transition: all 0.2s ease;
+}
+
+.series-page .stat-box:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.series-page .stat-number {
+  font-size: 1.25rem !important;
+  font-weight: 700 !important;
+  color: white;
+  line-height: 1;
+}
+
+.series-page .stat-label {
+  font-size: 0.625rem !important;
+  font-weight: 500 !important;
+  color: rgba(255, 255, 255, 0.7);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  text-align: center;
+  line-height: 1;
+}
+
+.series-page .set-actions {
+  display: flex;
+  align-items: center;
+}
+
+/* Grid Search Box */
+.series-page .grid-search-box {
+  grid-column: -3 / -1; /* Last two columns */
+  grid-row: 1;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 1rem;
+  padding: 0;
+  margin-bottom: 0;
+}
+
+.series-page .grid-search-box .search-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  max-width: 300px;
+}
+
+/* Series grid with headers */
+.series-page .series-grid-unified {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 270px);
+  gap: 0.5rem;
+  justify-content: center;
+  margin-bottom: 0.5rem;
+  margin-top: 0;
+}
+
+/* Grid header items */
+.series-page .grid-header-title-with-back {
+  grid-column: 1 / span 2; /* Start at column 1, span 2 columns */
+  grid-row: 1; /* Force first row */
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.5rem 0;
+  margin-bottom: 0.5rem;
+  white-space: nowrap; /* Prevent text wrapping */
+}
+
+.series-page .grid-header-title-with-back h1 {
+  font-size: 2.5rem !important;
+  font-weight: 700 !important;
+  margin: 0;
+  background: linear-gradient(135deg, #e5e7eb 0%, #f3f4f6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.series-page .grid-header-controls {
+  grid-column: 1 / span 2; /* Start at column 1, span 2 columns */
+  grid-row: 1; /* Force first row */
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+  margin-bottom: 0.5rem;
+  white-space: nowrap; /* Prevent text wrapping */
+}
+
+.series-page .grid-header-search-series {
+  grid-column: 3 / -1; /* From column 3 to the end */
+  grid-row: 1; /* Force first row */
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.5rem; /* Space between collapse button and search box */
+  padding: 0.5rem 0;
+  margin-bottom: 0.5rem;
+}
+
+/* Force a row break after header */
+.series-page .grid-row-break {
+  grid-column: 1 / -1; /* Span entire grid width */
+  height: 0; /* No visible height */
+  margin: 0;
+  padding: 0;
+}
+
+/* Back Button */
+.series-page .back-button {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  padding: 0.5rem;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+  z-index: 10;
+  position: relative;
+}
+
+.series-page .back-button:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: white;
+  transform: translateX(-1px);
+  text-decoration: none;
+}
+
+/* Search Box */
+.series-page .search-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  max-width: 300px;
+}
+
+.series-page .search-box svg {
+  position: absolute;
+  left: 1rem;
+  color: rgba(255, 255, 255, 0.4);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.series-page .search-box input {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 0.75rem 1rem 0.75rem 3rem;
+  color: white;
+  font-size: 0.875rem !important;
+  transition: all 0.2s ease;
+}
+
+.series-page .search-box input:focus {
+  outline: none;
+  border-color: #60a5fa;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.series-page .search-box input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Collapse Parallels Button */
+.series-page .collapse-parallels-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.875rem !important;
+  font-weight: 500 !important;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.series-page .collapse-parallels-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+}
+
+/* Action Buttons */
+.series-page .action-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+  text-decoration: none;
+}
+
+.series-page .action-button.primary {
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  border-color: #2563eb;
+  color: white;
+}
+
+.series-page .action-button.primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+  border-color: #1d4ed8;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  text-decoration: none;
+  color: white;
+}
+
+/* Empty State */
+.series-page .empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  color: rgba(255, 255, 255, 0.6);
+  gap: 1rem;
+  grid-column: 1 / -1;
+}
+
+.series-page .empty-state p {
+  margin: 0;
+  font-size: 1rem !important;
+}
+
+/* Series Card Height Fix */
+.series-page .series-card {
+  height: 180px !important;
+}
+
+.series-page .series-content {
+  padding: 0.75rem 1rem !important;
+  padding-right: 1.5rem !important; /* Make room for right stripe */
+  padding-top: 0.5rem !important;
+  padding-bottom: 0 !important; /* No bottom padding - let parallel stripe handle spacing */
+}
+
+.series-page .series-parallel-stripe {
+  height: 18px !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+  margin-top: auto !important; /* Push to bottom of card */
+  font-size: 0.625rem !important;
+  font-weight: 600 !important;
+}
+
+.series-page .series-parallel-stripe.has-content {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.series-page .series-parallel-stripe.empty {
+  background: transparent !important;
+  border-top: none !important;
+}
+
+.series-page .series-header {
+  height: 42px !important; /* Fixed height for row 1 - title and badges */
+  margin-bottom: 0.5rem !important;
+}
+
+.series-page .series-info {
+  height: 20px !important; /* Fixed height for row 2 - info/spacer */
+  margin-bottom: 0.5rem !important;
+}
+
+.series-page .series-stats {
+  height: 42px !important; /* Fixed height for row 3 - stats */
+  margin-top: 0 !important;
+  margin-bottom: 0.75rem !important; /* Add space under stats boxes */
+}
+
+/* Font Size Fixes */
+.series-page .series-name {
+  font-size: 1rem !important;
+  font-weight: 600 !important;
+}
+
+.series-page .series-stat-number {
+  font-size: 1.25rem !important;
+  font-weight: 700 !important;
+}
+
+.series-page .series-stat-label {
+  font-size: 0.6875rem !important;
+  font-weight: 500 !important;
+}
+
+.series-page .base-badge {
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+}
+
+.series-page .series-color-stripe-right {
+  font-size: 0.625rem !important;
+  font-weight: 600 !important;
+}
+
+/* Dropdown menu font sizes */
+.parallels-dropdown-menu .parallel-name-compact {
+  font-size: 0.8rem !important;
+  font-weight: 400 !important;
+}
+
+.parallels-dropdown-menu .parallel-print-run-tag {
+  font-size: 0.7rem !important;
+  font-weight: 600 !important;
+}
+
+/* Parallels Dropdown - Positioned globally */
+.parallels-dropdown-menu {
+  position: fixed;
+  min-width: 400px;
+  width: max-content;
+  max-width: 600px;
+  background: rgba(30, 41, 59, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+  z-index: 9999;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.parallel-item-compact {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  position: relative;
+  margin: 0 0.5rem;
+}
+
+.parallel-item-compact:last-child {
+  border-bottom: none;
+}
+
+.parallel-item-compact:hover {
+  background: rgba(255, 255, 255, 0.1);
+  margin: 0 0.25rem;
+  padding-left: 0.25rem;
+  padding-right: 0.25rem;
+  border-radius: 4px;
+}
+
+.parallel-content-compact {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  padding-right: 0.5rem;
+}
+
+.parallel-name-compact {
+  color: white;
+  font-size: 0.8rem;
+  font-weight: 400;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.parallel-print-run-tag {
+  background: rgba(34, 197, 94, 0.2);
+  color: #22c55e;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.1rem 0.3rem;
+  border-radius: 3px;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  white-space: nowrap;
+}
+
+.parallel-color-stripe {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  border-radius: 0 4px 4px 0;
+}
+
+/* Ensure proper line height */
+.series-page * {
+  line-height: normal;
+}
+
+.series-page button {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .series-page .series-grid-unified {
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    padding: 0 1rem;
+  }
+  
+  .series-page .grid-header-title-with-back,
+  .series-page .grid-header-controls {
+    grid-column: 1 / span 1;
+  }
+  
+  .series-page .grid-header-search-series {
+    grid-column: 2 / -1;
+  }
+}
+
+@media (max-width: 768px) {
+  .series-page {
+    padding: 1rem;
+  }
+  
+  .series-page .set-name {
+    font-size: 2rem !important;
+  }
+  
+  .series-page .set-header-content {
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1rem;
+    align-items: center;
+  }
+  
+  .series-page .set-stats-and-actions {
+    align-items: center;
+  }
+  
+  .series-page .set-stats {
+    gap: 1rem;
+  }
+  
+  .series-page .series-grid-unified {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .series-page .grid-search-box {
+    grid-column: 1 / -1;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  
+  .series-page .search-box {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .series-page {
+    padding: 0.5rem;
+  }
+  
+  .series-page .set-name {
+    font-size: 1.75rem !important;
+  }
+  
+  .series-page .set-header-content {
+    padding: 0.75rem;
+  }
+  
+  .series-page .set-title-line {
+    margin-bottom: 1rem;
+    gap: 0.5rem;
+  }
+  
+  .series-page .set-stats {
+    gap: 1rem;
+  }
+  
+  .series-page .search-box {
+    max-width: 100%;
+  }
+  
+  .series-page .search-box input {
+    padding: 0.6rem 1rem 0.6rem 2.5rem;
+    font-size: 0.8rem;
+  }
+  
+  .series-page .search-box svg {
+    left: 0.75rem;
+    width: 18px;
+    height: 18px;
+  }
+}
+
+/* Admin Edit Button */
+.series-page .admin-edit-button {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  width: 56px;
+  height: 56px;
+  background: #f59e0b;
+  border: none;
+  border-radius: 50%;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+  transition: all 0.2s ease;
+  z-index: 1000;
+}
+
+.series-page .admin-edit-button:hover {
+  background: #d97706;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(245, 158, 11, 0.5);
+}
+
+.series-page .admin-edit-button:active {
+  transform: translateY(0);
+}
+
+@media (max-width: 480px) {
+  .series-page .admin-edit-button {
+    bottom: 1rem;
+    right: 1rem;
+    width: 48px;
+    height: 48px;
+  }
+}

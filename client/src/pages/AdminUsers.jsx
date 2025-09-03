@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
 import axios from 'axios'
 import Icon from '../components/Icon'
-import './AdminUsers.css'
+import './AdminUsersScoped.css'
 
 function AdminUsers() {
   const { user } = useAuth()
@@ -11,6 +11,7 @@ function AdminUsers() {
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
+  const [showAddModal, setShowAddModal] = useState(false)
   const [editingUser, setEditingUser] = useState(null)
   const [showEditModal, setShowEditModal] = useState(false)
   const [editForm, setEditForm] = useState({
@@ -20,7 +21,13 @@ function AdminUsers() {
     is_active: true,
     is_verified: true
   })
+  const [addForm, setAddForm] = useState({
+    name: '',
+    email: '',
+    role: 'user'
+  })
   const [saving, setSaving] = useState(false)
+  const [creating, setCreating] = useState(false)
   const [showResetConfirm, setShowResetConfirm] = useState(false)
   const [resetUser, setResetUser] = useState(null)
   const [sendingReset, setSendingReset] = useState(false)
@@ -39,6 +46,7 @@ function AdminUsers() {
 
   // Load users data
   useEffect(() => {
+    document.title = 'Admin Users - Collect Your Cards'
     loadUsers()
   }, [])
 
@@ -63,6 +71,15 @@ function AdminUsers() {
   )
 
   const formatDate = (dateString) => {
+    if (!dateString) return 'Never'
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    })
+  }
+
+  const formatDateWithTime = (dateString) => {
     if (!dateString) return 'Never'
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -113,11 +130,63 @@ function AdminUsers() {
     setSaving(false)
   }
 
+  const handleCloseAddModal = () => {
+    setShowAddModal(false)
+    setAddForm({
+      name: '',
+      email: '',
+      role: 'user'
+    })
+    setCreating(false)
+  }
+
+  const handleAddFormChange = (field, value) => {
+    setAddForm(prev => ({
+      ...prev,
+      [field]: value
+    }))
+  }
+
   const handleFormChange = (field, value) => {
     setEditForm(prev => ({
       ...prev,
       [field]: value
     }))
+  }
+
+  const handleCreateUser = async () => {
+    try {
+      setCreating(true)
+
+      // Validate required fields
+      if (!addForm.email.trim()) {
+        addToast('Email is required', 'error')
+        return
+      }
+
+      const response = await axios.post('/api/admin/users', {
+        name: addForm.name.trim() || null,
+        email: addForm.email.trim(),
+        role: addForm.role || 'user'
+      })
+
+      // Add new user to the list
+      const newUser = {
+        ...response.data.user,
+        login_attempts: 0
+      }
+      setUsers(prevUsers => [newUser, ...prevUsers])
+
+      addToast('User created successfully. Welcome email sent.', 'success')
+      handleCloseAddModal()
+
+    } catch (error) {
+      console.error('Error creating user:', error)
+      const errorMessage = error.response?.data?.message || error.message
+      addToast(`Failed to create user: ${errorMessage}`, 'error')
+    } finally {
+      setCreating(false)
+    }
   }
 
   const handleSaveUser = async () => {
@@ -202,6 +271,13 @@ function AdminUsers() {
         </div>
 
         <div className="admin-controls">
+          <button
+            className="new-item-button"
+            onClick={() => setShowAddModal(true)}
+            title="Add new user"
+          >
+            <Icon name="plus" size={20} />
+          </button>
           <div className="search-box">
             <Icon name="search" size={20} />
             <input
@@ -262,7 +338,7 @@ function AdminUsers() {
                   )}
                 </div>
                 <div className="col-created">{formatDate(u.created)}</div>
-                <div className="col-login">{formatDate(u.last_login)}</div>
+                <div className="col-login">{formatDateWithTime(u.last_login)}</div>
                 <div className="col-actions">
                   <button 
                     className="edit-btn"
@@ -294,42 +370,33 @@ function AdminUsers() {
       {/* Edit User Modal */}
       {showEditModal && editingUser && (
         <div className="modal-overlay" onClick={handleCloseModal}>
-          <div className="edit-user-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="edit-player-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>Edit User</h3>
+              <h3>Edit User #{editingUser.user_id}</h3>
               <button className="close-btn" onClick={handleCloseModal}>
                 <Icon name="x" size={20} />
               </button>
             </div>
             
             <div className="modal-content">
-              <form className="edit-form" onSubmit={(e) => e.preventDefault()}>
-                {/* Read-only fields */}
-                <div className="readonly-section">
-                  <div className="form-row">
-                    <label className="form-label">User ID:</label>
-                    <span className="readonly-value">{editingUser.user_id}</span>
-                  </div>
-                </div>
-
-                {/* Editable fields */}
-                <div className="editable-section">
-                  <div className="form-row">
-                    <label className="form-label">Name:</label>
+              <div className="edit-form">
+                <div className="player-details-form">
+                  <div className="form-field-row">
+                    <label className="field-label">Name</label>
                     <input
                       type="text"
-                      className="form-input"
+                      className="field-input"
                       value={editForm.name}
                       onChange={(e) => handleFormChange('name', e.target.value)}
                       placeholder="Enter user name"
                     />
                   </div>
 
-                  <div className="form-row">
-                    <label className="form-label">Email:</label>
+                  <div className="form-field-row">
+                    <label className="field-label">Email</label>
                     <input
                       type="email"
-                      className="form-input"
+                      className="field-input"
                       value={editForm.email}
                       onChange={(e) => handleFormChange('email', e.target.value)}
                       placeholder="Enter email address"
@@ -337,10 +404,10 @@ function AdminUsers() {
                     />
                   </div>
 
-                  <div className="form-row">
-                    <label className="form-label">Role:</label>
+                  <div className="form-field-row">
+                    <label className="field-label">Role</label>
                     <select
-                      className="form-select"
+                      className="field-input"
                       value={editForm.role}
                       onChange={(e) => handleFormChange('role', e.target.value)}
                     >
@@ -351,31 +418,33 @@ function AdminUsers() {
                     </select>
                   </div>
 
-                  <div className="form-row">
-                    <label className="form-label">Status:</label>
-                    <div className="status-controls">
-                      <label className="checkbox-label">
-                        <input
-                          type="checkbox"
-                          className="form-checkbox"
-                          checked={editForm.is_active}
-                          onChange={(e) => handleFormChange('is_active', e.target.checked)}
-                        />
-                        <span className="checkbox-text">Account Active</span>
-                      </label>
-                      <label className="checkbox-label">
-                        <input
-                          type="checkbox"
-                          className="form-checkbox"
-                          checked={editForm.is_verified}
-                          onChange={(e) => handleFormChange('is_verified', e.target.checked)}
-                        />
-                        <span className="checkbox-text">Email Verified</span>
-                      </label>
-                    </div>
+                  <div className="form-field-row">
+                    <label className="field-label">Account Active</label>
+                    <button
+                      type="button"
+                      className={`hof-toggle ${editForm.is_active ? 'hof-active' : ''}`}
+                      onClick={() => handleFormChange('is_active', !editForm.is_active)}
+                    >
+                      <Icon name="power" size={16} />
+                      <span>Account Active</span>
+                      {editForm.is_active && <Icon name="check" size={16} className="hof-check" />}
+                    </button>
+                  </div>
+
+                  <div className="form-field-row">
+                    <label className="field-label">Email Verified</label>
+                    <button
+                      type="button"
+                      className={`hof-toggle ${editForm.is_verified ? 'hof-active' : ''}`}
+                      onClick={() => handleFormChange('is_verified', !editForm.is_verified)}
+                    >
+                      <Icon name="check-circle" size={16} />
+                      <span>Email Verified</span>
+                      {editForm.is_verified && <Icon name="check" size={16} className="hof-check" />}
+                    </button>
                   </div>
                 </div>
-              </form>
+              </div>
             </div>
             
             <div className="modal-actions">
@@ -397,6 +466,95 @@ function AdminUsers() {
                     <Icon name="check" size={16} />
                     Save Changes
                   </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add User Modal */}
+      {showAddModal && (
+        <div className="modal-overlay" onClick={handleCloseAddModal}>
+          <div className="edit-player-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Add New User</h3>
+              <button className="close-btn" onClick={handleCloseAddModal}>
+                <Icon name="x" size={20} />
+              </button>
+            </div>
+            
+            <div className="modal-content">
+              <div className="edit-form">
+                <div className="player-details-form">
+                  <div className="form-field-row">
+                    <label className="field-label">Name</label>
+                    <input
+                      type="text"
+                      className="field-input"
+                      value={addForm.name}
+                      onChange={(e) => handleAddFormChange('name', e.target.value)}
+                      placeholder="Enter user name (optional)"
+                    />
+                  </div>
+
+                  <div className="form-field-row">
+                    <label className="field-label">Email</label>
+                    <input
+                      type="email"
+                      className="field-input"
+                      value={addForm.email}
+                      onChange={(e) => handleAddFormChange('email', e.target.value)}
+                      placeholder="Enter email address"
+                      required
+                    />
+                  </div>
+
+                  <div className="form-field-row">
+                    <label className="field-label">Role</label>
+                    <select 
+                      className="field-input"
+                      value={addForm.role}
+                      onChange={(e) => handleAddFormChange('role', e.target.value)}
+                    >
+                      <option value="user">User</option>
+                      <option value="data_admin">Data Admin</option>
+                      <option value="admin">Admin</option>
+                      <option value="superadmin">Super Admin</option>
+                    </select>
+                  </div>
+
+                  <div style={{ 
+                    background: 'rgba(59, 130, 246, 0.1)', 
+                    border: '1px solid rgba(59, 130, 246, 0.2)', 
+                    borderRadius: '6px', 
+                    padding: '1rem', 
+                    marginTop: '1rem',
+                    fontSize: '0.875rem',
+                    color: 'rgba(255, 255, 255, 0.9)'
+                  }}>
+                    <strong>📧 Automatic Setup:</strong> A welcome email with password setup instructions will be automatically sent to the user.
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="modal-actions">
+              <button className="cancel-btn" onClick={handleCloseAddModal} disabled={creating}>
+                Cancel
+              </button>
+              <button 
+                className="save-btn"
+                onClick={handleCreateUser}
+                disabled={creating || !addForm.email.trim()}
+              >
+                {creating ? (
+                  <>
+                    <Icon name="activity" size={16} className="spinning" />
+                    Creating...
+                  </>
+                ) : (
+                  'Create User'
                 )}
               </button>
             </div>

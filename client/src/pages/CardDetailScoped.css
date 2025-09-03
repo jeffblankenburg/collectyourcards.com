@@ -1,4 +1,5 @@
-/* CardDetail.css - Card Detail Page Styles */
+/* CardDetail Page - All Styles Scoped to This Page Only */
+/* Prefix: .card-detail-page for complete isolation */
 
 .card-detail-page {
   min-height: 100vh;
@@ -6,7 +7,7 @@
   padding: 1rem 2rem;
 }
 
-.card-detail-container {
+.card-detail-page .card-detail-container {
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
@@ -16,8 +17,8 @@
 }
 
 /* Loading and Error States */
-.loading-state,
-.error-state {
+.card-detail-page .loading-state,
+.card-detail-page .error-state {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -26,25 +27,25 @@
   text-align: center;
 }
 
-.loading-spinner {
+.card-detail-page .loading-spinner {
   margin-bottom: 1rem;
 }
 
-.spinning {
-  animation: spin 1s linear infinite;
+.card-detail-page .spinning {
+  animation: card-detail-spin 1s linear infinite;
 }
 
-@keyframes spin {
+@keyframes card-detail-spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 }
 
-.error-state h2 {
+.card-detail-page .error-state h2 {
   margin: 1rem 0 0.5rem 0;
   color: #ff6b6b;
 }
 
-.error-actions {
+.card-detail-page .error-actions {
   display: flex;
   gap: 1rem;
   margin-top: 2rem;
@@ -52,8 +53,8 @@
   justify-content: center;
 }
 
-.back-button,
-.search-link {
+.card-detail-page .back-button,
+.card-detail-page .search-link {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -67,15 +68,14 @@
   transition: all 0.2s ease;
 }
 
-.back-button:hover,
-.search-link:hover {
+.card-detail-page .back-button:hover,
+.card-detail-page .search-link:hover {
   background: rgba(255, 255, 255, 0.2);
   transform: translateY(-1px);
 }
 
-
 /* Card Header */
-.card-header {
+.card-detail-page .card-header {
   background: rgba(255, 255, 255, 0.1);
   border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.2);
@@ -89,7 +89,7 @@
 }
 
 /* Color Strip */
-.card-header-color-strip {
+.card-detail-page .card-header-color-strip {
   position: absolute;
   right: 0;
   top: 0;
@@ -98,26 +98,26 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  writing-mode: vertical-rl;
+  writing-mode: vertical-lr;
   text-orientation: mixed;
   border-radius: 0 16px 16px 0;
   background: var(--color, #ec4899);
   color: var(--text-color, white);
 }
 
-.card-header-color-text {
+.card-detail-page .card-header-color-text {
   font-size: 0.6rem;
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.3px;
 }
 
-.card-title-section {
+.card-detail-page .card-title-section {
   flex: 1;
   min-width: 0;
 }
 
-.card-title {
+.card-detail-page .card-title {
   font-size: 2.5rem;
   font-weight: 700;
   margin: 0 0 0.5rem 0;
@@ -129,7 +129,7 @@
   line-height: 1.2;
 }
 
-.card-parallel-indicator {
+.card-detail-page .card-parallel-indicator {
   background: var(--color, #ec4899);
   color: var(--text-color, white);
   padding: 0.25rem 0.75rem;
@@ -141,32 +141,32 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.card-subtitle {
+.card-detail-page .card-subtitle {
   display: flex;
   align-items: flex-start;
   gap: 1rem;
 }
 
-.player-team-pairs {
+.card-detail-page .player-team-pairs {
   display: flex;
   flex-wrap: wrap;
   gap: 1.5rem;
   align-items: center;
 }
 
-.player-team-pair {
+.card-detail-page .player-team-pair {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 }
 
-.player-team-pair-header {
+.card-detail-page .player-team-pair-header {
   display: flex;
   align-items: center;
   gap: 0.75rem;
 }
 
-.player-name {
+.card-detail-page .player-name {
   font-size: 1.1rem;
   font-weight: 600;
   margin: 0;
@@ -176,7 +176,7 @@
   gap: 0.5rem;
 }
 
-.rookie-indicator {
+.card-detail-page .rookie-indicator {
   display: inline-flex;
   align-items: center;
   background: rgba(34, 197, 94, 0.2);
@@ -190,14 +190,14 @@
   letter-spacing: 0.05em;
 }
 
-.series-info {
+.card-detail-page .series-info {
   font-size: 1rem;
   color: rgba(255, 255, 255, 0.7);
   margin: 0;
   font-weight: 500;
 }
 
-.card-team-circle {
+.card-detail-page .card-team-circle {
   width: 32px;
   height: 32px;
   border-radius: 50%;
@@ -213,18 +213,18 @@
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
 }
 
-.clickable-team-circle {
+.card-detail-page .clickable-team-circle {
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
-.clickable-team-circle:hover {
+.card-detail-page .clickable-team-circle:hover {
   transform: translateY(-2px) scale(1.05);
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
 }
 
 /* Card Content */
-.card-content {
+.card-detail-page .card-content {
   background: rgba(255, 255, 255, 0.1);
   border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.2);
@@ -233,7 +233,7 @@
 }
 
 /* Card Images in Header */
-.card-images-header {
+.card-detail-page .card-images-header {
   display: flex;
   flex-direction: row;
   gap: 1rem;
@@ -241,7 +241,7 @@
   justify-content: center;
 }
 
-.card-image-placeholder {
+.card-detail-page .card-image-placeholder {
   aspect-ratio: 2.5/3.5;
   width: 100%;
   max-width: 120px;
@@ -257,37 +257,37 @@
   transition: all 0.2s ease;
 }
 
-.card-image-placeholder:hover {
+.card-detail-page .card-image-placeholder:hover {
   background: rgba(255, 255, 255, 0.08);
   border-color: rgba(255, 255, 255, 0.3);
 }
 
-.card-image-placeholder p {
+.card-detail-page .card-image-placeholder p {
   margin: 0.25rem 0 0.125rem 0;
   font-weight: 600;
   font-size: 0.8rem;
 }
 
-.card-image-placeholder small {
+.card-detail-page .card-image-placeholder small {
   font-size: 0.7rem;
   opacity: 0.8;
 }
 
-.card-image-placeholder.front-card {
+.card-detail-page .card-image-placeholder.front-card {
   aspect-ratio: 2.5/3.5; /* Portrait orientation for front */
 }
 
-.card-image-placeholder.back-card {
+.card-detail-page .card-image-placeholder.back-card {
   aspect-ratio: 2.5/3.5; /* Portrait orientation for back */
 }
 
 /* For landscape cards if needed */
-.card-image-placeholder.landscape {
+.card-detail-page .card-image-placeholder.landscape {
   aspect-ratio: 3.5/2.5;
 }
 
 /* Card Details Section */
-.card-details-section {
+.card-detail-page .card-details-section {
   display: flex;
   flex-direction: column;
   gap: 2rem;
@@ -295,13 +295,13 @@
 }
 
 /* Card Tags */
-.card-tags {
+.card-detail-page .card-tags {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
 }
 
-.card-tag {
+.card-detail-page .card-tag {
   display: flex;
   align-items: center;
   gap: 0.375rem;
@@ -313,38 +313,38 @@
   letter-spacing: 0.025em;
 }
 
-.card-tag-rookie {
+.card-detail-page .card-tag-rookie {
   background: rgba(34, 197, 94, 0.2);
   color: #22c55e;
   border: 1px solid rgba(34, 197, 94, 0.3);
 }
 
-.card-tag-auto {
+.card-detail-page .card-tag-auto {
   background: rgba(239, 68, 68, 0.2);
   color: #ef4444;
   border: 1px solid rgba(239, 68, 68, 0.3);
 }
 
-.card-tag-relic {
+.card-detail-page .card-tag-relic {
   background: rgba(168, 85, 247, 0.2);
   color: #a855f7;
   border: 1px solid rgba(168, 85, 247, 0.3);
 }
 
-.card-tag-parallel {
+.card-detail-page .card-tag-parallel {
   background: rgba(59, 130, 246, 0.2);
   color: #3b82f6;
   border: 1px solid rgba(59, 130, 246, 0.3);
 }
 
 /* Card Information Grid */
-.card-info-grid {
+.card-detail-page .card-info-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1rem;
 }
 
-.card-info-item {
+.card-detail-page .card-info-item {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
@@ -355,26 +355,26 @@
   transition: all 0.2s ease;
 }
 
-.card-info-item:hover {
+.card-detail-page .card-info-item:hover {
   background: rgba(255, 255, 255, 0.08);
   border-color: rgba(255, 255, 255, 0.15);
 }
 
-.card-info-item.clickable-info {
+.card-detail-page .card-info-item.clickable-info {
   cursor: pointer;
 }
 
-.card-info-item.clickable-info:hover {
+.card-detail-page .card-info-item.clickable-info:hover {
   background: rgba(255, 255, 255, 0.12);
   border-color: rgba(255, 255, 255, 0.2);
   transform: translateY(-1px);
 }
 
-.card-info-item.card-teams {
+.card-detail-page .card-info-item.card-teams {
   grid-column: 1 / -1;
 }
 
-.card-info-item label {
+.card-detail-page .card-info-item label {
   font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -382,25 +382,25 @@
   color: rgba(255, 255, 255, 0.6);
 }
 
-.card-info-item span {
+.card-detail-page .card-info-item span {
   font-size: 0.875rem;
   color: white;
   font-weight: 500;
 }
 
-.team-list {
+.card-detail-page .team-list {
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
 }
 
-.team-list-item {
+.card-detail-page .team-list-item {
   display: flex;
   align-items: center;
   gap: 0.5rem;
 }
 
-.team-list-circle {
+.card-detail-page .team-list-circle {
   width: 32px;
   height: 32px;
   border-radius: 50%;
@@ -416,28 +416,28 @@
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
 }
 
-.team-list-circle span {
+.card-detail-page .team-list-circle span {
   font-size: 0.6rem !important;
   font-weight: 700;
 }
 
-.team-name {
+.card-detail-page .team-name {
   color: white;
   font-weight: 500;
 }
 
 /* Clickable Links */
-.clickable-link {
+.card-detail-page .clickable-link {
   cursor: pointer;
   transition: text-decoration 0.2s ease;
 }
 
-.clickable-link:hover {
+.card-detail-page .clickable-link:hover {
   text-decoration: underline;
 }
 
 /* User Collection Section */
-.user-collection-section h3 {
+.card-detail-page .user-collection-section h3 {
   font-size: 1.25rem;
   font-weight: 700;
   margin: 0 0 1.5rem 0;
@@ -445,24 +445,24 @@
 }
 
 /* Card Stats Section */
-.card-stats-section {
+.card-detail-page .card-stats-section {
   margin-bottom: 2rem;
 }
 
-.card-stats-section h3 {
+.card-detail-page .card-stats-section h3 {
   font-size: 1.25rem;
   font-weight: 700;
   margin: 0 0 1rem 0;
   color: white;
 }
 
-.card-stats-grid {
+.card-detail-page .card-stats-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 1rem;
 }
 
-.stat-item {
+.card-detail-page .stat-item {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
@@ -471,23 +471,23 @@
   transition: all 0.2s ease;
 }
 
-.stat-item:hover {
+.card-detail-page .stat-item:hover {
   background: rgba(255, 255, 255, 0.08);
   border-color: rgba(255, 255, 255, 0.15);
   transform: translateY(-1px);
 }
 
-.stat-item-clickable {
+.card-detail-page .stat-item-clickable {
   cursor: pointer;
 }
 
-.stat-item-clickable:hover {
+.card-detail-page .stat-item-clickable:hover {
   background: rgba(255, 255, 255, 0.12);
   border-color: rgba(255, 255, 255, 0.2);
   transform: translateY(-2px);
 }
 
-.stat-item label {
+.card-detail-page .stat-item label {
   display: block;
   font-size: 0.75rem;
   font-weight: 600;
@@ -497,14 +497,14 @@
   margin-bottom: 0.5rem;
 }
 
-.stat-value {
+.card-detail-page .stat-value {
   font-size: 1.125rem;
   font-weight: 700;
   color: white;
 }
 
 /* Action Buttons */
-.card-actions {
+.card-detail-page .card-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
@@ -513,7 +513,7 @@
   border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.action-button {
+.card-detail-page .action-button {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -526,32 +526,32 @@
   font-size: 0.9rem;
 }
 
-.action-button.primary {
+.card-detail-page .action-button.primary {
   background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
   color: white;
   border: 1px solid rgba(59, 130, 246, 0.3);
 }
 
-.action-button.primary:hover {
+.card-detail-page .action-button.primary:hover {
   background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
-.action-button.secondary {
+.card-detail-page .action-button.secondary {
   background: rgba(255, 255, 255, 0.1);
   color: white;
   border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-.action-button.secondary:hover {
+.card-detail-page .action-button.secondary:hover {
   background: rgba(255, 255, 255, 0.15);
   border-color: rgba(255, 255, 255, 0.3);
   transform: translateY(-1px);
 }
 
 /* Footer */
-.card-footer {
+.card-detail-page .card-footer {
   background: rgba(255, 255, 255, 0.1);
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.2);
@@ -559,7 +559,7 @@
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
-.back-to-series-button {
+.card-detail-page .back-to-series-button {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -574,107 +574,21 @@
   font-size: 0.9rem;
 }
 
-.back-to-series-button:hover {
+.card-detail-page .back-to-series-button:hover {
   background: rgba(255, 255, 255, 0.15);
   border-color: rgba(255, 255, 255, 0.3);
   transform: translateY(-1px);
 }
 
-/* Responsive Design */
-@media (max-width: 1024px) {
-  .card-detail-page {
-    padding: 1rem;
-  }
-}
-
-@media (max-width: 768px) {
-  .card-detail-page {
-    padding: 1rem;
-  }
-
-  .card-header {
-    padding: 1.5rem;
-    grid-template-columns: 1fr;
-    grid-template-rows: auto auto auto auto;
-    align-items: center;
-    text-align: center;
-    gap: 1.5rem;
-  }
-
-  .card-images-header {
-    flex-direction: row;
-    justify-content: center;
-    gap: 1rem;
-  }
-  
-  .card-title {
-    font-size: 2rem;
-    justify-content: center;
-  }
-  
-  .card-content {
-    padding: 1.5rem;
-  }
-  
-  .card-info-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .card-stats-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  
-}
-
-@media (max-width: 480px) {
-  .card-detail-page {
-    padding: 0.5rem;
-  }
-
-  .card-header {
-    padding: 1rem;
-  }
-  
-  .card-title {
-    font-size: 1.75rem;
-    flex-direction: column;
-    align-items: center;
-  }
-  
-  .player-name {
-    font-size: 1.25rem;
-  }
-
-  .card-content {
-    padding: 1rem;
-  }
-  
-  .card-actions {
-    flex-direction: column;
-  }
-  
-  .action-button {
-    justify-content: center;
-  }
-
-  .card-stats-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .card-footer {
-    padding: 1rem;
-  }
-}
-
 /* Card Navigation Styles */
-.card-navigation {
+.card-detail-page .card-navigation {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 1rem;
 }
 
-.nav-button {
+.card-detail-page .nav-button {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -689,23 +603,22 @@
   font-size: 0.9rem;
 }
 
-.nav-button:hover {
+.card-detail-page .nav-button:hover {
   background: rgba(255, 255, 255, 0.15);
   border-color: rgba(255, 255, 255, 0.3);
   transform: translateY(-1px);
 }
 
-.prev-button {
+.card-detail-page .prev-button {
   margin-right: auto;
 }
 
-.next-button {
+.card-detail-page .next-button {
   margin-left: auto;
 }
 
-
 /* Subtle Card Navigation */
-.card-navigation-subtle {
+.card-detail-page .card-navigation-subtle {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -716,7 +629,7 @@
   margin-bottom: 0.5rem;
 }
 
-.nav-card-button {
+.card-detail-page .nav-card-button {
   display: flex;
   align-items: center;
   gap: 0.25rem;
@@ -731,20 +644,20 @@
   max-width: 200px;
 }
 
-.nav-card-button:hover {
+.card-detail-page .nav-card-button:hover {
   background: rgba(255, 255, 255, 0.1);
   color: rgba(255, 255, 255, 0.9);
 }
 
-.nav-card-button.prev {
+.card-detail-page .nav-card-button.prev {
   justify-self: flex-start;
 }
 
-.nav-card-button.next {
+.card-detail-page .nav-card-button.next {
   justify-self: flex-end;
 }
 
-.card-nav-info {
+.card-detail-page .card-nav-info {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -752,7 +665,7 @@
   letter-spacing: 0.01em;
 }
 
-.nav-series-name {
+.card-detail-page .nav-series-name {
   flex: 1;
   text-align: center;
   font-size: 0.75rem;
@@ -767,12 +680,12 @@
   border-radius: 4px;
 }
 
-.nav-series-name:hover {
+.card-detail-page .nav-series-name:hover {
   text-decoration: underline;
 }
 
 /* Player Card Tags - Match RC tag styling */
-.player-card-tags {
+.card-detail-page .player-card-tags {
   display: flex;
   gap: 0.5rem;
   margin-top: 0.5rem;
@@ -780,7 +693,7 @@
   clear: both;
 }
 
-.player-tag {
+.card-detail-page .player-tag {
   display: inline-flex;
   align-items: center;
   padding: 0.25rem 0.5rem;
@@ -791,20 +704,143 @@
   letter-spacing: 0.05em;
 }
 
-.player-tag-auto {
+.card-detail-page .player-tag-auto {
   background: rgba(59, 130, 246, 0.2);
   color: #3b82f6;
   border: 1px solid rgba(59, 130, 246, 0.4);
 }
 
-.player-tag-relic {
+.card-detail-page .player-tag-relic {
   background: rgba(245, 158, 11, 0.2);
   color: #f59e0b;
   border: 1px solid rgba(245, 158, 11, 0.4);
 }
 
-/* Card Detail Page - Override UniversalCardTable for narrower collection table */
+/* Override UniversalCardTable for narrower collection table */
 .card-detail-page .user-collection-section .cards-table {
   min-width: auto !important;
 }
 
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .card-detail-page {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .card-detail-page {
+    padding: 1rem;
+  }
+
+  .card-detail-page .card-header {
+    padding: 1.5rem;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto auto;
+    align-items: center;
+    text-align: center;
+    gap: 1.5rem;
+  }
+
+  .card-detail-page .card-images-header {
+    flex-direction: row;
+    justify-content: center;
+    gap: 1rem;
+  }
+  
+  .card-detail-page .card-title {
+    font-size: 2rem;
+    justify-content: center;
+  }
+  
+  .card-detail-page .card-content {
+    padding: 1.5rem;
+  }
+  
+  .card-detail-page .card-info-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .card-detail-page .card-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .card-detail-page {
+    padding: 0.5rem;
+  }
+
+  .card-detail-page .card-header {
+    padding: 1rem;
+  }
+  
+  .card-detail-page .card-title {
+    font-size: 1.75rem;
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .card-detail-page .player-name {
+    font-size: 1.25rem;
+  }
+
+  .card-detail-page .card-content {
+    padding: 1rem;
+  }
+  
+  .card-detail-page .card-actions {
+    flex-direction: column;
+  }
+  
+  .card-detail-page .action-button {
+    justify-content: center;
+  }
+
+  .card-detail-page .card-stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .card-detail-page .card-footer {
+    padding: 1rem;
+  }
+}
+
+/* Admin Edit Button */
+.card-detail-page .admin-edit-button {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  width: 56px;
+  height: 56px;
+  background: #f59e0b;
+  border: none;
+  border-radius: 50%;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+  transition: all 0.2s ease;
+  z-index: 1000;
+}
+
+.card-detail-page .admin-edit-button:hover {
+  background: #d97706;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(245, 158, 11, 0.5);
+}
+
+.card-detail-page .admin-edit-button:active {
+  transform: translateY(0);
+}
+
+@media (max-width: 480px) {
+  .card-detail-page .admin-edit-button {
+    bottom: 1rem;
+    right: 1rem;
+    width: 48px;
+    height: 48px;
+  }
+}

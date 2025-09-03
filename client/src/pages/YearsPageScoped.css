@@ -1,0 +1,273 @@
+/* Years Page Component - Completely Scoped Styles */
+/* All styles prefixed with .years-page for complete isolation */
+
+.years-page {
+  width: 100%;
+  min-height: calc(100vh - 140px);
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  color: white;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  font-size: 14px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+}
+
+/* Loading State */
+.years-page .loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 4rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 1rem !important;
+}
+
+.years-page .loading-state span {
+  font-size: 1rem !important;
+}
+
+.years-page .spinning {
+  animation: yearsSpinner 1s linear infinite;
+}
+
+@keyframes yearsSpinner {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Content Area */
+.years-page .content-area {
+  width: 100%;
+  flex: 1;
+}
+
+/* Years Grid - Using unified card system with centering */
+.years-page .years-grid-unified {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 270px);
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  justify-content: center;
+}
+
+/* Grid header items - Force to stay on first row */
+.years-page .grid-header-title {
+  grid-column: 1 / span 2; /* Start at column 1, span 2 columns */
+  grid-row: 1; /* Force first row */
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.5rem 0;
+  margin-bottom: 0.5rem;
+  white-space: nowrap; /* Prevent text wrapping */
+}
+
+.years-page .grid-header-title h1 {
+  font-size: 2.5rem !important;
+  font-weight: 700 !important;
+  margin: 0;
+  background: linear-gradient(135deg, #e5e7eb 0%, #f3f4f6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.years-page .grid-header-search {
+  grid-column: 3 / -1 !important; /* From column 3 to the end */
+  grid-row: 1 !important; /* Force first row */
+  display: flex !important;
+  justify-content: flex-end !important;
+  align-items: center !important;
+  padding: 0.5rem 0 !important;
+  margin-bottom: 0.5rem !important;
+}
+
+/* Force a row break after header */
+.years-page .grid-row-break {
+  grid-column: 1 / -1; /* Span entire grid width */
+  height: 0; /* No visible height */
+  margin: 0;
+  padding: 0;
+}
+
+/* Search Box */
+.years-page .search-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  max-width: 300px;
+}
+
+.years-page .search-box svg {
+  position: absolute;
+  left: 1rem;
+  color: rgba(255, 255, 255, 0.4);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.years-page .search-box input {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 0.75rem 1rem 0.75rem 3rem;
+  color: white;
+  font-size: 0.875rem !important;
+  transition: all 0.2s ease;
+}
+
+.years-page .search-box input:focus {
+  outline: none;
+  border-color: #60a5fa;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.years-page .search-box input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Empty State */
+.years-page .empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  color: rgba(255, 255, 255, 0.6);
+  gap: 1rem;
+  grid-column: 1 / -1;
+}
+
+.years-page .empty-state p {
+  margin: 0;
+  font-size: 1rem !important;
+}
+
+/* Font Size Fixes */
+.years-page .year-number {
+  font-size: 2rem !important;
+  font-weight: 700 !important;
+}
+
+.years-page .year-stats {
+  justify-content: center !important;
+  gap: 0.5rem !important;
+}
+
+.years-page .year-stat-box {
+  flex: 0 1 auto !important;
+  min-width: 60px !important;
+  max-width: 80px !important;
+  padding: 0.4rem 0.5rem !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+.years-page .year-stat-number {
+  font-size: 1rem !important;
+  font-weight: 700 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.years-page .year-stat-label {
+  font-size: 0.625rem !important;
+  font-weight: 500 !important;
+  white-space: nowrap !important;
+}
+
+/* Ensure proper line height */
+.years-page * {
+  line-height: normal;
+}
+
+.years-page button {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .years-page .years-grid-unified {
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    padding: 0 1rem;
+  }
+  
+  .years-page .grid-header-title {
+    grid-column: 1 / span 1;
+  }
+  
+  .years-page .grid-header-search {
+    grid-column: 2 / -1;
+  }
+}
+
+@media (max-width: 768px) {
+  .years-page {
+    padding: 1rem;
+  }
+  
+  .years-page .grid-header-title h1 {
+    font-size: 2rem !important;
+  }
+  
+  .years-page .years-grid-unified {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  /* On mobile, stack header elements */
+  .years-page .grid-header-title {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    justify-content: center;
+  }
+  
+  .years-page .grid-header-search {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-content: center;
+    padding-top: 0;
+    margin-bottom: 0.25rem;
+  }
+  
+  .years-page .search-box {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .years-page {
+    padding: 0.5rem;
+  }
+  
+  .years-page .grid-header-title h1 {
+    font-size: 1.75rem !important;
+  }
+  
+  .years-page .grid-header-title {
+    padding: 0.25rem 0;
+    margin-bottom: 0.25rem;
+    gap: 0.5rem;
+  }
+  
+  .years-page .search-box input {
+    padding: 0.6rem 1rem 0.6rem 2.5rem;
+    font-size: 0.8rem;
+  }
+  
+  .years-page .search-box svg {
+    left: 0.75rem;
+    width: 18px;
+    height: 18px;
+  }
+}

@@ -6,13 +6,14 @@ import UniversalCardTable from '../components/UniversalCardTable'
 import TeamFilterCircles from '../components/TeamFilterCircles'
 import PlayerStats from '../components/PlayerStats'
 import Icon from '../components/Icon'
-import './PlayerDetail.css'
+import EditPlayerModal from '../components/modals/EditPlayerModal'
+import './PlayerDetailScoped.css'
 
 function PlayerDetail() {
   const { playerSlug } = useParams()
   const location = useLocation()
   const navigate = useNavigate()
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, user } = useAuth()
   const [player, setPlayer] = useState(null)
   const [cards, setCards] = useState([])
   const [teams, setTeams] = useState([])
@@ -20,10 +21,23 @@ function PlayerDetail() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [selectedTeamIds, setSelectedTeamIds] = useState([])
+  const [showEditModal, setShowEditModal] = useState(false)
+
+  // Check if user is admin
+  const isAdmin = user && ['admin', 'superadmin', 'data_admin'].includes(user.role)
 
   useEffect(() => {
     fetchPlayerData()
   }, [playerSlug])
+
+  // Set page title
+  useEffect(() => {
+    if (player) {
+      document.title = `${player.first_name} ${player.last_name}${player.nick_name ? ` "${player.nick_name}"` : ''} - Collect Your Cards`
+    } else {
+      document.title = 'Player Details - Collect Your Cards'
+    }
+  }, [player])
 
   // Track player visit when player data is loaded
   useEffect(() => {
@@ -195,7 +209,7 @@ function PlayerDetail() {
           <div className="player-header-layout">
             {/* Left side - Player Info */}
             <div className="player-identity">
-              <h1 className="player-name">
+              <h1 className="player-header-name">
                 {player.first_name} {player.last_name}
                 {player.is_hof && <Icon name="trophy" size={20} className="hof-icon" title="Hall of Fame" />}
               </h1>
@@ -221,11 +235,18 @@ function PlayerDetail() {
               )}
             </div>
 
-            {/* Center - Card Photo Placeholder */}
+            {/* Card Photos */}
             <div className="card-photo-placeholder">
               <div className="card-placeholder">
                 <Icon name="card" size={48} className="card-icon" />
-                <span>Card Photo</span>
+                <span>Card Photo 1</span>
+              </div>
+            </div>
+
+            <div className="card-photo-placeholder">
+              <div className="card-placeholder">
+                <Icon name="card" size={48} className="card-icon" />
+                <span>Card Photo 2</span>
               </div>
             </div>
 
@@ -233,7 +254,6 @@ function PlayerDetail() {
             <div className="player-stats-inline">
               <div className="stats-grid-inline">
                 <div className="stat-item-inline">
-                  <Icon name="layers" size={16} className="stat-icon-inline" />
                   <div className="stat-content-inline">
                     <span className="stat-value-inline">{stats.total_cards?.toLocaleString() || 0}</span>
                     <span className="stat-label-inline">Total Cards</span>
@@ -241,7 +261,6 @@ function PlayerDetail() {
                 </div>
                 
                 <div className="stat-item-inline">
-                  <Icon name="star" size={16} className="stat-icon-inline" />
                   <div className="stat-content-inline">
                     <span className="stat-value-inline">{stats.rookie_cards?.toLocaleString() || 0}</span>
                     <span className="stat-label-inline">Rookie Cards</span>
@@ -249,7 +268,6 @@ function PlayerDetail() {
                 </div>
                 
                 <div className="stat-item-inline">
-                  <Icon name="edit" size={16} className="stat-icon-inline" />
                   <div className="stat-content-inline">
                     <span className="stat-value-inline">{stats.autograph_cards?.toLocaleString() || 0}</span>
                     <span className="stat-label-inline">Autographs</span>
@@ -257,7 +275,6 @@ function PlayerDetail() {
                 </div>
                 
                 <div className="stat-item-inline">
-                  <Icon name="shield" size={16} className="stat-icon-inline" />
                   <div className="stat-content-inline">
                     <span className="stat-value-inline">{stats.relic_cards?.toLocaleString() || 0}</span>
                     <span className="stat-label-inline">Relics</span>
@@ -265,7 +282,6 @@ function PlayerDetail() {
                 </div>
                 
                 <div className="stat-item-inline">
-                  <Icon name="hash" size={16} className="stat-icon-inline" />
                   <div className="stat-content-inline">
                     <span className="stat-value-inline">{stats.numbered_cards?.toLocaleString() || 0}</span>
                     <span className="stat-label-inline">Numbered</span>
@@ -273,7 +289,6 @@ function PlayerDetail() {
                 </div>
                 
                 <div className="stat-item-inline">
-                  <Icon name="collection" size={16} className="stat-icon-inline" />
                   <div className="stat-content-inline">
                     <span className="stat-value-inline">{stats.unique_series?.toLocaleString() || 0}</span>
                     <span className="stat-label-inline">Series</span>
@@ -297,6 +312,30 @@ function PlayerDetail() {
         />
 
       </div>
+
+      {/* Admin Edit Button */}
+      {isAdmin && player && (
+        <button 
+          className="admin-edit-button"
+          onClick={() => setShowEditModal(true)}
+          title="Edit player (Admin)"
+        >
+          <Icon name="edit" size={20} />
+        </button>
+      )}
+      
+      {/* Edit Modal */}
+      {showEditModal && player && (
+        <EditPlayerModal
+          player={player}
+          isOpen={showEditModal}
+          onClose={() => setShowEditModal(false)}
+          onSave={() => {
+            setShowEditModal(false)
+            fetchPlayerData() // Reload player data after save
+          }}
+        />
+      )}
     </div>
   )
 }

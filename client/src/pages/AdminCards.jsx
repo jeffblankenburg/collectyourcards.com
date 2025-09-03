@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom'
 import axios from 'axios'
 import { useToast } from '../contexts/ToastContext'
 import Icon from '../components/Icon'
@@ -8,7 +8,9 @@ import '../components/UniversalCardTable.css'
 
 function AdminCards() {
   const { year, setSlug, seriesSlug } = useParams()
+  const [searchParams] = useSearchParams()
   const navigate = useNavigate()
+  const seriesIdFromQuery = searchParams.get('series')
   const [selectedSet, setSelectedSet] = useState(null)
   const [selectedSeries, setSelectedSeries] = useState(null)
   const [cards, setCards] = useState([])
@@ -57,10 +59,16 @@ function AdminCards() {
   }
 
   useEffect(() => {
-    loadSetBySlug(year, setSlug)
-    loadSeriesBySlug(year, setSlug, seriesSlug)
+    if (seriesIdFromQuery) {
+      // Load series directly by ID from query param
+      loadSeriesById(seriesIdFromQuery)
+    } else if (year && setSlug && seriesSlug) {
+      // Load using URL params (existing functionality)
+      loadSetBySlug(year, setSlug)
+      loadSeriesBySlug(year, setSlug, seriesSlug)
+    }
     loadPlayersAndTeams()
-  }, [year, setSlug, seriesSlug])
+  }, [year, setSlug, seriesSlug, seriesIdFromQuery])
 
   // Load cards when we have selectedSeries data
   useEffect(() => {
@@ -110,6 +118,28 @@ function AdminCards() {
       }
     } catch (error) {
       console.error('Error loading set:', error)
+    }
+  }
+
+  const loadSeriesById = async (seriesId) => {
+    try {
+      // Load series directly by ID
+      const response = await axios.get(`/api/admin/series`, { params: { series_id: seriesId, limit: 1 } })
+      const seriesData = response.data.series?.[0]
+      if (seriesData) {
+        setSelectedSeries(seriesData)
+        // Also load set info for context
+        if (seriesData.set_id) {
+          const setResponse = await axios.get(`/api/admin/sets`, { params: { set_id: seriesData.set_id, limit: 1 } })
+          const setData = setResponse.data.sets?.[0]
+          if (setData) {
+            setSelectedSet(setData)
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error loading series by ID:', error)
+      addToast('Failed to load series', 'error')
     }
   }
 
@@ -376,14 +406,23 @@ function AdminCards() {
           </h1>
         </div>
         
-        <div className="search-box">
-          <Icon name="search" size={20} />
-          <input
-            type="text"
-            placeholder="Search cards..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+        <div className="admin-controls">
+          <button
+            className="add-card-btn"
+            onClick={() => {/* Add card functionality would go here */}}
+            title="Add new card"
+          >
+            <Icon name="plus" size={20} />
+          </button>
+          <div className="search-box">
+            <Icon name="search" size={20} />
+            <input
+              type="text"
+              placeholder="Search cards..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
         </div>
       </div>
 

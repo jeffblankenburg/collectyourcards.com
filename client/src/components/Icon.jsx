@@ -133,6 +133,7 @@ const iconMap = {
   'alert-circle': AlertCircle,
   'info': Info,
   'activity': Activity,
+  'loader': Activity,
   'clock': Clock,
   'circle': Circle,
   
@@ -186,6 +187,7 @@ const iconMap = {
   'shield': Shield,
   'hash': Hash,
   'collection': Grid3X3,
+  'grid': Grid3X3,
   'list': List
 }
 

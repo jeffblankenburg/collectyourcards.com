@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
 import axios from 'axios'
 import Icon from '../components/Icon'
-import './AdminDashboard.css'
+import './AdminDashboardScoped.css'
 
 function AdminDashboard() {
   const { user } = useAuth()
@@ -62,6 +62,7 @@ function AdminDashboard() {
   }
 
   useEffect(() => {
+    document.title = 'Admin Dashboard - Collect Your Cards'
     loadDashboardData()
     loadSpreadsheetQueue()
     

@@ -4,7 +4,7 @@ import axios from 'axios'
 import { useAuth } from '../contexts/AuthContext'
 import Icon from '../components/Icon'
 import { PlayerCard, TeamCard, SetCard, SeriesCard, YearCard, CardCard } from '../components/cards'
-import './SearchResults.css'
+import './SearchResultsScoped.css'
 
 function SearchResults() {
   const [searchParams] = useSearchParams()
@@ -32,7 +32,9 @@ function SearchResults() {
   useEffect(() => {
     if (searchQuery) {
       performSearch(searchQuery)
+      document.title = `Search: "${searchQuery}" - Collect Your Cards`
     } else {
+      document.title = 'Search - Collect Your Cards'
       // Clear results if no query
       setResults({
         players: [],

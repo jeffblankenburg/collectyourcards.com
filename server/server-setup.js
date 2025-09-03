@@ -159,6 +159,7 @@ if (config.environment === 'test') {
     { path: '/api/admin', file: './routes/admin-teams', name: 'Admin Teams' },
     { path: '/api/admin/players', file: './routes/admin-players', name: 'Admin Players' },
     { path: '/api/admin', file: './routes/admin-sets', name: 'Admin Sets' },
+    { path: '/api/admin', file: './routes/admin-series', name: 'Admin Series' },
     { path: '/api/admin/sets-optimized', file: './routes/admin-sets-optimized', name: 'Admin Sets Optimized' },
     { path: '/api/admin/cards', file: './routes/admin-cards', name: 'Admin Cards' },
     { path: '/api/admin/analytics', file: './routes/admin-analytics', name: 'Admin Analytics' },

@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { useToast } from '../contexts/ToastContext'
 import axios from 'axios'
 import Icon from './Icon'
 import './EditCardModal.css'
@@ -11,11 +13,14 @@ const EditCardModal = ({
   onCardUpdated 
 }) => {
   const { user } = useAuth()
+  const { success, error } = useToast()
   const [loading, setLoading] = useState(false)
   const [locations, setLocations] = useState([])
   const [gradingAgencies, setGradingAgencies] = useState([])
   const [showPricing, setShowPricing] = useState(true)
   const [showGrading, setShowGrading] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   
   const [formData, setFormData] = useState({
     random_code: '',
@@ -124,14 +129,41 @@ const EditCardModal = ({
       // Update the existing user_card record
       await axios.put(`/api/user/cards/${card.user_card_id}`, submitData)
       
+      success(`Card #${card.card_number} updated successfully`)
       onCardUpdated()
       onClose()
     } catch (err) {
       console.error('Error updating card:', err)
       console.error('Response data:', err.response?.data)
+      error(err.response?.data?.message || 'Failed to update card')
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleDeleteCard = () => {
+    setShowDeleteConfirm(true)
+  }
+
+  const confirmDeleteCard = async () => {
+    try {
+      setDeleting(true)
+      await axios.delete(`/api/user/cards/${card.user_card_id}`)
+      
+      success(`Card #${card.card_number} deleted from collection`)
+      onCardUpdated() // Refresh the table data
+      onClose() // Close the edit modal
+      setShowDeleteConfirm(false)
+    } catch (err) {
+      console.error('Error deleting card:', err)
+      error(err.response?.data?.message || 'Failed to delete card')
+    } finally {
+      setDeleting(false)
+    }
+  }
+
+  const cancelDelete = () => {
+    setShowDeleteConfirm(false)
   }
 
   if (!isOpen || !card) return null
@@ -393,22 +425,92 @@ const EditCardModal = ({
 
           {/* Form Actions */}
           <div className="form-actions">
-            <button type="button" className="edit-modal-btn btn-cancel" onClick={onClose}>
-              Cancel
+            <button 
+              type="button" 
+              className="edit-modal-btn btn-delete" 
+              onClick={handleDeleteCard}
+              disabled={loading}
+            >
+              <Icon name="trash" size={16} />
+              Delete
             </button>
-            <button type="submit" className="edit-modal-btn btn-submit" disabled={loading}>
-              {loading ? (
-                <>
-                  <Icon name="activity" size={16} className="spinner" />
-                  Updating...
-                </>
-              ) : (
-                'Update Card'
-              )}
-            </button>
+            <div className="right-actions">
+              <button type="button" className="edit-modal-btn btn-cancel" onClick={onClose}>
+                Cancel
+              </button>
+              <button type="submit" className="edit-modal-btn btn-submit" disabled={loading}>
+                {loading ? (
+                  <>
+                    <Icon name="activity" size={16} className="spinner" />
+                    Updating...
+                  </>
+                ) : (
+                  'Update Card'
+                )}
+              </button>
+            </div>
           </div>
         </form>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && createPortal(
+        <div className="modal-overlay" onClick={cancelDelete}>
+          <div className="delete-confirm-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Delete Card from Collection</h3>
+              <button className="modal-close" onClick={cancelDelete}>
+                <Icon name="x" size={20} />
+              </button>
+            </div>
+            
+            <div className="modal-content">
+              <div className="delete-icon">
+                <Icon name="warning" size={48} style={{color: '#ef4444'}} />
+              </div>
+              
+              <div className="delete-message">
+                <h4>Are you sure you want to delete this card?</h4>
+                <div className="card-details">
+                  <p><strong>Card:</strong> {card.card_number}</p>
+                  <p><strong>Series:</strong> {card.series_rel?.name}</p>
+                  {card.card_player_teams?.[0] && (
+                    <p><strong>Player:</strong> {card.card_player_teams[0].player?.name}</p>
+                  )}
+                  {card.random_code && (
+                    <p><strong>Code:</strong> {card.random_code}</p>
+                  )}
+                </div>
+                <p className="warning-text">This action cannot be undone.</p>
+              </div>
+            </div>
+            
+            <div className="modal-actions">
+              <button className="btn-cancel" onClick={cancelDelete}>
+                Cancel
+              </button>
+              <button 
+                className="btn-delete" 
+                onClick={confirmDeleteCard}
+                disabled={deleting}
+              >
+                {deleting ? (
+                  <>
+                    <Icon name="activity" size={16} className="spinner" />
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <Icon name="trash" size={16} />
+                    Delete Card
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   )
 }

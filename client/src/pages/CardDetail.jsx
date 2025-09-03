@@ -4,7 +4,7 @@ import axios from 'axios'
 import { useAuth } from '../contexts/AuthContext'
 import Icon from '../components/Icon'
 import UniversalCardTable from '../components/UniversalCardTable'
-import './CardDetail.css'
+import './CardDetailScoped.css'
 
 function CardDetail() {
   // Handle both URL formats: 
@@ -12,7 +12,7 @@ function CardDetail() {
   // 2. Simple: /card/:seriesSlug/:cardNumber/:playerName
   const params = useParams()
   const navigate = useNavigate()
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, user } = useAuth()
   
   // Extract parameters - check if we have the simple URL structure
   let year, setSlug, seriesSlug, cardSlug, cardNumber, playerName
@@ -42,9 +42,22 @@ function CardDetail() {
   // Determine which URL format we're using
   const isSimpleUrl = !!(cardNumber && playerName)
   
+  // Check if user is admin
+  const isAdmin = user && ['admin', 'superadmin', 'data_admin'].includes(user.role)
+  
   useEffect(() => {
     fetchCardDetails()
   }, [year, setSlug, seriesSlug, cardSlug, cardNumber, playerName])
+
+  // Set page title when card loads
+  useEffect(() => {
+    if (card) {
+      const playerNames = card.player_names || getPlayerNamesFromCard(card)
+      document.title = `#${card.card_number} ${playerNames} - ${card.series_name} - Collect Your Cards`
+    } else if (loading) {
+      document.title = 'Loading Card... - Collect Your Cards'
+    }
+  }, [card, loading])
 
   useEffect(() => {
     if (isAuthenticated && card) {
@@ -615,6 +628,17 @@ function CardDetail() {
         </div>
 
       </div>
+
+      {/* Admin Edit Button */}
+      {isAdmin && card && (
+        <button 
+          className="admin-edit-button"
+          onClick={() => navigate(`/admin/cards?series=${card.series_id}`)}
+          title="Edit card (Admin)"
+        >
+          <Icon name="edit" size={20} />
+        </button>
+      )}
     </div>
   )
 }

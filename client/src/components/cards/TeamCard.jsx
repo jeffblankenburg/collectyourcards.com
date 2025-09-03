@@ -1,10 +1,15 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../../contexts/AuthContext'
 import Icon from '../Icon'
 import './TeamCard.css'
 
 function TeamCard({ team, showBadge = false, customOnClick = null }) {
   const navigate = useNavigate()
+  const { user } = useAuth()
+  
+  // Check if user is admin
+  const isAdmin = user && ['admin', 'superadmin', 'data_admin'].includes(user.role)
 
 
   const handleTeamClick = () => {
@@ -71,6 +76,20 @@ function TeamCard({ team, showBadge = false, customOnClick = null }) {
           </div>
         </div>
       </div>
+      
+      {/* Admin Edit Button */}
+      {isAdmin && (
+        <button 
+          className="teamcard-admin-edit-btn"
+          onClick={(e) => {
+            e.stopPropagation()
+            navigate(`/admin/teams?search=${encodeURIComponent(team.name)}`)
+          }}
+          title="Edit team (Admin)"
+        >
+          <Icon name="edit" size={14} />
+        </button>
+      )}
     </div>
   )
 }

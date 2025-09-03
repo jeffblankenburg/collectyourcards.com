@@ -71,12 +71,12 @@ model card_variation {
 }
 
 model color {
-  color_id                      Int      @id(map: "PK_color") @default(autoincrement())
-  name                          String?  @db.NVarChar(Max)
-  hex_value                     String?  @db.NVarChar(Max)
-  created                       DateTime @default(now(), map: "DEFAULT_color_created") @db.DateTime
-  card_card_colorTocolor        card[]   @relation("card_colorTocolor")
-  series_series_colorTocolor    series[] @relation("series_colorTocolor")
+  color_id                   Int      @id(map: "PK_color") @default(autoincrement())
+  name                       String?  @db.NVarChar(Max)
+  hex_value                  String?  @db.NVarChar(Max)
+  created                    DateTime @default(now(), map: "DEFAULT_color_created") @db.DateTime
+  card_card_colorTocolor     card[]   @relation("card_colorTocolor")
+  series_series_colorTocolor series[] @relation("series_colorTocolor")
 }
 
 model duplicate_detection_job {
@@ -338,50 +338,50 @@ model player_team {
 }
 
 model series {
-  series_id            BigInt   @id(map: "PK_series") @default(autoincrement())
-  name                 String?  @db.NVarChar(Max)
-  set                  Int?
-  card_count           Int      @default(0, map: "DEFAULT_series_card_count")
-  rookie_count         Int?     @default(0)
-  created              DateTime @default(now(), map: "DEFAULT_series_created") @db.DateTime
-  card_entered_count   Int?     @default(0, map: "DF__series__card_ent__3493CFA7")
-  is_base              Boolean? @default(false, map: "DEFAULT_series_is_base")
-  parallel_of_series   BigInt?
-  front_image_path     String?  @db.NVarChar(Max)
-  back_image_path      String?  @db.NVarChar(Max)
-  min_print_run        Int?
-  max_print_run        Int?
-  print_run_variations Int?
-  print_run_display    String?  @db.NVarChar(50)
-  color                Int?
-  set_series_setToset  set?     @relation("series_setToset", fields: [set], references: [set_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_series_set")
-  color_series_colorTocolor color? @relation("series_colorTocolor", fields: [color], references: [color_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_series_color")
+  series_id                 BigInt   @id(map: "PK_series") @default(autoincrement())
+  name                      String?  @db.NVarChar(Max)
+  set                       Int?
+  card_count                Int      @default(0, map: "DEFAULT_series_card_count")
+  created                   DateTime @default(now(), map: "DEFAULT_series_created") @db.DateTime
+  card_entered_count        Int?     @default(0, map: "DF__series__card_ent__3493CFA7")
+  is_base                   Boolean? @default(false, map: "DEFAULT_series_is_base")
+  parallel_of_series        BigInt?
+  front_image_path          String?  @db.NVarChar(Max)
+  back_image_path           String?  @db.NVarChar(Max)
+  min_print_run             Int?
+  max_print_run             Int?
+  print_run_variations      Int?
+  print_run_display         String?  @db.NVarChar(50)
+  rookie_count              Int?     @default(0)
+  color                     Int?
+  color_series_colorTocolor color?   @relation("series_colorTocolor", fields: [color], references: [color_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_series_color")
+  set_series_setToset       set?     @relation("series_setToset", fields: [set], references: [set_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_series_set")
 
   @@index([set], map: "IX_series_set")
   @@index([color], map: "IX_series_color")
 }
 
 model set {
-  set_id                                      Int           @id(map: "PK_set") @default(autoincrement())
-  name                                        String?       @db.NVarChar(Max)
+  set_id                                      Int                            @id(map: "PK_set") @default(autoincrement())
+  name                                        String?                        @db.NVarChar(Max)
   year                                        Int?
   organization                                Int?
   manufacturer                                Int?
-  created                                     DateTime      @default(now(), map: "DEFAULT_set_created") @db.DateTime
-  card_count                                  Int?          @default(0, map: "DF__set__card_count__3864608B")
-  series_count                                Int?          @default(0, map: "DF__set__series_coun__395884C4")
-  is_complete                                 Boolean?      @default(false, map: "DEFAULT_set_is_complete")
-  thumbnail                                   String?       @db.NVarChar(Max)
-  checklist_blob_url                          String?       @db.NVarChar(Max)
-  checklist_generated_at                      DateTime?     @db.DateTime
-  checklist_generation_status                 String?       @db.VarChar(50)
+  created                                     DateTime                       @default(now(), map: "DEFAULT_set_created") @db.DateTime
+  card_count                                  Int?                           @default(0, map: "DF__set__card_count__3864608B")
+  series_count                                Int?                           @default(0, map: "DF__set__series_coun__395884C4")
+  is_complete                                 Boolean?                       @default(false, map: "DEFAULT_set_is_complete")
+  thumbnail                                   String?                        @db.NVarChar(Max)
+  checklist_blob_url                          String?                        @db.NVarChar(Max)
+  checklist_generated_at                      DateTime?                      @db.DateTime
+  checklist_generation_status                 String?                        @default("pending", map: "DF__set__checklist_g__57A801BA") @db.VarChar(50)
   checklist_file_size                         Int?
-  checklist_format                            String?       @db.VarChar(20)
-  series_series_setToset                      series[]      @relation("series_setToset")
-  manufacturer_set_manufacturerTomanufacturer manufacturer? @relation("set_manufacturerTomanufacturer", fields: [manufacturer], references: [manufacturer_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_set_manufacturer")
-  organization_set_organizationToorganization organization? @relation("set_organizationToorganization", fields: [organization], references: [organization_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_set_organization")
-  spreadsheet_generation_queue                spreadsheet_generation_queue[]
+  checklist_format                            String?                        @default("csv", map: "DF__set__checklist_f__589C25F3") @db.VarChar(20)
+  series_series_setToset                      series[]                       @relation("series_setToset")
+  manufacturer_set_manufacturerTomanufacturer manufacturer?                  @relation("set_manufacturerTomanufacturer", fields: [manufacturer], references: [manufacturer_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_set_manufacturer")
+  organization_set_organizationToorganization organization?                  @relation("set_organizationToorganization", fields: [organization], references: [organization_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_set_organization")
   spreadsheet_generation_log                  spreadsheet_generation_log[]
+  spreadsheet_generation_queue                spreadsheet_generation_queue[]
 
   @@index([set_id], map: "IX_set_series_lookup")
 }
@@ -585,32 +585,32 @@ model user_team {
 }
 
 model spreadsheet_generation_queue {
-  queue_id        Int       @id(map: "PK_queue") @default(autoincrement())
-  set_id          Int
-  priority        Int       @default(5)
-  status          String    @default("pending") @db.VarChar(50)
-  queued_at       DateTime  @default(now()) @db.DateTime
-  started_at      DateTime? @db.DateTime
-  completed_at    DateTime? @db.DateTime
-  error_message   String?   @db.NVarChar(Max)
-  retry_count     Int       @default(0)
-  set             set       @relation(fields: [set_id], references: [set_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_queue_set")
+  queue_id      Int       @id(map: "PK__spreadsh__2294FA6ED68E0A38") @default(autoincrement())
+  set_id        Int
+  priority      Int?      @default(5, map: "DF__spreadshe__prior__5B78929E")
+  status        String    @default("pending", map: "DF__spreadshe__statu__5C6CB6D7") @db.VarChar(50)
+  queued_at     DateTime? @default(now(), map: "DF__spreadshe__queue__5D60DB10") @db.DateTime
+  started_at    DateTime? @db.DateTime
+  completed_at  DateTime? @db.DateTime
+  error_message String?   @db.NVarChar(Max)
+  retry_count   Int?      @default(0, map: "DF__spreadshe__retry__5E54FF49")
+  set           set       @relation(fields: [set_id], references: [set_id], onUpdate: NoAction, map: "FK_queue_set")
 
-  @@index([status, priority, queued_at], map: "IX_queue_status_priority")
+  @@index([status, priority(sort: Desc), queued_at], map: "IX_queue_status_priority")
 }
 
 model spreadsheet_generation_log {
-  log_id             Int      @id(map: "PK_log") @default(autoincrement())
+  log_id             Int       @id(map: "PK__spreadsh__9E2397E09CE3F138") @default(autoincrement())
   set_id             Int
-  trigger_type       String   @db.VarChar(50)
-  trigger_details    String?  @db.NVarChar(Max)
-  generated_at       DateTime @default(now()) @db.DateTime
+  trigger_type       String    @db.VarChar(50)
+  trigger_details    String?   @db.NVarChar(Max)
+  generated_at       DateTime? @default(now(), map: "DF__spreadshe__gener__6225902D") @db.DateTime
   file_size          Int?
   generation_time_ms Int?
-  success            Boolean  @default(true)
-  error_message      String?  @db.NVarChar(Max)
-  blob_url           String?  @db.NVarChar(Max)
-  set                set      @relation(fields: [set_id], references: [set_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_log_set")
+  success            Boolean   @default(true, map: "DF__spreadshe__succe__6319B466")
+  error_message      String?   @db.NVarChar(Max)
+  blob_url           String?   @db.NVarChar(Max)
+  set                set       @relation(fields: [set_id], references: [set_id], onUpdate: NoAction, map: "FK_log_set")
 
-  @@index([set_id, generated_at], map: "IX_log_set_generated")
+  @@index([set_id, generated_at(sort: Desc)], map: "IX_log_set_generated")
 }

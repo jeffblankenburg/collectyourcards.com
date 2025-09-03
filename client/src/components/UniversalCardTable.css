@@ -68,6 +68,7 @@
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+  position: relative;
 }
 
 .table-container::-webkit-scrollbar {
@@ -118,12 +119,18 @@
 }
 
 .cards-table th.action-header {
-  position: sticky;
-  right: 0;
-  background: rgba(30, 41, 59, 0.95);
-  backdrop-filter: blur(10px);
-  z-index: 6;
   border-left: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.cards-table th.action-header-owned {
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Narrow columns for series detail view only */
+.series-detail-page .cards-table th.action-header-owned {
+  width: 50px;
+  min-width: 50px;
+  max-width: 50px;
 }
 
 .cards-table th.center {
@@ -171,12 +178,14 @@
 .cards-table tbody tr {
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   transition: background-color 0.2s ease;
-  height: 24px; /* Much more compact row height */
+  height: 18px; /* Even more compact row height */
 }
 
 .cards-table tbody tr:hover {
   background: rgba(255, 255, 255, 0.05);
 }
+
+
 
 .cards-table tbody tr:hover .player-row {
   background: transparent;
@@ -380,44 +389,67 @@
 }
 
 .cards-table th.owned-header {
-  position: sticky;
-  right: 80px; /* Width of action column */
-  background: rgba(30, 41, 59, 0.95);
-  backdrop-filter: blur(10px);
-  z-index: 6;
   border-left: 1px solid rgba(255, 255, 255, 0.1);
-  width: 45px;
-  min-width: 45px;
-  max-width: 45px;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: center;
+  font-size: 0.75rem;
+  padding: 0;
+  margin: 0;
 }
 
-.user-card-count-cell {
+/* Narrow columns for series detail view only */
+.series-detail-page .cards-table th.owned-header {
+  width: 50px;
+  min-width: 50px;
+  max-width: 50px;
+}
+
+td.user-card-count-cell {
   color: #22c55e;
   font-weight: 600;
-  width: 45px;
-  min-width: 45px;
-  max-width: 45px;
   padding: 0.1rem 0.25rem;
   font-size: 0.9rem;
-  position: sticky;
-  right: 80px; /* Width of action column */
-  background: rgba(30, 41, 59, 0.95);
-  backdrop-filter: blur(10px);
-  z-index: 3;
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: center;
+}
+
+
+.action-cell {
+  padding: 0.1rem 0.25rem;
   border-left: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.action-cell {
-  width: 80px;
-  min-width: 80px;
-  max-width: 80px;
+.owned-cell {
+  color: white;
+  font-weight: 600;
   padding: 0.1rem 0.25rem;
-  position: sticky;
-  right: 0;
-  background: rgba(30, 41, 59, 0.95);
-  backdrop-filter: blur(10px);
-  z-index: 3;
   border-left: 1px solid rgba(255, 255, 255, 0.1);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: center;
+  font-size: 0.85rem;
+}
+
+/* Narrow columns for series detail view only */
+.series-detail-page .owned-cell {
+  width: 50px;
+  min-width: 50px;
+  max-width: 50px;
+}
+
+.series-detail-page .action-cell {
+  width: 50px;
+  min-width: 50px;
+  max-width: 50px;
+  padding: 0.1rem 0.25rem;
+}
+
+
+.series-detail-page .add-card-btn {
+  padding: 0.4rem;
+}
+
+.series-detail-page .add-card-btn svg {
+  color: white;
 }
 
 .add-card-btn {

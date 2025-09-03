@@ -206,14 +206,14 @@ router.post('/counts', async (req, res) => {
 // POST /api/user/cards - Add a card to user's collection
 router.post('/', async (req, res) => {
   try {
-    const userId = req.user.user_id
+    const userId = req.user?.userId
     const {
       card_id,
       random_code,
       serial_number,
       user_location,
       notes,
-      aftermarket_auto,
+      aftermarket_autograph,
       purchase_price,
       estimated_value,
       grading_agency,
@@ -222,6 +222,14 @@ router.post('/', async (req, res) => {
     } = req.body
 
     console.log('Adding card to collection:', { userId, card_id, serial_number })
+
+    // Validate authentication
+    if (!userId) {
+      return res.status(401).json({
+        error: 'Authentication error',
+        message: 'User ID not found in authentication token'
+      })
+    }
 
     // Validate required fields
     if (!card_id) {
@@ -255,7 +263,7 @@ router.post('/', async (req, res) => {
         grading_agency, 
         grade, 
         grade_id,
-        aftermarket_auto,
+        aftermarket_autograph,
         user_location, 
         notes,
         created
@@ -269,7 +277,7 @@ router.post('/', async (req, res) => {
         ${grading_agency},
         ${grade},
         ${grade_id || null},
-        ${aftermarket_auto || false},
+        ${aftermarket_autograph || false},
         ${user_location},
         ${notes || null},
         GETDATE()
@@ -301,7 +309,7 @@ router.post('/', async (req, res) => {
 // GET /api/user/cards - Get user's card collection
 router.get('/', async (req, res) => {
   try {
-    const userId = req.user.user_id
+    const userId = req.user?.userId
     const { limit = 100, page = 1 } = req.query
 
     const limitNum = Math.min(parseInt(limit) || 100, 1000)
@@ -309,6 +317,14 @@ router.get('/', async (req, res) => {
     const offsetNum = (pageNum - 1) * limitNum
 
     console.log('Getting user collection:', { userId, limit: limitNum, page: pageNum })
+
+    // Validate authentication
+    if (!userId) {
+      return res.status(401).json({
+        error: 'Authentication error',
+        message: 'User ID not found in authentication token'
+      })
+    }
 
     const userCards = await prisma.$queryRaw`
       SELECT 
@@ -488,10 +504,18 @@ router.put('/:userCardId', async (req, res) => {
 // DELETE /api/user/cards/:userCardId - Remove card from collection
 router.delete('/:userCardId', async (req, res) => {
   try {
-    const userId = req.user.user_id
+    const userId = req.user?.userId
     const { userCardId } = req.params
 
     console.log('Removing card from collection:', { userId, userCardId })
+
+    // Validate authentication
+    if (!userId) {
+      return res.status(401).json({
+        error: 'Authentication error',
+        message: 'User ID not found in authentication token'
+      })
+    }
 
     const deleteResult = await prisma.$queryRaw`
       DELETE FROM user_card 

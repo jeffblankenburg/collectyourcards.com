@@ -1,10 +1,15 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../../contexts/AuthContext'
 import Icon from '../Icon'
 import './SetCard.css'
 
 function SetCard({ set, showBadge = false, customOnClick = null }) {
   const navigate = useNavigate()
+  const { user } = useAuth()
+  
+  // Check if user is admin
+  const isAdmin = user && ['admin', 'superadmin', 'data_admin'].includes(user.role)
 
   const handleSetClick = () => {
     if (customOnClick) {
@@ -69,6 +74,20 @@ function SetCard({ set, showBadge = false, customOnClick = null }) {
           </div>
         </div>
       </div>
+      
+      {/* Admin Edit Button */}
+      {isAdmin && (
+        <button 
+          className="setcard-admin-edit-btn"
+          onClick={(e) => {
+            e.stopPropagation()
+            navigate(`/admin/sets?search=${encodeURIComponent(set.name)}`)
+          }}
+          title="Edit set (Admin)"
+        >
+          <Icon name="edit" size={14} />
+        </button>
+      )}
     </div>
   )
 }

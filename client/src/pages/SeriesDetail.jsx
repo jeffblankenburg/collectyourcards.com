@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { useAuth } from '../contexts/AuthContext'
-import UniversalCardTable from '../components/UniversalCardTable'
+import SeriesDetailTable from '../components/SeriesDetailTable'
 import Icon from '../components/Icon'
 import './SeriesDetail.css'
 
@@ -424,24 +424,10 @@ function SeriesDetail() {
 
         {/* Cards Table */}
         {apiEndpoint && (
-          <UniversalCardTable
+          <SeriesDetailTable
             apiEndpoint={apiEndpoint}
-            showPlayer={true}
-            showTeam={true}
-            showSeries={false} // Don't show series column since we're already filtering by series
-            defaultSort="sort_order"
-            downloadFilename={`${series.name.replace(/[^a-z0-9]/gi, '_')}_${series.year}_cards`}
-            showSearch={true}
             onCardClick={handleCardClick}
-            onCollectionDataLoaded={isAuthenticated ? (data) => {
-              const { totalCards, ownedCount } = data
-              const percentage = totalCards > 0 ? Math.round((ownedCount / totalCards) * 100) : 0
-              setCollectionCompletion({
-                percentage,
-                owned: ownedCount,
-                total: totalCards
-              })
-            } : null}
+            downloadFilename={`${series.name.replace(/[^a-z0-9]/gi, '_')}_${series.year}_cards`}
           />
         )}
 

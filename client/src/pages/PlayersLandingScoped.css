@@ -1,16 +1,20 @@
-/* Players Landing Page Styles */
-.players-landing {
+/* Players Landing Page Component - Completely Scoped Styles */
+/* All styles prefixed with .players-landing-page for complete isolation */
+
+.players-landing-page {
   width: 100%;
   padding: 0.5rem;
   color: white;
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  min-height: calc(100vh - 140px);
 }
 
-.landing-header {
+.players-landing-page .landing-header {
   text-align: center;
   margin-bottom: 3rem;
 }
 
-.landing-header h1 {
+.players-landing-page .landing-header h1 {
   font-size: 2.5rem;
   font-weight: 700;
   margin: 0 0 0.5rem 0;
@@ -20,15 +24,14 @@
   background-clip: text;
 }
 
-.landing-header p {
+.players-landing-page .landing-header p {
   font-size: 1.1rem;
   color: rgba(255, 255, 255, 0.7);
   margin: 0;
 }
 
-
 /* Players Landing Grid - Using unified grid system */
-.players-landing-grid {
+.players-landing-page .players-landing-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, 270px);
   gap: 0.5rem;
@@ -37,18 +40,18 @@
 }
 
 /* Grid header items - Force to stay on first row */
-.players-landing-grid .grid-header-title {
+.players-landing-page .grid-header-title {
   grid-column: 1 / span 2; /* Start at column 1, span 2 columns */
   grid-row: 1; /* Force first row */
   display: flex;
   align-items: center;
   gap: 1rem;
-  padding: 1rem 0;
-  margin-bottom: 1rem;
+  padding: 0.5rem 0;
+  margin-bottom: 0.5rem;
   white-space: nowrap; /* Prevent text wrapping */
 }
 
-.players-landing-grid .grid-header-title h1 {
+.players-landing-page .grid-header-title h1 {
   font-size: 2.5rem;
   font-weight: 700;
   margin: 0;
@@ -58,17 +61,17 @@
   background-clip: text;
 }
 
-.players-landing-grid .grid-header-search {
+.players-landing-page .grid-header-search {
   grid-column: 3 / -1; /* From column 3 to the end */
   grid-row: 1; /* Force first row */
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  padding: 1rem 0;
-  margin-bottom: 1rem;
+  padding: 0.5rem 0;
+  margin-bottom: 0.5rem;
 }
 
-.players-landing-grid .search-box {
+.players-landing-page .search-box {
   position: relative;
   display: flex;
   align-items: center;
@@ -76,7 +79,7 @@
   max-width: 300px;
 }
 
-.players-landing-grid .search-box svg {
+.players-landing-page .search-box svg {
   position: absolute;
   left: 1rem;
   color: rgba(255, 255, 255, 0.4);
@@ -84,7 +87,7 @@
   z-index: 2;
 }
 
-.players-landing-grid .search-box input {
+.players-landing-page .search-box input {
   width: 100%;
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.2);
@@ -95,33 +98,30 @@
   transition: all 0.2s ease;
 }
 
-.players-landing-grid .search-box input:hover {
+.players-landing-page .search-box input:hover {
   background: rgba(255, 255, 255, 0.15);
 }
 
-.players-landing-grid .search-box input:focus {
+.players-landing-page .search-box input:focus {
   outline: none;
   border-color: #60a5fa;
   background: rgba(255, 255, 255, 0.15);
 }
 
-.players-landing-grid .search-box input::placeholder {
+.players-landing-page .search-box input::placeholder {
   color: rgba(255, 255, 255, 0.5);
 }
 
 /* Force a row break after header */
-.players-landing-grid .grid-row-break {
+.players-landing-page .grid-row-break {
   grid-column: 1 / -1; /* Span entire grid width */
   height: 0; /* No visible height */
   margin: 0;
   padding: 0;
 }
 
-/* Player Card - Using unified card system */
-/* All player card styles now use unified PlayerCard component */
-
-
-.player-card-content {
+/* Player Card Content */
+.players-landing-page .player-card-content {
   display: flex;
   flex-direction: column;
   gap: .5rem;
@@ -129,11 +129,11 @@
 }
 
 /* Player Info */
-.player-info {
+.players-landing-page .player-info {
   flex: 1;
 }
 
-.player-name {
+.players-landing-page .player-name {
   font-size: 0.95rem;
   font-weight: 600;
   margin: 0 0 0.25rem 0;
@@ -143,12 +143,12 @@
   gap: 0.5rem;
 }
 
-.hof-icon {
+.players-landing-page .hof-icon {
   color: #fbbf24;
 }
 
 /* Nickname in Stats Section */
-.nickname-section {
+.players-landing-page .nickname-section {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -157,7 +157,7 @@
   min-width: 0; /* Allows text to wrap/truncate */
 }
 
-.player-nickname {
+.players-landing-page .player-nickname {
   font-size: 0.75rem;
   color: rgba(255, 255, 255, 0.6);
   font-style: italic;
@@ -169,7 +169,7 @@
 }
 
 /* Player Stats */
-.player-stats {
+.players-landing-page .player-stats {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -179,21 +179,21 @@
   gap: 0.5rem;
 }
 
-.card-count {
+.players-landing-page .card-count {
   display: flex;
   flex-direction: column;
   align-items: center;
   flex-shrink: 0; /* Prevents card count from shrinking */
 }
 
-.count-number {
+.players-landing-page .count-number {
   font-size: 1.1rem;
   font-weight: 700;
   color: #e5e7eb;
   line-height: 1;
 }
 
-.count-label {
+.players-landing-page .count-label {
   font-size: 0.8rem;
   color: rgba(255, 255, 255, 0.6);
   text-transform: uppercase;
@@ -201,18 +201,16 @@
 }
 
 /* Player Teams */
-.player-teams {
+.players-landing-page .player-teams {
   display: flex;
   align-items: center;
   gap: 0.25rem;
   flex-wrap: wrap;
 }
 
-/* Team circles now use unified classes - remove all custom styles */
-
 /* Loading and Error States */
-.loading-container,
-.error-container {
+.players-landing-page .loading-container,
+.players-landing-page .error-container {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -222,17 +220,17 @@
   color: rgba(255, 255, 255, 0.7);
 }
 
-.spinner {
-  animation: spin 1s linear infinite;
+.players-landing-page .spinner {
+  animation: playersSpinner 1s linear infinite;
   color: #e5e7eb;
 }
 
-@keyframes spin {
+@keyframes playersSpinner {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
 
-.retry-button {
+.players-landing-page .retry-button {
   background: linear-gradient(135deg, #e5e7eb 0%, #e5e7eb 100%);
   color: #1e293b;
   border: none;
@@ -243,56 +241,112 @@
   transition: all 0.2s ease;
 }
 
-.retry-button:hover {
+.players-landing-page .retry-button:hover {
   background: linear-gradient(135deg, #f3f4f6 0%, #f3f4f6 100%);
   transform: translateY(-1px);
 }
 
+/* Empty State */
+.players-landing-page .empty-state {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 3rem 2rem;
+  color: rgba(255, 255, 255, 0.7);
+  text-align: center;
+}
+
+.players-landing-page .empty-state p {
+  font-size: 1.1rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
 /* Responsive Design */
+@media (max-width: 1024px) {
+  .players-landing-page .players-landing-grid {
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    padding: 0 1rem;
+  }
+  
+  .players-landing-page .grid-header-title {
+    grid-column: 1 / span 1;
+  }
+  
+  .players-landing-page .grid-header-search {
+    grid-column: 2 / -1;
+  }
+}
+
 @media (max-width: 768px) {
-  .players-landing {
+  .players-landing-page {
     padding: 0.75rem;
   }
   
-  .landing-header h1 {
+  .players-landing-page .landing-header h1,
+  .players-landing-page .grid-header-title h1 {
     font-size: 2rem;
   }
   
-  .players-grid {
+  .players-landing-page .players-landing-grid {
     grid-template-columns: 1fr;
     gap: 1rem;
   }
   
-  
-  .player-card {
-    padding: 1rem;
+  /* On mobile, stack header elements */
+  .players-landing-page .grid-header-title {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    justify-content: center;
   }
   
-  .player-name {
+  .players-landing-page .grid-header-search {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-content: center;
+    padding-top: 0;
+    margin-bottom: 0.25rem;
+  }
+  
+  .players-landing-page .search-box {
+    max-width: 100%;
+  }
+  
+  .players-landing-page .player-name {
     font-size: 1.1rem;
   }
   
-  .count-number {
+  .players-landing-page .count-number {
     font-size: 1.3rem;
   }
 }
 
 @media (max-width: 480px) {
-  .players-landing {
+  .players-landing-page {
     padding: 0.5rem 0.25rem;
   }
   
-  .landing-header h1 {
+  .players-landing-page .landing-header h1,
+  .players-landing-page .grid-header-title h1 {
     font-size: 1.75rem;
   }
   
-  .player-card {
-    padding: 0.75rem;
+  .players-landing-page .grid-header-title {
+    padding: 0.25rem 0;
+    margin-bottom: 0.25rem;
+    gap: 0.5rem;
   }
   
-  .mini-team-circle {
-    width: 28px;
-    height: 28px;
-    font-size: 0.6rem;
+  .players-landing-page .search-box input {
+    padding: 0.6rem 1rem 0.6rem 2.5rem;
+    font-size: 0.8rem;
+  }
+  
+  .players-landing-page .search-box svg {
+    left: 0.75rem;
+    width: 18px;
+    height: 18px;
   }
 }

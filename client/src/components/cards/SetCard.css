@@ -209,3 +209,40 @@
     font-size: 1.1rem;
   }
 }
+
+/* Admin Edit Button */
+.setcard-admin-edit-btn {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  width: 28px;
+  height: 28px;
+  background: #f59e0b;
+  border: none;
+  border-radius: 50%;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+  transition: all 0.2s ease;
+  z-index: 10;
+  opacity: 0;
+  visibility: hidden;
+}
+
+.setcard-container:hover .setcard-admin-edit-btn {
+  opacity: 1;
+  visibility: visible;
+}
+
+.setcard-admin-edit-btn:hover {
+  background: #d97706;
+  transform: scale(1.1);
+  box-shadow: 0 3px 10px rgba(245, 158, 11, 0.4);
+}
+
+.setcard-admin-edit-btn:active {
+  transform: scale(0.95);
+}

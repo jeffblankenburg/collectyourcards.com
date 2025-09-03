@@ -4,7 +4,7 @@ import { useToast } from '../contexts/ToastContext'
 import UniversalCardTable from '../components/UniversalCardTable'
 import Icon from '../components/Icon'
 import axios from 'axios'
-import './CollectionDashboard.css'
+import './CollectionDashboardScoped.css'
 
 function CollectionDashboard() {
   const { isAuthenticated, user } = useAuth()
@@ -40,6 +40,11 @@ function CollectionDashboard() {
       fetchLocations()
     }
   }, [isAuthenticated])
+
+  // Set page title
+  useEffect(() => {
+    document.title = 'My Collection - Collect Your Cards'
+  }, [])
 
   // Auto-select dashboard locations when locations load
   useEffect(() => {
@@ -244,7 +249,9 @@ function CollectionDashboard() {
   const formatCurrency = (value) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'USD'
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
     }).format(value || 0)
   }
 
@@ -253,7 +260,7 @@ function CollectionDashboard() {
   }
 
   return (
-    <div className="collection-dashboard">
+    <div className="collection-dashboard-page">
       <div className="dashboard-container">
         
         {/* Compact Header with Integrated Stats */}
@@ -263,9 +270,8 @@ function CollectionDashboard() {
               <Icon name="collections" size={24} className="title-icon" />
               <h1 className="dashboard-title">My Collection</h1>
             </div>
-          </div>
-          
-          <div className="header-stats">
+            
+            <div className="header-stats">
             <div className="stat-item">
               <Icon name="layers" size={18} />
               <div className="stat-content">
@@ -315,6 +321,7 @@ function CollectionDashboard() {
                 <span className="stat-label">Graded</span>
               </div>
             </div>
+          </div>
           </div>
         </header>
 

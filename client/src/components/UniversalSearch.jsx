@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
 import Icon from './Icon'
 import axios from 'axios'
-import './UniversalSearch.css'
+// import './UniversalSearch.css' // Styles moved to Header.css for independent stylesheets
 
 function UniversalSearch({ className = '' }) {
   const { isAuthenticated, user } = useAuth()

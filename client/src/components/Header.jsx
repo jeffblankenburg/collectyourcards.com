@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
 import UniversalSearch from './UniversalSearch'
-import AdminNavigation from './AdminNavigation'
+// import AdminNavigation from './AdminNavigation' // Commented out for SeriesDetail page independence
 import Icon from './Icon'
 import './Header.css'
 
@@ -255,9 +255,9 @@ function Header() {
       </div>
       
       {/* Admin Navigation - Only show on admin pages for authorized admin users */}
-      {isAdminPage() && isAuthenticated && ['admin', 'superadmin', 'data_admin'].includes(user?.role) && (
+      {/* {isAdminPage() && isAuthenticated && ['admin', 'superadmin', 'data_admin'].includes(user?.role) && (
         <AdminNavigation />
-      )}
+      )} */}
     </header>
   )
 }

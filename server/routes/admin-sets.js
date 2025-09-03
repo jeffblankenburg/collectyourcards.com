@@ -83,6 +83,89 @@ async function findSetBySlug(year, slug) {
 router.use(authMiddleware)
 router.use(requireAdmin)
 
+// GET /api/admin/sets - Get list of sets with search and limit
+router.get('/sets', async (req, res) => {
+  try {
+    const { search, set_id, limit = 20 } = req.query
+    const limitInt = Math.min(parseInt(limit) || 20, 100) // Cap at 100
+
+    let whereClause = {}
+    let orderBy = [{ created: 'desc' }]
+    
+    // Filter by specific set ID if provided
+    if (set_id && set_id.trim()) {
+      const setIdInt = parseInt(set_id)
+      if (setIdInt) {
+        whereClause.set_id = setIdInt
+      }
+    }
+    // Add search if provided
+    else if (search && search.trim()) {
+      whereClause = {
+        OR: [
+          { name: { contains: search.trim() } },
+          { organization_set_organizationToorganization: { name: { contains: search.trim() } } },
+          { organization_set_organizationToorganization: { abbreviation: { contains: search.trim() } } },
+          { manufacturer_set_manufacturerTomanufacturer: { name: { contains: search.trim() } } }
+        ]
+      }
+      orderBy = [{ name: 'asc' }]
+    }
+
+    const sets = await prisma.set.findMany({
+      where: whereClause,
+      take: limitInt,
+      orderBy,
+      include: {
+        organization_set_organizationToorganization: {
+          select: {
+            name: true,
+            abbreviation: true
+          }
+        },
+        manufacturer_set_manufacturerTomanufacturer: {
+          select: {
+            name: true
+          }
+        },
+        _count: {
+          select: {
+            series_series_setToset: true
+          }
+        }
+      }
+    })
+
+    // Format the response data
+    const formattedSets = sets.map(set => ({
+      set_id: Number(set.set_id),
+      name: set.name,
+      year: set.year,
+      organization: set.organization_set_organizationToorganization?.abbreviation || '',
+      manufacturer: set.manufacturer_set_manufacturerTomanufacturer?.name || '',
+      series_count: set._count.series_series_setToset || 0,
+      card_count: set.card_count || 0,
+      is_complete: set.is_complete,
+      thumbnail: set.thumbnail,
+      slug: generateSlug(set.name || ''),
+      created: set.created
+    }))
+
+    res.json({
+      sets: formattedSets,
+      total: formattedSets.length
+    })
+
+  } catch (error) {
+    console.error('Error fetching sets:', error)
+    res.status(500).json({
+      error: 'Database error',
+      message: 'Failed to fetch sets',
+      details: error.message
+    })
+  }
+})
+
 // GET /api/admin/sets/years - Get list of unique years
 router.get('/sets/years', async (req, res) => {
   try {

@@ -637,8 +637,11 @@
 }
 
 .btn-icon:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
+  opacity: 0.4 !important;
+  cursor: not-allowed !important;
+  background: rgba(255, 255, 255, 0.02) !important;
+  border-color: rgba(255, 255, 255, 0.05) !important;
+  color: rgba(255, 255, 255, 0.3) !important;
 }
 
 .edit-location-name {

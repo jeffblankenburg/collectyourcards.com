@@ -1,18 +1,21 @@
+/* Search Results Page Component - Completely Scoped Styles */
+/* All styles prefixed with .search-results-page for complete isolation */
+
 .search-results-page {
   flex: 1;
   background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
   color: white;
-  min-height: 100vh;
+  min-height: calc(100vh - 140px);
   padding: 2rem;
 }
 
-.search-results-container {
+.search-results-page .search-results-container {
   max-width: 1400px;
   margin: 0 auto;
 }
 
 /* Search Header */
-.search-header {
+.search-results-page .search-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -21,26 +24,26 @@
   gap: 1rem;
 }
 
-.search-summary h1 {
+.search-results-page .search-summary h1 {
   font-size: 1.5rem;
   font-weight: 600;
   margin: 0;
   color: white;
 }
 
-.search-time {
+.search-results-page .search-time {
   font-size: 0.875rem;
   color: rgba(255, 255, 255, 0.6);
   margin-top: 0.25rem;
   display: block;
 }
 
-.search-controls {
+.search-results-page .search-controls {
   display: flex;
   gap: 1rem;
 }
 
-.sort-select {
+.search-results-page .sort-select {
   padding: 0.5rem 1rem;
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.2);
@@ -51,12 +54,12 @@
   transition: all 0.2s ease;
 }
 
-.sort-select:hover {
+.search-results-page .sort-select:hover {
   background: rgba(255, 255, 255, 0.15);
 }
 
 /* Tabs */
-.search-tabs {
+.search-results-page .search-tabs {
   display: flex;
   gap: 0.5rem;
   margin-bottom: 2rem;
@@ -64,7 +67,7 @@
   padding-bottom: 0.5rem;
 }
 
-.search-tab {
+.search-results-page .search-tab {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -80,18 +83,18 @@
   white-space: nowrap;
 }
 
-.search-tab:hover {
+.search-results-page .search-tab:hover {
   background: rgba(255, 255, 255, 0.1);
   color: white;
 }
 
-.search-tab.active {
+.search-results-page .search-tab.active {
   background: rgba(59, 130, 246, 0.2);
   border-color: rgba(59, 130, 246, 0.4);
   color: white;
 }
 
-.tab-count {
+.search-results-page .tab-count {
   background: rgba(255, 255, 255, 0.2);
   padding: 0.125rem 0.5rem;
   border-radius: 12px;
@@ -99,12 +102,12 @@
   font-weight: 600;
 }
 
-.search-tab.active .tab-count {
+.search-results-page .search-tab.active .tab-count {
   background: rgba(59, 130, 246, 0.3);
 }
 
 /* Result Type Badges */
-.result-type-badge {
+.search-results-page .result-type-badge {
   position: absolute;
   top: 1rem;
   right: 1rem;
@@ -122,104 +125,102 @@
   z-index: 1;
 }
 
-.result-type-badge.player {
+.search-results-page .result-type-badge.player {
   background: rgba(59, 130, 246, 0.9);
 }
 
-.result-type-badge.team {
+.search-results-page .result-type-badge.team {
   background: rgba(168, 85, 247, 0.9);
 }
 
-.result-type-badge.set {
+.search-results-page .result-type-badge.set {
   background: rgba(236, 72, 153, 0.9);
 }
 
-.result-type-badge.series {
+.search-results-page .result-type-badge.series {
   background: rgba(34, 197, 94, 0.9);
 }
 
-.result-type-badge.card {
+.search-results-page .result-type-badge.card {
   background: rgba(251, 146, 60, 0.9);
 }
 
-/* Search result cards are now completely independent - no shared styles */
-
 /* Grid Layout for Search Results */
-.grid-responsive {
+.search-results-page .grid-responsive {
   display: grid;
   gap: 0.5rem;
   margin-bottom: 0.5rem;
 }
 
-.grid-cards-md {
+.search-results-page .grid-cards-md {
   grid-template-columns: repeat(auto-fill, 270px);
 }
 
 /* Responsive grid adjustments */
 @media (max-width: 768px) {
-  .grid-responsive {
+  .search-results-page .grid-responsive {
     gap: 0.75rem;
   }
   
-  .grid-cards-md {
+  .search-results-page .grid-cards-md {
     grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 480px) {
-  .grid-responsive {
+  .search-results-page .grid-responsive {
     gap: 0.5rem;
   }
 }
 
 /* Loading & Empty States */
-.loading-state,
-.empty-state {
+.search-results-page .loading-state,
+.search-results-page .empty-state {
   text-align: center;
   padding: 4rem 2rem;
 }
 
-.loading-spinner {
+.search-results-page .loading-spinner {
   margin-bottom: 1rem;
 }
 
-.spinning {
-  animation: spin 1s linear infinite;
+.search-results-page .spinning {
+  animation: searchResultsSpin 1s linear infinite;
 }
 
-@keyframes spin {
+@keyframes searchResultsSpin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 }
 
-.no-results {
+.search-results-page .no-results {
   text-align: center;
   padding: 4rem 2rem;
   max-width: 600px;
   margin: 0 auto;
 }
 
-.no-results h2 {
+.search-results-page .no-results h2 {
   font-size: 1.5rem;
   font-weight: 600;
   margin: 1rem 0;
   color: white;
 }
 
-.no-results p {
+.search-results-page .no-results p {
   font-size: 1rem;
   color: rgba(255, 255, 255, 0.6);
   margin-bottom: 2rem;
 }
 
-.browse-links {
+.search-results-page .browse-links {
   display: flex;
   justify-content: center;
   gap: 1rem;
   flex-wrap: wrap;
 }
 
-.browse-link {
+.search-results-page .browse-link {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -233,38 +234,72 @@
   transition: all 0.2s ease;
 }
 
-.browse-link:hover {
+.search-results-page .browse-link:hover {
   background: rgba(255, 255, 255, 0.15);
   transform: translateY(-2px);
+  text-decoration: none;
+  color: white;
 }
 
-.results-footer {
+.search-results-page .results-footer {
   text-align: center;
   padding: 2rem;
 }
 
-.results-hint {
+.search-results-page .results-hint {
   color: rgba(255, 255, 255, 0.6);
   font-size: 0.875rem;
 }
 
-/* Responsive */
+/* Empty State */
+.search-results-page .empty-state h2 {
+  font-size: 1.8rem;
+  font-weight: 600;
+  margin: 1rem 0;
+  color: white;
+}
+
+.search-results-page .empty-state p {
+  font-size: 1.1rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 2rem;
+}
+
+/* Responsive Design */
 @media (max-width: 768px) {
   .search-results-page {
     padding: 1rem;
   }
 
-  .search-header {
+  .search-results-page .search-header {
     flex-direction: column;
     align-items: flex-start;
   }
 
-  .search-tabs {
+  .search-results-page .search-tabs {
     width: 100%;
   }
+}
 
-  .team-stats {
-    flex-direction: column;
-    gap: 1rem;
+@media (max-width: 480px) {
+  .search-results-page .search-summary h1 {
+    font-size: 1.3rem;
+  }
+  
+  .search-results-page .no-results h2 {
+    font-size: 1.3rem;
+  }
+  
+  .search-results-page .empty-state h2 {
+    font-size: 1.5rem;
+  }
+  
+  .search-results-page .browse-links {
+    gap: 0.5rem;
+  }
+  
+  .search-results-page .browse-link {
+    padding: 0.6rem 1rem;
+    font-size: 0.9rem;
   }
 }

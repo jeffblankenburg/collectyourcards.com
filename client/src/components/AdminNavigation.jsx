@@ -28,14 +28,19 @@ function AdminNavigation() {
       icon: 'user'
     },
     {
-      path: '/admin/cards',
-      name: 'Cards',
-      icon: 'layers'
-    },
-    {
       path: '/admin/sets',
       name: 'Sets',
       icon: 'collection'
+    },
+    {
+      path: '/admin/series',
+      name: 'Series',
+      icon: 'layers'
+    },
+    {
+      path: '/admin/cards',
+      name: 'Cards',
+      icon: 'grid'
     }
   ]
 

@@ -129,6 +129,45 @@
   color: rgba(255, 255, 255, 0.5);
 }
 
+/* Admin controls for AdminCards */
+.admin-controls {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.add-card-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  width: 40px;
+  height: 40px;
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.add-card-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: white;
+}
+
+/* Update search box for consistent height */
+.admin-controls .search-box {
+  height: 40px;
+}
+
+.admin-controls .search-box input {
+  height: 40px;
+  padding: 0.5rem 1rem 0.5rem 3rem;
+  box-sizing: border-box;
+}
+
 /* Action Buttons */
 .action-button {
   display: flex;

@@ -2,6 +2,7 @@ const express = require('express')
 const { PrismaClient } = require('@prisma/client')
 const { authMiddleware, requireAdmin } = require('../middleware/auth')
 const crypto = require('crypto')
+const bcrypt = require('bcrypt')
 const { EmailClient } = require('@azure/communication-email')
 const router = express.Router()
 const prisma = new PrismaClient()
@@ -58,6 +59,207 @@ router.get('/users', async (req, res) => {
     res.status(500).json({
       error: 'Database error',
       message: 'Failed to fetch users'
+    })
+  }
+})
+
+// POST /api/admin/users - Create new user
+router.post('/users', async (req, res) => {
+  try {
+    const { name, email, role } = req.body
+
+    // Validate required fields
+    if (!email || !email.trim()) {
+      return res.status(400).json({
+        error: 'Validation error',
+        message: 'Email is required'
+      })
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email.trim())) {
+      return res.status(400).json({
+        error: 'Validation error',
+        message: 'Invalid email format'
+      })
+    }
+
+    // Check for email uniqueness
+    const emailExists = await prisma.user.findFirst({
+      where: {
+        email: email.toLowerCase().trim()
+      }
+    })
+
+    if (emailExists) {
+      return res.status(409).json({
+        error: 'Email conflict',
+        message: 'Email address is already in use'
+      })
+    }
+
+    // Generate a temporary password
+    const tempPassword = crypto.randomBytes(12).toString('base64').slice(0, 12)
+    const passwordHash = await bcrypt.hash(tempPassword, 12)
+
+    // Create the user
+    const newUser = await prisma.user.create({
+      data: {
+        name: name?.trim() || null,
+        email: email.trim().toLowerCase(),
+        role: role || 'user',
+        password_hash: passwordHash,
+        is_active: true,
+        is_verified: false, // Will be verified when they set their password
+        created: new Date(),
+        created_at: new Date()
+      },
+      select: {
+        user_id: true,
+        name: true,
+        email: true,
+        role: true,
+        is_active: true,
+        is_verified: true,
+        created: true
+      }
+    })
+
+    // Log admin action
+    await prisma.admin_action_log.create({
+      data: {
+        user_id: BigInt(req.user.userId),
+        action_type: 'CREATE',
+        entity_type: 'user',
+        entity_id: Number(newUser.user_id).toString(),
+        new_values: JSON.stringify({
+          name: newUser.name,
+          email: newUser.email,
+          role: newUser.role
+        }),
+        ip_address: req.ip,
+        user_agent: req.get('User-Agent'),
+        created: new Date()
+      }
+    })
+
+    // Automatically send password reset email
+    if (emailClient) {
+      try {
+        // Generate password reset token
+        const resetToken = crypto.randomBytes(32).toString('hex')
+        const resetTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
+
+        // Save reset token to database
+        await prisma.user.update({
+          where: { user_id: newUser.user_id },
+          data: {
+            reset_token: resetToken,
+            reset_token_expires: resetTokenExpires
+          }
+        })
+
+        // Create reset URL
+        const baseUrl = process.env.NODE_ENV === 'production' 
+          ? 'https://collectyourcards.com' 
+          : 'http://localhost:5173'
+        const resetUrl = `${baseUrl}/auth/reset-password?token=${resetToken}`
+
+        // Send welcome email with password setup
+        const emailContent = {
+          senderAddress: process.env.EMAIL_FROM || 'DoNotReply@collectyourcards.com',
+          content: {
+            subject: 'Welcome to Collect Your Cards - Set Your Password',
+            html: `
+              <!DOCTYPE html>
+              <html>
+              <head>
+                <meta charset="utf-8">
+                <title>Welcome to Collect Your Cards</title>
+                <style>
+                  body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
+                  .header { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+                  .content { background: #f8f9fa; padding: 30px; border-radius: 0 0 8px 8px; }
+                  .button { display: inline-block; background: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; margin: 20px 0; }
+                  .info { background: #d1ecf1; border: 1px solid #bee5eb; padding: 15px; border-radius: 4px; margin: 20px 0; }
+                  .footer { text-align: center; margin-top: 30px; font-size: 12px; color: #666; }
+                </style>
+              </head>
+              <body>
+                <div class="header">
+                  <h1>🃏 Collect Your Cards</h1>
+                  <h2>Welcome to the Community!</h2>
+                </div>
+                
+                <div class="content">
+                  <p>Hello ${newUser.name || 'there'},</p>
+                  
+                  <p>An administrator has created an account for you on Collect Your Cards with the email address: <strong>${newUser.email}</strong></p>
+                  
+                  <p>To get started, you'll need to set up your password by clicking the button below:</p>
+                  
+                  <p style="text-align: center;">
+                    <a href="${resetUrl}" class="button">Set Your Password</a>
+                  </p>
+                  
+                  <div class="info">
+                    <strong>📋 Your Account Details:</strong>
+                    <ul>
+                      <li><strong>Email:</strong> ${newUser.email}</li>
+                      <li><strong>Role:</strong> ${newUser.role}</li>
+                      <li><strong>Status:</strong> Active (pending password setup)</li>
+                    </ul>
+                  </div>
+                  
+                  <p><strong>Important:</strong> This setup link will expire in 24 hours. If you need a new link, contact an administrator.</p>
+                  
+                  <p>If the button doesn't work, copy and paste this URL into your browser:</p>
+                  <p style="word-break: break-all; font-family: monospace; background: #e9ecef; padding: 10px; border-radius: 4px;">
+                    ${resetUrl}
+                  </p>
+                </div>
+                
+                <div class="footer">
+                  <p>This email was sent automatically. Please do not reply.</p>
+                  <p>&copy; ${new Date().getFullYear()} Collect Your Cards. All rights reserved.</p>
+                </div>
+              </body>
+              </html>
+            `
+          },
+          recipients: {
+            to: [{ address: newUser.email }]
+          }
+        }
+
+        const poller = await emailClient.beginSend(emailContent)
+        await poller.pollUntilDone()
+        console.log('Welcome email sent to new user:', newUser.email)
+
+      } catch (emailError) {
+        console.error('Failed to send welcome email:', emailError)
+        // Don't fail user creation if email fails
+      }
+    }
+
+    // Serialize BigInt for JSON response
+    const serializedUser = {
+      ...newUser,
+      user_id: Number(newUser.user_id)
+    }
+
+    res.status(201).json({
+      message: 'User created successfully. Welcome email sent.',
+      user: serializedUser
+    })
+
+  } catch (error) {
+    console.error('Error creating user:', error)
+    res.status(500).json({
+      error: 'Database error',
+      message: 'Failed to create user',
+      details: error.message
     })
   }
 })

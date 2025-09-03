@@ -95,6 +95,120 @@
 - Delete functionality with confirmation dialogs
 - All monetary values show 2 decimal places
 
+## 🗣️ SOCIAL FEATURES & COMMUNITY SYSTEM (IN DEVELOPMENT)
+
+### Card Comments System
+- **Non-threaded discussions** on every card detail page
+- **Authentication required** to post, edit, or delete comments  
+- **Real-time comment updates** with WebSocket integration
+- **Comment editing** - 15 minute window after posting
+- **Rate limiting** - Maximum 5 comments per minute per user
+- **Auto-subscription** - Users automatically subscribed to cards they comment on
+
+### Community Moderation & Safety
+#### Content Filtering Options:
+- **Profanity Filter**: Automatic detection and filtering of inappropriate language
+- **Keyword Blacklist**: Admin-configurable list of prohibited words/phrases
+- **Content Analysis**: Integration with Azure Content Moderator API for automated screening
+- **User Reporting System**: Community-driven reporting of inappropriate content
+- **Spam Detection**: Pattern recognition for repetitive/promotional content
+
+#### Moderation Tools:
+- **Admin Dashboard**: Full comment moderation with approve/reject/edit capabilities
+- **User Reputation System**: Trust scores based on community behavior
+- **Temporary Suspensions**: Time-based commenting restrictions
+- **Permanent Bans**: Complete platform access removal for severe violations
+- **Comment Queue**: Pre-approval system for new users or flagged content
+- **Audit Trail**: Complete logging of all moderation actions
+
+#### Community Guidelines Enforcement:
+- **Automated Warnings**: System-generated messages for borderline content
+- **Escalation Paths**: Multi-tier review process for reported content
+- **Appeal System**: Users can contest moderation decisions
+- **Transparency Reports**: Regular community updates on moderation activities
+
+### Notification System
+- **eBay-style notification bell** with unread count badge in header
+- **Real-time notifications** via WebSocket connections
+- **Notification Types**:
+  - Comments on cards you own
+  - Comments on cards you've previously commented on
+  - Direct messages received
+  - System announcements and updates
+  - Moderation actions affecting your account
+- **Notification Preferences**: Granular control over notification types
+- **Email Integration**: Optional email notifications for important events
+- **Auto-cleanup**: Read notifications deleted after 30 days
+
+### Direct Messaging System (FUTURE)
+#### Core Features:
+- **One-to-one messaging** between registered users
+- **Message threads** with conversation history
+- **Real-time delivery** with read receipts
+- **Message search** and filtering capabilities
+- **File attachments** (images, documents) with size limits
+- **Message encryption** for privacy protection
+
+#### Privacy & Safety:
+- **Block/Unblock Users**: Comprehensive user blocking system
+- **Message Reporting**: Report inappropriate direct messages
+- **Content Filtering**: Same moderation tools apply to private messages
+- **Privacy Settings**: Control who can message you (everyone, friends, nobody)
+
+### Group Messaging System (FUTURE - PHASE 2)
+#### Planned Features:
+- **Topic-based channels** (similar to Discord)
+- **Card-specific discussion rooms** automatically created for popular cards
+- **Team/League channels** for collectors of specific teams
+- **Moderated channels** with appointed community moderators
+- **Role-based permissions** in group channels
+- **Channel discovery** and subscription system
+
+### Database Schema Extensions
+#### New Tables Required:
+```sql
+card_comments - Comment system for card discussions
+notifications - User notification management  
+user_card_subscriptions - Notification preference tracking
+direct_messages - Private messaging between users
+message_threads - Conversation grouping
+user_blocks - User blocking relationships
+content_reports - Community reporting system
+moderation_actions - Admin action audit trail  
+user_reputation - Community trust scoring
+group_channels - Future group messaging
+channel_members - Group membership tracking
+```
+
+### API Endpoints Structure:
+```
+# Comments
+GET/POST   /api/cards/:cardId/comments
+PUT/DELETE /api/comments/:commentId
+
+# Notifications  
+GET        /api/notifications
+PUT        /api/notifications/:id/read
+POST       /api/notifications/mark-all-read
+
+# Direct Messages (Future)
+GET/POST   /api/messages
+GET        /api/messages/threads
+PUT        /api/messages/:id
+
+# Moderation
+GET/POST   /api/admin/reports
+PUT        /api/admin/moderation/:actionId
+```
+
+### Technical Implementation Notes:
+- **WebSocket Integration**: Real-time updates for comments and notifications
+- **Content Moderation API**: Azure Content Moderator for automated screening
+- **Rate Limiting**: Aggressive limits on social actions to prevent spam
+- **Caching Strategy**: Redis caching for frequently accessed comments/notifications
+- **Mobile Optimization**: All social features fully responsive
+- **Accessibility**: Full screen reader support and keyboard navigation
+
 ## Current Architecture
 - Frontend: React with Vite
 - Backend: Express.js with Prisma ORM
@@ -107,13 +221,223 @@
 - **Location**: Docker container named `collect-cards-db`
 - **Image**: `mcr.microsoft.com/mssql/server:2022-latest`
 - **Port**: localhost:1433 (mapped from container)
-- **Connection**: `sqlserver://localhost:1433;database=CollectYourCards;user=sa;password=DevPassword123!;...`
+- **Connection**: `sqlserver://localhost:1433;database=CollectYourCards;user=sa;password=Password123;...`
 - **Current Status**: ✅ FULLY RESTORED - **793,740 cards, 6,965 players, 135 teams**
 - **Last Restored**: August 12, 2025 from .bacpac file dated August 3, 2024
 - **Commands**: 
   - `docker ps` - check container status
   - `docker logs collect-cards-db` - view SQL Server logs
   - `lsof -i :1433` - verify port usage
+
+## 📊 SQL SERVER SCHEMA REFERENCE (CRITICAL - ALWAYS CHECK!)
+
+### ⚠️ BIGINT SERIALIZATION RULES
+**ALL BigInt fields MUST be converted to Number or String before JSON response:**
+```javascript
+// ALWAYS DO THIS:
+card_id: Number(row.card_id)
+// OR THIS:
+card_id: row.card_id.toString()
+// NEVER THIS:
+card_id: row.card_id  // Will cause "Cannot convert BigInt to JSON" error
+```
+
+### 📋 Core Tables Schema
+
+#### `card` Table
+| Column | Type | Nullable | Notes |
+|--------|------|----------|--------|
+| card_id | **bigint** | NO | Primary key - **REQUIRES SERIALIZATION** |
+| sort_order | int | YES | |
+| card_number | nvarchar(MAX) | YES | |
+| is_rookie | bit | NO | Default: false |
+| is_autograph | bit | NO | Default: false |
+| is_relic | bit | NO | Default: false |
+| print_run | int | YES | |
+| series | **bigint** | YES | FK to series - **REQUIRES SERIALIZATION** |
+| color | int | YES | FK to color |
+| notes | nvarchar(MAX) | YES | |
+| created | datetime | NO | |
+| created_month | date | YES | |
+
+#### `user_card` Table  
+| Column | Type | Nullable | Notes |
+|--------|------|----------|--------|
+| user_card_id | **bigint** | NO | Primary key - **REQUIRES SERIALIZATION** |
+| user | **bigint** | YES | FK to user - **REQUIRES SERIALIZATION** |
+| card | **bigint** | YES | FK to card - **REQUIRES SERIALIZATION** |
+| serial_number | int | YES | |
+| purchase_price | money | YES | Returns as decimal - format with .toFixed(2) |
+| estimated_value | money | YES | Returns as decimal - format with .toFixed(2) |
+| current_value | money | YES | Returns as decimal - format with .toFixed(2) |
+| photo | nvarchar(MAX) | YES | |
+| notes | nvarchar(MAX) | YES | |
+| card_variation | **bigint** | YES | FK - **REQUIRES SERIALIZATION** |
+| grading_agency | int | YES | |
+| grade | decimal | YES | |
+| grade_id | **bigint** | YES | **REQUIRES SERIALIZATION** |
+| aftermarket_autograph | bit | YES | |
+| is_for_sale | bit | YES | |
+| is_wanted | bit | YES | |
+| is_special | bit | YES | |
+| is_labeled | bit | YES | |
+| user_location | **bigint** | YES | FK - **REQUIRES SERIALIZATION** |
+| random_code | nvarchar(MAX) | YES | |
+| created | datetime | YES | |
+| ebay_purchase_id | **bigint** | YES | **REQUIRES SERIALIZATION** |
+
+#### `series` Table
+| Column | Type | Nullable | Notes |
+|--------|------|----------|--------|
+| series_id | **bigint** | NO | Primary key - **REQUIRES SERIALIZATION** |
+| name | nvarchar(MAX) | YES | |
+| set | int | YES | FK to set |
+| card_count | int | NO | Default: 0 |
+| created | datetime | NO | |
+| card_entered_count | int | YES | |
+| is_base | bit | YES | |
+| parallel_of_series | **bigint** | YES | **REQUIRES SERIALIZATION** |
+| front_image_path | nvarchar(MAX) | YES | |
+| back_image_path | nvarchar(MAX) | YES | |
+| min_print_run | int | YES | |
+| max_print_run | int | YES | |
+| print_run_variations | int | YES | |
+| print_run_display | nvarchar(50) | YES | |
+| rookie_count | int | YES | |
+| color | int | YES | FK to color |
+
+#### `user` Table
+| Column | Type | Nullable | Notes |
+|--------|------|----------|--------|
+| user_id | **bigint** | NO | Primary key - **REQUIRES SERIALIZATION** |
+| name | nvarchar(MAX) | YES | Display name |
+| email | nvarchar(255) | YES | Unique |
+| created | datetime | YES | |
+| created_at | datetime | YES | |
+| first_name | nvarchar(100) | YES | |
+| last_name | nvarchar(100) | YES | |
+| is_active | bit | YES | Default: true |
+| is_verified | bit | YES | Default: false |
+| last_login | datetime | YES | |
+| locked_until | datetime | YES | |
+| login_attempts | int | YES | Default: 0 |
+| password_hash | nvarchar(500) | YES | |
+| reset_token | nvarchar(500) | YES | |
+| reset_token_expires | datetime | YES | |
+| role | nvarchar(50) | YES | Default: 'user' |
+| updated_at | datetime | YES | |
+| verification_token | nvarchar(500) | YES | |
+
+#### `player` Table  
+| Column | Type | Nullable | Notes |
+|--------|------|----------|--------|
+| player_id | **bigint** | NO | Primary key - **REQUIRES SERIALIZATION** |
+| first_name | nvarchar(MAX) | YES | |
+| last_name | nvarchar(MAX) | YES | |
+| nick_name | nvarchar(MAX) | YES | |
+| birthdate | datetime | YES | |
+| created | datetime | YES | |
+| is_hof | bit | YES | Hall of Fame |
+| card_count | int | YES | |
+
+#### `team` Table
+| Column | Type | Nullable | Notes |
+|--------|------|----------|--------|
+| team_Id | int | NO | Primary key - Regular int, not bigint |
+| name | nvarchar(MAX) | YES | Full team name (includes city) |
+| city | nvarchar(MAX) | YES | |
+| mascot | nvarchar(MAX) | YES | |
+| abbreviation | nvarchar(MAX) | YES | |
+| organization | int | YES | FK to organization |
+| created | datetime | NO | |
+| primary_color | nvarchar(MAX) | YES | |
+| secondary_color | nvarchar(MAX) | YES | |
+| card_count | int | YES | |
+| player_count | int | YES | |
+
+### 🔴 Common Serialization Mistakes to Avoid
+
+```javascript
+// ❌ WRONG - Will throw "Cannot convert BigInt to JSON"
+res.json({
+  card: {
+    card_id: row.card_id,
+    series_id: row.series_id
+  }
+})
+
+// ✅ CORRECT
+res.json({
+  card: {
+    card_id: Number(row.card_id),
+    series_id: Number(row.series_id)
+  }
+})
+
+// ✅ ALSO CORRECT (for IDs that might exceed JavaScript's safe integer)
+res.json({
+  card: {
+    card_id: row.card_id.toString(),
+    series_id: row.series_id.toString()
+  }
+})
+```
+
+### 💰 Money Field Formatting
+```javascript
+// Money fields return as decimal objects
+// Always format to 2 decimal places for display
+purchase_price: row.purchase_price ? Number(row.purchase_price).toFixed(2) : '0.00'
+```
+
+### 📝 Text Field Notes
+- `nvarchar(MAX)` fields can contain Unicode characters
+- `nvarchar(-1)` in schema info means MAX length
+- Always handle NULL values appropriately
+
+### 🔗 Junction & Auth Tables
+
+#### `card_player_team` Table (Junction)
+| Column | Type | Nullable | Notes |
+|--------|------|----------|--------|
+| card_player_team_id | **bigint** | NO | Primary key - **REQUIRES SERIALIZATION** |
+| card | **bigint** | YES | FK to card - **REQUIRES SERIALIZATION** |
+| player_team | **bigint** | YES | FK to player_team - **REQUIRES SERIALIZATION** |
+| created | datetime | NO | |
+
+#### `player_team` Table (Junction)
+| Column | Type | Nullable | Notes |
+|--------|------|----------|--------|
+| player_team_id | **bigint** | NO | Primary key - **REQUIRES SERIALIZATION** |
+| player | **bigint** | YES | FK to player - **REQUIRES SERIALIZATION** |
+| team | int | YES | FK to team - Regular int |
+| created | datetime | NO | |
+
+#### `user_session` Table (Auth)
+| Column | Type | Nullable | Notes |
+|--------|------|----------|--------|
+| session_id | **bigint** | NO | Primary key - **REQUIRES SERIALIZATION** |
+| user_id | **bigint** | NO | FK to user - **REQUIRES SERIALIZATION** |
+| session_token | nvarchar(500) | NO | |
+| expires_at | datetime | NO | |
+| created | datetime | NO | |
+| last_accessed | datetime | YES | |
+| ip_address | varchar(45) | YES | |
+| user_agent | varchar(500) | YES | |
+| token_hash | nvarchar(500) | YES | |
+
+#### `user_auth_log` Table (Auth)
+| Column | Type | Nullable | Notes |
+|--------|------|----------|--------|
+| log_id | **bigint** | NO | Primary key - **REQUIRES SERIALIZATION** |
+| user_id | **bigint** | YES | FK to user - **REQUIRES SERIALIZATION** |
+| email | nvarchar(255) | YES | |
+| event_type | varchar(50) | NO | |
+| ip_address | varchar(45) | YES | |
+| user_agent | varchar(500) | YES | |
+| success | bit | NO | Default: true |
+| error_message | nvarchar(MAX) | YES | |
+| created | datetime | NO | |
 
 ### 🚨 DATABASE CHANGES (CRITICAL - ALWAYS CHECK!)
 - **📋 MUST READ**: `DATABASE_CHANGE_TRACKING.md` - Complete change log for production

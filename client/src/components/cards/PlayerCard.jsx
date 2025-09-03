@@ -1,10 +1,18 @@
-import React from 'react'
+import React, { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../../contexts/AuthContext'
 import Icon from '../Icon'
+import EditPlayerModal from '../modals/EditPlayerModal'
 import './PlayerCard.css'
 
 function PlayerCard({ player, showBadge = false, onTeamClick = null, customOnClick = null }) {
   const navigate = useNavigate()
+  const { user } = useAuth()
+  const [showEditModal, setShowEditModal] = useState(false)
+  
+  // Check if user is admin
+  const isAdmin = user && ['admin', 'superadmin', 'data_admin'].includes(user.role)
 
   const handlePlayerClick = () => {
     if (customOnClick) {
@@ -31,6 +39,7 @@ function PlayerCard({ player, showBadge = false, onTeamClick = null, customOnCli
   }
 
   return (
+    <>
     <div 
       className="playercard-container"
       onClick={handlePlayerClick}
@@ -90,7 +99,45 @@ function PlayerCard({ player, showBadge = false, onTeamClick = null, customOnCli
           )}
         </div>
       </div>
+      
+      {/* Admin Edit Button */}
+      {isAdmin && (
+        <button 
+          className="playercard-admin-edit-btn"
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            console.log('Edit button clicked for player:', player)
+            setShowEditModal(true)
+          }}
+          title="Edit player (Admin)"
+        >
+          <Icon name="edit" size={14} />
+        </button>
+      )}
     </div>
+    
+    {/* Edit Modal - Rendered as Portal */}
+    {showEditModal && createPortal(
+      <>
+        {console.log('Rendering EditPlayerModal for:', player)}
+        <EditPlayerModal
+          player={player}
+          isOpen={showEditModal}
+          onClose={() => {
+            console.log('Modal close called')
+            setShowEditModal(false)
+          }}
+          onSave={() => {
+            console.log('Modal save called')
+            setShowEditModal(false)
+            // Optionally reload data here if needed
+          }}
+        />
+      </>,
+      document.body
+    )}
+  </>
   )
 }
 

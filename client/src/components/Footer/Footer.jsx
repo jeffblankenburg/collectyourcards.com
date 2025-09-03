@@ -1,7 +1,7 @@
 import React from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { useAuth } from '../contexts/AuthContext'
-import Icon from './Icon'
+import { useAuth } from '../../contexts/AuthContext'
+import Icon from '../Icon'
 import './Footer.css'
 
 function Footer() {
@@ -14,7 +14,7 @@ function Footer() {
   }
 
   return (
-    <footer className="app-footer">
+    <footer className="footer-component app-footer">
       <div className="footer-container">
         {/* Navigation Links */}
         <div className="footer-section">

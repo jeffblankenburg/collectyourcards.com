@@ -3,21 +3,34 @@ import { useParams, useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { useAuth } from '../contexts/AuthContext'
 import Icon from '../components/Icon'
-import './TeamDetail.css'
+import PlayerCard from '../components/cards/PlayerCard'
+import './TeamDetailScoped.css'
 
 function TeamDetail() {
   const { teamSlug } = useParams()
   const navigate = useNavigate()
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, user } = useAuth()
   const [team, setTeam] = useState(null)
   const [players, setPlayers] = useState([])
   const [stats, setStats] = useState({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
+  // Check if user is admin
+  const isAdmin = user && ['admin', 'superadmin', 'data_admin'].includes(user.role)
+
   useEffect(() => {
     fetchTeamData()
   }, [teamSlug])
+
+  // Set page title
+  useEffect(() => {
+    if (team) {
+      document.title = `${team.name} - Collect Your Cards`
+    } else {
+      document.title = 'Team Details - Collect Your Cards'
+    }
+  }, [team])
 
   const fetchTeamData = async () => {
     try {
@@ -99,57 +112,18 @@ function TeamDetail() {
     }
   }
 
-  const PlayerCard = ({ player }) => {
-    const handleTeamClick = (e, teamId) => {
-      e.stopPropagation()
-      // Navigate to player detail with selected team
-      handlePlayerClick(player)
+  const handleTeamClick = (teamId) => {
+    // Navigate to team detail page  
+    const teamSlug = team?.name
+      ?.toLowerCase()
+      ?.replace(/[^a-z0-9\s-]/g, '')
+      ?.replace(/\s+/g, '-')
+      ?.replace(/-+/g, '-')
+      ?.trim()
+    
+    if (teamSlug) {
+      navigate(`/teams/${teamSlug}`)
     }
-
-    return (
-      <div 
-        className="player-card"
-        onClick={() => handlePlayerClick(player)}
-      >
-        <div className="player-card-content">
-          <div className="player-info">
-            <h3 className="player-name">
-              {player.first_name} {player.last_name}
-              {player.is_hof && <Icon name="trophy" size={16} className="hof-icon" />}
-            </h3>
-          </div>
-          
-          <div className="player-teams">
-            {player.teams?.map(playerTeam => (
-              <div
-                key={playerTeam.team_id}
-                className="mini-team-circle clickable"
-                style={{
-                  '--primary-color': playerTeam.primary_color || '#666',
-                  '--secondary-color': playerTeam.secondary_color || '#999'
-                }}
-                title={`${playerTeam.name} (${playerTeam.card_count} cards)`}
-                onClick={(e) => handleTeamClick(e, playerTeam.team_id)}
-              >
-                {playerTeam.abbreviation}
-              </div>
-            ))}
-          </div>
-
-          <div className="player-stats">
-            {player.nick_name && (
-              <div className="nickname-section">
-                <p className="player-nickname">"{player.nick_name}"</p>
-              </div>
-            )}
-            <div className="card-count">
-              <span className="count-number">{player.card_count.toLocaleString()}</span>
-              <span className="count-label">Cards</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
   }
 
   if (loading) {
@@ -237,7 +211,8 @@ function TeamDetail() {
                 <PlayerCard
                   key={player.player_id}
                   player={player}
-                  onClick={() => handlePlayerClick(player)}
+                  onTeamClick={handleTeamClick}
+                  customOnClick={() => handlePlayerClick(player)}
                 />
               ))}
             </div>
@@ -245,6 +220,17 @@ function TeamDetail() {
         )}
 
       </div>
+
+      {/* Admin Edit Button */}
+      {isAdmin && team && (
+        <button 
+          className="admin-edit-button"
+          onClick={() => navigate(`/admin/teams?search=${encodeURIComponent(team.name)}`)}
+          title="Edit team (Admin)"
+        >
+          <Icon name="edit" size={20} />
+        </button>
+      )}
     </div>
   )
 }

@@ -1,18 +1,21 @@
 import React, { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import axios from 'axios'
 import { useToast } from '../contexts/ToastContext'
 import Icon from '../components/Icon'
-import './AdminTeams.css'
+import './AdminTeamsScoped.css'
 
 function AdminTeams() {
+  const [searchParams] = useSearchParams()
   const [teams, setTeams] = useState([])
   const [filteredTeams, setFilteredTeams] = useState([])
   const [organizations, setOrganizations] = useState([])
   const [loading, setLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState('')
+  const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '')
   const [sortField, setSortField] = useState('name')
   const [sortDirection, setSortDirection] = useState('asc')
   const [columnWidths, setColumnWidths] = useState({
+    actions: '100px',
     id: '80px',
     name: '2fr',
     city: '1.5fr',
@@ -20,8 +23,7 @@ function AdminTeams() {
     abbreviation: '100px',
     organization: '1fr',
     colors: '120px',
-    cards: '100px',
-    actions: '100px'
+    cards: '100px'
   })
   const [showEditModal, setShowEditModal] = useState(false)
   const [showNewModal, setShowNewModal] = useState(false)
@@ -48,6 +50,7 @@ function AdminTeams() {
   const { addToast } = useToast()
 
   useEffect(() => {
+    document.title = 'Admin Teams - Collect Your Cards'
     loadTeams()
     loadOrganizations()
   }, [])
@@ -347,7 +350,7 @@ function AdminTeams() {
             onClick={handleNewTeam}
             title="Add new team"
           >
-            <Icon name="plus" size={24} />
+            <Icon name="plus" size={20} />
           </button>
           <div className="search-box">
             <Icon name="search" size={20} />
@@ -370,8 +373,11 @@ function AdminTeams() {
         ) : (
           <div className="teams-table">
             <div className="table-header" style={{
-              gridTemplateColumns: `${columnWidths.id} ${columnWidths.name} ${columnWidths.city} ${columnWidths.mascot} ${columnWidths.abbreviation} ${columnWidths.organization} ${columnWidths.colors} ${columnWidths.cards} ${columnWidths.actions}`
+              gridTemplateColumns: `${columnWidths.actions} ${columnWidths.id} ${columnWidths.name} ${columnWidths.city} ${columnWidths.mascot} ${columnWidths.abbreviation} ${columnWidths.organization} ${columnWidths.colors} ${columnWidths.cards}`
             }}>
+              <div className="col-header center">
+                Actions
+              </div>
               <div className="col-header sortable" onClick={() => handleSort('team_id')}>
                 ID
                 <div className="resize-handle" onMouseDown={(e) => handleResizeStart(e, 'id')} />
@@ -388,24 +394,21 @@ function AdminTeams() {
                 Mascot
                 <div className="resize-handle" onMouseDown={(e) => handleResizeStart(e, 'mascot')} />
               </div>
-              <div className="col-header sortable" onClick={() => handleSort('abbreviation')}>
+              <div className="col-header sortable center" onClick={() => handleSort('abbreviation')}>
                 Abbrev
                 <div className="resize-handle" onMouseDown={(e) => handleResizeStart(e, 'abbreviation')} />
               </div>
-              <div className="col-header sortable" onClick={() => handleSort('organization')}>
+              <div className="col-header sortable center" onClick={() => handleSort('organization')}>
                 Org
                 <div className="resize-handle" onMouseDown={(e) => handleResizeStart(e, 'organization')} />
               </div>
-              <div className="col-header sortable" onClick={() => handleSort('primary_color')}>
+              <div className="col-header sortable center" onClick={() => handleSort('primary_color')}>
                 Colors
                 <div className="resize-handle" onMouseDown={(e) => handleResizeStart(e, 'colors')} />
               </div>
-              <div className="col-header sortable" onClick={() => handleSort('card_count')}>
+              <div className="col-header sortable center" onClick={() => handleSort('card_count')}>
                 Cards
                 <div className="resize-handle" onMouseDown={(e) => handleResizeStart(e, 'cards')} />
-              </div>
-              <div className="col-header">
-                Actions
               </div>
             </div>
             
@@ -414,11 +417,23 @@ function AdminTeams() {
                 key={team.team_id} 
                 className="team-row"
                 style={{
-                  gridTemplateColumns: `${columnWidths.id} ${columnWidths.name} ${columnWidths.city} ${columnWidths.mascot} ${columnWidths.abbreviation} ${columnWidths.organization} ${columnWidths.colors} ${columnWidths.cards} ${columnWidths.actions}`
+                  gridTemplateColumns: `${columnWidths.actions} ${columnWidths.id} ${columnWidths.name} ${columnWidths.city} ${columnWidths.mascot} ${columnWidths.abbreviation} ${columnWidths.organization} ${columnWidths.colors} ${columnWidths.cards}`
                 }}
                 onDoubleClick={() => handleEditTeam(team)}
                 title="Double-click to edit team"
               >
+                <div className="col-actions">
+                  <button 
+                    className="edit-btn"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleEditTeam(team)
+                    }}
+                    title="Edit team"
+                  >
+                    <Icon name="edit" size={16} />
+                  </button>
+                </div>
                 <div className="col-id">{team.team_id}</div>
                 <div className="col-name">
                   <div className="team-name">{team.name}</div>
@@ -438,18 +453,6 @@ function AdminTeams() {
                   </div>
                 </div>
                 <div className="col-cards">{team.card_count || 0}</div>
-                <div className="col-actions">
-                  <button 
-                    className="edit-btn"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleEditTeam(team)
-                    }}
-                    title="Edit team"
-                  >
-                    <Icon name="edit" size={16} />
-                  </button>
-                </div>
               </div>
             ))}
           </div>
@@ -459,7 +462,7 @@ function AdminTeams() {
       {/* Edit Team Modal */}
       {showEditModal && editingTeam && (
         <div className="modal-overlay" onClick={handleCloseModal}>
-          <div className="edit-team-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="edit-player-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3>Edit Team #{editingTeam.team_id}</h3>
               <button className="close-btn" onClick={handleCloseModal}>
@@ -468,130 +471,93 @@ function AdminTeams() {
             </div>
             
             <div className="modal-content">
-              <form className="edit-form" onSubmit={(e) => e.preventDefault()}>
-                
+              <div className="edit-form">
+                <div className="player-details-form">
+                  <div className="form-field-row">
+                    <label className="field-label">Name</label>
+                    <input
+                      type="text"
+                      className="field-input"
+                      value={editForm.name}
+                      onChange={(e) => handleFormChange('name', e.target.value)}
+                      placeholder="Team name"
+                      required
+                    />
+                  </div>
 
-                <div className="form-row">
-                  <label className="form-label">Name</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={editForm.name}
-                    onChange={(e) => handleFormChange('name', e.target.value)}
-                    placeholder="Team name"
-                    required
-                  />
-                </div>
+                  <div className="form-field-row">
+                    <label className="field-label">City</label>
+                    <input
+                      type="text"
+                      className="field-input"
+                      value={editForm.city}
+                      onChange={(e) => handleFormChange('city', e.target.value)}
+                      placeholder="City"
+                    />
+                  </div>
 
-                <div className="form-row">
-                  <label className="form-label">City</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={editForm.city}
-                    onChange={(e) => handleFormChange('city', e.target.value)}
-                    placeholder="City"
-                  />
-                </div>
+                  <div className="form-field-row">
+                    <label className="field-label">Mascot</label>
+                    <input
+                      type="text"
+                      className="field-input"
+                      value={editForm.mascot}
+                      onChange={(e) => handleFormChange('mascot', e.target.value)}
+                      placeholder="Mascot"
+                    />
+                  </div>
 
-                <div className="form-row">
-                  <label className="form-label">Mascot</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={editForm.mascot}
-                    onChange={(e) => handleFormChange('mascot', e.target.value)}
-                    placeholder="Mascot"
-                  />
-                </div>
+                  <div className="form-field-row">
+                    <label className="field-label">Abbreviation</label>
+                    <input
+                      type="text"
+                      className="field-input"
+                      value={editForm.abbreviation}
+                      onChange={(e) => handleFormChange('abbreviation', e.target.value)}
+                      placeholder="e.g., NYY"
+                      maxLength={5}
+                    />
+                  </div>
 
-                <div className="form-row">
-                  <label className="form-label">Abbreviation</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={editForm.abbreviation}
-                    onChange={(e) => handleFormChange('abbreviation', e.target.value)}
-                    placeholder="e.g., NYY"
-                    maxLength={5}
-                  />
-                </div>
+                  <div className="form-field-row">
+                    <label className="field-label">Organization</label>
+                    <select
+                      className="field-input"
+                      value={editForm.organization_id || ''}
+                      onChange={(e) => handleFormChange('organization_id', e.target.value)}
+                    >
+                      <option value="">Select organization...</option>
+                      {organizations.map(org => (
+                        <option key={org.organization_id} value={org.organization_id}>
+                          {org.name} ({org.abbreviation})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-                <div className="form-row">
-                  <label className="form-label">Organization</label>
-                  <select
-                    className="form-select"
-                    value={editForm.organization_id || ''}
-                    onChange={(e) => handleFormChange('organization_id', e.target.value)}
-                  >
-                    <option value="">Select organization...</option>
-                    {organizations.map(org => (
-                      <option key={org.organization_id} value={org.organization_id}>
-                        {org.name} ({org.abbreviation})
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                  <div className="form-field-row">
+                    <label className="field-label">Primary Color</label>
+                    <input
+                      type="text"
+                      className="field-input"
+                      value={editForm.primary_color || ''}
+                      onChange={(e) => handleFormChange('primary_color', e.target.value)}
+                      placeholder="#000000"
+                    />
+                  </div>
 
-                <div className="form-row">
-                  <label className="form-label">Team Colors</label>
-                  <div className="color-inputs">
-                    <div className="color-field">
-                      <label className="color-field-label">Darker Color</label>
-                      <div className="color-field-controls">
-                        <div 
-                          className="color-preview" 
-                          style={{ backgroundColor: editForm.primary_color }}
-                          onClick={() => document.getElementById('primary-color-picker').click()}
-                          title="Primary (darker) color"
-                        />
-                        <input
-                          id="primary-color-picker"
-                          type="color"
-                          style={{ display: 'none' }}
-                          value={editForm.primary_color || '#000000'}
-                          onChange={(e) => handleFormChange('primary_color', e.target.value)}
-                        />
-                        <input
-                          type="text"
-                          className="color-text-input"
-                          value={editForm.primary_color || ''}
-                          onChange={(e) => handleFormChange('primary_color', e.target.value)}
-                          placeholder="#000000"
-                          maxLength={7}
-                        />
-                      </div>
-                    </div>
-                    <div className="color-field">
-                      <label className="color-field-label">Lighter Color</label>
-                      <div className="color-field-controls">
-                        <div 
-                          className="color-preview" 
-                          style={{ backgroundColor: editForm.secondary_color }}
-                          onClick={() => document.getElementById('secondary-color-picker').click()}
-                          title="Secondary (lighter) color"
-                        />
-                        <input
-                          id="secondary-color-picker"
-                          type="color"
-                          style={{ display: 'none' }}
-                          value={editForm.secondary_color || '#000000'}
-                          onChange={(e) => handleFormChange('secondary_color', e.target.value)}
-                        />
-                        <input
-                          type="text"
-                          className="color-text-input"
-                          value={editForm.secondary_color || ''}
-                          onChange={(e) => handleFormChange('secondary_color', e.target.value)}
-                          placeholder="#000000"
-                          maxLength={7}
-                        />
-                      </div>
-                    </div>
+                  <div className="form-field-row">
+                    <label className="field-label">Secondary Color</label>
+                    <input
+                      type="text"
+                      className="field-input"
+                      value={editForm.secondary_color || ''}
+                      onChange={(e) => handleFormChange('secondary_color', e.target.value)}
+                      placeholder="#000000"
+                    />
                   </div>
                 </div>
-                
-              </form>
+              </div>
             </div>
             
             <div className="modal-actions">
@@ -619,8 +585,8 @@ function AdminTeams() {
 
       {/* New Team Modal */}
       {showNewModal && (
-        <div className="modal-overlay" onClick={handleCloseModal}>
-          <div className="edit-team-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-overlay">
+          <div className="edit-player-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3>New Team</h3>
               <button className="close-btn" onClick={handleCloseModal}>
@@ -629,13 +595,13 @@ function AdminTeams() {
             </div>
             
             <div className="modal-content">
-              <form className="edit-form" onSubmit={(e) => e.preventDefault()}>
-                
-                <div className="form-row">
-                  <label className="form-label">Name *</label>
+              <div className="edit-form">
+                <div className="player-details-form">
+                  <div className="form-field-row">
+                  <label className="field-label">Name</label>
                   <input
                     type="text"
-                    className="form-input"
+                    className="field-input"
                     value={newTeamForm.name}
                     onChange={(e) => handleNewTeamFormChange('name', e.target.value)}
                     placeholder="Team name"
@@ -643,33 +609,33 @@ function AdminTeams() {
                   />
                 </div>
 
-                <div className="form-row">
-                  <label className="form-label">City</label>
+                <div className="form-field-row">
+                  <label className="field-label">City</label>
                   <input
                     type="text"
-                    className="form-input"
+                    className="field-input"
                     value={newTeamForm.city}
                     onChange={(e) => handleNewTeamFormChange('city', e.target.value)}
                     placeholder="City"
                   />
                 </div>
 
-                <div className="form-row">
-                  <label className="form-label">Mascot</label>
+                <div className="form-field-row">
+                  <label className="field-label">Mascot</label>
                   <input
                     type="text"
-                    className="form-input"
+                    className="field-input"
                     value={newTeamForm.mascot}
                     onChange={(e) => handleNewTeamFormChange('mascot', e.target.value)}
                     placeholder="Mascot"
                   />
                 </div>
 
-                <div className="form-row">
-                  <label className="form-label">Abbreviation *</label>
+                <div className="form-field-row">
+                  <label className="field-label">Abbreviation</label>
                   <input
                     type="text"
-                    className="form-input"
+                    className="field-input"
                     value={newTeamForm.abbreviation}
                     onChange={(e) => handleNewTeamFormChange('abbreviation', e.target.value)}
                     placeholder="e.g., NYY"
@@ -678,10 +644,10 @@ function AdminTeams() {
                   />
                 </div>
 
-                <div className="form-row">
-                  <label className="form-label">Organization *</label>
+                <div className="form-field-row">
+                  <label className="field-label">Organization</label>
                   <select
-                    className="form-select"
+                    className="field-input"
                     value={newTeamForm.organization_id || ''}
                     onChange={(e) => handleNewTeamFormChange('organization_id', e.target.value)}
                   >
@@ -694,65 +660,29 @@ function AdminTeams() {
                   </select>
                 </div>
 
-                <div className="form-row">
-                  <label className="form-label">Team Colors</label>
-                  <div className="color-inputs">
-                    <div className="color-field">
-                      <label className="color-field-label">Darker Color</label>
-                      <div className="color-field-controls">
-                        <div 
-                          className="color-preview" 
-                          style={{ backgroundColor: newTeamForm.primary_color }}
-                          onClick={() => document.getElementById('new-primary-color-picker').click()}
-                          title="Primary (darker) color"
-                        />
-                        <input
-                          id="new-primary-color-picker"
-                          type="color"
-                          style={{ display: 'none' }}
-                          value={newTeamForm.primary_color || '#000000'}
-                          onChange={(e) => handleNewTeamFormChange('primary_color', e.target.value)}
-                        />
-                        <input
-                          type="text"
-                          className="color-text-input"
-                          value={newTeamForm.primary_color || ''}
-                          onChange={(e) => handleNewTeamFormChange('primary_color', e.target.value)}
-                          placeholder="#000000"
-                          maxLength={7}
-                        />
-                      </div>
-                    </div>
-                    <div className="color-field">
-                      <label className="color-field-label">Lighter Color</label>
-                      <div className="color-field-controls">
-                        <div 
-                          className="color-preview" 
-                          style={{ backgroundColor: newTeamForm.secondary_color }}
-                          onClick={() => document.getElementById('new-secondary-color-picker').click()}
-                          title="Secondary (lighter) color"
-                        />
-                        <input
-                          id="new-secondary-color-picker"
-                          type="color"
-                          style={{ display: 'none' }}
-                          value={newTeamForm.secondary_color || '#000000'}
-                          onChange={(e) => handleNewTeamFormChange('secondary_color', e.target.value)}
-                        />
-                        <input
-                          type="text"
-                          className="color-text-input"
-                          value={newTeamForm.secondary_color || ''}
-                          onChange={(e) => handleNewTeamFormChange('secondary_color', e.target.value)}
-                          placeholder="#000000"
-                          maxLength={7}
-                        />
-                      </div>
-                    </div>
+                  <div className="form-field-row">
+                    <label className="field-label">Primary Color</label>
+                    <input
+                      type="text"
+                      className="field-input"
+                      value={newTeamForm.primary_color || ''}
+                      onChange={(e) => handleNewTeamFormChange('primary_color', e.target.value)}
+                      placeholder="#000000"
+                    />
+                  </div>
+
+                  <div className="form-field-row">
+                    <label className="field-label">Secondary Color</label>
+                    <input
+                      type="text"
+                      className="field-input"
+                      value={newTeamForm.secondary_color || ''}
+                      onChange={(e) => handleNewTeamFormChange('secondary_color', e.target.value)}
+                      placeholder="#000000"
+                    />
                   </div>
                 </div>
-                
-              </form>
+              </div>
             </div>
             
             <div className="modal-actions">

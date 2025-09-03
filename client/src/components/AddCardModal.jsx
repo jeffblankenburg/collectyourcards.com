@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
+import { useToast } from '../contexts/ToastContext'
 import axios from 'axios'
 import Icon from './Icon'
 import './AddCardModal.css'
@@ -11,6 +12,7 @@ const AddCardModal = ({
   onCardAdded 
 }) => {
   const { user } = useAuth()
+  const { success, error } = useToast()
   const [loading, setLoading] = useState(false)
   const [locations, setLocations] = useState([])
   const [gradingAgencies, setGradingAgencies] = useState([])
@@ -113,11 +115,12 @@ const AddCardModal = ({
 
       await axios.post('/api/user/cards', submitData)
       
+      success(`Card #${card.card_number} added to collection`)
       if (onCardAdded) onCardAdded()
       onClose()
     } catch (err) {
       console.error('Error adding card:', err)
-      // Handle error - could show a toast notification
+      error(err.response?.data?.message || 'Failed to add card to collection')
     } finally {
       setLoading(false)
     }

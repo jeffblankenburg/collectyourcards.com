@@ -18,7 +18,7 @@ const UniversalCardTable = ({
   showAttributes = true,
   showDownload = true,
   columnWidths: customColumnWidths = null,
-  defaultSort = 'series_name',
+  defaultSort = null, // Will be determined based on isCollectionView
   downloadFilename = 'cards',
   pageSize = 100,
   onCardClick = null,
@@ -34,7 +34,9 @@ const UniversalCardTable = ({
   const { isAuthenticated } = useAuth()
   const navigate = useNavigate()
   const [cards, setCards] = useState(initialCards)
-  const [sortField, setSortField] = useState(defaultSort)
+  const [sortField, setSortField] = useState(
+    defaultSort || (isCollectionView ? 'series_name' : 'sort_order')
+  )
   const [sortDirection, setSortDirection] = useState('asc')
   // Removed displayedCards state - using sortedCards directly to prevent re-render loops
   const [loading, setLoading] = useState(false)
@@ -51,6 +53,7 @@ const UniversalCardTable = ({
   // Removed infinite scroll state - no longer needed
   const [columnWidths, setColumnWidths] = useState(customColumnWidths || {
     code: '100px',
+    edit: '60px',
     cardNumber: '100px',
     player: '200px',
     series: '300px',
@@ -64,7 +67,7 @@ const UniversalCardTable = ({
     grade: '120px',
     amAuto: '80px',
     notes: '200px',
-    actions: '80px'
+    actions: '60px'
   })
   
   // Update column widths when customColumnWidths prop changes
@@ -414,8 +417,8 @@ const UniversalCardTable = ({
           bValue = b.series_rel?.name || ''
           break
         case 'sort_order':
-          aValue = a.sort_order || 999999
-          bValue = b.sort_order || 999999
+          aValue = parseInt(a.sort_order) || 999999
+          bValue = parseInt(b.sort_order) || 999999
           break
         case 'card_number':
           aValue = a.card_number || ''
@@ -646,6 +649,21 @@ const UniversalCardTable = ({
         <table className="cards-table">
           <thead>
             <tr>
+              {isAuthenticated && isCollectionView && (
+                <th className="center action-header" style={{ width: columnWidths.edit }}>
+                  Edit
+                </th>
+              )}
+              {isAuthenticated && showOwned && (
+                <>
+                  <th className="center action-header-owned">
+                    ACTION
+                  </th>
+                  <th className="center owned-header">
+                    OWNED
+                  </th>
+                </>
+              )}
               {showCollectionColumns && (
                 <th 
                   className="sortable resizable-header"
@@ -798,18 +816,8 @@ const UniversalCardTable = ({
               </th>
               {isAuthenticated && isCollectionView && (
                 <th className="center action-header" style={{ width: columnWidths.actions }}>
-                  Actions
+                  Delete
                 </th>
-              )}
-              {isAuthenticated && showOwned && (
-                <>
-                  <th className="center owned-header">
-                    Owned
-                  </th>
-                  <th className="center">
-                    Action
-                  </th>
-                </>
               )}
             </tr>
           </thead>
@@ -837,6 +845,41 @@ const UniversalCardTable = ({
                 className={classNames}
                 onClick={() => onCardClick && onCardClick(card)}
               >
+                {isAuthenticated && isCollectionView && (
+                  <td className="action-cell center">
+                    <button
+                      className="edit-card-btn"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleEditCard(card)
+                      }}
+                      title="Edit card details"
+                    >
+                      <Icon name="edit" size={16} style={{color: 'white'}} />
+                    </button>
+                  </td>
+                )}
+                {isAuthenticated && showOwned && (
+                  <>
+                    <td className="action-cell center">
+                      {showAddButtons && (
+                        <button
+                          className="add-card-btn"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                          handleAddCard(card)
+                        }}
+                        title="Add to Collection"
+                      >
+                        <Icon name="plus" size={16} />
+                      </button>
+                      )}
+                    </td>
+                    <td className="owned-cell center">
+                      {card.user_card_count || 0}
+                    </td>
+                  </>
+                )}
                 {showCollectionColumns && (
                   <td className="random-code-cell">
                     {card.random_code && (
@@ -968,50 +1011,17 @@ const UniversalCardTable = ({
                 </td>
                 {isAuthenticated && isCollectionView && (
                   <td className="action-cell center">
-                    <div className="action-buttons">
-                      <button
-                        className="edit-card-btn"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleEditCard(card)
-                        }}
-                        title="Edit card details"
-                      >
-                        <Icon name="edit" size={16} style={{color: 'white'}} />
-                      </button>
-                      <button
-                        className="delete-card-btn"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleDeleteCard(card)
-                        }}
-                        title="Delete card from collection"
-                      >
-                        <Icon name="trash" size={16} style={{color: '#ef4444'}} />
-                      </button>
-                    </div>
+                    <button
+                      className="delete-card-btn"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleDeleteCard(card)
+                      }}
+                      title="Delete card from collection"
+                    >
+                      <Icon name="trash" size={16} style={{color: '#ef4444'}} />
+                    </button>
                   </td>
-                )}
-                {isAuthenticated && showOwned && (
-                  <>
-                    <td className="user-card-count-cell center">
-                      {card.user_card_count || 0}
-                    </td>
-                    <td className="action-cell center">
-                      {showAddButtons && (
-                        <button
-                          className="add-card-btn"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                          handleAddCard(card)
-                        }}
-                        title="Add to Collection"
-                      >
-                        <Icon name="plus" size={16} style={{color: 'white'}} />
-                      </button>
-                      )}
-                    </td>
-                  </>
                 )}
               </tr>
               )

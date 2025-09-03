@@ -1,0 +1,338 @@
+/* Team Detail Page Styles - Scoped */
+.team-detail-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #1e293b 0%, #475569 100%);
+  padding: 2rem;
+}
+
+.team-detail-page .team-detail-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+/* Loading and Error States */
+.team-detail-page .loading-container,
+.team-detail-page .error-container {
+  text-align: center;
+  padding: 4rem 2rem;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  max-width: 600px;
+  margin: 4rem auto;
+}
+
+.team-detail-page .loading-container .spinner {
+  animation: spin 1s linear infinite;
+  color: #e5e7eb;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.team-detail-page .loading-container p,
+.team-detail-page .error-container p {
+  color: rgba(255, 255, 255, 0.8);
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.team-detail-page .error-container h2 {
+  color: white;
+  margin: 1rem 0 0.5rem 0;
+  font-size: 1.5rem;
+}
+
+.team-detail-page .error-container svg {
+  color: #ef4444;
+}
+
+/* Team Header */
+.team-detail-page .team-header-combined {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  padding: 2.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.team-detail-page .team-header-combined.compact {
+  padding: 1.5rem;
+}
+
+.team-detail-page .team-header-combined.compact .team-header-layout {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.team-detail-page .team-header-combined.compact .team-circle-xl {
+  width: 60px;
+  height: 60px;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.team-detail-page .team-header-combined.compact .team-name {
+  color: white;
+  font-size: 2.5rem;
+  margin: 0;
+  font-weight: 700;
+}
+
+/* Compact Stats */
+.team-detail-page .team-stats-compact {
+  display: flex;
+  gap: 1rem;
+  margin-left: auto;
+}
+
+.team-detail-page .stat-compact {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  color: white;
+  min-width: 80px;
+}
+
+.team-detail-page .stat-compact .stat-value {
+  font-size: 1.3rem;
+  font-weight: 600;
+  line-height: 1;
+  margin-bottom: 0.25rem;
+}
+
+.team-detail-page .stat-compact .stat-label {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.7);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  line-height: 1;
+}
+
+.team-detail-page .team-circle-xl {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  border: 3px solid;
+  color: white;
+  font-size: 1.5rem;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-transform: uppercase;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.team-detail-page .team-name {
+  color: white;
+  font-size: 0.85rem;
+  margin: 0;
+  font-weight: normal;
+  text-align: center;
+}
+
+.team-detail-page .team-mascot {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 1.2rem;
+  font-style: italic;
+  text-align: center;
+  margin: 0;
+}
+
+/* Team Stats Section */
+.team-detail-page .team-stats-section {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  padding: 2rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.team-detail-page .section-header {
+  margin-bottom: 1.5rem;
+}
+
+.team-detail-page .section-header h3 {
+  color: white;
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* Players Section */
+.team-detail-page .team-players-section {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  padding: 2rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.team-detail-page .players-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .team-detail-page .team-detail-container {
+    max-width: 100%;
+    padding: 0;
+  }
+  
+  .team-detail-page .team-header-combined.compact .team-header-layout {
+    flex-direction: column;
+    text-align: center;
+    gap: 1rem;
+  }
+  
+  .team-detail-page .team-stats-compact {
+    margin-left: 0;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 768px) {
+  .team-detail-page {
+    padding: 1rem;
+  }
+
+  .team-detail-page .team-header-combined {
+    padding: 2rem 1.5rem;
+  }
+  
+  .team-detail-page .team-header-combined.compact {
+    padding: 1rem;
+  }
+
+  .team-detail-page .team-name {
+    font-size: 1.8rem;
+  }
+
+  .team-detail-page .team-stats-section,
+  .team-detail-page .team-players-section {
+    padding: 1.5rem;
+  }
+  
+  .team-detail-page .players-grid {
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  }
+  
+  .team-detail-page .team-stats-compact {
+    gap: 0.75rem;
+  }
+  
+  .team-detail-page .stat-compact {
+    min-width: 70px;
+    padding: 0.4rem 0.8rem;
+  }
+  
+  .team-detail-page .stat-compact .stat-value {
+    font-size: 1.1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .team-detail-page {
+    padding: 0.5rem;
+  }
+
+  .team-detail-page .team-header-combined,
+  .team-detail-page .team-stats-section,
+  .team-detail-page .team-players-section {
+    padding: 1rem;
+    border-radius: 12px;
+  }
+
+  .team-detail-page .team-name {
+    font-size: 1.5rem;
+  }
+
+  .team-detail-page .section-header h3 {
+    font-size: 1.1rem;
+  }
+  
+  .team-detail-page .players-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .team-detail-page .team-stats-compact {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: center;
+  }
+  
+  .team-detail-page .stat-compact {
+    min-width: 60px;
+    padding: 0.4rem 0.6rem;
+  }
+  
+  .team-detail-page .stat-compact .stat-value {
+    font-size: 1rem;
+  }
+  
+  .team-detail-page .stat-compact .stat-label {
+    font-size: 0.7rem;
+  }
+}
+
+/* Admin Edit Button */
+.team-detail-page .admin-edit-button {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  width: 56px;
+  height: 56px;
+  background: #f59e0b;
+  border: none;
+  border-radius: 50%;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+  transition: all 0.2s ease;
+  z-index: 1000;
+}
+
+.team-detail-page .admin-edit-button:hover {
+  background: #d97706;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(245, 158, 11, 0.5);
+}
+
+.team-detail-page .admin-edit-button:active {
+  transform: translateY(0);
+}
+
+@media (max-width: 480px) {
+  .team-detail-page .admin-edit-button {
+    bottom: 1rem;
+    right: 1rem;
+    width: 48px;
+    height: 48px;
+  }
+}

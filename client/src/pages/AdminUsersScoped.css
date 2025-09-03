@@ -1,0 +1,683 @@
+/* Admin Users Page Styles - Scoped */
+.admin-users-page {
+  width: 100%;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  color: white;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+/* Header Section */
+.admin-users-page .admin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2rem;
+}
+
+.admin-users-page .admin-title {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.admin-users-page .admin-title h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin: 0;
+  background: linear-gradient(135deg, #e5e7eb 0%, #f3f4f6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.admin-users-page .admin-controls {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.admin-users-page .new-item-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  width: 40px;
+  height: 40px;
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.admin-users-page .new-item-button:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: white;
+}
+
+.admin-users-page .search-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  gap: 0.75rem;
+  min-width: 300px;
+  height: 40px;
+}
+
+.admin-users-page .search-box input {
+  background: transparent;
+  border: none;
+  color: white;
+  outline: none;
+  flex: 1;
+  font-size: 0.875rem;
+}
+
+.admin-users-page .search-box input::placeholder {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* Users Container */
+.admin-users-page .users-container {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 16px;
+  padding: 1.5rem;
+  overflow: hidden;
+}
+
+/* Loading and Empty States */
+.admin-users-page .loading-state,
+.admin-users-page .empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 4rem 2rem;
+  color: rgba(255, 255, 255, 0.7);
+  text-align: center;
+}
+
+.admin-users-page .spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Users Table */
+.admin-users-page .users-table {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.admin-users-page .table-header {
+  display: grid;
+  grid-template-columns: 80px 1fr 1fr 120px 140px 150px 150px 100px;
+  gap: 1rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.admin-users-page .user-row {
+  display: grid;
+  grid-template-columns: 80px 1fr 1fr 120px 140px 150px 150px 100px;
+  gap: 1rem;
+  padding: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.2s ease;
+  cursor: pointer;
+  align-items: center;
+}
+
+.admin-users-page .user-row:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.admin-users-page .user-row:last-child {
+  border-bottom: none;
+}
+
+/* Column Styles */
+.admin-users-page .col-id {
+  font-family: monospace;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.6);
+  text-align: center;
+}
+
+.admin-users-page .col-name {
+  font-weight: 500;
+  overflow: visible;
+  white-space: nowrap;
+  text-overflow: clip;
+}
+
+.admin-users-page .user-name {
+  color: white;
+  overflow: visible;
+  white-space: nowrap;
+  text-overflow: clip;
+}
+
+.admin-users-page .col-email {
+  font-family: monospace;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.admin-users-page .col-role {
+  text-align: center;
+}
+
+.admin-users-page .role-badge {
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.admin-users-page .role-superadmin {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.admin-users-page .role-admin {
+  background: rgba(59, 130, 246, 0.2);
+  color: #93c5fd;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.admin-users-page .role-data-admin {
+  background: rgba(168, 85, 247, 0.2);
+  color: #c4b5fd;
+  border: 1px solid rgba(168, 85, 247, 0.3);
+}
+
+.admin-users-page .role-user {
+  background: rgba(156, 163, 175, 0.2);
+  color: #d1d5db;
+  border: 1px solid rgba(156, 163, 175, 0.3);
+}
+
+.admin-users-page .col-status {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  align-items: center;
+}
+
+.admin-users-page .status-badge {
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.admin-users-page .status-active {
+  background: rgba(34, 197, 94, 0.2);
+  color: #86efac;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.admin-users-page .status-inactive {
+  background: rgba(156, 163, 175, 0.2);
+  color: #d1d5db;
+  border: 1px solid rgba(156, 163, 175, 0.3);
+}
+
+.admin-users-page .status-unverified {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.admin-users-page .failed-attempts {
+  font-size: 0.7rem;
+  color: #ef4444;
+  font-weight: 600;
+}
+
+.admin-users-page .col-created,
+.admin-users-page .col-login {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.7);
+  text-align: center;
+}
+
+.admin-users-page .col-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.admin-users-page .edit-btn,
+.admin-users-page .reset-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  padding: 0.5rem;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+}
+
+.admin-users-page .edit-btn:hover {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: rgba(59, 130, 246, 0.3);
+  color: #93c5fd;
+}
+
+.admin-users-page .reset-btn:hover {
+  background: rgba(245, 158, 11, 0.2);
+  border-color: rgba(245, 158, 11, 0.3);
+  color: #fbbf24;
+}
+
+/* Modal Styles */
+.admin-users-page .modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 2rem;
+}
+
+.admin-users-page .edit-user-modal,
+.admin-users-page .reset-confirm-modal {
+  background: rgba(15, 23, 42, 0.95);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+  max-width: 500px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+}
+
+.admin-users-page .modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.admin-users-page .modal-header h3 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: white;
+}
+
+.admin-users-page .close-btn {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.admin-users-page .close-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.admin-users-page .modal-content {
+  padding: 1.5rem;
+}
+
+/* Form Styles */
+.admin-users-page .edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.admin-users-page .readonly-section,
+.admin-users-page .editable-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.admin-users-page .readonly-section {
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.admin-users-page .form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.admin-users-page .form-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.admin-users-page .readonly-value {
+  font-family: monospace;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.05);
+  padding: 0.5rem;
+  border-radius: 4px;
+}
+
+.admin-users-page .form-input,
+.admin-users-page .form-select {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  padding: 0.75rem;
+  color: white;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+}
+
+.admin-users-page .form-input:focus,
+.admin-users-page .form-select:focus {
+  outline: none;
+  border-color: rgba(59, 130, 246, 0.5);
+  background: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.admin-users-page .form-input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.admin-users-page .status-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.admin-users-page .checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.admin-users-page .form-checkbox {
+  width: 18px;
+  height: 18px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.admin-users-page .checkbox-text {
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* Modal Actions */
+.admin-users-page .modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  padding: 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.admin-users-page .cancel-btn,
+.admin-users-page .save-btn,
+.admin-users-page .reset-confirm-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid;
+}
+
+.admin-users-page .cancel-btn {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.3);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.admin-users-page .cancel-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.admin-users-page .save-btn {
+  background: rgba(34, 197, 94, 0.2);
+  border-color: rgba(34, 197, 94, 0.3);
+  color: #86efac;
+}
+
+.admin-users-page .save-btn:hover {
+  background: rgba(34, 197, 94, 0.3);
+  border-color: rgba(34, 197, 94, 0.5);
+}
+
+.admin-users-page .save-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.admin-users-page .reset-confirm-btn {
+  background: rgba(245, 158, 11, 0.2);
+  border-color: rgba(245, 158, 11, 0.3);
+  color: #fbbf24;
+}
+
+.admin-users-page .reset-confirm-btn:hover {
+  background: rgba(245, 158, 11, 0.3);
+  border-color: rgba(245, 158, 11, 0.5);
+}
+
+/* Password Reset Modal */
+.admin-users-page .reset-confirmation {
+  text-align: center;
+}
+
+.admin-users-page .warning-icon {
+  color: #fbbf24;
+  margin-bottom: 1rem;
+}
+
+.admin-users-page .confirmation-text h4 {
+  margin: 0 0 1rem 0;
+  font-size: 1.25rem;
+  color: white;
+}
+
+.admin-users-page .confirmation-text p {
+  margin: 0 0 1rem 0;
+  color: rgba(255, 255, 255, 0.8);
+  line-height: 1.5;
+}
+
+.admin-users-page .confirmation-text strong {
+  color: white;
+  font-weight: 600;
+}
+
+/* Access Denied */
+.admin-users-page .access-denied {
+  text-align: center;
+  padding: 4rem 2rem;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 16px;
+  margin: 2rem auto;
+  max-width: 500px;
+}
+
+.admin-users-page .access-denied h2 {
+  color: #ef4444;
+  font-size: 1.5rem;
+  margin: 0 0 1rem 0;
+}
+
+.admin-users-page .access-denied p {
+  color: rgba(255, 255, 255, 0.8);
+  margin: 0;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .admin-users-page .users-table {
+    font-size: 0.85rem;
+  }
+  
+  .admin-users-page .table-header,
+  .admin-users-page .user-row {
+    grid-template-columns: 60px 1fr 1fr 100px 120px 100px 100px 80px;
+    gap: 0.75rem;
+    padding: 0.75rem;
+  }
+}
+
+@media (max-width: 1024px) {
+  .admin-users-page {
+    padding: 1rem;
+  }
+
+  .admin-users-page .admin-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+
+  .admin-users-page .search-box {
+    min-width: 100%;
+  }
+
+  .admin-users-page .table-header,
+  .admin-users-page .user-row {
+    grid-template-columns: 50px 1fr 80px 100px 60px;
+    gap: 0.5rem;
+    padding: 0.75rem 0.5rem;
+  }
+
+  /* Hide some columns on smaller screens */
+  .admin-users-page .col-created,
+  .admin-users-page .col-login,
+  .admin-users-page .col-email {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .admin-users-page .admin-title h1 {
+    font-size: 2rem;
+  }
+
+  .admin-users-page .table-header,
+  .admin-users-page .user-row {
+    grid-template-columns: 1fr 80px 80px;
+    gap: 0.5rem;
+  }
+
+  /* Show only essential columns */
+  .admin-users-page .col-id,
+  .admin-users-page .col-email,
+  .admin-users-page .col-created,
+  .admin-users-page .col-login {
+    display: none;
+  }
+
+  .admin-users-page .col-name {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .admin-users-page .user-name::after {
+    content: attr(data-email);
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.6);
+    font-family: monospace;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-users-page {
+    padding: 0.5rem;
+  }
+
+  .admin-users-page .admin-title h1 {
+    font-size: 1.5rem;
+  }
+
+  .admin-users-page .users-container {
+    padding: 1rem;
+  }
+
+  .admin-users-page .modal-overlay {
+    padding: 1rem;
+  }
+
+  .admin-users-page .modal-content {
+    padding: 1rem;
+  }
+
+  .admin-users-page .modal-actions {
+    padding: 1rem;
+    flex-direction: column;
+  }
+
+  .admin-users-page .cancel-btn,
+  .admin-users-page .save-btn,
+  .admin-users-page .reset-confirm-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}

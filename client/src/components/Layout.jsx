@@ -1,8 +1,9 @@
 import React from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import Header from './Header'
-import Footer from './Footer'
-import './Layout.css'
+import Footer from './Footer/Footer'
+import AdminNavigation from './AdminNavigation'
+// import './Layout.css' // Commented out for SeriesDetail page independence
 
 function Layout({ children }) {
   const { user } = useAuth()
@@ -13,6 +14,7 @@ function Layout({ children }) {
   return (
     <div className="app-layout">
       <Header />
+      {isAdmin && <AdminNavigation />}
       <main className={`app-main ${isAdmin ? 'with-admin-nav' : ''}`}>
         {children}
       </main>

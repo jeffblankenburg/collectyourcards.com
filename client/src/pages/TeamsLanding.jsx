@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext'
 import axios from 'axios'
 import Icon from '../components/Icon'
 import { TeamCard } from '../components/cards'
-import './TeamsLanding.css'
+import './TeamsLandingScoped.css'
 
 function TeamsLanding() {
   const { isAuthenticated } = useAuth()
@@ -18,6 +18,7 @@ function TeamsLanding() {
 
   useEffect(() => {
     loadTeamsData()
+    document.title = 'All Teams - Collect Your Cards'
   }, [isAuthenticated])
 
   // Filter teams based on search term
@@ -143,7 +144,7 @@ function TeamsLanding() {
 
   if (loading) {
     return (
-      <div className="teams-landing">
+      <div className="teams-landing-page">
         <div className="loading-container">
           <Icon name="activity" size={24} className="spinner" />
           <p>Loading teams...</p>
@@ -154,7 +155,7 @@ function TeamsLanding() {
 
   if (error) {
     return (
-      <div className="teams-landing">
+      <div className="teams-landing-page">
         <div className="error-container">
           <Icon name="error" size={24} />
           <p>{error}</p>
@@ -167,7 +168,7 @@ function TeamsLanding() {
   }
 
   return (
-    <div className="teams-landing">
+    <div className="teams-landing-page">
       <div className="teams-landing-grid">
         {/* Header as grid items */}
         <div className="grid-header-title">

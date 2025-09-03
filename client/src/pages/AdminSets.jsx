@@ -1,25 +1,26 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
-import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom'
 import axios from 'axios'
 import { useToast } from '../contexts/ToastContext'
 import Icon from '../components/Icon'
-import './AdminSets.css'
+import './AdminSetsScoped.css'
 
 function AdminSets() {
   const { year, setSlug, seriesSlug } = useParams()
   const navigate = useNavigate()
-  const [years, setYears] = useState([])
-  const [filteredYears, setFilteredYears] = useState([])
+  const [searchParams] = useSearchParams()
   const [sets, setSets] = useState([])
-  const [filteredSets, setFilteredSets] = useState([])
-  const [series, setSeries] = useState([])
-  const [filteredSeries, setFilteredSeries] = useState([])
-  const [selectedSet, setSelectedSet] = useState(null)
-  const [selectedSeries, setSelectedSeries] = useState(null)
-  const [loading, setLoading] = useState(false)
-  const [searchTerm, setSearchTerm] = useState('')
+  const [totalSets, setTotalSets] = useState(0)
+  const [loading, setLoading] = useState(true)
+  const [searching, setSearching] = useState(false)
+  const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '')
+  const [isSearchMode, setIsSearchMode] = useState(false)
+  const [lastUpdated, setLastUpdated] = useState(null)
+  const [sortField, setSortField] = useState('last_viewed')
+  const [sortDirection, setSortDirection] = useState('desc')
   const [showEditModal, setShowEditModal] = useState(false)
+  const [showAddModal, setShowAddModal] = useState(false)
   const [editingItem, setEditingItem] = useState(null)
   const [editType, setEditType] = useState('') // 'set' or 'series'
   const [editForm, setEditForm] = useState({})
@@ -54,23 +55,13 @@ function AdminSets() {
   }
 
   useEffect(() => {
+    document.title = 'Admin Sets - Collect Your Cards'
     loadOrganizations()
     loadManufacturers()
     loadColors()
-    
-    // Load data based on URL parameters
-    if (setSlug) {
-      // We're viewing series for a specific set
-      loadSetBySlug(year, setSlug)
-      loadSeriesForSet(year, setSlug)
-    } else if (year) {
-      // We're viewing sets for a specific year
-      loadSetsForYear(year)
-    } else {
-      // We're viewing the years list
-      loadYears()
-    }
-  }, [year, setSlug, seriesSlug])
+    // Load with initial search if provided in URL
+    loadSets(searchParams.get('search') || '')
+  }, [])
 
 
   // Keep ref synchronized with state
@@ -141,123 +132,120 @@ function AdminSets() {
     }
   }, [colorDropdownOpen])
 
-  useEffect(() => {
-    // Filter based on current view and search term
-    if (!year && !setSlug) {
-      // Filter years
-      if (!searchTerm.trim()) {
-        setFilteredYears(years)
-      } else {
-        const filtered = years.filter(y => 
-          y.year.toString().includes(searchTerm)
-        )
-        setFilteredYears(filtered)
-      }
-    } else if (year && !setSlug) {
-      // Filter sets
-      if (!searchTerm.trim()) {
-        setFilteredSets(sets)
-      } else {
-        const filtered = sets.filter(set => 
-          set.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (set.organization && set.organization.toLowerCase().includes(searchTerm.toLowerCase())) ||
-          (set.manufacturer && set.manufacturer.toLowerCase().includes(searchTerm.toLowerCase()))
-        )
-        setFilteredSets(filtered)
-      }
-    } else if (setSlug && !seriesSlug) {
-      // Filter series with parallel collapse logic
-      let seriesToFilter = series
+  const loadSets = async (searchQuery = '') => {
+    try {
+      setLoading(!searchQuery) // Only show main loading for initial load
+      setSearching(!!searchQuery) // Show search loading for searches
       
-      if (parallelsCollapsed) {
-        // Only show series that are not parallels (parallel_of_series is null)
-        seriesToFilter = series.filter(s => !s.parallel_of_series)
+      const params = new URLSearchParams()
+      params.append('limit', '20')
+      if (searchQuery.trim()) {
+        params.append('search', searchQuery.trim())
+      }
+
+      const response = await axios.get(`/api/admin/sets?${params.toString()}`)
+      setSets(response.data.sets || [])
+      setLastUpdated(new Date())
+      setIsSearchMode(!!searchQuery.trim())
+      
+      // Get total count from database if not searching
+      if (!searchQuery.trim()) {
+        try {
+          const countResponse = await axios.get('/api/database/status')
+          if (countResponse.data?.records?.sets) {
+            setTotalSets(countResponse.data.records.sets)
+          }
+        } catch (error) {
+          console.error('Failed to get total sets count:', error)
+        }
       }
       
-      if (!searchTerm.trim()) {
-        setFilteredSeries(seriesToFilter)
-      } else {
-        const filtered = seriesToFilter.filter(s => 
-          s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (s.color_name && s.color_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-          (s.print_run_display && s.print_run_display.toLowerCase().includes(searchTerm.toLowerCase()))
-        )
-        setFilteredSeries(filtered)
-      }
-    }
-    // Note: seriesSlug case handled by navigation redirect
-  }, [years, sets, series, searchTerm, year, setSlug, seriesSlug, parallelsCollapsed])
-
-  const loadYears = async () => {
-    try {
-      setLoading(true)
-      const response = await axios.get('/api/admin/sets/years')
-      setYears(response.data.years || [])
-      setFilteredYears(response.data.years || [])
-    } catch (error) {
-      console.error('Error loading years:', error)
-      addToast(`Failed to load years: ${error.response?.data?.message || error.message}`, 'error')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const loadSetsForYear = async (yearParam) => {
-    try {
-      setLoading(true)
-      const response = await axios.get(`/api/admin/sets/by-year/${yearParam}`)
-      const setsData = response.data.sets || []
-      setSets(setsData)
-      setFilteredSets(setsData)
     } catch (error) {
       console.error('Error loading sets:', error)
       addToast(`Failed to load sets: ${error.response?.data?.message || error.message}`, 'error')
     } finally {
       setLoading(false)
+      setSearching(false)
     }
   }
 
-  const loadSetBySlug = async (yearParam, setSlugParam) => {
-    try {
-      // We need to get set details for the breadcrumb
-      const response = await axios.get(`/api/admin/sets/by-year/${yearParam}`)
-      const allSets = response.data.sets || []
-      const foundSet = allSets.find(s => s.slug === setSlugParam)
-      if (foundSet) {
-        setSelectedSet(foundSet)
+  const handleSearch = (e) => {
+    const value = e.target.value
+    setSearchTerm(value)
+    
+    // Debounce search
+    clearTimeout(window.setsSearchTimeout)
+    window.setsSearchTimeout = setTimeout(() => {
+      loadSets(value)
+    }, 300)
+  }
+
+  const handleRefresh = () => {
+    if (isSearchMode) {
+      loadSets(searchTerm)
+    } else {
+      loadSets()
+    }
+  }
+
+  const handleSort = (field) => {
+    let direction = 'asc'
+    if (sortField === field && sortDirection === 'asc') {
+      direction = 'desc'
+    }
+    setSortField(field)
+    setSortDirection(direction)
+  }
+
+  const getSortedSets = () => {
+    return [...sets].sort((a, b) => {
+      let aValue, bValue
+      
+      switch (sortField) {
+        case 'set_id':
+          aValue = a.set_id
+          bValue = b.set_id
+          break
+        case 'name':
+          aValue = (a.name || '').toLowerCase()
+          bValue = (b.name || '').toLowerCase()
+          break
+        case 'year':
+          aValue = a.year || 0
+          bValue = b.year || 0
+          break
+        case 'organization':
+          aValue = (a.organization || '').toLowerCase()
+          bValue = (b.organization || '').toLowerCase()
+          break
+        case 'manufacturer':
+          aValue = (a.manufacturer || '').toLowerCase()
+          bValue = (b.manufacturer || '').toLowerCase()
+          break
+        case 'series_count':
+          aValue = a.series_count || 0
+          bValue = b.series_count || 0
+          break
+        case 'card_count':
+          aValue = a.card_count || 0
+          bValue = b.card_count || 0
+          break
+        case 'last_viewed':
+          aValue = a.last_viewed ? new Date(a.last_viewed) : new Date(0)
+          bValue = b.last_viewed ? new Date(b.last_viewed) : new Date(0)
+          break
+        default:
+          return 0
       }
-    } catch (error) {
-      console.error('Error loading set:', error)
-    }
-  }
 
-  const loadSeriesForSet = async (yearParam, setSlugParam) => {
-    try {
-      setLoading(true)
-      const response = await axios.get(`/api/admin/series/by-set/${yearParam}/${setSlugParam}`)
-      const seriesData = response.data.series || []
-      setSeries(seriesData)
-      setFilteredSeries(seriesData)
-    } catch (error) {
-      console.error('Error loading series:', error)
-      addToast(`Failed to load series: ${error.response?.data?.message || error.message}`, 'error')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const loadSeriesBySlug = async (yearParam, setSlugParam, seriesSlugParam) => {
-    try {
-      // Find the series from the set's series list
-      const response = await axios.get(`/api/admin/series/by-set/${yearParam}/${setSlugParam}`)
-      const allSeries = response.data.series || []
-      const foundSeries = allSeries.find(s => generateSlug(s.name) === seriesSlugParam)
-      if (foundSeries) {
-        setSelectedSeries(foundSeries)
+      if (aValue < bValue) {
+        return sortDirection === 'asc' ? -1 : 1
       }
-    } catch (error) {
-      console.error('Error loading series:', error)
-    }
+      if (aValue > bValue) {
+        return sortDirection === 'asc' ? 1 : -1
+      }
+      return 0
+    })
   }
 
 
@@ -669,302 +657,195 @@ function AdminSets() {
     <div className="admin-sets-page">
       <div className="admin-header">
         <div className="admin-title">
-          {(year || setSlug || seriesSlug) && (
-            <Link 
-              to={seriesSlug ? `/admin/sets/${year}/${setSlug}` : setSlug ? `/admin/sets/${year}` : '/admin/sets'} 
-              className="back-button"
-              title="Go back"
-            >
-              <Icon name="arrow-left" size={24} />
-            </Link>
-          )}
           <Icon name="layers" size={32} />
-          <h1>
-            {seriesSlug && selectedSeries ? selectedSeries.name :
-             setSlug && selectedSet ? selectedSet.name : 
-             year ? `${year} Sets` : 
-             'Sets & Series Administration'}
-          </h1>
+          <h1>{totalSets > 0 ? `${totalSets.toLocaleString()} Sets` : 'Sets'}</h1>
         </div>
-        
-        <div className="header-controls">
-          {setSlug && selectedSet && (
-            <>
-              <button 
-                className="action-button secondary"
-                onClick={handleGenerateSpreadsheet}
-                disabled={generatingSpreadsheet}
-                title="Generate Excel spreadsheet for this set"
-              >
-                {generatingSpreadsheet ? (
-                  <>
-                    <Icon name="activity" size={16} className="spinning" />
-                    Queueing...
-                  </>
-                ) : (
-                  <>
-                    <Icon name="import" size={16} />
-                    Generate Checklist
-                  </>
-                )}
-              </button>
-              <button 
-                className="collapse-parallels-btn"
-                onClick={() => setParallelsCollapsed(!parallelsCollapsed)}
-              >
-                <Icon name={parallelsCollapsed ? "eye" : "eye-off"} size={16} />
-                {parallelsCollapsed ? "Show Parallels" : "Collapse Parallels"}
-              </button>
-            </>
-          )}
+
+        <div className="admin-controls">
+          <button
+            className="add-set-btn"
+            onClick={() => setShowAddModal(true)}
+            title="Add new set"
+          >
+            <Icon name="plus" size={20} />
+          </button>
           <div className="search-box">
             <Icon name="search" size={20} />
             <input
               type="text"
-              placeholder={
-                setSlug ? "Search series..." :
-                year ? "Search sets..." : 
-                "Search years..."
-              }
+              placeholder="Search sets by name, year, organization, manufacturer..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={handleSearch}
             />
+            {searching && <Icon name="activity" size={16} className="search-spinner spinning" />}
           </div>
         </div>
       </div>
 
-      <div className="content-area">
+      <div className="sets-content">
         {loading ? (
           <div className="loading-state">
             <Icon name="activity" size={24} className="spinning" />
-            <span>Loading...</span>
+            <span>Loading sets...</span>
           </div>
         ) : (
           <>
-            {/* Years Grid */}
-            {!year && !setSlug && (
-              <div className="years-grid">
-                {filteredYears.map(y => (
-                  <Link 
-                    key={y.year} 
-                    to={`/admin/sets/${y.year}`}
-                    className="year-card"
-                  >
-                    <div className="year-number">{y.year}</div>
-                    <div className="year-stats">
-                      <div className="year-stat-box">
-                        <div className="year-stat-number">{y.setCount}</div>
-                        <div className="year-stat-label">SETS</div>
-                      </div>
-                      <div className="year-stat-box">
-                        <div className="year-stat-number">{y.seriesCount}</div>
-                        <div className="year-stat-label">SERIES</div>
-                      </div>
-                    </div>
-                  </Link>
-                ))}
+            <div className="section-header">
+              <div className="section-info">
+                <h2>
+                  {isSearchMode 
+                    ? `Search Results (${sets.length})` 
+                    : `Most Recently Viewed Sets (${sets.length})`
+                  }
+                </h2>
               </div>
-            )}
+            </div>
 
-            {/* Sets Grid */}
-            {year && !setSlug && (
-              <div className="sets-list">
-                <div className="sets-grid">
-                  {filteredSets.map(set => (
-                    <div 
-                      key={set.set_id} 
-                      className="set-card"
-                      onClick={() => navigate(`/admin/sets/${year}/${set.slug}`)}
-                      onDoubleClick={(e) => { e.stopPropagation(); handleEditSet(set); }}
-                      title="Click to view series, double-click to edit"
-                    >
-                      <div className="set-id-stripe">SET_ID: {set.set_id}</div>
-                      <div className="set-card-body">
-                        <div className="set-thumbnail">
-                          {set.thumbnail ? (
-                            <img src={set.thumbnail} alt={`${set.name} thumbnail`} />
-                          ) : (
-                            <Icon name="series" size={20} />
-                          )}
-                        </div>
-                        <div className="set-main">
-                        <div className="set-header">
-                          <div className="set-title-row">
-                            <div className="set-name">{set.name}</div>
-                            {set.is_complete && <span className="complete-badge">Complete</span>}
-                          </div>
-                          <button 
-                            className="edit-btn"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleEditSet(set)
-                            }}
-                            title="Edit set"
-                          >
-                            <Icon name="edit" size={14} />
-                          </button>
-                        </div>
-                        <div className="set-content">
-                          <div className="set-stats">
-                            <div className="set-stat-box">
-                              <div className="set-stat-number">{set.series_count || 0}</div>
-                              <div className="set-stat-label">SERIES</div>
-                            </div>
-                            <div className="set-stat-box">
-                              <div className="set-stat-number">{set.card_count || 0}</div>
-                              <div className="set-stat-label">CARDS</div>
-                            </div>
-                          </div>
-                          <div className="set-tags">
-                            {set.manufacturer && (
-                              <div className="set-manufacturer">
-                                <span className="manufacturer-tag">{set.manufacturer}</span>
-                              </div>
-                            )}
-                            {set.organization && (
-                              <div className="set-organization">
-                                <span className="org-abbreviation">{set.organization}</span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+            <div className="sets-table">
+              <div className="table-header">
+                <div className="col-header center">Actions</div>
+                <div 
+                  className={`col-header sortable ${sortField === 'set_id' ? 'active' : ''}`}
+                  onClick={() => handleSort('set_id')}
+                >
+                  ID
+                  {sortField === 'set_id' && (
+                    <Icon 
+                      name={sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'} 
+                      size={14} 
+                      className="sort-icon" 
+                    />
+                  )}
                 </div>
-              </div>
-            )}
-
-            {/* Series Grid */}
-            {setSlug && selectedSet && (
-              <div className="series-list">
-                <div className="series-grid">
-                  {filteredSeries.map(s => (
-                    <div 
-                      key={s.series_id} 
-                      className="series-card-container"
-                    >
-                      <div 
-                        className="series-card"
-                        onClick={(e) => {
-                          // Don't navigate if clicking on parallels box
-                          if (!e.target.closest('.parallels-box-wrapper')) {
-                            navigate(`/admin/cards/${year}/${setSlug}/${generateSlug(s.name)}`)
-                          }
-                        }}
-                        title="Click to view cards"
-                      >
-                      {/* Top stripe for database ID */}
-                      <div className="series-id-stripe">SERIES_ID: {s.series_id}</div>
-                      <div className="series-content">
-                        <div className="series-header">
-                          <div className="series-name">
-                            {s.name === selectedSet?.name ? 'Base Set' : getCleanSeriesName(s.name)}
-                          </div>
-                          <div className="series-badges">
-                            <button 
-                              className="edit-btn"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleEditSeries(s)
-                              }}
-                              title="Edit series"
-                            >
-                              <Icon name="edit" size={14} />
-                            </button>
-                          </div>
-                        </div>
-                        
-                        <div className="series-info">
-                          {/* Parallel info moved to bottom stripe */}
-                        </div>
-                        
-                        <div className="series-stats">
-                          <div className="series-stat-box">
-                            <div className="series-stat-number">{s.card_count || 0}</div>
-                            <div className="series-stat-label">CARDS</div>
-                          </div>
-                          {/* Always show completion percentage */}
-                          <div 
-                            className="series-stat-box"
-                            style={{
-                              backgroundColor: getCompletionPercentage(s.card_count, s.card_entered_count) < 100 
-                                ? 'rgba(239, 68, 68, 0.2)' 
-                                : 'rgba(255, 255, 255, 0.1)',
-                              borderColor: getCompletionPercentage(s.card_count, s.card_entered_count) < 100 
-                                ? 'rgba(239, 68, 68, 0.4)' 
-                                : 'rgba(255, 255, 255, 0.2)'
-                            }}
-                          >
-                            <div 
-                              className="series-stat-number"
-                              style={{
-                                color: getCompletionColor(getCompletionPercentage(s.card_count, s.card_entered_count))
-                              }}
-                            >
-                              {getCompletionPercentage(s.card_count, s.card_entered_count)}%
-                            </div>
-                            <div className="series-stat-label">COMPLETE</div>
-                          </div>
-                          {getParallelCount(s.series_id) > 0 && (
-                            // Show parallel count for parent series
-                            <div className="parallels-box-wrapper">
-                              <div 
-                                className="series-stat-box clickable-stat-box"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  handleParallelsClick(s, e)
-                                }}
-                                title="Click to view parallels"
-                              >
-                                <div className="series-stat-number">{getParallelCount(s.series_id)}</div>
-                                <div className="series-stat-label">PARALLELS</div>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      {/* Bottom parallel stripe - always show for alignment */}
-                      <div 
-                        className={`series-parallel-stripe ${s.parallel_of_name ? 'has-content' : 'empty'}`}
-                        title={s.parallel_of_name ? `Parallel of series ID: ${s.parallel_of_series}` : undefined}
-                      >
-                        {s.parallel_of_name && (getCleanParallelName(s.parallel_of_name).trim() || 'BASE').toUpperCase()}
-                      </div>
-                      {/* Right color stripe - only show when color data exists */}
-                      {s.color_hex_value && (
-                        <div 
-                          className="series-color-stripe-right"
-                          style={{ 
-                            backgroundColor: s.color_hex_value,
-                            color: isLightColor(s.color_hex_value) ? '#000000' : '#ffffff',
-                            textShadow: isLightColor(s.color_hex_value) 
-                              ? '0 1px 1px rgba(255, 255, 255, 0.8)' 
-                              : '0 1px 1px rgba(0, 0, 0, 0.8)'
-                          }}
-                        >
-                          {(() => {
-                            const colorName = s.color_name || ''
-                            const printRun = s.print_run_display || (s.min_print_run && s.max_print_run ? `${s.min_print_run}-${s.max_print_run}` : '')
-                            const displayText = [colorName, printRun].filter(Boolean).join(' ')
-                            return displayText
-                          })()}
-                        </div>
-                      )}
-                      </div>
-                    </div>
-                  ))}
-                  {filteredSeries.length === 0 && series.length > 0 && (
-                    <div className="empty-state">
-                      <Icon name="search" size={48} />
-                      <p>No series found matching "{searchTerm}"</p>
-                    </div>
+                <div 
+                  className={`col-header sortable ${sortField === 'name' ? 'active' : ''}`}
+                  onClick={() => handleSort('name')}
+                >
+                  Set Name
+                  {sortField === 'name' && (
+                    <Icon 
+                      name={sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'} 
+                      size={14} 
+                      className="sort-icon" 
+                    />
+                  )}
+                </div>
+                <div 
+                  className={`col-header center sortable ${sortField === 'year' ? 'active' : ''}`}
+                  onClick={() => handleSort('year')}
+                >
+                  Year
+                  {sortField === 'year' && (
+                    <Icon 
+                      name={sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'} 
+                      size={14} 
+                      className="sort-icon" 
+                    />
+                  )}
+                </div>
+                <div 
+                  className={`col-header center sortable ${sortField === 'organization' ? 'active' : ''}`}
+                  onClick={() => handleSort('organization')}
+                >
+                  Org
+                  {sortField === 'organization' && (
+                    <Icon 
+                      name={sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'} 
+                      size={14} 
+                      className="sort-icon" 
+                    />
+                  )}
+                </div>
+                <div 
+                  className={`col-header center sortable ${sortField === 'manufacturer' ? 'active' : ''}`}
+                  onClick={() => handleSort('manufacturer')}
+                >
+                  Manufacturer
+                  {sortField === 'manufacturer' && (
+                    <Icon 
+                      name={sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'} 
+                      size={14} 
+                      className="sort-icon" 
+                    />
+                  )}
+                </div>
+                <div 
+                  className={`col-header center sortable ${sortField === 'series_count' ? 'active' : ''}`}
+                  onClick={() => handleSort('series_count')}
+                >
+                  Series
+                  {sortField === 'series_count' && (
+                    <Icon 
+                      name={sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'} 
+                      size={14} 
+                      className="sort-icon" 
+                    />
+                  )}
+                </div>
+                <div 
+                  className={`col-header center sortable ${sortField === 'card_count' ? 'active' : ''}`}
+                  onClick={() => handleSort('card_count')}
+                >
+                  Cards
+                  {sortField === 'card_count' && (
+                    <Icon 
+                      name={sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'} 
+                      size={14} 
+                      className="sort-icon" 
+                    />
                   )}
                 </div>
               </div>
-            )}
+              
+              {getSortedSets().map(set => (
+                <div 
+                  key={set.set_id} 
+                  className="set-row"
+                  onDoubleClick={() => handleEditSet(set)}
+                  title="Double-click to edit set"
+                >
+                  <div className="col-actions">
+                    <button 
+                      className="edit-btn"
+                      title="Edit set"
+                      onClick={() => handleEditSet(set)}
+                    >
+                      <Icon name="edit" size={16} />
+                    </button>
+                    <button 
+                      className="view-btn"
+                      title="View series"
+                      onClick={() => navigate(`/admin/series?set=${set.set_id}`)}
+                    >
+                      <Icon name="layers" size={16} />
+                    </button>
+                  </div>
+                  <div className="col-id">{set.set_id}</div>
+                  <div className="col-name">
+                    <span className="set-name">{set.name}</span>
+                    {set.is_complete && <span className="complete-badge">Complete</span>}
+                  </div>
+                  <div className="col-year">{set.year}</div>
+                  <div className="col-organization">{set.organization}</div>
+                  <div className="col-manufacturer">{set.manufacturer}</div>
+                  <div className="col-series">{(set.series_count || 0).toLocaleString()}</div>
+                  <div className="col-cards">{(set.card_count || 0).toLocaleString()}</div>
+                </div>
+              ))}
 
+              {sets.length === 0 && (
+                <div className="empty-state">
+                  <Icon name="search" size={48} />
+                  <h3>No sets found</h3>
+                  <p>
+                    {isSearchMode 
+                      ? `No sets match "${searchTerm}". Try a different search term.`
+                      : 'No recently viewed sets found. Sets will appear here after users visit their detail pages.'
+                    }
+                  </p>
+                </div>
+              )}
+            </div>
           </>
         )}
       </div>
@@ -1015,373 +896,243 @@ function AdminSets() {
       {/* Edit Modal */}
       {showEditModal && editingItem && (
         <div className="modal-overlay" onClick={handleCloseModal}>
-          <div className="edit-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="edit-player-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>Edit {editType === 'set' ? 'Set' : 'Series'}{editingItem && ` #${editType === 'set' ? editingItem.set_id : editingItem.series_id}`}</h3>
+              <h3>Edit {editType === 'set' ? 'Set' : 'Series'} #{editType === 'set' ? editingItem.set_id : editingItem.series_id}</h3>
               <button className="close-btn" onClick={handleCloseModal}>
                 <Icon name="x" size={20} />
               </button>
             </div>
             
             <div className="modal-content">
-              <form className="edit-form" onSubmit={(e) => e.preventDefault()}>
+              <div className="edit-form">
+                <div className="player-details-form">
                 
                 {editType === 'set' ? (
                   <>
-                    <div className="form-section">
-                      <div className="form-row">
-                        <label className="form-label">Name</label>
+                    <div className="form-field-row">
+                      <label className="field-label">Name</label>
+                      <input
+                        type="text"
+                        className="field-input"
+                        value={editForm.name}
+                        onChange={(e) => handleFormChange('name', e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        placeholder="Set name"
+                      />
+                    </div>
+
+                    <div className="form-field-row">
+                      <label className="field-label">Year</label>
+                      <input
+                        type="number"
+                        className="field-input"
+                        value={editForm.year}
+                        onChange={(e) => handleFormChange('year', e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        min="1900"
+                        max="2100"
+                      />
+                    </div>
+
+                    <div className="form-field-row">
+                      <label className="field-label">Organization</label>
+                      <select
+                        className="field-input"
+                        value={editForm.organization}
+                        onChange={(e) => handleFormChange('organization', e.target.value)}
+                        onKeyDown={handleKeyDown}
+                      >
+                        <option value="">Select organization...</option>
+                        {organizations.map(org => (
+                          <option key={org.organization_id} value={org.organization_id}>
+                            {org.name} ({org.abbreviation})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="form-field-row">
+                      <label className="field-label">Manufacturer</label>
+                      <select
+                        className="field-input"
+                        value={editForm.manufacturer}
+                        onChange={(e) => handleFormChange('manufacturer', e.target.value)}
+                        onKeyDown={handleKeyDown}
+                      >
+                        <option value="">Select manufacturer...</option>
+                        {manufacturers.map(mfg => (
+                          <option key={mfg.manufacturer_id} value={mfg.manufacturer_id}>
+                            {mfg.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="form-field-row">
+                      <label className="field-label">Complete</label>
+                      <button
+                        type="button"
+                        className={`hof-toggle ${editForm.is_complete ? 'hof-active' : ''}`}
+                        onClick={() => handleFormChange('is_complete', !editForm.is_complete)}
+                      >
+                        <Icon name="check-circle" size={16} />
+                        <span>Set is complete</span>
+                        {editForm.is_complete && <Icon name="check" size={16} className="hof-check" />}
+                      </button>
+                    </div>
+
+                    <div className="form-field-row">
+                      <label className="field-label">Thumbnail</label>
+                      <div className="thumbnail-upload" onClick={() => document.getElementById('thumbnail-input').click()}>
                         <input
-                          type="text"
-                          className="form-input"
-                          value={editForm.name}
-                          onChange={(e) => handleFormChange('name', e.target.value)}
-                          onKeyDown={handleKeyDown}
-                          placeholder="Set name"
+                          id="thumbnail-input"
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files[0]
+                            setSelectedFile(file)
+                            if (file) {
+                              const previewUrl = URL.createObjectURL(file)
+                              handleFormChange('thumbnail', previewUrl)
+                            }
+                          }}
+                          className="file-input"
+                          style={{ display: 'none' }}
                         />
-                      </div>
-
-                      <div className="form-row">
-                        <label className="form-label">Year</label>
-                        <input
-                          type="number"
-                          className="form-input"
-                          value={editForm.year}
-                          onChange={(e) => handleFormChange('year', e.target.value)}
-                          onKeyDown={handleKeyDown}
-                          min="1900"
-                          max="2100"
-                        />
-                      </div>
-
-                      <div className="form-row">
-                        <label className="form-label">Organization</label>
-                        <select
-                          className="form-input"
-                          value={editForm.organization}
-                          onChange={(e) => handleFormChange('organization', e.target.value)}
-                          onKeyDown={handleKeyDown}
-                        >
-                          <option value="">Select organization...</option>
-                          {organizations.map(org => (
-                            <option key={org.organization_id} value={org.organization_id}>
-                              {org.name} ({org.abbreviation})
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <div className="form-row">
-                        <label className="form-label">Manufacturer</label>
-                        <select
-                          className="form-input"
-                          value={editForm.manufacturer}
-                          onChange={(e) => handleFormChange('manufacturer', e.target.value)}
-                          onKeyDown={handleKeyDown}
-                        >
-                          <option value="">Select manufacturer...</option>
-                          {manufacturers.map(mfg => (
-                            <option key={mfg.manufacturer_id} value={mfg.manufacturer_id}>
-                              {mfg.name}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <div className="form-row">
-                        <label className="form-label">Complete</label>
-                        <label className="checkbox-label">
-                          <input
-                            type="checkbox"
-                            checked={editForm.is_complete}
-                            onChange={(e) => handleFormChange('is_complete', e.target.checked)}
-                          />
-                          <span>Set is complete</span>
-                        </label>
-                      </div>
-
-                      <div className="form-row">
-                        <label className="form-label">Thumbnail</label>
-                        <div className="thumbnail-section">
-                          {editForm.thumbnail && (
-                            <div className="current-thumbnail">
-                              <img src={editForm.thumbnail} alt="Current thumbnail" />
-                              <span>Current thumbnail</span>
-                            </div>
-                          )}
-                          <div 
-                            className="thumbnail-upload"
-                            onClick={() => document.getElementById('thumbnail-input').click()}
-                          >
-                            <input
-                              id="thumbnail-input"
-                              type="file"
-                              accept="image/*"
-                              onChange={(e) => {
-                                const file = e.target.files[0]
-                                setSelectedFile(file)
-                                if (file) {
-                                  const previewUrl = URL.createObjectURL(file)
-                                  handleFormChange('thumbnail', previewUrl)
-                                }
-                              }}
-                              className="file-input"
-                            />
-                            <span className="upload-text">
-                              {selectedFile ? selectedFile.name : 'Choose image file...'}
-                            </span>
-                            {uploadingThumbnail && (
-                              <span className="upload-status">Uploading...</span>
-                            )}
-                          </div>
-                        </div>
+                        <span className="upload-text">
+                          {selectedFile ? selectedFile.name : (editForm.thumbnail ? 'Change thumbnail...' : 'Choose image file...')}
+                        </span>
+                        {uploadingThumbnail && <span className="upload-status">Uploading...</span>}
                       </div>
                     </div>
                   </>
                 ) : (
                   <>
-                    <div className="form-section">
-                      <div className="form-row">
-                        <label className="form-label">Name</label>
+                    <div className="form-field-row">
+                      <label className="field-label">Name</label>
+                      <input
+                        type="text"
+                        className="field-input"
+                        value={editForm.name}
+                        onChange={(e) => handleFormChange('name', e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        placeholder="Series name"
+                      />
+                    </div>
+
+                    <div className="form-field-row">
+                      <label className="field-label">Is Base Series</label>
+                      <button
+                        type="button"
+                        className={`hof-toggle ${editForm.is_base ? 'hof-active' : ''}`}
+                        onClick={() => handleFormChange('is_base', !editForm.is_base)}
+                      >
+                        <Icon name="star" size={16} />
+                        <span>This is a base series</span>
+                        {editForm.is_base && <Icon name="check" size={16} className="hof-check" />}
+                      </button>
+                    </div>
+
+                    <div className="form-field-row">
+                      <label className="field-label">Parallel Of</label>
+                      <select
+                        className="field-input"
+                        value={editForm.parallel_of_series || ''}
+                        onChange={(e) => handleFormChange('parallel_of_series', e.target.value || null)}
+                        onKeyDown={handleKeyDown}
+                      >
+                        <option value="">Not a parallel</option>
+                        {series.filter(s => !s.parallel_of_series && s.series_id !== editingItem?.series_id).map(s => (
+                          <option key={s.series_id} value={s.series_id}>
+                            {s.name === selectedSet?.name ? 'Base Set' : getCleanSeriesName(s.name)}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="form-field-row">
+                      <label className="field-label">Total Cards</label>
+                      <input
+                        type="number"
+                        className="field-input"
+                        value={editForm.card_count}
+                        onChange={(e) => handleFormChange('card_count', e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        min="0"
+                      />
+                    </div>
+
+                    <div className="form-field-row">
+                      <label className="field-label">Entered Cards</label>
+                      <input
+                        type="text"
+                        className="field-input"
+                        value={editForm.card_entered_count || 0}
+                        disabled
+                        style={{ opacity: 0.7 }}
+                      />
+                    </div>
+
+
+                    <div className="form-field-row">
+                      <label className="field-label">Color</label>
+                      <select
+                        className="field-input"
+                        value={editForm.color_id || ''}
+                        onChange={(e) => handleFormChange('color_id', e.target.value || null)}
+                        onKeyDown={handleKeyDown}
+                      >
+                        <option value="">No color</option>
+                        {colors.map(color => (
+                          <option key={color.color_id} value={color.color_id}>
+                            {color.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="form-field-row">
+                      <label className="field-label">Front Image</label>
+                      <div className="thumbnail-upload" onClick={() => document.getElementById('front-image-upload').click()}>
                         <input
-                          type="text"
-                          className="form-input"
-                          value={editForm.name}
-                          onChange={(e) => handleFormChange('name', e.target.value)}
-                          onKeyDown={handleKeyDown}
-                          placeholder="Series name"
+                          type="file"
+                          id="front-image-upload"
+                          accept="image/*"
+                          onChange={(e) => handleFrontImageSelect(e.target.files[0] || null)}
+                          style={{ display: 'none' }}
                         />
-                      </div>
-
-                      <div className="form-row">
-                        <label className="form-label">Is Base Series</label>
-                        <label className="checkbox-label">
-                          <input
-                            type="checkbox"
-                            checked={editForm.is_base}
-                            onChange={(e) => handleFormChange('is_base', e.target.checked)}
-                          />
-                          <span>This is a base series</span>
-                        </label>
-                      </div>
-
-                      <div className="form-row">
-                        <label className="form-label">Parallel Of</label>
-                        <select
-                          className="form-input"
-                          value={editForm.parallel_of_series || ''}
-                          onChange={(e) => handleFormChange('parallel_of_series', e.target.value || null)}
-                          onKeyDown={handleKeyDown}
-                        >
-                          <option value="">Not a parallel</option>
-                          {series.filter(s => !s.parallel_of_series && s.series_id !== editingItem?.series_id).map(s => (
-                            <option key={s.series_id} value={s.series_id}>
-                              {s.name === selectedSet?.name ? 'Base Set' : getCleanSeriesName(s.name)}
-                            </option>
-                          ))}
-                        </select>
+                        <span className="upload-text">
+                          {selectedFrontImage ? selectedFrontImage.name : (editForm.front_image_path ? 'Change front image...' : 'Choose front image...')}
+                        </span>
                       </div>
                     </div>
 
-                    <div className="form-section">
-                      <h4>Card Counts</h4>
-                      
-                      <div className="form-row-inline">
-                        <div className="form-field">
-                          <label className="form-label">Total</label>
-                          <input
-                            type="number"
-                            className="form-input"
-                            value={editForm.card_count}
-                            onChange={(e) => handleFormChange('card_count', e.target.value)}
-                            onKeyDown={handleKeyDown}
-                            min="0"
-                          />
-                        </div>
-                        <div className="form-field">
-                          <label className="form-label">Entered</label>
-                          <span className="form-value">{editForm.card_entered_count || 0}</span>
-                        </div>
+                    <div className="form-field-row">
+                      <label className="field-label">Back Image</label>
+                      <div className="thumbnail-upload" onClick={() => document.getElementById('back-image-upload').click()}>
+                        <input
+                          type="file"
+                          id="back-image-upload"
+                          accept="image/*"
+                          onChange={(e) => handleBackImageSelect(e.target.files[0] || null)}
+                          style={{ display: 'none' }}
+                        />
+                        <span className="upload-text">
+                          {selectedBackImage ? selectedBackImage.name : (editForm.back_image_path ? 'Change back image...' : 'Choose back image...')}
+                        </span>
                       </div>
                     </div>
 
-
-                    <div className="form-section">
-                      <h4>Color</h4>
-                      
-                      <div className="form-row">
-                        <label className="form-label">Color</label>
-                        <div className="color-dropdown" ref={colorDropdownRef}>
-                          <div 
-                            className="custom-color-select"
-                            onClick={() => setColorDropdownOpen(!colorDropdownOpen)}
-                          >
-                            <div className="selected-color-display">
-                              {editForm.color_id && colors.length > 0 && (() => {
-                                const selectedColor = colors.find(c => c.color_id == editForm.color_id)
-                                return selectedColor ? (
-                                  <>
-                                    <div 
-                                      className="color-swatch-small"
-                                      style={{ backgroundColor: selectedColor.hex_value }}
-                                    />
-                                    <span>{selectedColor.name}</span>
-                                  </>
-                                ) : null
-                              })() || <span>No color</span>}
-                            </div>
-                            <Icon name="chevron-down" size={16} />
-                          </div>
-                          {colorDropdownOpen && (
-                            <div className="custom-color-options">
-                              <div 
-                                className={`color-option ${!editForm.color_id ? 'selected' : ''}`}
-                                onClick={() => {
-                                  handleFormChange('color_id', null)
-                                  setColorDropdownOpen(false)
-                                }}
-                              >
-                                <span className="color-option-text">No color</span>
-                              </div>
-                              {colors.map(color => (
-                                <div 
-                                  key={color.color_id}
-                                  className={`color-option ${editForm.color_id == color.color_id ? 'selected' : ''}`}
-                                  onClick={() => {
-                                    handleFormChange('color_id', color.color_id)
-                                    setColorDropdownOpen(false)
-                                  }}
-                                >
-                                  <div 
-                                    className="color-swatch-small"
-                                    style={{ backgroundColor: color.hex_value }}
-                                  />
-                                  <span className="color-option-text">{color.name}</span>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
+                    {uploadingImages && (
+                      <div className="form-field-row">
+                        <span style={{ color: '#fbbf24' }}>Uploading images...</span>
                       </div>
-                    </div>
-
-                    <div className="form-section">
-                      <h4>Images</h4>
-
-                      <div className="form-row">
-                        <label className="form-label">Front Image</label>
-                        <div className="image-upload-section">
-                          {/* Show current image from database */}
-                          {editForm.front_image_path && !frontImagePreview && (
-                            <div className="current-image-preview">
-                              <img 
-                                src={editForm.front_image_path} 
-                                alt="Current front image" 
-                                className="image-preview"
-                              />
-                            </div>
-                          )}
-                          
-                          {/* Show preview of newly selected image */}
-                          {frontImagePreview && (
-                            <div className="new-image-preview">
-                              <img 
-                                src={frontImagePreview} 
-                                alt="Front image preview" 
-                                className="image-preview"
-                              />
-                              <span className="new-image-label">New</span>
-                            </div>
-                          )}
-                          
-                          <div className="file-upload-wrapper">
-                            <input
-                              type="file"
-                              id="front-image-upload"
-                              accept="image/*"
-                              onChange={(e) => handleFrontImageSelect(e.target.files[0] || null)}
-                              className="file-input-hidden"
-                            />
-                            <label htmlFor="front-image-upload" className="file-upload-button">
-                              <span className="upload-text">
-                                {selectedFrontImage ? selectedFrontImage.name : 'Choose front image...'}
-                              </span>
-                            </label>
-                            {selectedFrontImage && (
-                              <button
-                                type="button"
-                                onClick={() => handleFrontImageSelect(null)}
-                                className="clear-image-btn"
-                              >
-                                Clear
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="form-row">
-                        <label className="form-label">Back Image</label>
-                        <div className="image-upload-section">
-                          {/* Show current image from database */}
-                          {editForm.back_image_path && !backImagePreview && (
-                            <div className="current-image-preview">
-                              <img 
-                                src={editForm.back_image_path} 
-                                alt="Current back image" 
-                                className="image-preview"
-                              />
-                            </div>
-                          )}
-                          
-                          {/* Show preview of newly selected image */}
-                          {backImagePreview && (
-                            <div className="new-image-preview">
-                              <img 
-                                src={backImagePreview} 
-                                alt="Back image preview" 
-                                className="image-preview"
-                              />
-                              <span className="new-image-label">New</span>
-                            </div>
-                          )}
-                          
-                          <div className="file-upload-wrapper">
-                            <input
-                              type="file"
-                              id="back-image-upload"
-                              accept="image/*"
-                              onChange={(e) => handleBackImageSelect(e.target.files[0] || null)}
-                              className="file-input-hidden"
-                            />
-                            <label htmlFor="back-image-upload" className="file-upload-button">
-                              <span className="upload-text">
-                                {selectedBackImage ? selectedBackImage.name : 'Choose back image...'}
-                              </span>
-                            </label>
-                            {selectedBackImage && (
-                              <button
-                                type="button"
-                                onClick={() => handleBackImageSelect(null)}
-                                className="clear-image-btn"
-                              >
-                                Clear
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      {uploadingImages && (
-                        <div className="upload-status-message">
-                          <span>Uploading images...</span>
-                        </div>
-                      )}
-                    </div>
+                    )}
                   </>
                 )}
-                
-              </form>
+                </div>
+              </div>
             </div>
             
             <div className="modal-actions">

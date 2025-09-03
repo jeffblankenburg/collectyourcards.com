@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation, useParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
 import Icon from '../components/Icon'
-import './Auth.css'
+import './AuthScoped.css'
 
 function Auth() {
   const { mode } = useParams() // 'login' or 'signup'
@@ -50,6 +50,11 @@ function Auth() {
       })
     }
   }, [mode, location.pathname])
+
+  // Set page title
+  useEffect(() => {
+    document.title = authMode === 'signup' ? 'Sign Up - Collect Your Cards' : 'Login - Collect Your Cards'
+  }, [authMode])
 
   // Handle messages from navigation
   useEffect(() => {

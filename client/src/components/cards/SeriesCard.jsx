@@ -1,10 +1,15 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../../contexts/AuthContext'
 import Icon from '../Icon'
 import './SeriesCard.css'
 
-function SeriesCard({ series, showBadge = false, customOnClick = null }) {
+function SeriesCard({ series, showBadge = false, customOnClick = null, hideSetName = false }) {
   const navigate = useNavigate()
+  const { user } = useAuth()
+  
+  // Check if user is admin
+  const isAdmin = user && ['admin', 'superadmin', 'data_admin'].includes(user.role)
 
   // Function to determine if a color is light or dark
   const isLightColor = (hex) => {
@@ -62,13 +67,15 @@ function SeriesCard({ series, showBadge = false, customOnClick = null }) {
           <h3 className="seriescard-name">
             {series.name}
           </h3>
-          <div className="seriescard-set-header">
-            {series.set_name ? (
-              <p className="seriescard-set-text">{series.set_name}</p>
-            ) : (
-              <p className="seriescard-set-text seriescard-set-placeholder">&nbsp;</p>
-            )}
-          </div>
+          {!hideSetName && (
+            <div className="seriescard-set-header">
+              {series.set_name ? (
+                <p className="seriescard-set-text">{series.set_name}</p>
+              ) : (
+                <p className="seriescard-set-text seriescard-set-placeholder">&nbsp;</p>
+              )}
+            </div>
+          )}
         </div>
         
         <div className="seriescard-middle-space">
@@ -99,6 +106,20 @@ function SeriesCard({ series, showBadge = false, customOnClick = null }) {
           )}
         </div>
       </div>
+      
+      {/* Admin Edit Button */}
+      {isAdmin && (
+        <button 
+          className="seriescard-admin-edit-btn"
+          onClick={(e) => {
+            e.stopPropagation()
+            navigate(`/admin/series?search=${encodeURIComponent(series.name)}`)
+          }}
+          title="Edit series (Admin)"
+        >
+          <Icon name="edit" size={14} />
+        </button>
+      )}
     </div>
   )
 }

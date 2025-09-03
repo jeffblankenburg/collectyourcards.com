@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext'
 import axios from 'axios'
 import Icon from '../components/Icon'
 import { PlayerCard } from '../components/cards'
-import './PlayersLanding.css'
+import './PlayersLandingScoped.css'
 
 function PlayersLanding() {
   const { isAuthenticated } = useAuth()
@@ -18,6 +18,7 @@ function PlayersLanding() {
 
   useEffect(() => {
     loadPlayersData()
+    document.title = 'All Players - Collect Your Cards'
   }, [isAuthenticated])
 
   // Filter players based on search term
@@ -158,7 +159,7 @@ function PlayersLanding() {
 
   if (loading) {
     return (
-      <div className="players-landing">
+      <div className="players-landing-page">
         <div className="loading-container">
           <Icon name="activity" size={24} className="spinner" />
           <p>Loading players...</p>
@@ -169,7 +170,7 @@ function PlayersLanding() {
 
   if (error) {
     return (
-      <div className="players-landing">
+      <div className="players-landing-page">
         <div className="error-container">
           <Icon name="error" size={24} />
           <p>{error}</p>
@@ -182,7 +183,7 @@ function PlayersLanding() {
   }
 
   return (
-    <div className="players-landing">
+    <div className="players-landing-page">
       <div className="players-landing-grid">
         {/* Header as grid items */}
         <div className="grid-header-title">
