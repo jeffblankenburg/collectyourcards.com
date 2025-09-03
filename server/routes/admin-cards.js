@@ -1,8 +1,7 @@
 const express = require('express')
-const { PrismaClient } = require('@prisma/client')
-const { requireAdmin, requireDataAdmin } = require('../middleware/auth')
 const router = express.Router()
-const prisma = new PrismaClient()
+const { prisma } = require('../config/prisma-singleton')
+const { authMiddleware, requireDataAdmin } = require('../middleware/auth')
 
 // PUT /api/admin/cards/:id - Update a card
 router.put('/:id', requireDataAdmin, async (req, res) => {

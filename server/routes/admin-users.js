@@ -1,11 +1,10 @@
 const express = require('express')
-const { PrismaClient } = require('@prisma/client')
-const { authMiddleware, requireAdmin } = require('../middleware/auth')
-const crypto = require('crypto')
-const bcrypt = require('bcrypt')
-const { EmailClient } = require('@azure/communication-email')
+const { authMiddleware, requireAdmin, requireDataAdmin, requireSuperAdmin } = require('../middleware/auth')
 const router = express.Router()
-const prisma = new PrismaClient()
+const { prisma } = require('../config/prisma-singleton')
+const { EmailClient } = require('@azure/communication-email')
+const bcrypt = require('bcrypt')
+const crypto = require('crypto')
 
 // Initialize Azure Communication Services Email Client
 const emailConnectionString = process.env.AZURE_COMMUNICATION_CONNECTION_STRING

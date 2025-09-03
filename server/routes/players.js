@@ -1,7 +1,6 @@
 const express = require('express')
-const { PrismaClient } = require('@prisma/client')
 const router = express.Router()
-const prisma = new PrismaClient()
+const { prisma } = require('../config/prisma-singleton')
 const { authMiddleware } = require('../middleware/auth')
 
 // GET /api/players/by-slug/:slug - Get player details by slug (simplified)

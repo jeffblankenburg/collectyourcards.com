@@ -123,6 +123,9 @@ const iconMap = {
   'fire': Zap,
   'party': Sparkles,
   'archive': Archive,
+  'refresh-cw': RefreshCw,
+  'zap': Zap,
+  'login': LogIn,
   
   // Status & Alerts
   'success': CheckCircle,

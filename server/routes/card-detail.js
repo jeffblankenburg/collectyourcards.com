@@ -1,22 +1,11 @@
 const express = require('express')
-const { PrismaClient } = require('@prisma/client')
+const { prisma } = require('../config/prisma-singleton')
 
 const router = express.Router()
 
-// Initialize Prisma with error handling for production
-let prisma
-let databaseAvailable = false
-
-try {
-  prisma = new PrismaClient({
-    log: ['error']
-  })
-  databaseAvailable = true
-  console.log('Card Detail API: Database connection established')
-} catch (error) {
-  console.error('Card Detail API: Database connection failed:', error.message)
-  prisma = null
-}
+// Database connection is handled by singleton
+const databaseAvailable = true
+console.log('Card Detail API: Database connection established')
 
 // Helper function to generate URL slug from name
 function generateSlug(name) {

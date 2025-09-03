@@ -1,9 +1,9 @@
 const express = require('express')
+const { prisma } = require('../config/prisma-singleton')
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
 const crypto = require('crypto')
 const { body, validationResult } = require('express-validator')
-const { PrismaClient } = require('@prisma/client')
 const emailService = require('../services/emailService')
 const { authMiddleware } = require('../middleware/auth')
 const rateLimiter = require('../middleware/rateLimiter')
@@ -21,11 +21,9 @@ router.get('/health', (req, res) => {
 })
 
 // Initialize Prisma with error handling for production
-let prisma
 let databaseAvailable = false
 
 try {
-  prisma = new PrismaClient()
   databaseAvailable = true
   console.log('✅ Database connection initialized for auth routes')
 } catch (error) {

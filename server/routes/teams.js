@@ -1,7 +1,6 @@
 const express = require('express')
-const { PrismaClient } = require('@prisma/client')
 const router = express.Router()
-const prisma = new PrismaClient()
+const { prisma } = require('../config/prisma-singleton')
 
 // POST /api/teams/track-visit - Track team visit (authenticated users only)
 router.post('/track-visit', async (req, res) => {

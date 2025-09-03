@@ -1,9 +1,7 @@
 const express = require('express')
-const { PrismaClient } = require('@prisma/client')
-const { authMiddleware, requireDataAdmin } = require('../middleware/auth')
-
+const { authMiddleware, requireAdmin, requireDataAdmin, requireSuperAdmin } = require('../middleware/auth')
 const router = express.Router()
-const prisma = new PrismaClient()
+const { prisma } = require('../config/prisma-singleton')
 
 // Apply authentication and data admin requirements to all routes
 router.use(authMiddleware)

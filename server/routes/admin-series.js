@@ -1,8 +1,7 @@
 const express = require('express')
-const { PrismaClient } = require('@prisma/client')
+const { prisma } = require('../config/prisma-singleton')
 const { authMiddleware, requireAdmin } = require('../middleware/auth')
 const router = express.Router()
-const prisma = new PrismaClient()
 
 // All routes require admin authentication
 router.use(authMiddleware)

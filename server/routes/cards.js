@@ -1,8 +1,20 @@
 const express = require('express')
-const { PrismaClient } = require('@prisma/client')
-const { optionalAuthMiddleware } = require('../middleware/auth')
 const router = express.Router()
-const prisma = new PrismaClient()
+const { prisma } = require('../config/prisma-singleton')
+const { authMiddleware } = require('../middleware/auth')
+
+// Optional auth middleware
+const optionalAuthMiddleware = async (req, res, next) => {
+  const authHeader = req.headers.authorization
+  if (authHeader?.startsWith('Bearer ')) {
+    try {
+      await authMiddleware(req, res, () => {})
+    } catch (err) {
+      // User not authenticated, continue without user context
+    }
+  }
+  next()
+}
 
 // GET /api/cards - Get cards with filtering and pagination
 router.get('/', optionalAuthMiddleware, async (req, res) => {

@@ -1,10 +1,9 @@
 const express = require('express')
+const { authMiddleware, requireAdmin, requireDataAdmin, requireSuperAdmin } = require('../middleware/auth')
+const router = express.Router()
 const multer = require('multer')
 const { BlobServiceClient } = require('@azure/storage-blob')
-const { PrismaClient } = require('@prisma/client')
-const { authMiddleware, requireAdmin } = require('../middleware/auth')
-const router = express.Router()
-const prisma = new PrismaClient()
+const { prisma } = require('../config/prisma-singleton')
 
 // Configure multer for memory storage
 const upload = multer({ 
@@ -86,8 +85,9 @@ router.use(requireAdmin)
 // GET /api/admin/sets - Get list of sets with search and limit
 router.get('/sets', async (req, res) => {
   try {
-    const { search, set_id, limit = 20 } = req.query
-    const limitInt = Math.min(parseInt(limit) || 20, 100) // Cap at 100
+    const { search, set_id, limit = 20, all } = req.query
+    // If 'all' parameter is provided, get all sets (for dropdowns)
+    const limitInt = all === 'true' ? 10000 : Math.min(parseInt(limit) || 20, 100) // Cap at 100 unless 'all' is requested
 
     let whereClause = {}
     let orderBy = [{ created: 'desc' }]

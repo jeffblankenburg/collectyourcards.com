@@ -150,15 +150,9 @@ function AdminSeries() {
 
   const loadSets = async () => {
     try {
-      const response = await axios.get('/api/admin/sets')
+      // Request ALL sets for the dropdown
+      const response = await axios.get('/api/admin/sets', { params: { all: 'true' } })
       const sets = response.data.sets || []
-      console.log('Available sets count:', sets.length)
-      console.log('Set ID range:', sets.length > 0 ? `${Math.min(...sets.map(s => s.set_id))} - ${Math.max(...sets.map(s => s.set_id))}` : 'No sets')
-      
-      // Check if set_id 1 exists
-      const setOne = sets.find(s => s.set_id === 1)
-      console.log('Set with ID 1:', setOne ? `Found: ${setOne.name} (${setOne.year})` : 'NOT FOUND')
-      
       setAvailableSets(sets)
     } catch (error) {
       console.error('Error loading sets:', error)
@@ -175,7 +169,6 @@ function AdminSeries() {
     try {
       const response = await axios.get('/api/admin/series', { params: { set: setId, limit: 1000 } })
       setSeriesForSet(response.data.series || [])
-      console.log(`Loaded ${response.data.series?.length || 0} series for set ${setId}`)
     } catch (error) {
       console.error('Error loading series for set:', error)
       addToast('Failed to load series for set', 'error')
@@ -184,13 +177,8 @@ function AdminSeries() {
   }
 
   const handleEditSeries = async (seriesItem) => {
-    console.log('=== EDIT SERIES DEBUG ===')
-    console.log('Series set_id:', seriesItem.set_id, 'type:', typeof seriesItem.set_id)
-    console.log('Number conversion:', Number(seriesItem.set_id))
-    
     setEditingSeries(seriesItem)
     const setId = seriesItem.set_id ? Number(seriesItem.set_id) : ''
-    console.log('Final setId for form:', setId, 'type:', typeof setId)
     
     setEditForm({
       name: seriesItem.name || '',
@@ -201,7 +189,7 @@ function AdminSeries() {
       rookie_count: seriesItem.rookie_count || '',
       print_run_display: seriesItem.print_run_display || '',
       set_id: setId,
-      parallel_of_series: seriesItem.parallel_of_series || ''
+      parallel_of_series: seriesItem.parallel_of_series ? Number(seriesItem.parallel_of_series) : ''
     })
     
     // Load sets and series for dropdowns
@@ -211,7 +199,6 @@ function AdminSeries() {
       await loadSeriesForSet(seriesItem.set_id)
     }
     
-    console.log('=== END DEBUG ===')
     setShowEditModal(true)
   }
 
@@ -586,7 +573,7 @@ function AdminSeries() {
                       }}
                       placeholder="Select set..."
                       emptyMessage="No sets available"
-                      getOptionLabel={(set) => `${set.name} (${set.year})`}
+                      getOptionLabel={(set) => set.name}
                       getOptionValue={(set) => Number(set.set_id)}
                     />
                   </div>
@@ -724,18 +711,13 @@ function AdminSeries() {
                       options={availableSets}
                       value={editForm.set_id}
                       onChange={(value) => {
-                        console.log('Edit modal set changed to:', value, 'type:', typeof value)
                         setEditForm({...editForm, set_id: Number(value), parallel_of_series: ''})
                         loadSeriesForSet(value)
                       }}
                       placeholder="Select set..."
                       emptyMessage="No sets available"
-                      getOptionLabel={(set) => `${set.name} (${set.year})`}
-                      getOptionValue={(set) => {
-                        const val = Number(set.set_id)
-                        console.log(`Edit modal getOptionValue: ${set.name} -> ${val} (comparing to form value: ${editForm.set_id})`)
-                        return val
-                      }}
+                      getOptionLabel={(set) => set.name}
+                      getOptionValue={(set) => Number(set.set_id)}
                     />
                   </div>
 

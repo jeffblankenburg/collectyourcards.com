@@ -1,14 +1,12 @@
 const express = require('express')
-const { PrismaClient } = require('@prisma/client')
+const { prisma } = require('../config/prisma-singleton')
 
 const router = express.Router()
 
 // Initialize Prisma with error handling for production
-let prisma
 let databaseAvailable = false
 
 try {
-  prisma = new PrismaClient()
   databaseAvailable = true
   console.log('✅ Database connection initialized for player-team-search routes')
 } catch (error) {

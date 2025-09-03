@@ -51,7 +51,12 @@ function SearchableDropdown({
     }
   }, [isOpen])
 
-  const selectedOption = options.find(option => getOptionValue(option) === value)
+  const selectedOption = options.find(option => {
+    const optionValue = getOptionValue(option)
+    // Compare both as strings and as numbers to handle type mismatches
+    return optionValue === value || 
+           (optionValue != null && value != null && String(optionValue) === String(value))
+  })
   const displayValue = selectedOption ? getOptionLabel(selectedOption) : placeholder
 
   const handleToggle = () => {
@@ -118,7 +123,9 @@ function SearchableDropdown({
               filteredOptions.map((option, index) => {
                 const optionValue = getOptionValue(option)
                 const optionLabel = getOptionLabel(option)
-                const isSelected = optionValue === value
+                // Compare both as strings and as numbers to handle type mismatches
+                const isSelected = optionValue === value || 
+                  (optionValue != null && value != null && String(optionValue) === String(value))
 
                 return (
                   <div

@@ -1,11 +1,9 @@
 const express = require('express')
-const { PrismaClient } = require('@prisma/client')
-const { BlobServiceClient } = require('@azure/storage-blob')
-const { authMiddleware, requireAdmin } = require('../middleware/auth')
-const ExcelJS = require('exceljs')
-
+const { authMiddleware, requireAdmin, requireDataAdmin, requireSuperAdmin } = require('../middleware/auth')
 const router = express.Router()
-const prisma = new PrismaClient()
+const { prisma } = require('../config/prisma-singleton')
+const ExcelJS = require('exceljs')
+const { BlobServiceClient } = require('@azure/storage-blob')
 
 // Azure Blob Storage configuration
 const AZURE_STORAGE_CONNECTION_STRING = process.env.AZURE_STORAGE_CONNECTION_STRING

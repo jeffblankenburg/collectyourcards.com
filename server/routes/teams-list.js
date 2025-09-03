@@ -1,8 +1,6 @@
 const express = require('express')
-const { PrismaClient } = require('@prisma/client')
-const jwt = require('jsonwebtoken')
 const router = express.Router()
-const prisma = new PrismaClient()
+const { prisma } = require('../config/prisma-singleton')
 
 // GET /api/teams-list - Get top teams by card count
 router.get('/', async (req, res) => {

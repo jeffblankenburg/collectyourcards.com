@@ -1,15 +1,12 @@
 const express = require('express')
+const { prisma } = require('../config/prisma-singleton')
 const router = express.Router()
-const { PrismaClient } = require('@prisma/client')
 const dynatraceService = require('../services/dynatraceService')
 
 // Initialize Prisma with error handling (don't fail route loading if Prisma fails)
-let prisma
 try {
-  prisma = new PrismaClient()
 } catch (error) {
   console.error('Status route: Prisma client failed to initialize:', error.message)
-  prisma = null
 }
 
 // Health check endpoint
