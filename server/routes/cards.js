@@ -88,9 +88,10 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
     const total = Number(countResult[0].total)
 
     // Get paginated cards with user collection data
-    const userId = req.user?.id
-    const userCollectionJoin = userId ? `
-      LEFT JOIN user_card uc ON c.card_id = uc.card AND uc.[user] = ${userId}
+    const userId = req.user?.userId
+    const userIdNumber = userId ? Number(userId) : null
+    const userCollectionJoin = userIdNumber ? `
+      LEFT JOIN user_card uc ON c.card_id = uc.card AND uc.[user] = ${userIdNumber}
     ` : ''
     
     const cardsQuery = `
@@ -99,7 +100,7 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
         c.print_run, c.sort_order, c.notes,
         s.name as series_name, s.series_id,
         col.name as color, col.hex_value as hex_color,
-        ${userId ? 'ISNULL(COUNT(uc.user_card_id), 0) as user_card_count' : '0 as user_card_count'}
+        ${userIdNumber ? 'ISNULL(COUNT(uc.user_card_id), 0) as user_card_count' : '0 as user_card_count'}
       FROM card c
       JOIN series s ON c.series = s.series_id
       LEFT JOIN color col ON c.color = col.color_id

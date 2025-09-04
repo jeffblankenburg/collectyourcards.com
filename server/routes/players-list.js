@@ -14,7 +14,8 @@ router.get('/', async (req, res) => {
       limit = 50,
       search,
       sortBy = 'card_count',
-      sortOrder = 'desc'
+      sortOrder = 'desc',
+      team_id
     } = req.query
     
     const currentPage = Math.max(1, parseInt(page))
@@ -36,19 +37,37 @@ router.get('/', async (req, res) => {
     const sortColumn = ['first_name', 'last_name', 'card_count', 'is_hof'].includes(sortBy) ? sortBy : 'card_count'
     const sortDirection = sortOrder === 'asc' ? 'ASC' : 'DESC'
 
-    // Build where clause for search
-    let searchCondition = ''
+    // Build where clause for search and team filtering
+    let whereConditions = []
+    
     if (search && search.trim()) {
       const searchTerm = search.trim().replace(/'/g, "''")
-      searchCondition = `
-        WHERE (
+      whereConditions.push(`
+        (
           p.first_name LIKE '%${searchTerm}%' 
           OR p.last_name LIKE '%${searchTerm}%'
           OR p.nick_name LIKE '%${searchTerm}%'
           OR CONCAT(p.first_name, ' ', p.last_name) LIKE '%${searchTerm}%'
         )
-      `
+      `)
     }
+    
+    if (team_id && team_id.trim()) {
+      const teamIdInt = parseInt(team_id)
+      if (!isNaN(teamIdInt)) {
+        whereConditions.push(`
+          p.player_id IN (
+            SELECT DISTINCT pt.player 
+            FROM player_team pt 
+            WHERE pt.team = ${teamIdInt}
+          )
+        `)
+      }
+    }
+    
+    const searchCondition = whereConditions.length > 0 
+      ? `WHERE ${whereConditions.join(' AND ')}`
+      : ''
 
     // First, get recently viewed or most visited players if user is logged in
     let recentlyViewedPlayers = []

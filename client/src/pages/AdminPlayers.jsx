@@ -50,7 +50,16 @@ function AdminPlayers() {
       }
 
       const response = await axios.get(`/api/admin/players?${params.toString()}`)
-      setPlayers(response.data.players || [])
+      const playersData = response.data.players || []
+      
+      // Check for duplicates in the API response
+      const playerIds = playersData.map(p => p.player_id)
+      const duplicateIds = playerIds.filter((id, index) => playerIds.indexOf(id) !== index)
+      if (duplicateIds.length > 0) {
+        console.warn('AdminPlayers: Duplicate player IDs detected from API:', [...new Set(duplicateIds)])
+      }
+      
+      setPlayers(playersData)
       setLastUpdated(new Date())
       setIsSearchMode(!!searchQuery.trim())
       
@@ -104,7 +113,16 @@ function AdminPlayers() {
   }
 
   const getSortedPlayers = () => {
-    return [...players].sort((a, b) => {
+    // Deduplicate players by player_id to prevent React key warnings
+    const uniquePlayers = players.reduce((acc, player) => {
+      const existingPlayer = acc.find(p => p.player_id === player.player_id)
+      if (!existingPlayer) {
+        acc.push(player)
+      }
+      return acc
+    }, [])
+    
+    return [...uniquePlayers].sort((a, b) => {
       let aValue, bValue
       
       switch (sortField) {

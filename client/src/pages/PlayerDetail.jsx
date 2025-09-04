@@ -10,7 +10,7 @@ import EditPlayerModal from '../components/modals/EditPlayerModal'
 import './PlayerDetailScoped.css'
 
 function PlayerDetail() {
-  const { playerSlug } = useParams()
+  const { playerSlug, teamSlug } = useParams()
   const location = useLocation()
   const navigate = useNavigate()
   const { isAuthenticated, user } = useAuth()
@@ -46,16 +46,35 @@ function PlayerDetail() {
     }
   }, [player])
 
-  // Apply team filter from navigation state
+  // Apply team filter from URL or navigation state
   useEffect(() => {
-    if (location.state?.selectedTeamId && teams.length > 0) {
-      // Check if the team exists in player's teams
-      const teamExists = teams.some(t => t.team_id === location.state.selectedTeamId)
-      if (teamExists) {
-        setSelectedTeamIds([location.state.selectedTeamId])
+    if (teams.length > 0) {
+      // First check for teamSlug in URL
+      if (teamSlug) {
+        // Find team by matching slug
+        const matchingTeam = teams.find(team => {
+          const teamSlugGenerated = team.name
+            .toLowerCase()
+            .replace(/[^a-z0-9\s-]/g, '')
+            .replace(/\s+/g, '-')
+            .replace(/-+/g, '-')
+            .trim()
+          return teamSlugGenerated === teamSlug
+        })
+        
+        if (matchingTeam) {
+          setSelectedTeamIds([matchingTeam.team_id])
+        }
+        // If teamSlug doesn't match any of the player's teams, ignore it (show all teams)
+      } else if (location.state?.selectedTeamId) {
+        // Fallback to navigation state
+        const teamExists = teams.some(t => t.team_id === location.state.selectedTeamId)
+        if (teamExists) {
+          setSelectedTeamIds([location.state.selectedTeamId])
+        }
       }
     }
-  }, [location.state, teams])
+  }, [teams, teamSlug, location.state])
 
   const fetchPlayerData = async () => {
     try {

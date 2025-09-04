@@ -53,6 +53,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
               <Route path="/collection" element={<ProtectedRoute><CollectionDashboard /></ProtectedRoute>} />
               <Route path="/players" element={<PlayersLanding />} />
               <Route path="/players/:playerSlug" element={<PlayerDetail />} />
+              <Route path="/players/:playerSlug/:teamSlug" element={<PlayerDetail />} />
               <Route path="/teams" element={<TeamsLanding />} />
               <Route path="/teams/:teamSlug" element={<TeamDetail />} />
               <Route path="/sets" element={<YearsPage />} />

@@ -125,6 +125,23 @@
 - [ ] **Mobile-specific caching** - Aggressive caching for mobile networks
 - [ ] **PWA capabilities** - Install prompt, splash screen, app-like experience
 
+### ⚡ Performance Optimization Roadmap (MEDIUM PRIORITY)
+
+#### 🚀 Infinite Scroll Implementation (FUTURE)
+- [ ] **Replace current "load all" approach** - Currently loading 10,000+ cards at once causes performance issues
+- [ ] **Implement smooth infinite scrolling** - Load cards in batches of 100-200 as user scrolls
+- [ ] **Maintain sort/filter state** - Preserve sorting and filtering during infinite scroll
+- [ ] **Virtual scrolling for massive datasets** - Only render visible DOM elements for ultimate performance
+- [ ] **Progressive data loading** - Prioritize visible content, lazy load off-screen data
+- [ ] **Scroll position persistence** - Remember scroll position when navigating back to tables
+- [ ] **Performance monitoring** - Track scroll performance metrics and optimize bottlenecks
+
+#### ⚡ Current Performance Issues to Address
+- [ ] **Chrome DevTools violations** - "[Violation] 'message' handler took 343ms" warnings from large dataset processing  
+- [ ] **Heavy DOM operations** - Large table rendering blocking main thread
+- [ ] **Memory optimization** - Reduce memory footprint of large card collections
+- [ ] **Image loading optimization** - Implement progressive/lazy loading for card images
+
 #### 📊 Mobile Analytics & Testing
 - [ ] **Mobile usage tracking** - Screen sizes, touch patterns, performance
 - [ ] **Mobile-specific error monitoring** - Touch events, orientation changes

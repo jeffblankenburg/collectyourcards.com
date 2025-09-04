@@ -442,6 +442,10 @@ const UniversalCardTable = ({
           aValue = a.print_run || 999999
           bValue = b.print_run || 999999
           break
+        case 'owned_count':
+          aValue = a.user_card_count || 0
+          bValue = b.user_card_count || 0
+          break
         default:
           aValue = a[sortField] || ''
           bValue = b[sortField] || ''
@@ -694,8 +698,18 @@ const UniversalCardTable = ({
                   <th className="center action-header-owned">
                     ACTION
                   </th>
-                  <th className="center owned-header">
-                    OWNED
+                  <th 
+                    className="center owned-header sortable"
+                    onClick={() => handleSort('owned_count')}
+                  >
+                    <div className="header-content">
+                      <span>OWNED</span>
+                      <Icon 
+                        name="chevron-up" 
+                        size={14} 
+                        className={`sort-icon ${sortField === 'owned_count' ? 'active' : 'neutral'} ${sortField === 'owned_count' && sortDirection === 'desc' ? 'desc' : ''}`}
+                      />
+                    </div>
                   </th>
                 </>
               )}

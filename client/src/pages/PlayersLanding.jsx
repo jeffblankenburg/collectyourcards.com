@@ -95,11 +95,49 @@ function PlayersLanding() {
   }
 
   const handleTeamClick = (teamId) => {
-    // Find the player and handle click with team filter
-    // This is called from within PlayerCard when team circle is clicked
-    const currentPlayer = players.find(p => p.teams?.some(t => t.team_id === teamId))
-    if (currentPlayer) {
-      handlePlayerClick(currentPlayer, teamId)
+    // Navigate directly to the team page - this makes more sense when clicking a team circle
+    const teams = []
+    players.forEach(p => p.teams?.forEach(t => teams.push(t)))
+    const team = teams.find(t => t.team_id === teamId)
+    
+    if (team) {
+      const teamSlug = team.name
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .trim()
+      navigate(`/teams/${teamSlug}`)
+    }
+  }
+
+  const createPlayerSpecificTeamHandler = (player) => (teamId) => {
+    // Navigate to player page with team filter
+    const team = player.teams?.find(t => t.team_id === teamId)
+    if (team) {
+      const playerSlug = `${player.first_name}-${player.last_name}`
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .trim()
+      
+      const teamSlug = team.name
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .trim()
+      
+      // Track visit for logged-in users
+      if (isAuthenticated) {
+        trackPlayerVisit({
+          ...player,
+          slug: playerSlug
+        })
+      }
+      
+      navigate(`/players/${playerSlug}/${teamSlug}`)
     }
   }
 
@@ -147,11 +185,14 @@ function PlayersLanding() {
       handlePlayerClick(player)
     }
 
-    // Pass the custom onClick and team click handler to the unified component
+    // Create a player-specific team click handler
+    const playerTeamClickHandler = createPlayerSpecificTeamHandler(player)
+
+    // Pass the custom onClick and player-specific team click handler to the unified component
     return (
       <PlayerCard 
         player={player}
-        onTeamClick={handleTeamClick}
+        onTeamClick={playerTeamClickHandler}
         customOnClick={handleCustomPlayerClick}
       />
     )
