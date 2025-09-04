@@ -33,6 +33,7 @@ function CollectionDashboard() {
   const [reassignLocationId, setReassignLocationId] = useState('')
   const [showReassignModal, setShowReassignModal] = useState(false)
   const [locationToDelete, setLocationToDelete] = useState(null)
+  const [hasInitializedLocations, setHasInitializedLocations] = useState(false)
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -46,11 +47,14 @@ function CollectionDashboard() {
     document.title = 'My Collection - Collect Your Cards'
   }, [])
 
-  // Auto-select dashboard locations when locations load
+  // Auto-select dashboard locations only on initial load
   useEffect(() => {
-    const dashboardLocations = locations.filter(loc => loc.is_dashboard)
-    setSelectedLocationIds(dashboardLocations.map(loc => loc.user_location_id))
-  }, [locations])
+    if (locations.length > 0 && !hasInitializedLocations) {
+      const dashboardLocations = locations.filter(loc => loc.is_dashboard)
+      setSelectedLocationIds(dashboardLocations.map(loc => loc.user_location_id))
+      setHasInitializedLocations(true)
+    }
+  }, [locations, hasInitializedLocations])
 
   const fetchDashboardData = async () => {
     try {
@@ -225,13 +229,20 @@ function CollectionDashboard() {
 
   // Memoize the API endpoint for filtered cards
   const apiEndpoint = useMemo(() => {
-    if (selectedLocationIds.length === 0) {
-      // Show unassigned cards when no locations are selected
-      return `/api/user/collection/cards?unassigned=true`
+    const params = []
+    
+    if (selectedLocationIds.length > 0) {
+      // Show selected locations plus unassigned cards
+      const locationParams = selectedLocationIds.map(id => `location_id=${id}`).join('&')
+      params.push(locationParams)
+      params.push('include_unassigned=true')
+    } else {
+      // If no locations selected, don't show any cards (empty state)
+      // This prevents showing all cards when dashboard locations are disabled
+      params.push('location_id=-1') // Non-existent location ID to show empty result
     }
     
-    const locationParams = selectedLocationIds.map(id => `location_id=${id}`).join('&')
-    return `/api/user/collection/cards?${locationParams}`
+    return `/api/user/collection/cards?${params.join('&')}`
   }, [selectedLocationIds])
 
   if (!isAuthenticated) {
@@ -397,8 +408,8 @@ function CollectionDashboard() {
         <section className="collection-table-section">
           {selectedLocationIds.length === 0 && (
             <div className="unassigned-cards-header">
-              <Icon name="alert-circle" size={20} />
-              <span>Showing cards without assigned locations</span>
+              <Icon name="info" size={20} />
+              <span>No dashboard locations selected. Click location tags above to view your cards.</span>
             </div>
           )}
           <UniversalCardTable
@@ -413,6 +424,11 @@ function CollectionDashboard() {
             showAddButtons={false}
             isCollectionView={true}
             showCollectionColumns={true}
+            showGalleryToggle={true}
+            onCollectionDataLoaded={() => {
+              // Refresh location counts whenever collection data changes
+              fetchLocations()
+            }}
           />
         </section>
       </div>

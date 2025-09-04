@@ -74,7 +74,8 @@ import {
   Edit,
   Hash,
   Grid3X3,
-  List
+  List,
+  Power
 } from 'lucide-react'
 
 // Icon mapping for consistent usage across the app
@@ -106,6 +107,7 @@ const iconMap = {
   'help': HelpCircle,
   'help-circle': HelpCircle,
   'logout': LogOut,
+  'power': Power,
   'target': Target,
   'settings': Settings,
   

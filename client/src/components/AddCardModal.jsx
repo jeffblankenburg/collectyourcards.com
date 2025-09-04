@@ -18,6 +18,9 @@ const AddCardModal = ({
   const [gradingAgencies, setGradingAgencies] = useState([])
   const [showPricing, setShowPricing] = useState(true)
   const [showGrading, setShowGrading] = useState(false)
+  const [showPhotos, setShowPhotos] = useState(false)
+  const [selectedPhotos, setSelectedPhotos] = useState([])
+  const [uploadingPhotos, setUploadingPhotos] = useState(false)
   
   // Function to generate 4-character random code
   const generateRandomCode = () => {
@@ -65,6 +68,71 @@ const AddCardModal = ({
     })
     setShowPricing(true)
     setShowGrading(false)
+    setShowPhotos(false)
+    setSelectedPhotos([])
+  }
+
+  const handlePhotoSelect = (event) => {
+    const files = Array.from(event.target.files)
+    
+    // Limit to 5 photos
+    if (files.length > 5) {
+      error('Maximum 5 photos allowed per card')
+      return
+    }
+    
+    // Validate file types and sizes
+    const validFiles = []
+    for (const file of files) {
+      if (!['image/jpeg', 'image/jpg', 'image/png', 'image/webp'].includes(file.type)) {
+        error(`${file.name}: Only JPEG, PNG, and WebP images are allowed`)
+        continue
+      }
+      
+      if (file.size > 5 * 1024 * 1024) {
+        error(`${file.name}: File size must be less than 5MB`)
+        continue
+      }
+      
+      validFiles.push(file)
+    }
+    
+    if (validFiles.length > 0) {
+      setSelectedPhotos(validFiles)
+      setShowPhotos(true) // Auto-expand the section when photos are selected
+    }
+  }
+
+  const removePhoto = (index) => {
+    setSelectedPhotos(prev => prev.filter((_, i) => i !== index))
+  }
+
+  const uploadPhotos = async (userCardId) => {
+    if (selectedPhotos.length === 0) return
+    
+    try {
+      setUploadingPhotos(true)
+      
+      const formData = new FormData()
+      selectedPhotos.forEach(photo => {
+        formData.append('photos', photo)
+      })
+      
+      const response = await axios.post(`/api/user/cards/${userCardId}/photos`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      })
+      
+      if (response.data.success) {
+        success(`Successfully uploaded ${response.data.photos.length} photo(s)`)
+      }
+    } catch (err) {
+      console.error('Error uploading photos:', err)
+      error(err.response?.data?.message || 'Failed to upload photos')
+    } finally {
+      setUploadingPhotos(false)
+    }
   }
 
   const loadLocations = async () => {
@@ -113,7 +181,13 @@ const AddCardModal = ({
         grade: formData.grade || null
       }
 
-      await axios.post('/api/user/cards', submitData)
+      const response = await axios.post('/api/user/cards', submitData)
+      const newUserCardId = response.data.user_card_id
+      
+      // Upload photos if any were selected
+      if (selectedPhotos.length > 0) {
+        await uploadPhotos(newUserCardId)
+      }
       
       success(`Card #${card.card_number} added to collection`)
       if (onCardAdded) onCardAdded()
@@ -392,6 +466,69 @@ const AddCardModal = ({
                     />
                   </div>
                 )}
+              </div>
+            )}
+          </div>
+
+          {/* Photos Section */}
+          <div className="form-section collapsible">
+            <div 
+              className="section-header"
+              onClick={() => setShowPhotos(!showPhotos)}
+            >
+              <h4>Card Photos (Optional)</h4>
+              <Icon name={showPhotos ? "chevron-up" : "chevron-down"} size={18} />
+            </div>
+            
+            {showPhotos && (
+              <div className="collapsible-content">
+                {/* Photo Grid - New Photos */}
+                <div className="photo-grid">
+                  {/* New photos to upload */}
+                  {selectedPhotos.map((photo, index) => (
+                    <div key={index} className="photo-preview-item new">
+                      <div className="photo-preview">
+                        <img
+                          src={URL.createObjectURL(photo)}
+                          alt={`Preview ${index + 1}`}
+                          onLoad={(e) => URL.revokeObjectURL(e.target.src)}
+                        />
+                        {index === 0 && (
+                          <div className="primary-badge">Primary</div>
+                        )}
+                        <button
+                          type="button"
+                          className="remove-photo"
+                          onClick={() => removePhoto(index)}
+                          disabled={loading || uploadingPhotos}
+                        >
+                          <Icon name="x" size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  
+                  {/* Upload button as last item if space available */}
+                  {selectedPhotos.length < 5 && (
+                    <div className="photo-preview-item upload-slot">
+                      <div className="photo-preview upload-preview">
+                        <input
+                          type="file"
+                          accept="image/jpeg,image/jpg,image/png,image/webp"
+                          multiple
+                          onChange={handlePhotoSelect}
+                          style={{ display: 'none' }}
+                          id="photo-upload"
+                          disabled={loading || uploadingPhotos}
+                        />
+                        <label htmlFor="photo-upload" className="photo-upload-inline">
+                          <Icon name="plus" size={24} />
+                          <span>Add Photo</span>
+                        </label>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>

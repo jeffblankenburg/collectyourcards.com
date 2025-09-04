@@ -217,6 +217,7 @@ if (config.environment === 'test') {
     { path: '/api/sets-list', file: './routes/sets-list', name: 'Sets List' },
     { path: '/api/series-by-set', file: './routes/series-by-set', name: 'Series By Set' },
     { path: '/api/user/cards', file: './routes/user-cards', name: 'User Cards' },
+    { path: '/api/user/cards', file: './routes/user-card-photos', name: 'User Card Photos' },
     { path: '/api/user/locations', file: './routes/user-locations', name: 'User Locations' },
     { path: '/api/user/collection/stats', file: './routes/user-collection-stats', name: 'User Collection Stats' },
     { path: '/api/user/collection/cards', file: './routes/user-collection-cards', name: 'User Collection Cards' },

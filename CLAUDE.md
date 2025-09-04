@@ -5,6 +5,7 @@
 ### Important Facts & Credentials
 - **Database password**: Password123
 - **Admin user**: `cardcollector@jeffblankenburg.com` / `testpassword`
+- **You never need to start or restart the servers.  Ever.
 
 ### 🚨 Database Location & Connection (CRITICAL - NEVER FORGET!)
 - **Location**: Docker container named `collect-cards-db`
@@ -130,6 +131,194 @@
 - [ ] **Performance benchmarks** - Load times on 3G/4G networks
 - [ ] **User testing** - Real collector feedback on mobile experience
 
+### 🛒 eBay Integration System (PLANNING PHASE)
+
+#### Core Objective
+**Automatically detect when a user purchases a sports card on eBay, match it to our database (if exists), and add it to their "In Transit To Me" location with notification.**
+
+#### 🔐 eBay API Requirements
+- [ ] **eBay Developer Account** - Register application with eBay Developer Program
+- [ ] **OAuth 2.0 Integration** - Secure user consent flow for eBay account linking
+- [ ] **API Credentials Management** - Store client ID, client secret, sandbox/production keys
+- [ ] **User Consent Scopes** - Request access to:
+  - `https://api.ebay.com/oauth/api_scope` - Basic API access
+  - `https://api.ebay.com/oauth/api_scope/sell.account` - Account info
+  - `https://api.ebay.com/oauth/api_scope/buy.order.readonly` - Purchase history
+
+#### 📊 Existing eBay Database Schema (✅ ALREADY IMPLEMENTED)
+```sql
+-- eBay account linking (EXISTING TABLE: user_ebay_accounts)
+TABLE user_ebay_accounts:
+- id (bigint, NOT NULL) - Primary key
+- user_id (bigint, NOT NULL) - FK to user table
+- ebay_user_id (nvarchar(255), NOT NULL) - eBay's internal user ID
+- ebay_username (nvarchar(255), NULLABLE) - eBay public username
+- access_token (nvarchar(MAX), NOT NULL) - OAuth access token (encrypted)
+- refresh_token (nvarchar(MAX), NULLABLE) - OAuth refresh token
+- token_expires_at (datetime, NULLABLE) - Token expiration timestamp
+- scope_permissions (nvarchar(MAX), NULLABLE) - Granted OAuth scopes
+- last_sync_at (datetime, NULLABLE) - Last successful sync
+- is_active (bit, NOT NULL) - Account active status
+- created_at (datetime, NOT NULL) - Account link date
+- updated_at (datetime, NOT NULL) - Last modification
+
+-- eBay purchase tracking (EXISTING TABLE: ebay_purchases)  
+TABLE ebay_purchases:
+- id (bigint, NOT NULL) - Primary key
+- user_id (bigint, NOT NULL) - FK to user
+- ebay_account_id (bigint, NULLABLE) - FK to user_ebay_accounts
+- ebay_item_id (nvarchar(255), NOT NULL) - eBay item identifier
+- ebay_transaction_id (nvarchar(255), NULLABLE) - Transaction ID
+- ebay_order_id (nvarchar(255), NULLABLE) - Order ID
+- title (nvarchar(MAX), NOT NULL) - eBay listing title
+- purchase_date (datetime, NOT NULL) - When purchased
+- price (decimal, NOT NULL) - Purchase price
+- currency (varchar(3), NOT NULL) - Currency code (USD, etc)
+- quantity (int, NOT NULL) - Items purchased
+- seller_name (nvarchar(255), NULLABLE) - Seller username
+- seller_feedback_score (int, NULLABLE) - Seller's feedback rating
+- image_url (nvarchar(MAX), NULLABLE) - eBay item image URL
+- ebay_category_id (int, NULLABLE) - eBay category
+- category_path (nvarchar(MAX), NULLABLE) - Full category breadcrumb
+- item_condition (nvarchar(50), NULLABLE) - Item condition
+- is_sports_card (bit, NULLABLE) - AI detected as sports card
+- card_confidence (decimal, NULLABLE) - Sports card detection confidence
+- detected_sport (nvarchar(50), NULLABLE) - Auto-detected sport
+- detected_year (int, NULLABLE) - Auto-detected year
+- detected_brand (nvarchar(100), NULLABLE) - Auto-detected brand/set
+- detected_series (nvarchar(255), NULLABLE) - Auto-detected series
+- detected_player (nvarchar(255), NULLABLE) - Auto-detected player
+- status (varchar(50), NOT NULL) - Processing status
+- user_notes (nvarchar(MAX), NULLABLE) - User's manual notes
+- matched_card_id (bigint, NULLABLE) - FK to matched card
+- match_confidence (decimal, NULLABLE) - Match confidence score
+- manual_match (bit, NOT NULL) - User manually matched
+- processed_at (datetime, NULLABLE) - Processing timestamp
+- created_at (datetime, NOT NULL) - Record creation
+- updated_at (datetime, NOT NULL) - Last update
+
+-- eBay sync tracking (EXISTING TABLE: ebay_sync_logs)
+TABLE ebay_sync_logs:
+- id (bigint, NOT NULL) - Primary key
+- user_id (bigint, NOT NULL) - FK to user
+- ebay_account_id (bigint, NULLABLE) - FK to user_ebay_accounts
+- sync_type (varchar(50), NOT NULL) - 'full', 'incremental', 'manual'
+- sync_start (datetime, NOT NULL) - Sync start time
+- sync_end (datetime, NULLABLE) - Sync completion time
+- items_processed (int, NOT NULL) - Total items processed
+- sports_cards_found (int, NOT NULL) - Cards detected as sports cards
+- new_purchases (int, NOT NULL) - New purchases found
+- errors_encountered (int, NOT NULL) - Error count
+- error_details (nvarchar(MAX), NULLABLE) - Error descriptions
+- status (varchar(50), NOT NULL) - 'pending', 'running', 'completed', 'failed'
+
+-- eBay account deletion tracking (EXISTING TABLE: ebay_deletion_log)
+TABLE ebay_deletion_log:
+- log_id (bigint, NOT NULL) - Primary key
+- username (nvarchar(255), NOT NULL) - eBay username
+- user_id (nvarchar(255), NOT NULL) - eBay user ID
+- eias_token (nvarchar(MAX), NULLABLE) - Account deletion token
+- deletion_date (datetime2, NULLABLE) - When account was deleted
+- processed (bit, NULLABLE) - Whether deletion was processed
+- created_at (datetime2, NULLABLE) - Log entry creation
+```
+
+#### 🔄 eBay Integration Workflow Status
+
+**✅ ALREADY IMPLEMENTED (Database Schema Complete):**
+- **Database Tables**: All eBay tables exist with comprehensive schema
+- **Account Linking Storage**: `user_ebay_accounts` with OAuth token storage
+- **Purchase Tracking**: `ebay_purchases` with advanced AI detection fields
+- **Sync Logging**: `ebay_sync_logs` with detailed sync metrics
+- **Account Deletion Handling**: `ebay_deletion_log` for compliance
+
+**🚧 IMPLEMENTATION NEEDED:**
+1. **Frontend UI Components**:
+   - [ ] eBay account linking interface in user settings
+   - [ ] OAuth consent flow with eBay Developer API
+   - [ ] Purchase review queue for manual matching
+   - [ ] Sync status dashboard showing last sync, errors, etc.
+
+2. **Backend API Integration**:
+   - [ ] eBay OAuth flow endpoints (`/api/ebay/auth/*`)
+   - [ ] Purchase sync job processor (`/api/ebay/sync`)
+   - [ ] Card matching algorithm implementation
+   - [ ] Background job scheduler for periodic syncing
+
+3. **AI Detection & Matching**:
+   - [ ] **Title parsing**: Extract player/year/set from eBay titles
+   - [ ] **Sports card detection**: Populate `is_sports_card` and `card_confidence`
+   - [ ] **Fuzzy matching**: Match to our card database using `detected_*` fields
+   - [ ] **Auto-population**: Fill `detected_sport`, `detected_year`, `detected_brand`, `detected_series`, `detected_player`
+
+4. **Automatic Addition Process**:
+   - [ ] High confidence auto-add to "In Transit To Me" location
+   - [ ] Medium confidence → review queue
+   - [ ] Low confidence → manual review with suggestions
+
+#### 🎯 Automatic Card Addition Process
+1. **High Confidence Matches (>0.85)**:
+   - [ ] Auto-add to "In Transit To Me" location
+   - [ ] Set purchase price from eBay transaction
+   - [ ] Generate notification: "We added [Card Name] from your eBay purchase"
+   - [ ] Mark as `auto_added: true` for tracking
+
+2. **Medium Confidence Matches (0.5-0.84)**:
+   - [ ] Add to review queue with suggested match
+   - [ ] Notification: "Review potential card match from eBay"
+   - [ ] User can approve/reject/modify the match
+
+3. **Low Confidence/No Match (<0.5)**:
+   - [ ] Store purchase data without card match
+   - [ ] Notification: "New eBay purchase detected - manual review needed"
+   - [ ] Allow manual card selection or "not a card" marking
+
+#### 📱 User Interface Components
+- [ ] **Settings page**: eBay account linking/unlinking
+- [ ] **Review queue**: Pending eBay matches requiring approval
+- [ ] **Purchase history**: All eBay purchases with match status
+- [ ] **Sync status**: Last sync time, next sync, manual sync button
+- [ ] **Match overrides**: User can correct/train the matching algorithm
+
+#### 🔔 Notification System Integration
+- [ ] **Real-time notifications**: New purchases, matches found, review needed
+- [ ] **Email notifications**: Daily digest of new additions
+- [ ] **Push notifications**: Mobile PWA notifications for instant updates
+- [ ] **Notification preferences**: Control what triggers notifications
+
+#### 🔧 Technical Implementation Details
+- [ ] **Background job processor**: Queue-based eBay sync jobs
+- [ ] **Error handling**: API failures, token expiration, rate limiting
+- [ ] **Data validation**: Verify purchase data integrity
+- [ ] **Duplicate prevention**: Don't add same item multiple times
+- [ ] **Privacy protection**: Encrypt stored eBay tokens
+- [ ] **Audit logging**: Track all eBay integration activities
+
+#### 🚨 Required User Locations
+- [ ] **"In Transit To Me" location**: Auto-created for all users
+- [ ] **Default location assignment**: Fallback if "In Transit" doesn't exist
+- [ ] **Location preferences**: User can set preferred auto-add location
+
+#### 📈 Analytics & Reporting
+- [ ] **Match accuracy tracking**: Success rates of auto-matching
+- [ ] **Purchase pattern analysis**: Most bought cards, spending trends
+- [ ] **Sync performance**: API response times, error rates
+- [ ] **User adoption metrics**: How many users link eBay accounts
+
+#### 🛡️ Security & Privacy Considerations
+- [ ] **Token encryption**: Store all eBay tokens encrypted at rest
+- [ ] **Minimal data storage**: Only store necessary purchase information
+- [ ] **User control**: Easy account unlinking and data deletion
+- [ ] **API security**: Secure webhook endpoints with validation
+- [ ] **Rate limiting**: Prevent abuse of eBay API integration
+
+#### 🧪 Testing Strategy
+- [ ] **eBay Sandbox testing**: Test all flows with fake purchases
+- [ ] **Mock API responses**: Unit tests for matching algorithms
+- [ ] **Edge case handling**: Weird titles, missing data, API errors
+- [ ] **Performance testing**: Large purchase history imports
+- [ ] **User acceptance testing**: Real collector feedback on accuracy
+
 ### 🗣️ Social Features & Community System (IN DEVELOPMENT)
 
 #### Card Comments System
@@ -175,6 +364,9 @@
 - [ ] **Complete Stages 4-6** of import system (Entity Save, Card Review, Card Import)
 - [ ] **Implement enhanced fuzzy matching** for players/teams
 - [ ] **Implement database backup strategy** to prevent future data loss
+
+### Complete set collection addtion
+- [ ] **On the series landing page, like /sets/2024/2024-topps-update, when a user hovers over a series, an option to add the entire series to their collection should appear, in the same way that the edit button appears for admins.  Clicking this button should bring up a modal to confirm that they're adding every card from that series to their collection, as well as choosing a location for those cards to be assigned.  Clicking the add button should add ALL of the cards from that series to the user's collection, with the selected location assigned.
 
 ### 🎯 Immediate Next Steps
 1. **Mobile navigation system** - Hamburger menu for screens < 768px

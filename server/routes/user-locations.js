@@ -34,15 +34,18 @@ router.get('/', async (req, res) => {
     `
     console.log('Distinct user values in table:', userValues)
 
+    // Get locations with actual card counts calculated dynamically
     const locations = await prisma.$queryRaw`
       SELECT 
-        user_location_id,
-        location,
-        card_count,
-        is_dashboard
-      FROM user_location 
-      WHERE [user] = ${BigInt(parseInt(userId))}
-      ORDER BY location
+        ul.user_location_id,
+        ul.location,
+        COALESCE(COUNT(uc.user_card_id), 0) as card_count,
+        ul.is_dashboard
+      FROM user_location ul
+      LEFT JOIN user_card uc ON ul.user_location_id = uc.user_location AND uc.[user] = ${BigInt(parseInt(userId))}
+      WHERE ul.[user] = ${BigInt(parseInt(userId))}
+      GROUP BY ul.user_location_id, ul.location, ul.is_dashboard
+      ORDER BY ul.location
     `
 
     console.log('Raw query result:', locations)

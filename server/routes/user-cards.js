@@ -1,6 +1,7 @@
 const express = require('express')
 const { PrismaClient, Prisma } = require('@prisma/client')
 const { authMiddleware } = require('../middleware/auth')
+const { BlobServiceClient } = require('@azure/storage-blob')
 const router = express.Router()
 const prisma = new PrismaClient()
 
@@ -267,7 +268,9 @@ router.post('/', async (req, res) => {
         user_location, 
         notes,
         created
-      ) VALUES (
+      )
+      OUTPUT INSERTED.user_card_id
+      VALUES (
         ${BigInt(parseInt(userId))},
         ${card_id},
         ${random_code},
@@ -284,8 +287,11 @@ router.post('/', async (req, res) => {
       )
     `
 
+    const newUserCardId = insertResult[0].user_card_id
+
     res.status(201).json({
-      message: 'Card added to collection successfully'
+      message: 'Card added to collection successfully',
+      user_card_id: Number(newUserCardId)
     })
 
   } catch (error) {
@@ -517,6 +523,46 @@ router.delete('/:userCardId', async (req, res) => {
       })
     }
 
+    // First, get all photos for this user card so we can delete them from Azure Blob Storage
+    const photos = await prisma.$queryRaw`
+      SELECT user_card_photo_id, photo_url, blob_name
+      FROM user_card_photo
+      WHERE user_card = ${parseInt(userCardId)}
+    `
+
+    // Delete photos from Azure Blob Storage
+    if (photos.length > 0 && process.env.AZURE_STORAGE_CONNECTION_STRING) {
+      try {
+        const blobServiceClient = BlobServiceClient.fromConnectionString(process.env.AZURE_STORAGE_CONNECTION_STRING)
+        const containerClient = blobServiceClient.getContainerClient('user-card')
+
+        for (const photo of photos) {
+          if (photo.blob_name) {
+            try {
+              await containerClient.deleteBlob(photo.blob_name)
+              console.log(`Deleted blob: ${photo.blob_name}`)
+            } catch (blobError) {
+              console.error(`Failed to delete blob ${photo.blob_name}:`, blobError.message)
+              // Continue with other deletions even if one fails
+            }
+          }
+        }
+      } catch (azureError) {
+        console.error('Error connecting to Azure Blob Storage:', azureError.message)
+        // Continue with database deletion even if Azure cleanup fails
+      }
+    }
+
+    // Delete photo records from database
+    if (photos.length > 0) {
+      await prisma.$queryRaw`
+        DELETE FROM user_card_photo 
+        WHERE user_card = ${parseInt(userCardId)}
+      `
+      console.log(`Deleted ${photos.length} photo records`)
+    }
+
+    // Finally, delete the user card record
     const deleteResult = await prisma.$queryRaw`
       DELETE FROM user_card 
       WHERE user_card_id = ${parseInt(userCardId)} 
@@ -524,7 +570,7 @@ router.delete('/:userCardId', async (req, res) => {
     `
 
     res.json({
-      message: 'Card removed from collection successfully'
+      message: 'Card and associated photos removed from collection successfully'
     })
 
   } catch (error) {

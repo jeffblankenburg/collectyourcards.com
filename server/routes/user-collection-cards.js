@@ -20,32 +20,28 @@ router.get('/', async (req, res) => {
     console.log('Getting collection cards for user:', userId)
     
     // Get location IDs from query parameters
-    const { location_id, unassigned } = req.query
+    const { location_id, include_unassigned } = req.query
     const locationIds = Array.isArray(location_id) ? location_id : (location_id ? [location_id] : [])
-    const showUnassigned = unassigned === 'true'
+    const includeUnassigned = include_unassigned === 'true'
     
-    console.log('Location IDs filter:', locationIds, 'Show unassigned:', showUnassigned)
+    console.log('Location IDs filter:', locationIds, 'Include unassigned:', includeUnassigned)
     
-    if (locationIds.length === 0 && !showUnassigned) {
-      return res.json({
-        cards: [],
-        total: 0,
-        page: 1,
-        limit: 100,
-        hasMore: false
-      })
-    }
-
     // Build location filter
     let whereClause
-    if (showUnassigned) {
-      whereClause = `WHERE uc.[user] = ${parseInt(userId)} AND uc.user_location IS NULL`
+    if (locationIds.length === 0) {
+      // If no specific locations selected, show all cards for the user
+      whereClause = `WHERE uc.[user] = ${parseInt(userId)}`
+    } else if (includeUnassigned) {
+      // Show selected locations AND unassigned cards
+      const locationFilter = locationIds.map(id => parseInt(id)).join(',')
+      whereClause = `WHERE uc.[user] = ${parseInt(userId)} AND (uc.user_location IN (${locationFilter}) OR uc.user_location IS NULL)`
     } else {
+      // Show only selected locations (backward compatibility)
       const locationFilter = locationIds.map(id => parseInt(id)).join(',')
       whereClause = `WHERE uc.[user] = ${parseInt(userId)} AND uc.user_location IN (${locationFilter})`
     }
     
-    // Single optimized query to get all collection cards with player-team data
+    // Single optimized query to get all collection cards with player-team data and primary photo
     const cardsQuery = `
       SELECT 
         uc.user_card_id,
@@ -80,13 +76,15 @@ router.get('/', async (req, res) => {
         t.name as team_name,
         t.abbreviation as team_abbr,
         t.primary_color,
-        t.secondary_color
+        t.secondary_color,
+        ucp.photo_url as primary_photo_url
       FROM user_card uc
       JOIN card c ON uc.card = c.card_id
       JOIN series s ON c.series = s.series_id
       LEFT JOIN color col ON c.color = col.color_id
       LEFT JOIN user_location ul ON uc.user_location = ul.user_location_id
       LEFT JOIN grading_agency ga ON uc.grading_agency = ga.grading_agency_id
+      LEFT JOIN user_card_photo ucp ON uc.user_card_id = ucp.user_card AND ucp.sort_order = 1
       LEFT JOIN card_player_team cpt ON cpt.card = c.card_id
       LEFT JOIN player_team pt ON cpt.player_team = pt.player_team_id
       LEFT JOIN player p ON pt.player = p.player_id
@@ -129,6 +127,7 @@ router.get('/', async (req, res) => {
           user_card_count: 1,
           date_added: row.date_added,
           location_name: row.location_name,
+          primary_photo_url: row.primary_photo_url,
           series_rel: {
             series_id: typeof row.series_id === 'bigint' ? Number(row.series_id) : row.series_id,
             name: row.series_name

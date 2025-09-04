@@ -28,6 +28,7 @@ const UniversalCardTable = ({
   showOwned = true,
   showAddButtons = true,
   isCollectionView = false,
+  showGalleryToggle = false,
   showCollectionColumns = false,
   onCollectionDataLoaded = null
 }) => {
@@ -42,6 +43,7 @@ const UniversalCardTable = ({
   const [loading, setLoading] = useState(false)
   const [totalCardsCount, setTotalCardsCount] = useState(0)
   const [searchQuery, setSearchQuery] = useState('')
+  const [viewMode, setViewMode] = useState('table') // 'table' or 'gallery'
   const [userCardCounts, setUserCardCounts] = useState({})
   const [showAddCardModal, setShowAddCardModal] = useState(false)
   const [selectedCard, setSelectedCard] = useState(null)
@@ -626,27 +628,60 @@ const UniversalCardTable = ({
     return luminance > 0.5 ? '#000000' : '#ffffff'
   }
 
+  // Helper function to get background style for color stripes
+  const getColorBackground = (colorName, hexColor) => {
+    if (colorName?.toLowerCase() === 'rainbow') {
+      return {
+        background: 'linear-gradient(90deg, #ff0000, #ff8000, #ffff00, #80ff00, #00ff00, #00ff80, #00ffff, #0080ff, #0000ff, #8000ff, #ff00ff, #ff0080)'
+      }
+    }
+    return {
+      backgroundColor: hexColor || '#64748b'
+    }
+  }
+
 
   return (
     <>
       <div className="universal-card-table">
-        {/* Search Box */}
-        {showSearch && (
+        {/* Search Box and View Toggle */}
+        {(showSearch || showGalleryToggle) && (
         <div className="table-controls">
-          <div className="search-container">
-            <input
-              type="text"
-              placeholder="Search this list..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="search-input"
-            />
-          </div>
+          {showGalleryToggle && (
+            <div className="view-toggle">
+              <button
+                className={`view-toggle-btn ${viewMode === 'table' ? 'active' : ''}`}
+                onClick={() => setViewMode('table')}
+                title="Table View"
+              >
+                <Icon name="list" size={18} />
+              </button>
+              <button
+                className={`view-toggle-btn ${viewMode === 'gallery' ? 'active' : ''}`}
+                onClick={() => setViewMode('gallery')}
+                title="Gallery View"
+              >
+                <Icon name="grid" size={18} />
+              </button>
+            </div>
+          )}
+          {showSearch && (
+            <div className="search-container">
+              <input
+                type="text"
+                placeholder="Search this list..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="search-input"
+              />
+            </div>
+          )}
         </div>
       )}
       
-      <div className="table-container">
-        <table className="cards-table">
+      {viewMode === 'table' ? (
+        <div className="table-container">
+          <table className="cards-table">
           <thead>
             <tr>
               {isAuthenticated && isCollectionView && (
@@ -946,8 +981,8 @@ const UniversalCardTable = ({
                       <span 
                         className="color-tag" 
                         style={{ 
-                          backgroundColor: card.color_rel.hex_color,
-                          color: getTextColor(card.color_rel.hex_color)
+                          ...getColorBackground(card.color_rel.color, card.color_rel.hex_color),
+                          color: card.color_rel.color?.toLowerCase() === 'rainbow' ? '#000000' : getTextColor(card.color_rel.hex_color)
                         }}
                       >
                         {card.color_rel.color}
@@ -1038,7 +1073,86 @@ const UniversalCardTable = ({
         )}
 
         {/* Removed loading more indicator - no longer needed */}
-      </div>
+        </div>
+      ) : (
+        <div className="gallery-container">
+          <div className="gallery-grid">
+            {sortedCards.map((card, index) => (
+              <div key={card.user_card_id || card.card_id} className="gallery-card">
+                <div className="gallery-card-image">
+                  {card.primary_photo_url ? (
+                    <img 
+                      src={card.primary_photo_url} 
+                      alt={`Card ${card.card_number}`}
+                      className="card-image"
+                    />
+                  ) : (
+                    <div className="card-placeholder">
+                      <Icon name="image" size={32} />
+                      <span>No Photo</span>
+                    </div>
+                  )}
+                  {isCollectionView && (
+                    <button
+                      className="gallery-edit-btn"
+                      onClick={() => handleEditCard(card)}
+                      title="Edit card"
+                    >
+                      <Icon name="edit" size={14} />
+                    </button>
+                  )}
+                </div>
+                <div className="gallery-card-info">
+                  <div className="card-number">#{card.card_number}</div>
+                  <div className="card-player">
+                    {card.card_player_teams?.map((cpt, i) => cpt.player?.name).join(', ') || card.player_name || 'N/A'}
+                  </div>
+                  <div className="card-series">{card.series_rel?.name || card.series_name}</div>
+                  
+                  {/* Tags row for random code and grading */}
+                  <div className="gallery-tags">
+                    {card.random_code && (
+                      <div className="gallery-random-code-tag">{card.random_code}</div>
+                    )}
+                    {card.grading_agency_abbr && card.grade && (
+                      <div className="gallery-grade-tag">
+                        {card.grading_agency_abbr} {card.grade}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Color stripe at bottom if color or print run exists */}
+                {(card.color_rel?.color || card.print_run) && (
+                  <div 
+                    className="gallery-color-stripe"
+                    style={{
+                      ...getColorBackground(card.color_rel?.color, card.color_rel?.hex_color)
+                    }}
+                  >
+                    <span className="gallery-color-text" style={{
+                      color: card.color_rel?.color?.toLowerCase() === 'rainbow' ? '#000000' : getTextColor(card.color_rel?.hex_color || '#64748b')
+                    }}>
+                      {[
+                        card.color_rel?.color,
+                        card.print_run ? (showCollectionColumns && card.serial_number ? `${card.serial_number}/${card.print_run}` : `/${card.print_run}`) : null
+                      ].filter(Boolean).join(' ')}
+                    </span>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {sortedCards.length === 0 && !loading && (
+            <div className="empty-state">
+              <Icon name="search" size={48} />
+              <h3>No Cards Found</h3>
+              <p>No cards match the current filters.</p>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Table Footer */}
       <div className="table-footer">

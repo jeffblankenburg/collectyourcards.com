@@ -19,8 +19,16 @@ const EditCardModal = ({
   const [gradingAgencies, setGradingAgencies] = useState([])
   const [showPricing, setShowPricing] = useState(true)
   const [showGrading, setShowGrading] = useState(false)
+  const [showPhotos, setShowPhotos] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [existingPhotos, setExistingPhotos] = useState([])
+  const [selectedPhotos, setSelectedPhotos] = useState([])
+  const [uploadingPhotos, setUploadingPhotos] = useState(false)
+  const [deletingPhotoId, setDeletingPhotoId] = useState(null)
+  const [draggedPhotoId, setDraggedPhotoId] = useState(null)
+  const [dragOverPhotoId, setDragOverPhotoId] = useState(null)
+  const [reordering, setReordering] = useState(false)
   
   const [formData, setFormData] = useState({
     random_code: '',
@@ -39,6 +47,7 @@ const EditCardModal = ({
     if (isOpen && card) {
       loadLocations()
       loadGradingAgencies()
+      loadExistingPhotos()
     }
   }, [isOpen, card])
 
@@ -101,6 +110,163 @@ const EditCardModal = ({
     }
   }
 
+  const loadExistingPhotos = async () => {
+    if (!card?.user_card_id) return
+    
+    try {
+      const response = await axios.get(`/api/user/cards/${card.user_card_id}/photos`)
+      if (response.data.success) {
+        setExistingPhotos(response.data.photos || [])
+        setShowPhotos(response.data.photos?.length > 0) // Auto-expand if photos exist
+      }
+    } catch (err) {
+      console.error('Error loading existing photos:', err)
+    }
+  }
+
+  const handlePhotoSelect = (event) => {
+    const files = Array.from(event.target.files)
+    const currentTotal = existingPhotos.length + selectedPhotos.length
+    
+    // Check total limit including existing photos
+    if (currentTotal + files.length > 5) {
+      error(`Maximum 5 photos allowed per card. You have ${currentTotal} photo(s) already.`)
+      return
+    }
+    
+    // Validate file types and sizes
+    const validFiles = []
+    for (const file of files) {
+      if (!['image/jpeg', 'image/jpg', 'image/png', 'image/webp'].includes(file.type)) {
+        error(`${file.name}: Only JPEG, PNG, and WebP images are allowed`)
+        continue
+      }
+      
+      if (file.size > 5 * 1024 * 1024) {
+        error(`${file.name}: File size must be less than 5MB`)
+        continue
+      }
+      
+      validFiles.push(file)
+    }
+    
+    if (validFiles.length > 0) {
+      setSelectedPhotos(prev => [...prev, ...validFiles])
+      setShowPhotos(true)
+    }
+  }
+
+  const removeNewPhoto = (index) => {
+    setSelectedPhotos(prev => prev.filter((_, i) => i !== index))
+  }
+
+  const deleteExistingPhoto = async (photoId) => {
+    try {
+      setDeletingPhotoId(photoId)
+      
+      await axios.delete(`/api/user/cards/${card.user_card_id}/photos/${photoId}`)
+      
+      // Refresh existing photos
+      await loadExistingPhotos()
+      success('Photo deleted successfully')
+    } catch (err) {
+      console.error('Error deleting photo:', err)
+      error(err.response?.data?.message || 'Failed to delete photo')
+    } finally {
+      setDeletingPhotoId(null)
+    }
+  }
+
+  const uploadNewPhotos = async () => {
+    if (selectedPhotos.length === 0) return
+    
+    try {
+      setUploadingPhotos(true)
+      
+      const formData = new FormData()
+      selectedPhotos.forEach(photo => {
+        formData.append('photos', photo)
+      })
+      
+      const response = await axios.post(`/api/user/cards/${card.user_card_id}/photos`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      })
+      
+      if (response.data.success) {
+        success(`Successfully uploaded ${response.data.photos.length} photo(s)`)
+        setSelectedPhotos([])
+        await loadExistingPhotos() // Refresh the existing photos
+      }
+    } catch (err) {
+      console.error('Error uploading photos:', err)
+      error(err.response?.data?.message || 'Failed to upload photos')
+    } finally {
+      setUploadingPhotos(false)
+    }
+  }
+
+  const handleDragStart = (e, photoId) => {
+    console.log('Drag start:', photoId)
+    setDraggedPhotoId(photoId)
+    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('text/plain', photoId)
+  }
+
+  const handleDragOver = (e, photoId) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    setDragOverPhotoId(photoId)
+  }
+
+  const handleDragLeave = (e) => {
+    // Only clear if we're leaving the photo item entirely
+    if (!e.currentTarget.contains(e.relatedTarget)) {
+      setDragOverPhotoId(null)
+    }
+  }
+
+  const handleDragEnd = () => {
+    setDraggedPhotoId(null)
+    setDragOverPhotoId(null)
+  }
+
+  const handleDrop = (e, targetPhotoId) => {
+    e.preventDefault()
+    
+    if (!draggedPhotoId || draggedPhotoId === targetPhotoId) {
+      setDraggedPhotoId(null)
+      setDragOverPhotoId(null)
+      return
+    }
+
+    // Find dragged and target photo indices
+    const draggedIndex = existingPhotos.findIndex(p => p.user_card_photo_id === draggedPhotoId)
+    const targetIndex = existingPhotos.findIndex(p => p.user_card_photo_id === targetPhotoId)
+    
+    if (draggedIndex === -1 || targetIndex === -1) {
+      setDraggedPhotoId(null)
+      setDragOverPhotoId(null)
+      return
+    }
+
+    // Reorder photos array locally
+    const reorderedPhotos = [...existingPhotos]
+    const [draggedPhoto] = reorderedPhotos.splice(draggedIndex, 1)
+    reorderedPhotos.splice(targetIndex, 0, draggedPhoto)
+    
+    // Update sort_order values in the local array
+    const updatedPhotos = reorderedPhotos.map((photo, index) => ({
+      ...photo,
+      sort_order: index + 1
+    }))
+    
+    setExistingPhotos(updatedPhotos)
+    setDraggedPhotoId(null)
+    setDragOverPhotoId(null)
+  }
+
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target
     setFormData(prev => ({
@@ -128,6 +294,32 @@ const EditCardModal = ({
 
       // Update the existing user_card record
       await axios.put(`/api/user/cards/${card.user_card_id}`, submitData)
+      
+      // Upload photos if any were selected
+      if (selectedPhotos.length > 0) {
+        await uploadNewPhotos()
+      }
+
+      // Update photo sort orders if they were changed
+      const photoOrders = existingPhotos.map(photo => ({
+        photoId: photo.user_card_photo_id,
+        sortOrder: photo.sort_order
+      }))
+
+      console.log('Sending photo orders to API:', photoOrders)
+
+      if (photoOrders.length > 0) {
+        try {
+          await axios.put(`/api/user/cards/${card.user_card_id}/photos/reorder`, {
+            photoOrders: photoOrders
+          })
+          console.log('Photo order update successful')
+        } catch (photoErr) {
+          console.error('Error updating photo order:', photoErr)
+          console.error('Full error details:', photoErr.response)
+          // Don't fail the entire update for photo ordering issues
+        }
+      }
       
       success(`Card #${card.card_number} updated successfully`)
       onCardUpdated()
@@ -419,6 +611,103 @@ const EditCardModal = ({
                     />
                   </div>
                 )}
+              </div>
+            )}
+          </div>
+
+          {/* Photos Section */}
+          <div className="form-section collapsible">
+            <div 
+              className="section-header"
+              onClick={() => setShowPhotos(!showPhotos)}
+            >
+              <h4>Card Photos ({existingPhotos.length + selectedPhotos.length}/5)</h4>
+              <Icon name={showPhotos ? "chevron-up" : "chevron-down"} size={18} />
+            </div>
+            
+            {showPhotos && (
+              <div className="collapsible-content">
+                {/* Photo Grid - Existing and New Photos Combined */}
+                <div className="photo-grid">
+                  {/* Existing photos */}
+                  {existingPhotos.map((photo, index) => (
+                    <div 
+                      key={photo.user_card_photo_id} 
+                      className={`photo-preview-item existing ${dragOverPhotoId === photo.user_card_photo_id ? 'drag-over' : ''}`}
+                      draggable={true}
+                      onDragStart={(e) => handleDragStart(e, photo.user_card_photo_id)}
+                      onDragOver={(e) => handleDragOver(e, photo.user_card_photo_id)}
+                      onDragLeave={handleDragLeave}
+                      onDragEnd={handleDragEnd}
+                      onDrop={(e) => handleDrop(e, photo.user_card_photo_id)}
+                    >
+                      <div className={`photo-preview ${draggedPhotoId === photo.user_card_photo_id ? 'dragging' : ''}`}>
+                        <img
+                          src={photo.photo_url}
+                          alt={`Card photo ${photo.sort_order}`}
+                        />
+                        {photo.sort_order === 1 && (
+                          <div className="primary-badge">Primary</div>
+                        )}
+                        <button
+                          type="button"
+                          className="remove-photo"
+                          onClick={() => deleteExistingPhoto(photo.user_card_photo_id)}
+                          disabled={loading || deletingPhotoId === photo.user_card_photo_id || reordering}
+                        >
+                          {deletingPhotoId === photo.user_card_photo_id ? (
+                            <Icon name="activity" size={12} className="spinner" />
+                          ) : (
+                            <Icon name="x" size={14} />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  
+                  {/* New photos to upload */}
+                  {selectedPhotos.map((photo, index) => (
+                    <div key={index} className="photo-preview-item new">
+                      <div className="photo-preview">
+                        <img
+                          src={URL.createObjectURL(photo)}
+                          alt={`Preview ${index + 1}`}
+                          onLoad={(e) => URL.revokeObjectURL(e.target.src)}
+                        />
+                        <div className="new-badge">New</div>
+                        <button
+                          type="button"
+                          className="remove-photo"
+                          onClick={() => removeNewPhoto(index)}
+                          disabled={loading || uploadingPhotos}
+                        >
+                          <Icon name="x" size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  
+                  {/* Upload button as last item if space available */}
+                  {(existingPhotos.length + selectedPhotos.length) < 5 && (
+                    <div className="photo-preview-item upload-slot">
+                      <div className="photo-preview upload-preview">
+                        <input
+                          type="file"
+                          accept="image/jpeg,image/jpg,image/png,image/webp"
+                          multiple
+                          onChange={handlePhotoSelect}
+                          style={{ display: 'none' }}
+                          id="photo-upload-edit"
+                          disabled={loading || uploadingPhotos}
+                        />
+                        <label htmlFor="photo-upload-edit" className="photo-upload-inline">
+                          <Icon name="plus" size={24} />
+                          <span>Add Photo</span>
+                        </label>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>

@@ -40,16 +40,16 @@ function Auth() {
     const newMode = getAuthMode()
     if (newMode !== authMode) {
       setAuthMode(newMode)
-      // Clear form when switching modes
-      setFormData({
+      // Clear form when switching modes (but preserve email)
+      setFormData(prev => ({
         firstName: '',
         lastName: '',
-        email: formData.email, // Keep email
+        email: prev.email, // Keep current email
         password: '',
         confirmPassword: ''
-      })
+      }))
     }
-  }, [mode, location.pathname])
+  }, [mode, location.pathname]) // Remove authMode from dependency array
 
   // Set page title
   useEffect(() => {
@@ -69,7 +69,7 @@ function Auth() {
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
-      const from = location.state?.from?.pathname || '/dashboard'
+      const from = location.state?.from?.pathname || '/collection'
       navigate(from, { replace: true })
     }
   }, [isAuthenticated, navigate, location.state])
@@ -88,9 +88,17 @@ function Auth() {
   }
 
   const checkPasswordStrength = (password) => {
-    if (password.length < 6) {
+    const hasUpper = /[A-Z]/.test(password)
+    const hasLower = /[a-z]/.test(password)
+    const hasNumber = /\d/.test(password)
+    const hasSpecial = /[@$!%*?&]/.test(password)
+    const isLongEnough = password.length >= 8
+    
+    const criteriaCount = [hasUpper, hasLower, hasNumber, hasSpecial, isLongEnough].filter(Boolean).length
+    
+    if (criteriaCount < 3) {
       setPasswordStrength('weak')
-    } else if (password.length < 10) {
+    } else if (criteriaCount < 5) {
       setPasswordStrength('medium')
     } else {
       setPasswordStrength('strong')
@@ -126,8 +134,15 @@ function Auth() {
       error('Password is required')
       return false
     }
-    if (formData.password.length < 6) {
-      error('Password must be at least 6 characters long')
+    if (formData.password.length < 8) {
+      error('Password must be at least 8 characters long')
+      return false
+    }
+    
+    // Check password complexity
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/
+    if (!passwordRegex.test(formData.password)) {
+      error('Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character')
       return false
     }
     if (formData.password !== formData.confirmPassword) {
@@ -151,17 +166,19 @@ function Auth() {
         if (result.success) {
           const userName = result.user.name || result.user.first_name || 'there'
           success(`Welcome back, ${userName}!`)
-          const from = location.state?.from?.pathname || '/dashboard'
+          const from = location.state?.from?.pathname || '/collection'
           navigate(from, { replace: true })
         } else {
           error(result.error)
         }
       } else {
         const result = await register({
+          name: `${formData.firstName} ${formData.lastName}`.trim(),
           firstName: formData.firstName,
           lastName: formData.lastName,
           email: formData.email,
-          password: formData.password
+          password: formData.password,
+          confirmPassword: formData.confirmPassword
         })
         if (result.success) {
           success('Account created successfully! Please check your email to verify your account.')
@@ -201,7 +218,6 @@ function Auth() {
     <div className="auth-page">
       <div className="auth-container">
         <div className="auth-header">
-          <h1><Icon name="app-logo" size={24} /> Collect Your Cards</h1>
           <div className="auth-mode-toggle">
             <button
               type="button"
@@ -218,47 +234,44 @@ function Auth() {
               Sign Up
             </button>
           </div>
-          <h2>{isLogin ? 'Welcome Back' : 'Create Account'}</h2>
-          <p>{isLogin ? 'Sign in to manage your card collection' : 'Start tracking your card collection today'}</p>
+          <p className="auth-subtitle">Sign in or sign up to manage your card collection</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="auth-form">
+        <form onSubmit={handleSubmit} className={`auth-form ${isSignup ? 'signup-form' : 'login-form'}`}>
           {isSignup && (
             <>
-              <div className="form-row">
-                <div className="form-group">
-                  <label htmlFor="firstName">First Name</label>
-                  <input
-                    type="text"
-                    id="firstName"
-                    name="firstName"
-                    value={formData.firstName}
-                    onChange={handleChange}
-                    required
-                    disabled={loading}
-                    placeholder="Enter your first name"
-                    autoComplete="given-name"
-                  />
-                </div>
-                <div className="form-group">
-                  <label htmlFor="lastName">Last Name</label>
-                  <input
-                    type="text"
-                    id="lastName"
-                    name="lastName"
-                    value={formData.lastName}
-                    onChange={handleChange}
-                    required
-                    disabled={loading}
-                    placeholder="Enter your last name"
-                    autoComplete="family-name"
-                  />
-                </div>
+              <div className="form-group horizontal">
+                <label htmlFor="firstName">First Name</label>
+                <input
+                  type="text"
+                  id="firstName"
+                  name="firstName"
+                  value={formData.firstName}
+                  onChange={handleChange}
+                  required
+                  disabled={loading}
+                  placeholder="Enter your first name"
+                  autoComplete="given-name"
+                />
+              </div>
+              <div className="form-group horizontal">
+                <label htmlFor="lastName">Last Name</label>
+                <input
+                  type="text"
+                  id="lastName"
+                  name="lastName"
+                  value={formData.lastName}
+                  onChange={handleChange}
+                  required
+                  disabled={loading}
+                  placeholder="Enter your last name"
+                  autoComplete="family-name"
+                />
               </div>
             </>
           )}
 
-          <div className="form-group">
+          <div className="form-group horizontal">
             <label htmlFor="email">Email Address</label>
             <input
               type="email"
@@ -273,45 +286,47 @@ function Auth() {
             />
           </div>
 
-          <div className="form-group">
+          <div className="form-group horizontal">
             <label htmlFor="password">Password</label>
-            <div className="password-input-container">
-              <input
-                type={showPassword ? 'text' : 'password'}
-                id="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                required
-                disabled={loading}
-                placeholder={isLogin ? 'Enter your password' : 'Create a password (min 6 characters)'}
-                autoComplete={isLogin ? 'current-password' : 'new-password'}
-              />
-              <button
-                type="button"
-                className="password-toggle"
-                onClick={() => setShowPassword(!showPassword)}
-                disabled={loading}
-              >
-                {showPassword ? <Icon name="eye" size={16} /> : <Icon name="eye-off" size={16} />}
-              </button>
-            </div>
-            {isSignup && formData.password && (
-              <div className={`password-strength ${passwordStrength}`}>
-                <div className="strength-bar">
-                  <div className="strength-fill"></div>
-                </div>
-                <span className="strength-text">
-                  {passwordStrength === 'weak' && 'Weak password'}
-                  {passwordStrength === 'medium' && 'Medium strength'}
-                  {passwordStrength === 'strong' && 'Strong password'}
-                </span>
+            <div className="input-wrapper">
+              <div className="password-input-container">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  id="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  required
+                  disabled={loading}
+                  placeholder={isLogin ? 'Enter your password' : 'Create a password (min 8 characters)'}
+                  autoComplete={isLogin ? 'current-password' : 'new-password'}
+                />
+                <button
+                  type="button"
+                  className="password-toggle"
+                  onClick={() => setShowPassword(!showPassword)}
+                  disabled={loading}
+                >
+                  {showPassword ? <Icon name="eye" size={16} /> : <Icon name="eye-off" size={16} />}
+                </button>
               </div>
-            )}
+              {isSignup && formData.password && (
+                <div className={`password-strength ${passwordStrength}`}>
+                  <div className="strength-bar">
+                    <div className="strength-fill"></div>
+                  </div>
+                  <span className="strength-text">
+                    {passwordStrength === 'weak' && 'Weak - Add uppercase, number, special character'}
+                    {passwordStrength === 'medium' && 'Medium - Almost there'}
+                    {passwordStrength === 'strong' && 'Strong password ✓'}
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
 
           {isSignup && (
-            <div className="form-group">
+            <div className="form-group horizontal">
               <label htmlFor="confirmPassword">Confirm Password</label>
               <div className="password-input-container">
                 <input
