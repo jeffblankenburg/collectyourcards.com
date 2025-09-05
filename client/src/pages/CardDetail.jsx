@@ -4,6 +4,8 @@ import axios from 'axios'
 import { useAuth } from '../contexts/AuthContext'
 import Icon from '../components/Icon'
 import UniversalCardTable from '../components/UniversalCardTable'
+import CommentsSection from '../components/CommentsSection'
+import SocialShareButton from '../components/SocialShareButton'
 import './CardDetailScoped.css'
 
 function CardDetail() {
@@ -35,7 +37,6 @@ function CardDetail() {
   const [error, setError] = useState(null)
   const [seriesCards, setSeriesCards] = useState([])
   const [currentCardIndex, setCurrentCardIndex] = useState(-1)
-  const [shareButtonText, setShareButtonText] = useState('Share Card')
   const [userHasCards, setUserHasCards] = useState(false)
   const [checkingUserCards, setCheckingUserCards] = useState(true)
   
@@ -601,27 +602,10 @@ function CardDetail() {
                   <Icon name="heart" size={16} />
                   Add to Wishlist
                 </button>
-                <button className="action-button secondary" onClick={() => {
-                  // Copy current page URL to clipboard
-                  const currentUrl = window.location.href
-                  navigator.clipboard.writeText(currentUrl).then(() => {
-                    // Show success message temporarily
-                    setShareButtonText('Link Copied!')
-                    setTimeout(() => {
-                      setShareButtonText('Share Card')
-                    }, 2000)
-                  }).catch((err) => {
-                    console.error('Failed to copy URL:', err)
-                    // Show error message temporarily
-                    setShareButtonText('Copy Failed')
-                    setTimeout(() => {
-                      setShareButtonText('Share Card')
-                    }, 2000)
-                  })
-                }}>
-                  <Icon name="link" size={16} />
-                  {shareButtonText}
-                </button>
+                <SocialShareButton 
+                  card={card} 
+                  className="action-button secondary"
+                />
               </div>
             )}
           </div>
@@ -638,6 +622,15 @@ function CardDetail() {
         >
           <Icon name="edit" size={20} />
         </button>
+      )}
+
+      {/* Comments Section */}
+      {card && (
+        <CommentsSection
+          itemType="card"
+          itemId={card.card_id}
+          title={`Discussion about ${card.player_names} #${card.card_number}`}
+        />
       )}
     </div>
   )

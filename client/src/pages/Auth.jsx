@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { Link, useNavigate, useLocation, useParams } from 'react-router-dom'
+import axios from 'axios'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
 import Icon from '../components/Icon'
@@ -22,6 +23,7 @@ function Auth() {
     firstName: '',
     lastName: '',
     email: '',
+    username: '',
     password: '',
     confirmPassword: ''
   })
@@ -30,6 +32,8 @@ function Auth() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [rememberMe, setRememberMe] = useState(false)
   const [passwordStrength, setPasswordStrength] = useState('')
+  const [usernameStatus, setUsernameStatus] = useState('') // 'checking', 'available', 'taken', 'invalid'
+  const [usernameMessage, setUsernameMessage] = useState('')
 
   const { login, register, isAuthenticated } = useAuth()
   const { success, error } = useToast()
@@ -45,6 +49,7 @@ function Auth() {
         firstName: '',
         lastName: '',
         email: prev.email, // Keep current email
+        username: '',
         password: '',
         confirmPassword: ''
       }))
@@ -85,6 +90,11 @@ function Auth() {
     if (name === 'password' && authMode === 'signup') {
       checkPasswordStrength(value)
     }
+
+    // Check username availability on username change
+    if (name === 'username' && authMode === 'signup') {
+      checkUsernameAvailability(value)
+    }
   }
 
   const checkPasswordStrength = (password) => {
@@ -102,6 +112,60 @@ function Auth() {
       setPasswordStrength('medium')
     } else {
       setPasswordStrength('strong')
+    }
+  }
+
+  // Debounced username availability check
+  const checkUsernameAvailability = useCallback(
+    debounce(async (username) => {
+      if (!username || username.length < 3) {
+        setUsernameStatus('')
+        setUsernameMessage('')
+        return
+      }
+
+      // Validate username format
+      if (!/^[a-zA-Z0-9._-]{3,30}$/.test(username)) {
+        setUsernameStatus('invalid')
+        setUsernameMessage('Username must be 3-30 characters and contain only letters, numbers, dots, underscores, or dashes')
+        return
+      }
+
+      setUsernameStatus('checking')
+      setUsernameMessage('Checking availability...')
+
+      try {
+        const response = await axios.get(`/api/auth/check-username/${username}`)
+        if (response.data.available) {
+          setUsernameStatus('available')
+          setUsernameMessage('Username is available!')
+        } else {
+          setUsernameStatus('taken')
+          setUsernameMessage('Username is already taken')
+        }
+      } catch (error) {
+        if (error.response?.status === 400) {
+          setUsernameStatus('invalid')
+          setUsernameMessage(error.response.data.error || 'Invalid username')
+        } else {
+          setUsernameStatus('')
+          setUsernameMessage('')
+        }
+      }
+    }, 500),
+    []
+  )
+
+  // Simple debounce function
+  function debounce(func, wait) {
+    let timeout
+    return function executedFunction(...args) {
+      const later = () => {
+        clearTimeout(timeout)
+        func(...args)
+      }
+      clearTimeout(timeout)
+      timeout = setTimeout(later, wait)
     }
   }
 
@@ -124,6 +188,14 @@ function Auth() {
     }
     if (!formData.lastName.trim()) {
       error('Last name is required')
+      return false
+    }
+    if (!formData.username.trim()) {
+      error('Username is required')
+      return false
+    }
+    if (usernameStatus !== 'available') {
+      error('Please choose a valid, available username')
       return false
     }
     if (!formData.email.trim()) {
@@ -176,6 +248,7 @@ function Auth() {
           name: `${formData.firstName} ${formData.lastName}`.trim(),
           firstName: formData.firstName,
           lastName: formData.lastName,
+          username: formData.username,
           email: formData.email,
           password: formData.password,
           confirmPassword: formData.confirmPassword
@@ -267,6 +340,35 @@ function Auth() {
                   placeholder="Enter your last name"
                   autoComplete="family-name"
                 />
+              </div>
+              
+              <div className="form-group horizontal">
+                <label htmlFor="username">Username</label>
+                <div className="input-wrapper">
+                  <input
+                    type="text"
+                    id="username"
+                    name="username"
+                    value={formData.username}
+                    onChange={handleChange}
+                    required
+                    disabled={loading}
+                    placeholder="Choose a unique username"
+                    autoComplete="username"
+                    minLength={3}
+                    maxLength={30}
+                    pattern="[a-zA-Z0-9._-]{3,30}"
+                  />
+                  {usernameStatus && (
+                    <div className={`username-status ${usernameStatus}`}>
+                      {usernameStatus === 'checking' && <Icon name="activity" size={16} className="spinner" />}
+                      {usernameStatus === 'available' && <Icon name="check" size={16} />}
+                      {usernameStatus === 'taken' && <Icon name="x" size={16} />}
+                      {usernameStatus === 'invalid' && <Icon name="alert-circle" size={16} />}
+                      <span className="status-text">{usernameMessage}</span>
+                    </div>
+                  )}
+                </div>
               </div>
             </>
           )}

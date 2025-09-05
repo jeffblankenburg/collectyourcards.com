@@ -99,6 +99,53 @@ const shouldLockAccount = (loginAttempts) => {
   return loginAttempts >= 5
 }
 
+// Check username availability
+router.get('/check-username/:username', authLimiter, async (req, res) => {
+  try {
+    const { username } = req.params
+
+    // Validate username format
+    if (!/^[a-zA-Z0-9._-]{3,30}$/.test(username)) {
+      return res.status(400).json({ 
+        available: false,
+        error: 'Username must be 3-30 characters and contain only letters, numbers, dots, underscores, or dashes'
+      })
+    }
+
+    // Check if username is reserved
+    const { isReserved, suggestAlternatives } = require('../config/reserved-usernames')
+    if (isReserved(username)) {
+      return res.status(400).json({
+        available: false,
+        error: 'This username is reserved',
+        suggestions: suggestAlternatives(username)
+      })
+    }
+
+    // Check if username exists
+    const existingUser = await prisma.$queryRaw`
+      SELECT user_id 
+      FROM [user] 
+      WHERE username = ${username.toLowerCase()}
+        AND is_active = 1
+    `
+
+    const available = existingUser.length === 0
+
+    res.json({
+      available,
+      username: username.toLowerCase()
+    })
+
+  } catch (error) {
+    console.error('Error checking username availability:', error)
+    res.status(500).json({ 
+      available: false,
+      error: 'Unable to check username availability' 
+    })
+  }
+})
+
 // User Registration
 router.post('/register', 
   authLimiter,
@@ -107,6 +154,12 @@ router.post('/register',
       .isEmail()
       .normalizeEmail()
       .withMessage('Valid email is required'),
+    body('username')
+      .trim()
+      .isLength({ min: 3, max: 30 })
+      .withMessage('Username must be between 3 and 30 characters')
+      .matches(/^[a-zA-Z0-9._-]+$/)
+      .withMessage('Username can only contain letters, numbers, dots, underscores, and dashes'),
     body('password')
       .isLength({ min: 8 })
       .withMessage('Password must be at least 8 characters')
@@ -136,18 +189,34 @@ router.post('/register',
         })
       }
 
-      const { email, password, name } = req.body
+      const { email, password, name, username } = req.body
 
-      // Check if user already exists
-      const existingUser = await prisma.user.findUnique({
-        where: { email }
+      // Check if user already exists (email or username)
+      const existingUser = await prisma.user.findFirst({
+        where: {
+          OR: [
+            { email },
+            { username: username.toLowerCase() }
+          ]
+        }
       })
 
       if (existingUser) {
-        await logAuthEvent(email, 'registration_failed', false, 'Email already registered', null, req)
+        const conflictType = existingUser.email === email ? 'Email' : 'Username'
+        await logAuthEvent(email, 'registration_failed', false, `${conflictType} already registered`, null, req)
         return res.status(409).json({
           error: 'Registration failed',
-          message: 'An account with this email already exists'
+          message: `An account with this ${conflictType.toLowerCase()} already exists`
+        })
+      }
+
+      // Check if username is reserved
+      const { isReserved } = require('../config/reserved-usernames')
+      if (isReserved(username)) {
+        await logAuthEvent(email, 'registration_failed', false, 'Reserved username', null, req)
+        return res.status(400).json({
+          error: 'Registration failed',
+          message: 'This username is reserved and cannot be used'
         })
       }
 
@@ -159,6 +228,7 @@ router.post('/register',
       const user = await prisma.user.create({
         data: {
           email,
+          username: username.toLowerCase(),
           password_hash: passwordHash,
           name,
           role: 'user',

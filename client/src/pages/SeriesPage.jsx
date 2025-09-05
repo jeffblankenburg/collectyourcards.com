@@ -6,6 +6,8 @@ import { useToast } from '../contexts/ToastContext'
 import { useAuth } from '../contexts/AuthContext'
 import Icon from '../components/Icon'
 import { SeriesCard } from '../components/cards'
+import CommentsSection from '../components/CommentsSection'
+import ActivityFeed from '../components/ActivityFeed'
 import './SeriesPageScoped.css'
 
 function SeriesPage() {
@@ -452,6 +454,23 @@ function SeriesPage() {
           ))}
         </div>,
         document.body
+      )}
+
+      {/* Activity Feed - Recent comments from series/cards within this set */}
+      {selectedSet && (
+        <ActivityFeed
+          setId={selectedSet.set_id}
+          title={`Recent Activity in ${selectedSet.name}`}
+        />
+      )}
+
+      {/* Comments Section */}
+      {selectedSet && (
+        <CommentsSection
+          itemType="set"
+          itemId={selectedSet.set_id}
+          title={`Discussion about ${selectedSet.name}`}
+        />
       )}
 
       {/* Admin Edit Button */}

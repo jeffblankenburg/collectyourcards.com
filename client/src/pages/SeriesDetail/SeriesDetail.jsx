@@ -5,6 +5,7 @@ import axios from 'axios'
 import { useAuth } from '../../contexts/AuthContext'
 import Icon from '../../components/Icon'
 import AddCardModal from '../../components/AddCardModal'
+import CommentsSection from '../../components/CommentsSection'
 import './SeriesDetail.css'
 
 
@@ -777,6 +778,15 @@ function SeriesDetail() {
           onCardAdded={handleCardAdded}
         />,
         document.body
+      )}
+
+      {/* Comments Section */}
+      {series && (
+        <CommentsSection
+          itemType="series"
+          itemId={series.series_id}
+          title={`Discussion about ${series.name}`}
+        />
       )}
 
       {/* Admin Edit Button */}

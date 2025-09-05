@@ -418,28 +418,36 @@ model team {
 }
 
 model user {
-  user_id                              BigInt         @id(map: "PK_user") @default(autoincrement())
-  name                                 String?        @db.NVarChar(Max)
-  email                                String?        @unique @db.NVarChar(255)
-  created                              DateTime?      @default(now(), map: "DEFAULT_user_created") @db.DateTime
-  created_at                           DateTime?      @db.DateTime
-  first_name                           String?        @db.NVarChar(100)
-  is_active                            Boolean?       @default(true, map: "DF__user__is_active__03BB8E22")
-  is_verified                          Boolean?       @default(false, map: "DF__user__is_verifie__02C769E9")
-  last_login                           DateTime?      @db.DateTime
-  last_name                            String?        @db.NVarChar(100)
-  locked_until                         DateTime?      @db.DateTime
-  login_attempts                       Int?           @default(0, map: "DF__user__login_atte__04AFB25B")
-  password_hash                        String?        @db.NVarChar(500)
-  reset_token                          String?        @db.NVarChar(500)
-  reset_token_expires                  DateTime?      @db.DateTime
-  role                                 String?        @default("user", map: "DF__user__role__01D345B0") @db.NVarChar(50)
-  updated_at                           DateTime?      @db.DateTime
-  verification_token                   String?        @db.NVarChar(500)
-  staging_data_staging_data_userTouser staging_data[] @relation("staging_data_userTouser")
-  user_card_user_card_userTouser       user_card[]    @relation("user_card_userTouser")
-  user_player_user_player_userTouser   user_player[]  @relation("user_player_userTouser")
-  user_team_user_team_userTouser       user_team[]    @relation("user_team_userTouser")
+  user_id                                          BigInt                 @id(map: "PK_user") @default(autoincrement())
+  name                                             String?                @db.NVarChar(Max)
+  username                                         String?                @unique @db.NVarChar(50)
+  email                                            String?                @unique @db.NVarChar(255)
+  bio                                              String?                @db.NVarChar(500)
+  avatar_url                                       String?                @db.NVarChar(500)
+  website                                          String?                @db.NVarChar(255)
+  user_location                                    String?                @db.NVarChar(100)
+  is_public_profile                                Boolean?               @default(true)
+  profile_completed                                Boolean?               @default(false)
+  created                                          DateTime?              @default(now(), map: "DEFAULT_user_created") @db.DateTime
+  created_at                                       DateTime?              @db.DateTime
+  first_name                                       String?                @db.NVarChar(100)
+  is_active                                        Boolean?               @default(true, map: "DF__user__is_active__03BB8E22")
+  is_verified                                      Boolean?               @default(false, map: "DF__user__is_verifie__02C769E9")
+  last_login                                       DateTime?              @db.DateTime
+  last_name                                        String?                @db.NVarChar(100)
+  locked_until                                     DateTime?              @db.DateTime
+  login_attempts                                   Int?                   @default(0, map: "DF__user__login_atte__04AFB25B")
+  password_hash                                    String?                @db.NVarChar(500)
+  reset_token                                      String?                @db.NVarChar(500)
+  reset_token_expires                              DateTime?              @db.DateTime
+  role                                             String?                @default("user", map: "DF__user__role__01D345B0") @db.NVarChar(50)
+  updated_at                                       DateTime?              @db.DateTime
+  verification_token                               String?                @db.NVarChar(500)
+  staging_data_staging_data_userTouser             staging_data[]         @relation("staging_data_userTouser")
+  user_card_user_card_userTouser                   user_card[]            @relation("user_card_userTouser")
+  user_player_user_player_userTouser               user_player[]          @relation("user_player_userTouser")
+  user_team_user_team_userTouser                   user_team[]            @relation("user_team_userTouser")
+  user_favorite_cards_user_favorite_cards_userTouser user_favorite_cards[] @relation("user_favorite_cards_userTouser")
 
   @@map("user")
 }
@@ -461,33 +469,34 @@ model user_auth_log {
 }
 
 model user_card {
-  user_card_id                                            BigInt            @id(map: "PK_user_card") @default(autoincrement())
-  user                                                    BigInt?
-  card                                                    BigInt?
-  serial_number                                           Int?
-  purchase_price                                          Float?            @default(0, map: "DEFAULT_user_card_purchase_price") @db.Money
-  estimated_value                                         Float?            @default(0, map: "DEFAULT_user_card_estimated_value") @db.Money
-  current_value                                           Float?            @default(0, map: "DEFAULT_user_card_current_value") @db.Money
-  photo                                                   String?           @db.NVarChar(Max)
-  notes                                                   String?           @db.NVarChar(Max)
-  card_variation                                          BigInt?
-  grading_agency                                          Int?
-  grade                                                   Decimal?          @db.Decimal(18, 0)
-  grade_id                                                BigInt?
-  aftermarket_autograph                                   Boolean?
-  is_for_sale                                             Boolean?          @default(false, map: "DEFAULT_user_card_is_for_sale")
-  is_wanted                                               Boolean?          @default(false, map: "DEFAULT_user_card_is_wanted")
-  is_special                                              Boolean?          @default(false, map: "DEFAULT_user_card_is_special")
-  is_labeled                                              Boolean?          @default(false, map: "DEFAULT_user_card_is_labeled")
-  user_location                                           BigInt?
-  random_code                                             String?           @db.NVarChar(Max)
-  created                                                 DateTime?         @default(now(), map: "DEFAULT_user_card_created") @db.DateTime
-  ebay_purchase_id                                        BigInt?
-  card_user_card_cardTocard                               card?             @relation("user_card_cardTocard", fields: [card], references: [card_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_user_card_card")
-  card_variation_user_card_card_variationTocard_variation card_variation?   @relation("user_card_card_variationTocard_variation", fields: [card_variation], references: [card_variation_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_user_card_card_variation")
-  user_user_card_userTouser                               user?             @relation("user_card_userTouser", fields: [user], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_user_card_user")
-  user_location_user_card_user_locationTouser_location    user_location?    @relation("user_card_user_locationTouser_location", fields: [user_location], references: [user_location_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_user_card_user_location")
-  user_card_photo_user_card_photo_user_cardTouser_card    user_card_photo[] @relation("user_card_photo_user_cardTouser_card")
+  user_card_id                                                BigInt                 @id(map: "PK_user_card") @default(autoincrement())
+  user                                                        BigInt?
+  card                                                        BigInt?
+  serial_number                                               Int?
+  purchase_price                                              Float?                 @default(0, map: "DEFAULT_user_card_purchase_price") @db.Money
+  estimated_value                                             Float?                 @default(0, map: "DEFAULT_user_card_estimated_value") @db.Money
+  current_value                                               Float?                 @default(0, map: "DEFAULT_user_card_current_value") @db.Money
+  photo                                                       String?                @db.NVarChar(Max)
+  notes                                                       String?                @db.NVarChar(Max)
+  card_variation                                              BigInt?
+  grading_agency                                              Int?
+  grade                                                       Decimal?               @db.Decimal(18, 0)
+  grade_id                                                    BigInt?
+  aftermarket_autograph                                       Boolean?
+  is_for_sale                                                 Boolean?               @default(false, map: "DEFAULT_user_card_is_for_sale")
+  is_wanted                                                   Boolean?               @default(false, map: "DEFAULT_user_card_is_wanted")
+  is_special                                                  Boolean?               @default(false, map: "DEFAULT_user_card_is_special")
+  is_labeled                                                  Boolean?               @default(false, map: "DEFAULT_user_card_is_labeled")
+  user_location                                               BigInt?
+  random_code                                                 String?                @db.NVarChar(Max)
+  created                                                     DateTime?              @default(now(), map: "DEFAULT_user_card_created") @db.DateTime
+  ebay_purchase_id                                            BigInt?
+  card_user_card_cardTocard                                   card?                  @relation("user_card_cardTocard", fields: [card], references: [card_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_user_card_card")
+  card_variation_user_card_card_variationTocard_variation     card_variation?        @relation("user_card_card_variationTocard_variation", fields: [card_variation], references: [card_variation_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_user_card_card_variation")
+  user_user_card_userTouser                                   user?                  @relation("user_card_userTouser", fields: [user], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_user_card_user")
+  user_location_user_card_user_locationTouser_location        user_location?         @relation("user_card_user_locationTouser_location", fields: [user_location], references: [user_location_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_user_card_user_location")
+  user_card_photo_user_card_photo_user_cardTouser_card        user_card_photo[]      @relation("user_card_photo_user_cardTouser_card")
+  user_favorite_cards_user_favorite_cards_user_cardTouser_card user_favorite_cards[] @relation("user_favorite_cards_user_cardTouser_card")
 
   @@index([card, user], map: "idx_user_card_covering")
   @@index([card_variation], map: "IX_user_card_card_variation")
@@ -582,6 +591,21 @@ model user_team {
 
   @@index([created], map: "IX_user_team_created")
   @@index([team], map: "IX_user_team_team")
+}
+
+model user_favorite_cards {
+  favorite_id   BigInt    @id(map: "PK_user_favorite_cards") @default(autoincrement())
+  user_id       BigInt
+  user_card_id  BigInt
+  sort_order    Int       @default(1)
+  created_at    DateTime  @default(now()) @db.DateTime
+  updated_at    DateTime  @default(now()) @db.DateTime
+  user          user      @relation("user_favorite_cards_userTouser", fields: [user_id], references: [user_id], onUpdate: NoAction, map: "FK_user_favorite_cards_user")
+  user_card     user_card @relation("user_favorite_cards_user_cardTouser_card", fields: [user_card_id], references: [user_card_id], onDelete: Cascade, onUpdate: NoAction, map: "FK_user_favorite_cards_user_card")
+
+  @@unique([user_id, user_card_id], map: "UK_user_favorite_cards_user_card")
+  @@index([user_id, sort_order], map: "idx_user_favorite_cards_user")
+  @@index([user_card_id], map: "idx_user_favorite_cards_user_card")
 }
 
 model spreadsheet_generation_queue {

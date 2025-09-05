@@ -225,7 +225,9 @@ if (config.environment === 'test') {
     { path: '/api/player-team-search', file: './routes/player-team-search', name: 'Player Team Search' },
     { path: '/api/spreadsheet-generation', file: './routes/spreadsheet-generation', name: 'Spreadsheet Generation' },
     { path: '/api/card-detail', file: './routes/card-detail', name: 'Card Detail' },
-    { path: '/api/card', file: './routes/simple-card-detail', name: 'Simple Card Detail' }
+    { path: '/api/card', file: './routes/simple-card-detail', name: 'Simple Card Detail' },
+    { path: '/api/comments', file: './routes/comments', name: 'Comments' },
+    { path: '/api/profile', file: './routes/user-profile', name: 'User Profiles' }
   ];
 
   console.log('📍 Loading API routes in production mode...');

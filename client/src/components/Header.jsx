@@ -5,6 +5,7 @@ import { useToast } from '../contexts/ToastContext'
 import UniversalSearch from './UniversalSearch'
 // import AdminNavigation from './AdminNavigation' // Commented out for SeriesDetail page independence
 import Icon from './Icon'
+import NotificationBell from './NotificationBell'
 import './Header.css'
 
 function Header() {
@@ -159,7 +160,9 @@ function Header() {
         {/* User Section */}
         <div className="header-user">
           {isAuthenticated ? (
-            <div className="user-menu" ref={dropdownRef}>
+            <>
+              <NotificationBell />
+              <div className="user-menu" ref={dropdownRef}>
               <button 
                 className="user-avatar-button"
                 onClick={() => setShowUserMenu(!showUserMenu)}
@@ -244,6 +247,7 @@ function Header() {
                 </div>
               )}
             </div>
+            </>
           ) : (
             <div className="auth-buttons">
               <Link to="/auth/login" className="header-button primary">

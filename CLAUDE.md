@@ -338,13 +338,34 @@ TABLE ebay_deletion_log:
 
 ### 🗣️ Social Features & Community System (IN DEVELOPMENT)
 
-#### Card Comments System
-- [ ] **Non-threaded discussions** on every card detail page
+#### 💬 Universal Comment System (PRIORITY 1 - TODAY)
+##### Core Comment Features
+- [ ] **Multi-level commenting** - Comments on cards, series, and sets
 - [ ] **Authentication required** to post, edit, or delete comments  
-- [ ] **Real-time comment updates** with WebSocket integration
 - [ ] **Comment editing** - 15 minute window after posting
 - [ ] **Rate limiting** - Maximum 5 comments per minute per user
-- [ ] **Auto-subscription** - Users automatically subscribed to cards they comment on
+- [ ] **Auto-subscription** - Users automatically subscribed to items they comment on or own
+
+##### Comment Roll-Up Activity Feed
+- [ ] **Hierarchical display** - Comments bubble up from cards → series → sets
+- [ ] **Set-level activity feed** - Shows all comments from child series and cards
+- [ ] **Series-level activity feed** - Shows all comments from child cards
+- [ ] **Context preservation** - Each comment shows its origin (card name, series, etc.)
+- [ ] **Smart aggregation** - Group multiple comments from same user/card when appropriate
+- [ ] **Timestamp-based ordering** - Most recent activity first
+- [ ] **Activity type indicators** - Icons showing if comment is on card/series/set
+
+##### Comment Display Context
+- [ ] **On Card Pages**: Show only card-specific comments
+- [ ] **On Series Pages**: Show series comments + recent card comments from that series
+- [ ] **On Set Pages**: Show set comments + activity feed from all series/cards
+- [ ] **Comment attribution**: "John commented on 2024 Topps Update #123 Mike Trout"
+- [ ] **Jump-to navigation**: Click to go directly to the commented item
+
+##### Real-time Updates (PRIORITY 3 - LATER)
+- [ ] **WebSocket integration** for live comment updates
+- [ ] **Live activity feeds** - New comments appear without refresh
+- [ ] **Typing indicators** - See who's currently writing a comment
 
 #### Community Moderation & Safety
 - [ ] **Profanity Filter**: Automatic detection and filtering
@@ -358,13 +379,240 @@ TABLE ebay_deletion_log:
 - [ ] **Comment Queue**: Pre-approval system
 - [ ] **Audit Trail**: Complete logging of moderation actions
 
-#### Notification System
-- [ ] **eBay-style notification bell** with unread count badge
-- [ ] **Real-time notifications** via WebSocket
-- [ ] **Notification types**: Comments, messages, system announcements
-- [ ] **Notification preferences**: Granular control
-- [ ] **Email integration**: Optional email notifications
-- [ ] **Auto-cleanup**: 30-day retention
+#### 🔔 Notification System (PRIORITY 1 - CURRENT)
+##### Basic Notification Bell
+- [x] **Header notification icon** with unread count badge
+- [x] **Core notifications**:
+  - "Someone commented on your card/series/set"
+  - "Someone replied to your comment"
+  - "New comment on a card you own"
+  - "New activity in series/set you're subscribed to"
+- [x] **Notification management**:
+  - Mark as read/unread
+  - Clear all notifications
+  - Auto-cleanup after 30 days
+- [x] **Click-to-navigate** - Each notification links to the relevant comment
+- [x] **Hover dropdown** - Show recent notifications on icon hover
+- [ ] **Dedicated notifications page** - Full notification history and management
+
+##### Advanced Notifications (PRIORITY 3 - LATER)
+- [ ] **Real-time delivery** via WebSocket
+- [ ] **Notification preferences** - Granular control per type
+- [ ] **Email integration** - Optional daily/weekly digests
+
+## 🚀 SOCIAL & PROFILE FEATURES (✅ MAJOR IMPLEMENTATION COMPLETE!)
+
+### ✨ Recently Completed Features
+- ✅ **Username system with real-time validation** - Full registration and profile management
+- ✅ **Favorite Cards showcase** - Users can display 5 favorite cards on their profile
+- ✅ **One-click social media sharing** - Share cards to Twitter, Facebook, Reddit, LinkedIn, Email
+- ✅ **Activity Feed system** - Social media style feed showing recent comments on sets
+- ✅ **Notification Bell** - Header notification system with unread counters and dropdown
+- ✅ **Universal comment system** - Comments on cards, series, and sets with full moderation
+- ✅ **Public user profiles** - Viewable profiles with collection stats and favorite cards
+- ✅ **Profile management** - Complete settings page for bio, privacy, and username changes
+
+### 👤 Enhanced User Profile System
+#### Username Management (✅ COMPLETED)
+- [x] **Registration username selection**: Users must choose username during signup
+- [x] **Username availability checking**: Real-time validation during registration
+- [x] **Username change functionality**: Allow users to update their username
+- [x] **Reserved username protection**: Block system routes and inappropriate names
+- [x] **Username history tracking**: Audit trail for username changes
+
+#### Favorite Cards Showcase (✅ COMPLETED)
+- [x] **"My Top 5" profile section**: Users can select 5 favorite cards from their collection
+- [x] **Visual card display**: Show card images in profile (with fallback for no images)
+- [x] **Easy card selection**: Modal/interface to choose from user's collection
+- [x] **Drag-and-drop reordering**: Users can reorder their top 5 cards
+- [x] **Public display**: Favorite cards visible on public profiles
+- [x] **Collection context**: Show rarity/value of showcased cards
+
+#### Profile Enhancements
+- [x] **Public/private toggle**: Control profile visibility
+- [x] **Profile management page**: Complete settings interface at /profile
+- [x] **Bio and personal info**: Display name, bio, location, website
+- [x] **Collection statistics**: Card counts, values, rookie cards, etc.
+- [ ] **Activity timeline**: Recent comments and collection updates
+- [ ] **Achievement badges**: Milestones for collection size, activity, etc.
+
+### 📱 Social Media Sharing (✅ COMPLETED - ONE-CLICK SHARING)
+#### Card Sharing Features
+- [x] **Share individual cards**: Direct sharing from card detail pages
+- [x] **Platform integration**: Native sharing for Twitter/X, Facebook, Reddit, LinkedIn, Email
+- [x] **Rich media support**: Include card images in shared posts
+- [x] **Auto-generated content**: Smart captions with card details
+- [x] **Web Share API**: Native mobile sharing on supported devices
+
+#### Sharing Content Template
+```
+"Check out this amazing [YEAR] [SET] [PLAYER] [CARD NUMBER] from my collection! 🏀⚾
+[CARD IMAGE]
+View my full collection at [SITE_URL]/[USERNAME]
+#SportCards #[SPORT] #[PLAYER_NAME] #Collecting"
+```
+
+#### Technical Implementation
+- [ ] **Web Share API**: Native mobile sharing on supported devices
+- [ ] **Fallback sharing**: Custom modal with copy-to-clipboard for unsupported platforms
+- [ ] **Image optimization**: Proper sizing for different social platforms
+- [ ] **Open Graph tags**: Rich previews when links are shared
+- [ ] **Analytics tracking**: Monitor sharing activity and engagement
+
+#### 📊 Database Schema Extensions for Comments
+##### New Tables Required:
+
+```sql
+-- Universal comments table - supports cards, series, and sets
+CREATE TABLE universal_comments (
+  comment_id BIGINT IDENTITY(1,1) PRIMARY KEY,
+  user_id BIGINT NOT NULL REFERENCES [user](user_id),
+  comment_type VARCHAR(10) NOT NULL CHECK (comment_type IN ('card', 'series', 'set')),
+  item_id BIGINT NOT NULL, -- References card_id, series_id, or set_id
+  comment_text NVARCHAR(MAX) NOT NULL,
+  parent_comment_id BIGINT NULL REFERENCES universal_comments(comment_id),
+  created_at DATETIME NOT NULL DEFAULT GETDATE(),
+  updated_at DATETIME NULL,
+  is_edited BIT NOT NULL DEFAULT 0,
+  is_deleted BIT NOT NULL DEFAULT 0,
+  INDEX IX_comments_type_item (comment_type, item_id),
+  INDEX IX_comments_user (user_id),
+  INDEX IX_comments_created (created_at DESC)
+);
+
+-- User subscriptions to items for notifications
+CREATE TABLE user_item_subscriptions (
+  subscription_id BIGINT IDENTITY(1,1) PRIMARY KEY,
+  user_id BIGINT NOT NULL REFERENCES [user](user_id),
+  item_type VARCHAR(10) NOT NULL CHECK (item_type IN ('card', 'series', 'set')),
+  item_id BIGINT NOT NULL,
+  subscribed_at DATETIME NOT NULL DEFAULT GETDATE(),
+  is_active BIT NOT NULL DEFAULT 1,
+  UNIQUE (user_id, item_type, item_id),
+  INDEX IX_subscriptions_user (user_id),
+  INDEX IX_subscriptions_item (item_type, item_id)
+);
+
+-- Notifications table
+CREATE TABLE user_notifications (
+  notification_id BIGINT IDENTITY(1,1) PRIMARY KEY,
+  user_id BIGINT NOT NULL REFERENCES [user](user_id),
+  notification_type VARCHAR(50) NOT NULL,
+  title NVARCHAR(255) NOT NULL,
+  message NVARCHAR(MAX) NOT NULL,
+  related_comment_id BIGINT NULL REFERENCES universal_comments(comment_id),
+  related_user_id BIGINT NULL REFERENCES [user](user_id),
+  item_type VARCHAR(10) NULL CHECK (item_type IN ('card', 'series', 'set')),
+  item_id BIGINT NULL,
+  is_read BIT NOT NULL DEFAULT 0,
+  created_at DATETIME NOT NULL DEFAULT GETDATE(),
+  INDEX IX_notifications_user_unread (user_id, is_read, created_at DESC)
+);
+```
+
+#### 🎯 API Endpoints Structure
+
+```javascript
+// Comment endpoints
+GET    /api/comments/:type/:itemId          // Get comments for card/series/set
+POST   /api/comments/:type/:itemId          // Add comment to card/series/set
+PUT    /api/comments/:commentId             // Edit comment (within 15 min)
+DELETE /api/comments/:commentId             // Delete comment
+
+// Activity feed endpoints
+GET    /api/activity/:type/:itemId          // Get activity feed for item
+GET    /api/activity/set/:setId             // Get all activity in a set
+GET    /api/activity/series/:seriesId       // Get all activity in a series
+
+// Notification endpoints
+GET    /api/notifications                   // Get user notifications
+PUT    /api/notifications/:id/read          // Mark notification as read
+POST   /api/notifications/mark-all-read     // Mark all as read
+DELETE /api/notifications/:id               // Delete notification
+
+// Subscription endpoints
+POST   /api/subscriptions/:type/:itemId     // Subscribe to item
+DELETE /api/subscriptions/:type/:itemId     // Unsubscribe from item
+GET    /api/subscriptions                   // Get user subscriptions
+```
+
+#### 🔄 Activity Feed Roll-up Logic
+
+##### Set-level Activity Feed
+Shows activity from the set itself plus all child series and cards:
+```sql
+-- Get all comments in a set (set comments + series comments + card comments)
+SELECT 
+  c.comment_id, c.comment_text, c.created_at,
+  u.first_name, u.last_name,
+  c.comment_type,
+  CASE 
+    WHEN c.comment_type = 'card' THEN CONCAT(card.card_number, ' ', player.first_name, ' ', player.last_name)
+    WHEN c.comment_type = 'series' THEN series.name
+    WHEN c.comment_type = 'set' THEN 'Set Discussion'
+  END as item_context
+FROM universal_comments c
+JOIN [user] u ON c.user_id = u.user_id
+LEFT JOIN card ON c.comment_type = 'card' AND c.item_id = card.card_id
+LEFT JOIN series ON c.comment_type = 'series' AND c.item_id = series.series_id
+LEFT JOIN player ON card.player = player.player_id
+WHERE 
+  (c.comment_type = 'set' AND c.item_id = @setId)
+  OR (c.comment_type = 'series' AND c.item_id IN (SELECT series_id FROM series WHERE set = @setId))
+  OR (c.comment_type = 'card' AND c.item_id IN (
+    SELECT card.card_id FROM card 
+    JOIN series s ON card.series = s.series_id 
+    WHERE s.set = @setId
+  ))
+ORDER BY c.created_at DESC
+```
+
+##### Series-level Activity Feed
+Shows series comments plus all card comments in that series:
+```sql
+-- Get comments in a series (series comments + card comments in that series)
+SELECT 
+  c.comment_id, c.comment_text, c.created_at,
+  u.first_name, u.last_name,
+  c.comment_type,
+  CASE 
+    WHEN c.comment_type = 'card' THEN CONCAT(card.card_number, ' ', player.first_name, ' ', player.last_name)
+    WHEN c.comment_type = 'series' THEN 'Series Discussion'
+  END as item_context
+FROM universal_comments c
+JOIN [user] u ON c.user_id = u.user_id
+LEFT JOIN card ON c.comment_type = 'card' AND c.item_id = card.card_id
+LEFT JOIN player ON card.player = player.player_id
+WHERE 
+  (c.comment_type = 'series' AND c.item_id = @seriesId)
+  OR (c.comment_type = 'card' AND c.item_id IN (
+    SELECT card_id FROM card WHERE series = @seriesId
+  ))
+ORDER BY c.created_at DESC
+```
+
+#### 🎨 UI Components for Activity Feeds
+
+##### Activity Feed Item Component
+Each activity item shows:
+- **User avatar/name** - Who commented
+- **Timestamp** - When the comment was made
+- **Context indicator** - "commented on [Card Name]" or "commented on this series"
+- **Comment preview** - First line of comment with "read more" link
+- **Jump button** - "View Card" or "View Series" to navigate to source
+
+##### Set Page Activity Feed
+- **Tab system**: "Set Comments" | "All Activity" 
+- **All Activity tab** shows roll-up of everything in the set
+- **Grouping**: Multiple comments from same user/item grouped together
+- **Load more**: Paginated loading for large comment volumes
+
+##### Series Page Activity Feed  
+- **Inline activity section** below series information
+- **Recent activity** from cards in the series
+- **"Show all activity"** expands to full feed
+- [ ] **@ Mentions** - Notify when username is mentioned
+- [ ] **Follow users** - Get notified of specific collectors' activity
 
 #### Direct Messaging System (FUTURE)
 - [ ] **One-to-one messaging** between users

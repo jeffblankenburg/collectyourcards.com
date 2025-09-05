@@ -30,6 +30,8 @@ import AdminCards from './pages/AdminCards.jsx'
 // import SpreadsheetIngestion from './pages/SpreadsheetIngestion.jsx' // Commented out for SeriesDetail page independence
 import CollectionDashboard from './pages/CollectionDashboard.jsx'
 import CardDetail from './pages/CardDetail.jsx'
+import PublicProfile from './pages/PublicProfile.jsx'
+import ProfileManagement from './pages/ProfileManagement.jsx'
 import './index.css'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
@@ -49,7 +51,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
               <Route path="/register" element={<Auth />} />
               {/* <Route path="/attributions" element={<Attributions />} /> */}
               {/* <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} /> */}
-              {/* <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} /> */}
+              <Route path="/profile" element={<ProtectedRoute><ProfileManagement /></ProtectedRoute>} />
               <Route path="/collection" element={<ProtectedRoute><CollectionDashboard /></ProtectedRoute>} />
               <Route path="/players" element={<PlayersLanding />} />
               <Route path="/players/:playerSlug" element={<PlayerDetail />} />
@@ -79,6 +81,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
               {/* <Route path="/admin/sets/:year/:setSlug/:seriesSlug" element={<ProtectedRoute><AdminSets /></ProtectedRoute>} /> */}
               <Route path="/admin/cards/:year/:setSlug/:seriesSlug" element={<ProtectedRoute><AdminCards /></ProtectedRoute>} />
               {/* <Route path="/admin/ingestion" element={<ProtectedRoute><SpreadsheetIngestion /></ProtectedRoute>} /> */}
+              
+              {/* Public profile route - MUST BE LAST to avoid conflicts with other routes */}
+              <Route path="/:username" element={<PublicProfile />} />
             </Routes>
           </Layout>
         </AuthProvider>
