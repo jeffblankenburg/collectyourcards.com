@@ -1,0 +1,487 @@
+/* CardTable - Reusable component for database card tables */
+
+.card-table-container {
+  width: calc(100vw - 2rem);
+  margin-left: calc(-50vw + 50% + 1rem);
+}
+
+.card-table-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  color: rgba(255, 255, 255, 0.7);
+  gap: 1rem;
+}
+
+.card-table-loading .spinner {
+  animation: spin 1s linear infinite;
+  color: #3b82f6;
+}
+
+.card-table-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.card-table-container .search-container {
+  flex: 1;
+  max-width: 400px;
+}
+
+.card-table-container .search-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  color: white;
+  font-size: 0.9rem;
+  backdrop-filter: blur(10px);
+  transition: all 0.2s ease;
+}
+
+.card-table-container .search-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.card-table-container .search-input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.card-table-container .view-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  padding: 0.25rem;
+}
+
+.card-table-container .view-toggle .toggle-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.card-table-container .view-toggle .toggle-button:hover {
+  color: white;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.card-table-container .view-toggle .toggle-button.active {
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.card-table-container .bulk-action-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: #10b981;
+  border: 1px solid #10b981;
+  border-radius: 6px;
+  color: white;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.card-table-container .bulk-action-button:hover {
+  background: #059669;
+  border-color: #059669;
+  transform: translateY(-1px);
+}
+
+/* Table Structure */
+.card-table-wrapper {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px 8px 0 0;
+  backdrop-filter: blur(10px);
+  overflow-x: auto;
+  overflow-y: auto;
+  position: relative;
+  max-height: 400px;
+}
+
+.card-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+  table-layout: fixed;
+  border-spacing: 0;
+}
+
+/* Table Headers - Base styles */
+.card-table thead th {
+  background: #1f2937;
+  padding: 0.75rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  vertical-align: middle;
+  text-align: left; /* Default alignment */
+}
+
+.card-table thead th:first-child {
+  border-left: none;
+}
+
+.card-table thead th:last-child {
+  border-right: none;
+}
+
+.card-table thead th.sortable {
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.card-table thead th.sortable:hover {
+  background: #374151;
+}
+
+/* Table Body - Base styles */
+.card-table tbody td {
+  padding: 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.9);
+  vertical-align: middle;
+  /* No default text-align - let column-specific styles control alignment */
+}
+
+.card-table tbody tr:first-child td {
+  border-top: none;
+}
+
+.card-table tbody td:first-child {
+  border-left: none;
+}
+
+.card-table tbody td:last-child {
+  border-right: none;
+}
+
+/* Column-specific styles with alignments */
+.checkbox-header,
+.action-header,
+.checkbox-cell,
+.action-cell {
+  text-align: center;
+}
+
+.owned-header,
+.owned-cell {
+  text-align: center;
+}
+
+.card-number-header,
+.card-number-cell {
+  text-align: left;
+}
+
+.player-header,
+.player-cell {
+  text-align: left;
+}
+
+.color-header,
+.color-cell {
+  text-align: left;
+}
+
+.print-run-header,
+.print-run-cell {
+  text-align: center;
+}
+
+.attributes-header,
+.attributes-cell {
+  text-align: left;
+}
+
+.notes-header,
+.notes-cell {
+  text-align: left;
+}
+
+/* Row styles */
+.card-row {
+  transition: background-color 0.2s ease;
+}
+
+.card-row:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.card-row.owned-card {
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.card-row.owned-card:hover {
+  background: rgba(16, 185, 129, 0.15);
+}
+
+.card-row.clickable {
+  cursor: pointer;
+}
+
+/* Interactive elements */
+.checkbox-container {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+  margin: 0 auto;
+}
+
+.checkbox-container:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.checkbox-container input[type="checkbox"] {
+  margin: 0;
+  padding: 0;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.add-card-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+  margin: 0 auto;
+}
+
+.add-card-btn:hover {
+  background: #10b981;
+  border-color: #10b981;
+  color: white;
+  transform: scale(1.1);
+}
+
+/* Content-specific styles */
+.header-content {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sort-icon {
+  transition: transform 0.2s ease;
+}
+
+.sort-icon.neutral {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.sort-icon.active {
+  color: #3b82f6;
+}
+
+.sort-icon.desc {
+  transform: rotate(180deg);
+}
+
+.clickable-cell {
+  cursor: pointer;
+}
+
+.clickable-cell:hover {
+  color: #3b82f6;
+}
+
+.player-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.player-info:last-child {
+  margin-bottom: 0;
+}
+
+.player-name {
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* Tag styles */
+.color-tag {
+  display: inline-block;
+  padding: 0.125rem 0.375rem;
+  border-radius: 4px;
+  font-size: 0.625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.print-run-tag {
+  display: inline-block;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 0.125rem 0.375rem;
+  border-radius: 4px;
+  font-size: 0.625rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.attribute-tags {
+  display: inline-flex;
+  gap: 0.25rem;
+  flex-wrap: nowrap;
+}
+
+.notes-cell {
+  word-wrap: break-word;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* Footer */
+.card-table-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.875rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  margin-top: -1px;
+}
+
+/* Column resizing */
+.header-with-resize {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+}
+
+/* Center content for centered columns */
+.checkbox-header .header-with-resize,
+.action-header .header-with-resize,
+.owned-header .header-with-resize,
+.print-run-header .header-with-resize {
+  justify-content: center;
+}
+
+/* Left align content for other columns */
+.card-number-header .header-with-resize,
+.player-header .header-with-resize,
+.color-header .header-with-resize,
+.attributes-header .header-with-resize,
+.notes-header .header-with-resize {
+  justify-content: flex-start;
+}
+
+.resize-handle {
+  position: absolute;
+  top: 0;
+  right: -3px;
+  width: 6px;
+  height: 100%;
+  background: transparent;
+  cursor: col-resize;
+  user-select: none;
+  z-index: 10;
+}
+
+.resize-handle:hover {
+  background: rgba(59, 130, 246, 0.5);
+}
+
+.resize-handle:active {
+  background: #3b82f6;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .card-table-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .search-container {
+    max-width: none;
+  }
+  
+  .view-toggle {
+    justify-content: center;
+  }
+  
+  .card-table {
+    font-size: 0.8rem;
+  }
+  
+  .card-table thead th {
+    padding: 0.5rem 0.25rem;
+  }
+  
+  .card-table tbody td {
+    padding: 0.5rem 0.25rem;
+  }
+  
+  .player-info {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
