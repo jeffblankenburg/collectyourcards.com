@@ -25,10 +25,10 @@ function AdminCards() {
   const [teams, setTeams] = useState([])
   const [playerTeamCombinations, setPlayerTeamCombinations] = useState([])
   const [cardPlayers, setCardPlayers] = useState([])
-  const [showAddPlayerModal, setShowAddPlayerModal] = useState(false)
   const [playerSearchTerm, setPlayerSearchTerm] = useState('')
   const [filteredPlayers, setFilteredPlayers] = useState([])
   const [selectedResultIndex, setSelectedResultIndex] = useState(-1)
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 })
   const { addToast } = useToast()
 
   // Function to determine text color based on background brightness
@@ -202,12 +202,6 @@ function AdminCards() {
     setSaving(false)
   }
 
-  const handleCloseAddPlayerModal = () => {
-    setShowAddPlayerModal(false)
-    setPlayerSearchTerm('')
-    setFilteredPlayers([])
-    setSelectedResultIndex(-1)
-  }
 
   const handleFormChange = (field, value) => {
     setEditForm(prev => ({
@@ -309,7 +303,16 @@ function AdminCards() {
     
     setPlayerSearchTerm('')
     setFilteredPlayers([])
-    setShowAddPlayerModal(false)
+    setSelectedResultIndex(-1)
+  }
+
+  const calculateDropdownPosition = (inputElement) => {
+    const rect = inputElement.getBoundingClientRect()
+    setDropdownPosition({
+      top: rect.bottom + 4,
+      left: rect.left,
+      width: rect.width
+    })
   }
 
   const handlePlayerSearch = async (searchTerm) => {
@@ -373,7 +376,9 @@ function AdminCards() {
         break
       case 'Escape':
         e.preventDefault()
-        handleCloseAddPlayerModal()
+        setPlayerSearchTerm('')
+        setFilteredPlayers([])
+        setSelectedResultIndex(-1)
         break
     }
   }
@@ -382,11 +387,25 @@ function AdminCards() {
     return (
       <div className="admin-sets-page">
         <div className="loading-state">
-          <Icon name="activity" size={24} className="spinning" />
+          <div className="card-icon-spinner"></div>
           <span>Loading...</span>
         </div>
       </div>
     )
+  }
+
+  // Compute back URL based on available data
+  const getBackUrl = () => {
+    if (year) {
+      // Navigate to year-specific sets page
+      return `/admin/sets/${year}`
+    } else if (selectedSet) {
+      // We loaded set data, use the year from set data
+      return `/admin/sets/${selectedSet.year}`
+    } else {
+      // Fallback to admin sets index
+      return '/admin/sets'
+    }
   }
 
   return (
@@ -394,7 +413,7 @@ function AdminCards() {
       <div className="admin-header">
         <div className="admin-title">
           <Link 
-            to={`/admin/sets/${year}/${setSlug}`} 
+            to={getBackUrl()} 
             className="back-button"
             title="Back to series"
           >
@@ -667,14 +686,57 @@ function AdminCards() {
                         </button>
                       </div>
                     ))}
-                    <button
-                      type="button"
-                      className="add-player-btn"
-                      onClick={() => setShowAddPlayerModal(true)}
-                    >
-                      <Icon name="plus" size={16} />
-                      {cardPlayers.length === 0 ? 'Add Player' : 'Add Another Player'}
-                    </button>
+                    <div className="inline-player-search">
+                      <div className="player-search-box">
+                        <Icon name="search" size={16} className="search-icon" />
+                        <input
+                          type="text"
+                          placeholder="Search players to add..."
+                          value={playerSearchTerm}
+                          onChange={(e) => handlePlayerSearch(e.target.value)}
+                          onKeyDown={handleSearchKeyDown}
+                          onFocus={(e) => calculateDropdownPosition(e.target)}
+                          className="inline-player-search-input"
+                        />
+                      </div>
+                      
+                      {filteredPlayers.length > 0 && (
+                        <div 
+                          className="inline-player-search-results"
+                          style={{
+                            top: dropdownPosition.top,
+                            left: dropdownPosition.left,
+                            width: dropdownPosition.width
+                          }}
+                        >
+                          {filteredPlayers.slice(0, 8).map((result, index) => (
+                            <button
+                              key={`${result.player.player_id}-${result.team.team_id}`}
+                              className={`inline-player-search-result ${index === selectedResultIndex ? 'selected' : ''}`}
+                              onClick={() => handleAddPlayer(result.player, result.team)}
+                              onMouseEnter={() => setSelectedResultIndex(index)}
+                            >
+                              <div 
+                                className="mini-team-circle"
+                                style={{ 
+                                  '--primary-color': result.team.primary_color,
+                                  '--secondary-color': result.team.secondary_color 
+                                }}
+                                title={result.team.name}
+                              >
+                                {result.team.abbreviation}
+                              </div>
+                              <span className="inline-player-result-name">
+                                {result.player.first_name} {result.player.last_name}
+                              </span>
+                              <span className="inline-team-result-name">
+                                {result.team.name}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
                 
@@ -692,7 +754,7 @@ function AdminCards() {
               >
                 {saving ? (
                   <>
-                    <Icon name="activity" size={16} className="spinning" />
+                    <div className="card-icon-spinner small"></div>
                     Saving...
                   </>
                 ) : (
@@ -707,79 +769,6 @@ function AdminCards() {
         </div>
       )}
 
-      {/* Add Player Search Modal */}
-      {showAddPlayerModal && (
-        <div className="modal-overlay" onClick={handleCloseAddPlayerModal}>
-          <div className="add-player-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>Add Player to Card</h3>
-              <button className="close-btn" onClick={handleCloseAddPlayerModal}>
-                <Icon name="x" size={20} />
-              </button>
-            </div>
-            <div className="modal-content">
-              <div className="add-player-form">
-                <div className="player-search-box">
-                  <Icon name="search" size={20} className="search-icon" />
-                  <input
-                    type="text"
-                    placeholder="Search players..."
-                    value={playerSearchTerm}
-                    onChange={(e) => handlePlayerSearch(e.target.value)}
-                    onKeyDown={handleSearchKeyDown}
-                    className="player-search-input"
-                    autoFocus
-                  />
-                </div>
-                
-                {filteredPlayers.length > 0 && (
-                  <div className="player-search-results">
-                    {filteredPlayers.map((result, index) => (
-                      <button
-                        key={`${result.player.player_id}-${result.team.team_id}`}
-                        className={`player-search-result ${index === selectedResultIndex ? 'selected' : ''}`}
-                        onClick={() => handleAddPlayer(result.player, result.team)}
-                        onMouseEnter={() => setSelectedResultIndex(index)}
-                      >
-                        <div 
-                          className="mini-team-circle"
-                          style={{ 
-                            '--primary-color': result.team.primary_color,
-                            '--secondary-color': result.team.secondary_color 
-                          }}
-                          title={result.team.name}
-                        >
-                          {result.team.abbreviation}
-                        </div>
-                        <span className="player-result-name">
-                          {result.player.first_name} {result.player.last_name}
-                        </span>
-                        <span className="team-result-name">
-                          {result.team.name}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-                
-                {playerSearchTerm.trim() && filteredPlayers.length === 0 && (
-                  <div className="no-results">
-                    <Icon name="search" size={24} />
-                    <p>No players found matching "{playerSearchTerm}"</p>
-                  </div>
-                )}
-                
-                {!playerSearchTerm.trim() && (
-                  <div className="search-hint">
-                    <Icon name="info" size={20} />
-                    <p>Start typing a player name or team to see results</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

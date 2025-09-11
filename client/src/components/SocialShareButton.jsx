@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react'
 import Icon from './Icon'
 import './SocialShareButton.css'
 
-function SocialShareButton({ card, className = '' }) {
+function SocialShareButton({ card, className = '', iconOnly = false, size = 16 }) {
   const [showDropdown, setShowDropdown] = useState(false)
   const [copyButtonText, setCopyButtonText] = useState('Copy Link')
   const dropdownRef = useRef(null)
@@ -83,48 +83,26 @@ function SocialShareButton({ card, className = '' }) {
     setShowDropdown(false)
   }
 
-  const shareToReddit = () => {
+  const shareToInstagram = () => {
+    // Instagram doesn't have a direct share URL, so we copy the link with a message
     const content = createShareContent()
-    const redditUrl = `https://reddit.com/submit?url=${encodeURIComponent(content.url)}&title=${encodeURIComponent(content.title)}`
-    window.open(redditUrl, '_blank', 'width=550,height=420')
+    navigator.clipboard.writeText(`${content.title}\n\n${content.url}`).then(() => {
+      setCopyButtonText('Link Copied!')
+      setTimeout(() => setCopyButtonText('Copy Link'), 2000)
+      window.open('https://www.instagram.com/', '_blank')
+    }).catch(err => {
+      console.error('Failed to copy for Instagram:', err)
+    })
     setShowDropdown(false)
   }
 
-  const shareToLinkedIn = () => {
+  const shareToBlueSky = () => {
     const content = createShareContent()
-    const linkedinUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(content.url)}&title=${encodeURIComponent(content.title)}`
-    window.open(linkedinUrl, '_blank', 'width=550,height=420')
+    const blueSkyUrl = `https://bsky.app/intent/compose?text=${encodeURIComponent(`${content.title}\n\n${content.url}`)}`
+    window.open(blueSkyUrl, '_blank', 'width=550,height=420')
     setShowDropdown(false)
   }
 
-  const shareToEmail = () => {
-    const content = createShareContent()
-    const subject = content.title
-    const body = `I thought you might find this card interesting!\n\n${content.title}\n\n${content.url}\n\nShared via Collect Your Cards`
-    const emailUrl = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
-    window.open(emailUrl)
-    setShowDropdown(false)
-  }
-
-  // Use Web Share API if available (mobile devices)
-  const handleNativeShare = async () => {
-    const content = createShareContent()
-    
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: content.title,
-          text: content.text,
-          url: content.url,
-        })
-        setShowDropdown(false)
-      } catch (err) {
-        console.log('Native share cancelled or failed:', err)
-      }
-    }
-  }
-
-  const supportsNativeShare = typeof navigator !== 'undefined' && navigator.share
 
   return (
     <div className={`social-share-container ${className}`} ref={dropdownRef}>
@@ -133,8 +111,8 @@ function SocialShareButton({ card, className = '' }) {
         onClick={() => setShowDropdown(!showDropdown)}
         aria-label="Share card"
       >
-        <Icon name="share-2" size={16} />
-        Share
+        <Icon name="upload" size={size} />
+        {!iconOnly && 'Share'}
       </button>
 
       {showDropdown && (
@@ -142,16 +120,6 @@ function SocialShareButton({ card, className = '' }) {
           <div className="share-dropdown-header">
             <span>Share this card</span>
           </div>
-          
-          {supportsNativeShare && (
-            <button 
-              className="share-option native-share"
-              onClick={handleNativeShare}
-            >
-              <Icon name="share-2" size={16} />
-              <span>Share...</span>
-            </button>
-          )}
 
           <button 
             className="share-option copy-link"
@@ -180,27 +148,19 @@ function SocialShareButton({ card, className = '' }) {
           </button>
 
           <button 
-            className="share-option reddit"
-            onClick={shareToReddit}
+            className="share-option instagram"
+            onClick={shareToInstagram}
           >
-            <Icon name="external-link" size={16} />
-            <span>Reddit</span>
+            <Icon name="camera" size={16} />
+            <span>Instagram</span>
           </button>
 
           <button 
-            className="share-option linkedin"
-            onClick={shareToLinkedIn}
+            className="share-option bluesky"
+            onClick={shareToBlueSky}
           >
-            <Icon name="linkedin" size={16} />
-            <span>LinkedIn</span>
-          </button>
-
-          <button 
-            className="share-option email"
-            onClick={shareToEmail}
-          >
-            <Icon name="mail" size={16} />
-            <span>Email</span>
+            <Icon name="cloud" size={16} />
+            <span>Blue Sky</span>
           </button>
         </div>
       )}

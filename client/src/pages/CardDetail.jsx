@@ -3,8 +3,11 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import axios from 'axios'
 import { useAuth } from '../contexts/AuthContext'
 import Icon from '../components/Icon'
-import UniversalCardTable from '../components/UniversalCardTable'
+import CollectionTable from '../components/tables/CollectionTable'
+import QuickEditModal from '../components/modals/QuickEditModal'
+import AddCardModal from '../components/modals/AddCardModal'
 import CommentsSection from '../components/CommentsSection'
+import { useToast } from '../contexts/ToastContext'
 import SocialShareButton from '../components/SocialShareButton'
 import './CardDetailScoped.css'
 
@@ -15,6 +18,7 @@ function CardDetail() {
   const params = useParams()
   const navigate = useNavigate()
   const { isAuthenticated, user } = useAuth()
+  const { success, error: showError } = useToast()
   
   // Extract parameters - check if we have the simple URL structure
   let year, setSlug, seriesSlug, cardSlug, cardNumber, playerName
@@ -37,8 +41,13 @@ function CardDetail() {
   const [error, setError] = useState(null)
   const [seriesCards, setSeriesCards] = useState([])
   const [currentCardIndex, setCurrentCardIndex] = useState(-1)
-  const [userHasCards, setUserHasCards] = useState(false)
+  const [userCards, setUserCards] = useState([])
   const [checkingUserCards, setCheckingUserCards] = useState(true)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [cardToEdit, setCardToEdit] = useState(null)
+  const [locations, setLocations] = useState([])
+  const [gradingAgencies, setGradingAgencies] = useState([])
+  const [showAddCardModal, setShowAddCardModal] = useState(false)
   
   // Determine which URL format we're using
   const isSimpleUrl = !!(cardNumber && playerName)
@@ -65,7 +74,7 @@ function CardDetail() {
       checkUserCards()
     } else {
       setCheckingUserCards(false)
-      setUserHasCards(false)
+      setUserCards([])
     }
   }, [isAuthenticated, card])
 
@@ -73,10 +82,18 @@ function CardDetail() {
     try {
       setCheckingUserCards(true)
       const response = await axios.get(`/api/user/cards/${card.card_id}`)
-      setUserHasCards(response.data.cards && response.data.cards.length > 0)
+      setUserCards(response.data.cards || [])
+      
+      // Load locations and grading agencies for the edit modal
+      const [locationsRes, gradingRes] = await Promise.all([
+        axios.get('/api/user/locations'),
+        axios.get('/api/grading-agencies')
+      ])
+      setLocations(locationsRes.data.locations || [])
+      setGradingAgencies(gradingRes.data.agencies || [])
     } catch (err) {
       console.error('Error checking user cards:', err)
-      setUserHasCards(false)
+      setUserCards([])
     } finally {
       setCheckingUserCards(false)
     }
@@ -244,13 +261,62 @@ function CardDetail() {
     return luminance > 0.5
   }
 
+  const handleDeleteCard = async (cardToDelete) => {
+    if (!window.confirm('Are you sure you want to remove this card from your collection?')) {
+      return
+    }
+
+    try {
+      await axios.delete(`/api/user/cards/${cardToDelete.user_card_id}`)
+      success('Card removed from collection')
+      // Reload user cards
+      await checkUserCards()
+    } catch (err) {
+      console.error('Error deleting card:', err)
+      showError('Failed to remove card from collection')
+    }
+  }
+
+  const handleFavoriteToggle = async (cardToToggle) => {
+    try {
+      await axios.put(`/api/user/cards/${cardToToggle.user_card_id}`, {
+        is_special: !cardToToggle.is_special
+      })
+      success(cardToToggle.is_special ? 'Removed from favorites' : 'Added to favorites')
+      // Reload user cards
+      await checkUserCards()
+    } catch (err) {
+      console.error('Error toggling favorite:', err)
+      showError('Failed to update favorite status')
+    }
+  }
+
+  const handleCardUpdated = async () => {
+    // Reload user cards after edit
+    await checkUserCards()
+  }
+
+  const handleAddToCollection = () => {
+    if (!isAuthenticated) {
+      showError('Please log in to add cards to your collection')
+      return
+    }
+    setShowAddCardModal(true)
+  }
+
+  const handleCardAdded = async () => {
+    // Reload user cards after adding
+    await checkUserCards()
+    setShowAddCardModal(false)
+  }
+
   if (loading) {
     return (
       <div className="card-detail-page">
         <div className="card-detail-container">
           <div className="loading-state">
             <div className="loading-spinner">
-              <Icon name="activity" size={32} className="spinning" />
+              <div className="card-icon-spinner"></div>
             </div>
             <p>Loading card details...</p>
           </div>
@@ -367,19 +433,42 @@ function CardDetail() {
                         </h2>
                       </div>
                       
-                      {/* Auto/Relic tags below each player name */}
-                      {index === 0 && (card.is_autograph || card.is_relic) && (
-                        <div className="player-card-tags">
-                          {card.is_autograph && (
-                            <span className="player-tag player-tag-auto">
-                              AUTOGRAPH
-                            </span>
+                      {/* Auto/Relic tags and action buttons below each player name */}
+                      {index === 0 && (
+                        <div className="player-actions-row">
+                          {(card.is_autograph || card.is_relic) && (
+                            <div className="player-card-tags">
+                              {card.is_autograph && (
+                                <span className="player-tag player-tag-auto">
+                                  AUTOGRAPH
+                                </span>
+                              )}
+                              {card.is_relic && (
+                                <span className="player-tag player-tag-relic">
+                                  RELIC
+                                </span>
+                              )}
+                            </div>
                           )}
-                          {card.is_relic && (
-                            <span className="player-tag player-tag-relic">
-                              RELIC
-                            </span>
-                          )}
+                          
+                          {/* Action buttons */}
+                          <div className="player-action-buttons">
+                            {isAuthenticated && (
+                              <button 
+                                className="squircle-button add-button"
+                                onClick={handleAddToCollection}
+                                title="Add to Collection"
+                              >
+                                <Icon name="plus" size={16} />
+                              </button>
+                            )}
+                            <SocialShareButton 
+                              card={card}
+                              iconOnly={true}
+                              size={16}
+                              className="squircle-button share-button"
+                            />
+                          </div>
                         </div>
                       )}
                     </div>
@@ -389,17 +478,66 @@ function CardDetail() {
             </div>
           </div>
 
-          {/* Card Images in Header */}
-          <div className="card-images-header">
-            <div className="card-image-placeholder front-card">
-              <Icon name="image" size={24} />
-              <p>Front</p>
-              <small>Coming Soon</small>
+          {/* Stats Boxes and Card Images in Header */}
+          <div className="card-header-right-section">
+            {/* Card Images */}
+            <div className="card-images-header">
+              <div className="card-image-placeholder front-card">
+                <Icon name="image" size={24} />
+                <p>Front</p>
+                <small>No Image</small>
+              </div>
+              <div className="card-image-placeholder back-card">
+                <Icon name="image" size={24} />
+                <p>Back</p>
+                <small>No Image</small>
+              </div>
             </div>
-            <div className="card-image-placeholder back-card">
-              <Icon name="image" size={24} />
-              <p>Back</p>
-              <small>Coming Soon</small>
+
+            {/* Stats Boxes */}
+            <div className="card-stats-header">
+              <div className="stat-box">
+                <label>Current Value</label>
+                <span className="stat-value">TBD</span>
+              </div>
+              <div className="stat-box">
+                <label>CYC Pop</label>
+                <span className="stat-value">{card.cyc_population || 0}</span>
+              </div>
+              <div 
+                className="stat-box stat-box-clickable stat-box-logo" 
+                onClick={() => {
+                  const searchQuery = `${card.set_name} ${card.player_names} #${card.card_number}`
+                  const ebayUrl = `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(searchQuery)}`
+                  window.open(ebayUrl, '_blank')
+                }}
+                title="Find on eBay"
+              >
+                <span className="stat-value">
+                  <img 
+                    src="https://cardcheckliststorage.blob.core.windows.net/logo/ebay.svg" 
+                    alt="eBay" 
+                    className="logo-image"
+                  />
+                </span>
+              </div>
+              <div 
+                className="stat-box stat-box-clickable stat-box-logo" 
+                onClick={() => {
+                  const searchQuery = `${card.card_number}+${card.set_name}+${card.player_names.replace(/,/g, '+').replace(/\s+/g, '+')}`
+                  const comcUrl = `https://www.comc.com/Cards,sh,=${searchQuery}`
+                  window.open(comcUrl, '_blank')
+                }}
+                title="Find on COMC"
+              >
+                <span className="stat-value">
+                  <img 
+                    src="https://cardcheckliststorage.blob.core.windows.net/logo/comc.webp" 
+                    alt="COMC" 
+                    className="logo-image"
+                  />
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -439,179 +577,28 @@ function CardDetail() {
           </div>
         )}
 
-        {/* User's Collection of this Card - Separate Block - Only show if user has cards */}
-        {isAuthenticated && card && userHasCards && (
-          <div className="card-content">
-            <div className="user-collection-section">
-              <h3>In My Collection</h3>
-              <UniversalCardTable
-                apiEndpoint={`/api/user/cards/${card.card_id}`}
-                showPlayer={false}
-                showTeam={false}
-                showSeries={false}
-                showCardNumber={false}
-                showColor={false}
-                showAttributes={false}
-                showDownload={false}
-                columnWidths={{
-                  code: '50px',
-                  cardNumber: '60px',
-                  player: '100px',
-                  series: '120px',
-                  printRun: '60px',
-                  color: '50px',
-                  attributes: '60px',
-                  purchasePrice: '70px',
-                  estimatedValue: '70px',
-                  currentValue: '70px',
-                  location: '80px',
-                  grade: '60px',
-                  amAuto: '50px',
-                  notes: '100px',
-                  actions: '60px'
-                }}
-                showSearch={false}
-                showOwned={false}
-                showAddButtons={false}
-                isCollectionView={true}
-                showCollectionColumns={true}
-                defaultSort="date_added"
-                pageSize={100}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Card Content */}
-        <div className="card-content">
-          {/* Card Details - Now Full Width */}
-          <div className="card-details-section">
-            {/* Card Stats/Value Section - Moved to top */}
-            <div className="card-stats-section">
-              <h3>Card Statistics</h3>
-              <div className="card-stats-grid">
-                <div className="stat-item">
-                  <label>Estimated Value</label>
-                  <span className="stat-value">TBD</span>
-                </div>
-                <div className="stat-item">
-                  <label>CYC Population</label>
-                  <span className="stat-value">{card.cyc_population || 0}</span>
-                </div>
-                <div className="stat-item stat-item-clickable" onClick={() => {
-                  // Generate eBay search URL for this card
-                  const searchQuery = `${card.set_name} ${card.player_names} #${card.card_number}`
-                  const ebayUrl = `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(searchQuery)}`
-                  window.open(ebayUrl, '_blank')
-                }}>
-                  <label>eBay</label>
-                  <span className="stat-value">
-                    <Icon name="external-link" size={16} />
-                  </span>
-                </div>
-                <div className="stat-item stat-item-clickable" onClick={() => {
-                  // Generate COMC search URL for this card
-                  const searchQuery = `${card.card_number}+${card.set_name}+${card.player_names.replace(/,/g, '+').replace(/\s+/g, '+')}`
-                  const comcUrl = `https://www.comc.com/Cards,sh,=${searchQuery}`
-                  window.open(comcUrl, '_blank')
-                }}>
-                  <label>COMC</label>
-                  <span className="stat-value">
-                    <Icon name="external-link" size={16} />
-                  </span>
-                </div>
-              </div>
-            </div>
-
-
-            {/* Card Information */}
-            <div className="card-info-grid">
-              <div className="card-info-item clickable-info" onClick={() => {
-                const setSlugFromCard = card.set_slug || card.set_name
-                  .toLowerCase()
-                  .replace(/'/g, '') // Remove apostrophes completely
-                  .replace(/[^a-z0-9]+/g, '-') // Replace other special chars with hyphens
-                  .replace(/^-|-$/g, '') // Remove leading/trailing hyphens
-                navigate(`/sets/${card.set_year}/${setSlugFromCard}`)
-              }}>
-                <label>Set</label>
-                <span>{card.set_name}</span>
-              </div>
-              <div className="card-info-item clickable-info" onClick={() => {
-                navigate(`/sets/${card.set_year}`)
-              }}>
-                <label>Year</label>
-                <span>{card.set_year}</span>
-              </div>
-              {card.manufacturer_name && (
-                <div className="card-info-item">
-                  <label>Manufacturer</label>
-                  <span>{card.manufacturer_name}</span>
-                </div>
-              )}
-              {card.print_run && (
-                <div className="card-info-item">
-                  <label>Print Run</label>
-                  <span>{card.print_run.toLocaleString()}</span>
-                </div>
-              )}
-              {card.teams.length > 0 && (
-                <div className="card-info-item card-teams">
-                  <label>Team{card.teams.length > 1 ? 's' : ''}</label>
-                  <div className="team-list">
-                    {card.teams.map((team, index) => (
-                      <div key={team.team_id} className="team-list-item">
-                        <div 
-                          className="team-list-circle"
-                          style={{
-                            '--team-primary': team.primary_color || '#333',
-                            '--team-secondary': team.secondary_color || '#666'
-                          }}
-                        >
-                          <span>{team.abbreviation}</span>
-                        </div>
-                        <span 
-                          className="team-name clickable-link"
-                          onClick={() => {
-                            const teamSlug = team.name
-                              .toLowerCase()
-                              .replace(/[^a-z0-9\s-]/g, '')
-                              .replace(/\s+/g, '-')
-                              .replace(/-+/g, '-')
-                              .trim()
-                            navigate(`/teams/${teamSlug}`)
-                          }}
-                        >
-                          {team.name}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Action Buttons */}
-            {isAuthenticated && (
-              <div className="card-actions">
-                <button className="action-button primary">
-                  <Icon name="plus" size={16} />
-                  Add to Collection
-                </button>
-                <button className="action-button secondary">
-                  <Icon name="heart" size={16} />
-                  Add to Wishlist
-                </button>
-                <SocialShareButton 
-                  card={card} 
-                  className="action-button secondary"
-                />
-              </div>
-            )}
-          </div>
-        </div>
 
       </div>
+
+      {/* User's Collection of this Card - Full Width Outside Container */}
+      {isAuthenticated && card && userCards.length > 0 && (
+        <CollectionTable
+          cards={userCards}
+          loading={checkingUserCards}
+          onEditCard={(card) => {
+            setCardToEdit(card)
+            setShowEditModal(true)
+          }}
+          onDeleteCard={handleDeleteCard}
+          onFavoriteToggle={handleFavoriteToggle}
+          onCardClick={null} // Don't navigate from here
+          showSearch={true}
+          showGalleryToggle={true}
+          viewMode="table"
+          maxHeight="600px"
+          showDownload={false}
+        />
+      )}
 
       {/* Admin Edit Button */}
       {isAdmin && card && (
@@ -630,6 +617,31 @@ function CardDetail() {
           itemType="card"
           itemId={card.card_id}
           title={`Discussion about ${card.player_names} #${card.card_number}`}
+        />
+      )}
+      
+      {/* Add Card Modal */}
+      {showAddCardModal && (
+        <AddCardModal
+          isOpen={showAddCardModal}
+          onClose={() => setShowAddCardModal(false)}
+          card={card}
+          onCardAdded={handleCardAdded}
+        />
+      )}
+      
+      {/* Quick Edit Modal */}
+      {showEditModal && cardToEdit && (
+        <QuickEditModal
+          isOpen={showEditModal}
+          onClose={() => {
+            setShowEditModal(false)
+            setCardToEdit(null)
+          }}
+          card={cardToEdit}
+          onCardUpdated={handleCardUpdated}
+          locations={locations}
+          gradingAgencies={gradingAgencies}
         />
       )}
     </div>

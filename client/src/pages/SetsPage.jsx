@@ -126,7 +126,7 @@ function SetsPage() {
       <div className="content-area">
         {loading ? (
           <div className="loading-state">
-            <Icon name="activity" size={24} className="spinning" />
+            <div className="card-icon-spinner"></div>
             <span>Loading...</span>
           </div>
         ) : (

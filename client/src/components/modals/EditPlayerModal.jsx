@@ -482,7 +482,7 @@ function EditPlayerModal({ player, isOpen, onClose, onSave }) {
             >
               {saving ? (
                 <>
-                  <Icon name="activity" size={16} className="spinning" />
+                  <div className="card-icon-spinner small"></div>
                   Saving...
                 </>
               ) : (
@@ -558,7 +558,7 @@ function EditPlayerModal({ player, isOpen, onClose, onSave }) {
               >
                 {reassigning ? (
                   <>
-                    <Icon name="activity" size={16} className="spinning" />
+                    <div className="card-icon-spinner small"></div>
                     Reassigning...
                   </>
                 ) : (

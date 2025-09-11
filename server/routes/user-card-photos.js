@@ -332,6 +332,149 @@ router.put('/:userCardId/photos/reorder', async (req, res) => {
   }
 })
 
+// PUT /api/user/cards/:userCardId/photos/:photoId - Replace/update a single photo
+router.put('/:userCardId/photos/:photoId', upload.single('photo'), async (req, res) => {
+  try {
+    const userId = req.user?.userId
+    const { userCardId, photoId } = req.params
+    const file = req.file
+
+    if (!userId) {
+      return res.status(401).json({
+        error: 'Authentication error',
+        message: 'User ID not found in authentication token'
+      })
+    }
+
+    if (!file) {
+      return res.status(400).json({
+        error: 'No file provided',
+        message: 'Please select a photo to upload'
+      })
+    }
+
+    // Verify the user owns this card
+    const userCard = await prisma.$queryRaw`
+      SELECT user_card_id 
+      FROM user_card 
+      WHERE user_card_id = ${parseInt(userCardId)} 
+      AND [user] = ${BigInt(parseInt(userId))}
+    `
+
+    if (userCard.length === 0) {
+      return res.status(404).json({
+        error: 'Card not found',
+        message: 'User card not found or does not belong to you'
+      })
+    }
+
+    // Get the existing photo to replace
+    const existingPhoto = await prisma.$queryRaw`
+      SELECT photo_url, sort_order
+      FROM user_card_photo
+      WHERE user_card_photo_id = ${parseInt(photoId)}
+      AND user_card = ${parseInt(userCardId)}
+    `
+
+    if (existingPhoto.length === 0) {
+      return res.status(404).json({
+        error: 'Photo not found',
+        message: 'Photo not found or does not belong to this card'
+      })
+    }
+
+    const oldPhotoUrl = existingPhoto[0].photo_url
+    const sortOrder = existingPhoto[0].sort_order
+
+    // Check Azure Storage configuration
+    if (!AZURE_STORAGE_CONNECTION_STRING) {
+      console.error('Azure Storage connection string not configured')
+      return res.status(500).json({
+        error: 'Configuration error',
+        message: 'Azure Storage not configured. Please contact support.'
+      })
+    }
+
+    // Create Azure Storage client
+    let blobServiceClient
+    try {
+      blobServiceClient = BlobServiceClient.fromConnectionString(AZURE_STORAGE_CONNECTION_STRING)
+    } catch (error) {
+      console.error('Invalid Azure Storage connection string:', error.message)
+      return res.status(500).json({
+        error: 'Configuration error',
+        message: 'Invalid Azure Storage configuration. Please contact support.'
+      })
+    }
+
+    const containerClient = blobServiceClient.getContainerClient(CONTAINER_NAME)
+
+    // Generate unique blob name for new photo
+    const timestamp = Date.now()
+    const fileExtension = file.originalname.split('.').pop()
+    const sanitizedFileName = file.originalname
+      .replace(/\.[^/.]+$/, '') // Remove extension
+      .replace(/[^a-zA-Z0-9-_]/g, '_') // Replace special chars
+      .substring(0, 50) // Limit filename length
+    
+    const blobName = `user-card/${userCardId}_${timestamp}_${sanitizedFileName}.${fileExtension}`
+    
+    // Upload new photo to Azure Blob Storage
+    const blockBlobClient = containerClient.getBlockBlobClient(blobName)
+    
+    await blockBlobClient.uploadData(file.buffer, {
+      blobHTTPHeaders: {
+        blobContentType: file.mimetype
+      }
+    })
+
+    // Get the public URL for new photo
+    const newPhotoUrl = blockBlobClient.url
+
+    // Update database record
+    await prisma.$queryRaw`
+      UPDATE user_card_photo
+      SET photo_url = ${newPhotoUrl}
+      WHERE user_card_photo_id = ${parseInt(photoId)}
+      AND user_card = ${parseInt(userCardId)}
+    `
+
+    // Delete old photo from Azure Blob Storage (non-critical if it fails)
+    try {
+      if (oldPhotoUrl) {
+        const urlParts = oldPhotoUrl.split('/')
+        const oldBlobName = urlParts.slice(-2).join('/') // Get last two parts: user-card/filename
+        
+        if (oldBlobName.startsWith('user-card/')) {
+          const oldBlockBlobClient = containerClient.getBlockBlobClient(oldBlobName)
+          await oldBlockBlobClient.deleteIfExists()
+        }
+      }
+    } catch (blobError) {
+      console.error('Failed to delete old blob from storage:', blobError)
+      // Continue anyway - new photo upload was successful
+    }
+
+    res.json({
+      success: true,
+      message: 'Photo updated successfully',
+      photo: {
+        user_card_photo_id: parseInt(photoId),
+        photo_url: newPhotoUrl,
+        sort_order: sortOrder
+      }
+    })
+
+  } catch (error) {
+    console.error('Error updating photo:', error)
+    res.status(500).json({
+      error: 'Update failed',
+      message: 'Failed to update photo. Please try again.',
+      details: error.message
+    })
+  }
+})
+
 // DELETE /api/user/cards/:userCardId/photos/:photoId - Delete a photo
 router.delete('/:userCardId/photos/:photoId', async (req, res) => {
   try {

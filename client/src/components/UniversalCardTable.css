@@ -7,6 +7,29 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+/* Allow overflow for gallery view to show dropdowns */
+.universal-card-table.gallery-view {
+  overflow: visible;
+}
+
+/* Force all parent containers to allow overflow when gallery share is active */
+.universal-card-table.gallery-view:has(.gallery-share-dropdown) {
+  overflow: visible !important;
+}
+
+/* Alternative approach: ensure dropdown parents allow overflow */
+.gallery-card:has(.gallery-share-dropdown) {
+  z-index: 1001;
+}
+
+.gallery-grid:has(.gallery-share-dropdown) {
+  overflow: visible;
+}
+
+.gallery-container:has(.gallery-share-dropdown) {
+  overflow: visible;
+}
+
 /* Table Controls */
 .table-controls {
   padding: 1rem 1.5rem;
@@ -404,6 +427,19 @@
   max-width: 50px;
 }
 
+/* Fixed widths for player detail page action and owned columns */
+.player-detail-page .cards-table th.action-header {
+  width: 75px;
+  min-width: 75px;
+  max-width: 75px;
+}
+
+.player-detail-page .cards-table th.owned-header {
+  width: 75px;
+  min-width: 75px;
+  max-width: 75px;
+}
+
 td.user-card-count-cell {
   color: #22c55e;
   font-weight: 600;
@@ -756,6 +792,34 @@ td.user-card-count-cell {
   border-color: rgba(239, 68, 68, 0.4);
 }
 
+.favorite-card-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  padding: 0.4rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.favorite-card-btn:hover {
+  background: rgba(251, 191, 36, 0.2);
+  border-color: rgba(251, 191, 36, 0.4);
+  transform: scale(1.05);
+}
+
+.favorite-card-btn.favorited {
+  background: rgba(251, 191, 36, 0.2);
+  border-color: rgba(251, 191, 36, 0.3);
+}
+
+.favorite-card-btn.favorited:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
 /* Delete confirmation modal styling */
 .delete-confirm-modal {
   background: white;
@@ -959,6 +1023,7 @@ td.user-card-count-cell {
 /* Gallery View Styles */
 .gallery-container {
   padding: 1rem 0;
+  overflow: visible;
 }
 
 .gallery-grid {
@@ -966,13 +1031,14 @@ td.user-card-count-cell {
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 0.75rem;
   padding: 0;
+  overflow: visible;
 }
 
 .gallery-card {
   background: rgba(30, 41, 59, 0.6);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 12px;
-  overflow: hidden;
+  overflow: visible;
   transition: all 0.3s ease;
   cursor: pointer;
   display: flex;
@@ -994,6 +1060,8 @@ td.user-card-count-cell {
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
+  border-radius: 12px 12px 0 0;
 }
 
 .gallery-card-image .card-image {
@@ -1040,6 +1108,174 @@ td.user-card-count-cell {
 
 .gallery-edit-btn:hover {
   background: rgba(59, 130, 246, 0.8);
+}
+
+.gallery-share-btn {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  opacity: 0;
+  transform: translateY(4px);
+}
+
+.gallery-card:hover .gallery-share-btn {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.gallery-share-btn:hover {
+  background: rgba(34, 197, 94, 0.8);
+  transform: scale(1.1);
+}
+
+/* Gallery Share Dropdown */
+.gallery-share-dropdown {
+  position: absolute;
+  bottom: 48px;
+  right: 8px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  z-index: 10000;
+  min-width: 180px;
+  padding: 8px 0;
+  animation: dropdown-slide-up 0.2s ease;
+  backdrop-filter: blur(10px);
+}
+
+.gallery-share-header {
+  padding: 12px 16px 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #666;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  margin-bottom: 4px;
+}
+
+@keyframes dropdown-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.share-dropdown-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 16px;
+  border: none;
+  background: transparent;
+  color: #1a1a1a;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  text-align: left;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.share-dropdown-option:hover {
+  background: rgba(59, 130, 246, 0.08);
+  color: #3b82f6;
+}
+
+.share-dropdown-divider {
+  height: 1px;
+  background: rgba(0, 0, 0, 0.08);
+  margin: 8px 0;
+}
+
+/* Platform-specific hover colors */
+.share-dropdown-option.twitter:hover {
+  background: rgba(29, 161, 242, 0.1);
+  color: #1da1f2;
+}
+
+.share-dropdown-option.facebook:hover {
+  background: rgba(24, 119, 242, 0.1);
+  color: #1877f2;
+}
+
+.share-dropdown-option.instagram:hover {
+  background: linear-gradient(45deg, rgba(255, 0, 150, 0.1), rgba(255, 119, 0, 0.1));
+  color: #E4405F;
+}
+
+.share-dropdown-option.bluesky:hover {
+  background: rgba(0, 153, 255, 0.1);
+  color: #0099ff;
+}
+
+/* Mobile responsive dropdown positioning */
+@media (max-width: 768px) {
+  .gallery-share-dropdown {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    right: 20px;
+    top: auto;
+    min-width: auto;
+    max-width: none;
+    border-radius: 16px;
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.3);
+  }
+  
+  .gallery-share-dropdown::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.3);
+    z-index: -1;
+    backdrop-filter: blur(4px);
+  }
+  
+  .share-dropdown-option {
+    padding: 16px 20px;
+    font-size: 16px;
+  }
+  
+  .gallery-share-header {
+    padding: 16px 20px 12px;
+    font-size: 15px;
+  }
+}
+
+@media (max-width: 480px) {
+  .gallery-share-dropdown {
+    border-radius: 20px;
+  }
+  
+  .share-dropdown-option {
+    padding: 18px 24px;
+    font-size: 17px;
+    gap: 16px;
+  }
+  
+  .gallery-share-header {
+    padding: 18px 24px 14px;
+    font-size: 16px;
+  }
 }
 
 .gallery-card-info {
@@ -1156,4 +1392,28 @@ td.user-card-count-cell {
   .search-container {
     max-width: 100%;
   }
+}
+
+/* Fixed widths for player detail page action and owned cells */
+.player-detail-page .action-cell {
+  width: 75px !important;
+  min-width: 75px !important;
+  max-width: 75px !important;
+  padding: 0.1rem 0.25rem;
+  text-align: center;
+}
+
+.player-detail-page .owned-cell {
+  width: 75px !important;
+  min-width: 75px !important;
+  max-width: 75px !important;
+  text-align: center;
+}
+
+.player-detail-page .cards-table th.action-header {
+  text-align: center;
+}
+
+.player-detail-page .cards-table th.owned-header {
+  text-align: center;
 }

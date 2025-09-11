@@ -9,7 +9,7 @@ let prisma = null
 
 // Production connection pool configuration
 const productionConfig = {
-  log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error']
+  log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'] // Removed 'query' to reduce log noise
   // Connection pool is configured via DATABASE_URL parameters
 }
 

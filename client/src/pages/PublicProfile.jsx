@@ -12,6 +12,7 @@ function PublicProfile() {
   const [profile, setProfile] = useState(null)
   const [stats, setStats] = useState(null)
   const [recentActivity, setRecentActivity] = useState([])
+  const [favoriteCards, setFavoriteCards] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
@@ -42,6 +43,7 @@ function PublicProfile() {
       setProfile(response.data.profile)
       setStats(response.data.stats)
       setRecentActivity(response.data.recent_activity || [])
+      setFavoriteCards(response.data.favorite_cards || [])
     } catch (err) {
       console.error('Error fetching profile:', err)
       if (err.response?.status === 404) {
@@ -220,6 +222,110 @@ function PublicProfile() {
                 <span className="stat-value">${Number(stats.avg_card_value).toFixed(2)}</span>
                 <span className="stat-label">Avg Card Value</span>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Favorite Cards */}
+        {favoriteCards.length > 0 && (
+          <div className="favorite-cards">
+            <h3>
+              <Icon name="star" size={20} />
+              Favorite Cards
+            </h3>
+            <div className="gallery-grid">
+              {favoriteCards.map((card) => {
+                const handleCardClick = () => {
+                  if (card.card_number && card.series_slug && card.player_name) {
+                    const playerSlug = card.player_name
+                      .toLowerCase()
+                      .replace(/[^a-z0-9\s-]/g, '')
+                      .replace(/\s+/g, '-')
+                      .replace(/-+/g, '-')
+                      .trim()
+                    
+                    window.location.href = `/card/${card.series_slug}/${card.card_number}/${playerSlug}`
+                  }
+                }
+
+                const getColorBackground = (colorName, hexColor) => {
+                  if (!colorName && !hexColor) return {}
+                  
+                  if (colorName?.toLowerCase() === 'rainbow') {
+                    return {
+                      background: 'linear-gradient(45deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3)',
+                      backgroundSize: '200% 200%',
+                      animation: 'rainbow 3s ease infinite'
+                    }
+                  }
+                  
+                  return {
+                    backgroundColor: hexColor || '#64748b'
+                  }
+                }
+
+                const getTextColor = (hexColor) => {
+                  if (!hexColor) return '#ffffff'
+                  
+                  const hex = hexColor.replace('#', '')
+                  const r = parseInt(hex.substr(0, 2), 16)
+                  const g = parseInt(hex.substr(2, 2), 16)
+                  const b = parseInt(hex.substr(4, 2), 16)
+                  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+                  
+                  return luminance > 0.5 ? '#000000' : '#ffffff'
+                }
+                
+                return (
+                  <div key={`favorite-${card.user_card_id}`} className="gallery-card" onClick={handleCardClick}>
+                    <div className="gallery-card-image">
+                      {card.primary_photo ? (
+                        <img 
+                          src={card.primary_photo} 
+                          alt={`Card ${card.card_number}`}
+                          className="card-image"
+                        />
+                      ) : (
+                        <div className="card-placeholder">
+                          <Icon name="image" size={32} />
+                          <span>No Photo</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="gallery-card-info">
+                      <div className="card-number">#{card.card_number}</div>
+                      <div className="card-player">{card.player_name}</div>
+                      <div className="card-series">{card.series_name}</div>
+                      
+                      {/* Tags row for grading (without random_code as requested) */}
+                      <div className="gallery-tags">
+                        {card.grade && (
+                          <div className="gallery-grade-tag">
+                            Grade {card.grade}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {/* Color stripe at bottom if team colors exist or print run */}
+                    {(card.team_primary_color || card.print_run) && (
+                      <div 
+                        className="gallery-color-stripe"
+                        style={getColorBackground(null, card.team_primary_color)}
+                      >
+                        <span className="gallery-color-text" style={{
+                          color: getTextColor(card.team_primary_color || '#64748b')
+                        }}>
+                          {[
+                            card.team_name,
+                            card.print_run ? (card.serial_number ? `${card.serial_number}/${card.print_run}` : `/${card.print_run}`) : null
+                          ].filter(Boolean).join(' ')}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
             </div>
           </div>
         )}

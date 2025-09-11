@@ -268,7 +268,7 @@ function EditSetModal({
             >
               {saving ? (
                 <>
-                  <Icon name="activity" size={16} className="spinning" />
+                  <div className="card-icon-spinner small"></div>
                   Saving...
                 </>
               ) : (

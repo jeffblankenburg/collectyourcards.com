@@ -659,7 +659,7 @@ function SearchResults() {
                 className={`search-tab ${activeTab === 'cards' ? 'active' : ''}`}
                 onClick={() => setActiveTab('cards')}
               >
-                <Icon name="card" size={16} />
+                <Icon name="layers" size={16} />
                 Cards
                 <span className="tab-count">{getTabCount('cards')}</span>
               </button>
@@ -694,7 +694,7 @@ function SearchResults() {
           {loading ? (
             <div className="loading-state">
               <div className="loading-spinner">
-                <Icon name="activity" size={32} className="spinning" />
+                <div className="card-icon-spinner"></div>
               </div>
               <p>Searching the database...</p>
             </div>

@@ -32,7 +32,9 @@ import CollectionDashboard from './pages/CollectionDashboard.jsx'
 import CardDetail from './pages/CardDetail.jsx'
 import PublicProfile from './pages/PublicProfile.jsx'
 import ProfileManagement from './pages/ProfileManagement.jsx'
+import DesignSystemDemo from './pages/DesignSystemDemo.jsx'
 import './index.css'
+// import './styles/global-design-system.css' // Temporarily removed to prevent conflicts
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
@@ -81,6 +83,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
               {/* <Route path="/admin/sets/:year/:setSlug/:seriesSlug" element={<ProtectedRoute><AdminSets /></ProtectedRoute>} /> */}
               <Route path="/admin/cards/:year/:setSlug/:seriesSlug" element={<ProtectedRoute><AdminCards /></ProtectedRoute>} />
               {/* <Route path="/admin/ingestion" element={<ProtectedRoute><SpreadsheetIngestion /></ProtectedRoute>} /> */}
+              
+              {/* Design System Demo - Testing new CSS system */}
+              <Route path="/design-system-demo" element={<DesignSystemDemo />} />
               
               {/* Public profile route - MUST BE LAST to avoid conflicts with other routes */}
               <Route path="/:username" element={<PublicProfile />} />

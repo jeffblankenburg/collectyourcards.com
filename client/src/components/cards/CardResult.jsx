@@ -17,7 +17,7 @@ function CardResult({ card, showBadge = false }) {
     >
       {showBadge && (
         <div className="result-type-badge card">
-          <Icon name="card" size={14} />
+          <Icon name="layers" size={14} />
           Card
         </div>
       )}

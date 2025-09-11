@@ -322,3 +322,84 @@
 .seriescard-admin-edit-btn:active {
   transform: scale(0.95);
 }
+
+/* Universal Actions Button (Ellipses) */
+.seriescard-actions-wrapper {
+  position: absolute;
+  bottom: 0.5rem;
+  right: 0.5rem;
+  z-index: 3;
+}
+
+.seriescard-actions-btn {
+  width: 32px;
+  height: 32px;
+  background: rgba(30, 41, 59, 0.95);
+  color: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(10px);
+}
+
+.seriescard-container:hover .seriescard-actions-btn {
+  opacity: 1;
+}
+
+.seriescard-actions-btn:hover {
+  background: rgba(30, 41, 59, 1);
+  color: white;
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: scale(1.05);
+}
+
+/* Dropdown Menu */
+.seriescard-dropdown {
+  position: absolute;
+  bottom: 100%;
+  right: 0;
+  margin-bottom: 4px;
+  min-width: 280px;
+  background: rgba(30, 41, 59, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  backdrop-filter: blur(20px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  z-index: 999;
+  overflow: hidden;
+}
+
+.seriescard-dropdown-item {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.9);
+  border: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.seriescard-dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.seriescard-dropdown-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.seriescard-dropdown-item:hover svg {
+  color: #3b82f6;
+}

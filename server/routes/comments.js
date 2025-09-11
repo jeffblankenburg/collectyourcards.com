@@ -1,15 +1,9 @@
 const express = require('express')
 const router = express.Router()
 const { PrismaClient } = require('@prisma/client')
-const prisma = new PrismaClient()
+const prisma = new PrismaClient({ log: ['error'] }) // Only log errors, not queries
 const { authMiddleware } = require('../middleware/auth')
-
-// Profanity filter - basic implementation
-const profanityWords = ['spam', 'scam', 'fake', 'delete', 'remove'] // Add more as needed
-const containsProfanity = (text) => {
-  const lowerText = text.toLowerCase()
-  return profanityWords.some(word => lowerText.includes(word))
-}
+const { commentModerationMiddleware, mutedUserMiddleware } = require('../middleware/contentModeration')
 
 // GET /api/comments/:type/:itemId - Get comments for a card/series/set
 router.get('/:type/:itemId', async (req, res) => {
@@ -48,6 +42,7 @@ router.get('/:type/:itemId', async (req, res) => {
       WHERE c.comment_type = ${type}
         AND c.item_id = ${itemIdNumber}
         AND c.is_deleted = 0
+        AND c.comment_status = 'visible'
       ORDER BY c.created_at DESC
       OFFSET ${offset} ROWS
       FETCH NEXT ${parseInt(limit)} ROWS ONLY
@@ -60,6 +55,7 @@ router.get('/:type/:itemId', async (req, res) => {
       WHERE comment_type = ${type}
         AND item_id = ${itemIdNumber}
         AND is_deleted = 0
+        AND comment_status = 'visible'
     `
     
     const total = Number(totalResult[0].total)
@@ -100,10 +96,11 @@ router.get('/:type/:itemId', async (req, res) => {
 })
 
 // POST /api/comments/:type/:itemId - Add comment (authentication required)
-router.post('/:type/:itemId', authMiddleware, async (req, res) => {
+router.post('/:type/:itemId', authMiddleware, mutedUserMiddleware, commentModerationMiddleware, async (req, res) => {
   try {
     const { type, itemId } = req.params
     const { comment_text, parent_comment_id } = req.body
+    // Note: comment_text may have been filtered by contentModerationMiddleware
     const userId = req.user.userId
     
     // Validate input
@@ -124,10 +121,7 @@ router.post('/:type/:itemId', authMiddleware, async (req, res) => {
       return res.status(400).json({ error: 'Comment too long (max 5000 characters)' })
     }
     
-    // Basic profanity filter
-    if (containsProfanity(comment_text)) {
-      return res.status(400).json({ error: 'Comment contains inappropriate content' })
-    }
+    // Content moderation already handled by middleware
     
     // Validate parent comment if provided
     let parentCommentIdNumber = null
@@ -225,7 +219,7 @@ router.post('/:type/:itemId', authMiddleware, async (req, res) => {
 })
 
 // PUT /api/comments/:commentId - Edit comment (authentication required, 15 minute window)
-router.put('/:commentId', authMiddleware, async (req, res) => {
+router.put('/:commentId', authMiddleware, mutedUserMiddleware, commentModerationMiddleware, async (req, res) => {
   try {
     const { commentId } = req.params
     const { comment_text } = req.body
@@ -244,10 +238,7 @@ router.put('/:commentId', authMiddleware, async (req, res) => {
       return res.status(400).json({ error: 'Comment too long (max 5000 characters)' })
     }
     
-    // Basic profanity filter
-    if (containsProfanity(comment_text)) {
-      return res.status(400).json({ error: 'Comment contains inappropriate content' })
-    }
+    // Content moderation already handled by middleware
     
     // Get existing comment
     const existingComment = await prisma.$queryRaw`
@@ -329,10 +320,12 @@ router.delete('/:commentId', authMiddleware, async (req, res) => {
       return res.status(403).json({ error: 'You can only delete your own comments' })
     }
     
-    // Soft delete comment
+    // Soft delete comment with audit trail
     await prisma.$executeRaw`
       UPDATE universal_comments
       SET is_deleted = 1,
+          deleted_at = GETDATE(),
+          deleted_by = ${Number(userId)},
           updated_at = GETDATE()
       WHERE comment_id = ${commentIdNumber}
     `
@@ -388,10 +381,10 @@ router.get('/set/:setId/activity', async (req, res) => {
       FROM universal_comments c
       JOIN [user] u ON c.user_id = u.user_id
       -- Join for series comments
-      LEFT JOIN series s ON c.comment_type = 'series' AND c.item_id = s.series_id AND s.set = ${setIdNumber}
+      LEFT JOIN series s ON c.comment_type = 'series' AND c.item_id = s.series_id AND s.[set] = ${setIdNumber}
       -- Join for card comments (more complex - need to get the card's series which belongs to our set)
       LEFT JOIN card card_info ON c.comment_type = 'card' AND c.item_id = card_info.card_id
-      LEFT JOIN series card_series ON card_info.series = card_series.series_id AND card_series.set = ${setIdNumber}
+      LEFT JOIN series card_series ON card_info.series = card_series.series_id AND card_series.[set] = ${setIdNumber}
       LEFT JOIN card_player_team cpt ON card_info.card_id = cpt.card
       LEFT JOIN player_team pt ON cpt.player_team = pt.player_team_id
       LEFT JOIN player p ON pt.player = p.player_id
@@ -413,10 +406,10 @@ router.get('/set/:setId/activity', async (req, res) => {
       SELECT COUNT(*) as total
       FROM universal_comments c
       -- Join for series comments
-      LEFT JOIN series s ON c.comment_type = 'series' AND c.item_id = s.series_id AND s.set = ${setIdNumber}
+      LEFT JOIN series s ON c.comment_type = 'series' AND c.item_id = s.series_id AND s.[set] = ${setIdNumber}
       -- Join for card comments
       LEFT JOIN card card_info ON c.comment_type = 'card' AND c.item_id = card_info.card_id
-      LEFT JOIN series card_series ON card_info.series = card_series.series_id AND card_series.set = ${setIdNumber}
+      LEFT JOIN series card_series ON card_info.series = card_series.series_id AND card_series.[set] = ${setIdNumber}
       WHERE c.is_deleted = 0
         AND (
           (c.comment_type = 'series' AND s.series_id IS NOT NULL)
@@ -458,6 +451,102 @@ router.get('/set/:setId/activity', async (req, res) => {
   } catch (error) {
     console.error('Error fetching set activity feed:', error)
     res.status(500).json({ error: 'Failed to fetch set activity feed' })
+  }
+})
+
+// GET /api/comments/series/:seriesId/activity - Get activity feed for a series (comments from cards within series)
+router.get('/series/:seriesId/activity', async (req, res) => {
+  try {
+    const { seriesId } = req.params
+    const { page = 1, limit = 20 } = req.query
+    
+    const seriesIdNumber = parseInt(seriesId)
+    if (isNaN(seriesIdNumber)) {
+      return res.status(400).json({ error: 'Invalid series ID' })
+    }
+    
+    const offset = (parseInt(page) - 1) * parseInt(limit)
+    
+    // Get comments from cards within this series
+    const activities = await prisma.$queryRaw`
+      SELECT 
+        c.comment_id,
+        c.comment_text,
+        c.comment_type,
+        c.item_id,
+        c.created_at,
+        c.updated_at,
+        c.is_edited,
+        u.user_id,
+        u.username,
+        u.avatar_url,
+        -- Context information for card comments
+        CONCAT(
+          COALESCE(card_info.card_number, ''), 
+          CASE WHEN COALESCE(p.first_name, '') + ' ' + COALESCE(p.last_name, '') != ' ' 
+               THEN ' - ' + COALESCE(p.first_name, '') + ' ' + COALESCE(p.last_name, '') 
+               ELSE '' END
+        ) as context_name,
+        'card' as activity_type,
+        c.item_id as target_id
+      FROM universal_comments c
+      JOIN [user] u ON c.user_id = u.user_id
+      JOIN card card_info ON c.comment_type = 'card' AND c.item_id = card_info.card_id
+      LEFT JOIN card_player_team cpt ON card_info.card_id = cpt.card
+      LEFT JOIN player_team pt ON cpt.player_team = pt.player_team_id
+      LEFT JOIN player p ON pt.player = p.player_id
+      WHERE c.is_deleted = 0
+        AND c.comment_type = 'card'
+        AND card_info.series = ${seriesIdNumber}
+      ORDER BY c.created_at DESC
+      OFFSET ${offset} ROWS
+      FETCH NEXT ${parseInt(limit)} ROWS ONLY
+    `
+    
+    // Get total count for pagination
+    const totalResult = await prisma.$queryRaw`
+      SELECT COUNT(*) as total
+      FROM universal_comments c
+      JOIN card card_info ON c.comment_type = 'card' AND c.item_id = card_info.card_id
+      WHERE c.is_deleted = 0
+        AND c.comment_type = 'card'
+        AND card_info.series = ${seriesIdNumber}
+    `
+    
+    const total = Number(totalResult[0]?.total || 0)
+    
+    // Serialize BigInt values
+    const serializedActivities = activities.map(activity => ({
+      comment_id: Number(activity.comment_id),
+      comment_text: activity.comment_text,
+      comment_type: activity.comment_type,
+      item_id: Number(activity.item_id),
+      created_at: activity.created_at,
+      updated_at: activity.updated_at,
+      is_edited: activity.is_edited,
+      context_name: activity.context_name,
+      activity_type: activity.activity_type,
+      target_id: Number(activity.target_id),
+      user: {
+        user_id: Number(activity.user_id),
+        username: activity.username,
+        avatar_url: activity.avatar_url
+      }
+    }))
+    
+    res.json({
+      activities: serializedActivities,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        totalPages: Math.ceil(total / parseInt(limit))
+      }
+    })
+    
+  } catch (error) {
+    console.error('Error fetching series activity feed:', error)
+    res.status(500).json({ error: 'Failed to fetch series activity feed' })
   }
 })
 

@@ -1,5 +1,5 @@
 /* Edit Card Modal Styles */
-.modal-overlay {
+.edit-modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -14,7 +14,7 @@
   padding: 1rem;
 }
 
-.add-card-modal {
+.edit-card-modal {
   background: rgba(30, 41, 59, 0.95);
   backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.15);
@@ -123,7 +123,7 @@
   padding: 1rem 1rem 0 1rem;
 }
 
-.form-grid {
+.edit-card-modal .form-grid {
   display: grid;
   grid-template-columns: 140px 1fr;
   gap: 1rem 1.5rem;
@@ -131,16 +131,16 @@
   margin-bottom: 1rem;
 }
 
-.form-group {
+.edit-card-modal .form-group {
   display: contents;
   margin-bottom: 0;
 }
 
-.form-group.full-width {
+.edit-card-modal .form-group.full-width {
   display: contents;
 }
 
-.form-group label {
+.edit-card-modal .form-group label {
   text-align: right;
   margin-bottom: 0;
   font-weight: 500;
@@ -152,18 +152,18 @@
   padding-right: 0;
 }
 
-.form-group.full-width label {
+.edit-card-modal .form-group.full-width label {
   align-self: start;
   padding-top: 0.75rem;
 }
 
 @media (max-width: 640px) {
-  .form-grid {
+  .edit-card-modal .form-grid {
     grid-template-columns: 1fr;
     gap: 0.5rem;
   }
   
-  .form-group label {
+  .edit-card-modal .form-group label {
     text-align: left;
     justify-self: start;
     margin-bottom: 0.25rem;
@@ -257,9 +257,9 @@
 
 /* Label styling is now handled above in the main form-group styles */
 
-.form-group input,
-.form-group select,
-.form-group textarea {
+.edit-card-modal .edit-card-modal .form-group input,
+.edit-card-modal .form-group select,
+.edit-card-modal .edit-card-modal .form-group textarea {
   flex: 1;
   padding: 0.75rem;
   background: rgba(15, 23, 42, 0.6);
@@ -271,7 +271,7 @@
   min-width: 0;
 }
 
-.form-group select {
+.edit-card-modal .form-group select {
   cursor: pointer;
   appearance: none;
   -webkit-appearance: none;
@@ -285,12 +285,12 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-.form-group select:hover {
+.edit-card-modal .form-group select:hover {
   border-color: rgba(255, 255, 255, 0.25);
   background-color: rgba(15, 23, 42, 0.7);
 }
 
-.form-group select option {
+.edit-card-modal .form-group select option {
   background: #1e293b;
   color: #e2e8f0;
   padding: 0.75rem;
@@ -298,23 +298,23 @@
   border: none;
 }
 
-.form-group select option:hover {
+.edit-card-modal .form-group select option:hover {
   background: #334155;
 }
 
-.form-group select option:checked {
+.edit-card-modal .form-group select option:checked {
   background: #60a5fa;
   color: white;
 }
 
-.form-group input::placeholder,
-.form-group textarea::placeholder {
+.edit-card-modal .form-group input::placeholder,
+.edit-card-modal .form-group textarea::placeholder {
   color: #64748b;
 }
 
-.form-group input:focus,
+.edit-card-modal .form-group input:focus,
 .form-group select:focus,
-.form-group textarea:focus {
+.edit-card-modal .form-group textarea:focus {
   outline: none;
   border-color: #60a5fa;
   box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1);
@@ -346,7 +346,7 @@
 }
 
 .checkbox-group .checkbox-label,
-.form-group .checkbox-label {
+.edit-card-modal .form-group .checkbox-label {
   display: flex;
   align-items: center;
   flex-direction: row-reverse;
@@ -429,6 +429,100 @@
   flex: 1;
 }
 
+/* Location Controls */
+.location-select-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.location-select-row .form-select {
+  flex: 1;
+}
+
+.new-location-btn {
+  padding: 0.75rem;
+  background: rgba(34, 197, 94, 0.8);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.new-location-btn:hover {
+  background: rgba(34, 197, 94, 1);
+  border-color: rgba(34, 197, 94, 0.5);
+  transform: translateY(-1px);
+}
+
+.new-location-input {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.new-location-input .form-input {
+  flex: 1;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  color: white;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+}
+
+.new-location-input .form-input:focus {
+  outline: none;
+  border-color: rgba(59, 130, 246, 0.5);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.new-location-input .form-input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.create-location-btn,
+.cancel-location-btn {
+  padding: 0.75rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1px solid transparent;
+}
+
+.create-location-btn {
+  background: rgba(34, 197, 94, 0.8);
+  color: white;
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+.create-location-btn:hover {
+  background: rgba(34, 197, 94, 1);
+  border-color: rgba(34, 197, 94, 0.5);
+}
+
+.cancel-location-btn {
+  background: rgba(248, 113, 113, 0.8);
+  color: white;
+  border-color: rgba(248, 113, 113, 0.3);
+}
+
+.cancel-location-btn:hover {
+  background: rgba(248, 113, 113, 1);
+  border-color: rgba(248, 113, 113, 0.5);
+}
+
 .currency {
   position: absolute;
   left: 0.5rem;
@@ -454,13 +548,13 @@
 }
 
 /* Hide number input spinners for all number inputs */
-.form-group input[type=number]::-webkit-outer-spin-button,
-.form-group input[type=number]::-webkit-inner-spin-button {
+.edit-card-modal .form-group input[type=number]::-webkit-outer-spin-button,
+.edit-card-modal .form-group input[type=number]::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
 
-.form-group input[type=number] {
+.edit-card-modal .form-group input[type=number] {
   -moz-appearance: textfield;
 }
 

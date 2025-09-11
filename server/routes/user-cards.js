@@ -1,12 +1,15 @@
 const express = require('express')
 const { PrismaClient, Prisma } = require('@prisma/client')
 const { authMiddleware } = require('../middleware/auth')
+const { sanitizeInput, sanitizeParams } = require('../middleware/inputSanitization')
 const { BlobServiceClient } = require('@azure/storage-blob')
 const router = express.Router()
-const prisma = new PrismaClient()
+const prisma = new PrismaClient({ log: ['error'] }) // Only log errors, not queries
 
-// All routes require authentication
+// All routes require authentication and input sanitization
 router.use(authMiddleware)
+router.use(sanitizeInput)
+router.use(sanitizeParams)
 
 // GET /api/user/cards/:cardId - Get user's copies of a specific card
 router.get('/:cardId', async (req, res) => {
@@ -36,6 +39,7 @@ router.get('/:cardId', async (req, res) => {
         ga.abbreviation as grading_agency_abbr,
         ga.name as grading_agency_name,
         uc.aftermarket_autograph,
+        uc.is_special,
         uc.created as date_added,
         c.card_id, 
         c.card_number, 
@@ -91,6 +95,7 @@ router.get('/:cardId', async (req, res) => {
           grade: row.grade,
           grade_id: typeof row.grade_id === 'bigint' ? Number(row.grade_id) : row.grade_id,
           aftermarket_autograph: row.aftermarket_autograph,
+          is_special: row.is_special,
           date_added: row.date_added,
           card_id: typeof row.card_id === 'bigint' ? Number(row.card_id) : Number(row.card_id),
           card_number: row.card_number,
@@ -208,6 +213,7 @@ router.post('/counts', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const userId = req.user?.userId
+    // Use sanitized inputs instead of raw req.body
     const {
       card_id,
       random_code,
@@ -220,7 +226,7 @@ router.post('/', async (req, res) => {
       grading_agency,
       grade,
       grade_id
-    } = req.body
+    } = req.sanitized
 
     console.log('Adding card to collection:', { userId, card_id, serial_number })
 
@@ -253,7 +259,7 @@ router.post('/', async (req, res) => {
     }
 
     // Insert user card
-    const insertResult = await prisma.$queryRaw`
+    await prisma.$queryRaw`
       INSERT INTO user_card (
         [user], 
         card, 
@@ -269,7 +275,6 @@ router.post('/', async (req, res) => {
         notes,
         created
       )
-      OUTPUT INSERTED.user_card_id
       VALUES (
         ${BigInt(parseInt(userId))},
         ${card_id},
@@ -287,11 +292,8 @@ router.post('/', async (req, res) => {
       )
     `
 
-    const newUserCardId = insertResult[0].user_card_id
-
     res.status(201).json({
-      message: 'Card added to collection successfully',
-      user_card_id: Number(newUserCardId)
+      message: 'Card added to collection successfully'
     })
 
   } catch (error) {
@@ -344,6 +346,7 @@ router.get('/', async (req, res) => {
         uc.aftermarket_auto,
         uc.notes,
         uc.created,
+        uc.is_special,
         c.card_id,
         c.card_number,
         c.print_run,
@@ -423,7 +426,7 @@ router.put('/:userCardId', async (req, res) => {
       })
     }
 
-    // Extract and validate the update data
+    // Extract sanitized update data
     const {
       random_code,
       serial_number,
@@ -435,7 +438,7 @@ router.put('/:userCardId', async (req, res) => {
       current_value,
       grading_agency,
       grade
-    } = req.body
+    } = req.sanitized
 
     // Build update data object for simpler approach
     const updateData = {}
@@ -525,7 +528,7 @@ router.delete('/:userCardId', async (req, res) => {
 
     // First, get all photos for this user card so we can delete them from Azure Blob Storage
     const photos = await prisma.$queryRaw`
-      SELECT user_card_photo_id, photo_url, blob_name
+      SELECT user_card_photo_id, photo_url
       FROM user_card_photo
       WHERE user_card = ${parseInt(userCardId)}
     `
@@ -537,12 +540,19 @@ router.delete('/:userCardId', async (req, res) => {
         const containerClient = blobServiceClient.getContainerClient('user-card')
 
         for (const photo of photos) {
-          if (photo.blob_name) {
+          if (photo.photo_url) {
             try {
-              await containerClient.deleteBlob(photo.blob_name)
-              console.log(`Deleted blob: ${photo.blob_name}`)
+              // Extract blob name from photo URL
+              // Assuming URL format: https://storageaccount.blob.core.windows.net/container/blobname
+              const url = new URL(photo.photo_url)
+              const blobName = url.pathname.split('/').slice(2).join('/') // Remove container name from path
+              
+              if (blobName) {
+                await containerClient.deleteBlob(blobName)
+                console.log(`Deleted blob: ${blobName}`)
+              }
             } catch (blobError) {
-              console.error(`Failed to delete blob ${photo.blob_name}:`, blobError.message)
+              console.error(`Failed to delete blob from ${photo.photo_url}:`, blobError.message)
               // Continue with other deletions even if one fails
             }
           }

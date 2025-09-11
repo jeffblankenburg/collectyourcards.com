@@ -1,7 +1,10 @@
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo, useCallback, startTransition } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
-import UniversalCardTable from '../components/UniversalCardTable'
+import { useNavigate } from 'react-router-dom'
+import CollectionTable from '../components/tables/CollectionTable'
+import QuickEditModal from '../components/modals/QuickEditModal'
+import TeamFilterCircles from '../components/TeamFilterCircles'
 import Icon from '../components/Icon'
 import axios from 'axios'
 import './CollectionDashboardScoped.css'
@@ -34,11 +37,57 @@ function CollectionDashboard() {
   const [showReassignModal, setShowReassignModal] = useState(false)
   const [locationToDelete, setLocationToDelete] = useState(null)
   const [hasInitializedLocations, setHasInitializedLocations] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [viewMode, setViewMode] = useState('table')
+  const [cards, setCards] = useState([])
+  const [cardsLoading, setCardsLoading] = useState(false)
+  const [activeFilters, setActiveFilters] = useState(new Set())
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [selectedCard, setSelectedCard] = useState(null)
+  const [gradingAgencies, setGradingAgencies] = useState([])
+  const [teams, setTeams] = useState([])
+  const [selectedTeamIds, setSelectedTeamIds] = useState([])
+  const [teamsLoading, setTeamsLoading] = useState(false)
+  
+  const navigate = useNavigate()
+
+  // Memoize the API endpoint for filtered cards
+  const apiEndpoint = useMemo(() => {
+    const params = []
+    
+    if (selectedLocationIds.length > 0) {
+      // Show selected locations plus unassigned cards
+      const locationParams = selectedLocationIds.map(id => `location_id=${id}`).join('&')
+      params.push(locationParams)
+      params.push('include_unassigned=true')
+    } else {
+      // If no locations selected, show only unassigned cards (cards without a location)
+      params.push('include_unassigned=true')
+      params.push('only_unassigned=true')
+    }
+    
+    // Add filter parameters
+    if (activeFilters.has('rookies')) params.push('is_rookie=true')
+    if (activeFilters.has('autos')) params.push('is_autograph=true')
+    if (activeFilters.has('relics')) params.push('is_relic=true')
+    if (activeFilters.has('graded')) params.push('has_grade=true')
+    
+    // Add team filtering
+    if (selectedTeamIds.length > 0) {
+      const teamParams = selectedTeamIds.map(id => `team_id=${id}`).join('&')
+      params.push(teamParams)
+    }
+    
+    return `/api/user/collection/cards?${params.join('&')}`
+  }, [selectedLocationIds, activeFilters, selectedTeamIds])
 
   useEffect(() => {
     if (isAuthenticated) {
       fetchDashboardData()
       fetchLocations()
+      fetchTeamsData()
+      // Pre-load grading agencies for edit modal
+      fetchGradingAgencies()
     }
   }, [isAuthenticated])
 
@@ -55,6 +104,13 @@ function CollectionDashboard() {
       setHasInitializedLocations(true)
     }
   }, [locations, hasInitializedLocations])
+
+  // Fetch cards when API endpoint changes
+  useEffect(() => {
+    if (isAuthenticated && hasInitializedLocations) {
+      fetchCards(apiEndpoint)
+    }
+  }, [apiEndpoint, isAuthenticated, hasInitializedLocations])
 
   const fetchDashboardData = async () => {
     try {
@@ -76,6 +132,46 @@ function CollectionDashboard() {
     } catch (err) {
       console.error('Error fetching locations:', err)
       error('Failed to load locations')
+    }
+  }
+
+  const fetchGradingAgencies = async () => {
+    try {
+      const response = await axios.get('/api/grading-agencies')
+      setGradingAgencies(response.data.agencies || [])
+    } catch (err) {
+      console.error('Error fetching grading agencies:', err)
+    }
+  }
+
+  const fetchTeamsData = async () => {
+    try {
+      setTeamsLoading(true)
+      const response = await axios.get('/api/user/collection/cards/teams-with-players')
+      setTeams(response.data.teams || [])
+    } catch (err) {
+      console.error('Error fetching teams data:', err)
+      error('Failed to load team data')
+    } finally {
+      setTeamsLoading(false)
+    }
+  }
+
+  const fetchCards = async (endpoint) => {
+    try {
+      setCardsLoading(true)
+      console.log('Fetching cards with endpoint:', endpoint) // Debug log
+      const response = await axios.get(endpoint)
+      console.log('Cards received:', response.data.cards?.length || 0) // Debug log
+      setCards(response.data.cards || [])
+      
+      // Refresh location counts whenever collection data changes
+      fetchLocations()
+    } catch (err) {
+      console.error('Error fetching cards:', err)
+      error('Failed to load collection cards')
+    } finally {
+      setCardsLoading(false)
     }
   }
 
@@ -109,6 +205,95 @@ function CollectionDashboard() {
         return [...prev, locationId]
       }
     })
+  }
+
+  const handleFilterToggle = (filterType) => {
+    setActiveFilters(prev => {
+      const newFilters = new Set(prev)
+      if (newFilters.has(filterType)) {
+        newFilters.delete(filterType)
+      } else {
+        newFilters.add(filterType)
+      }
+      return newFilters
+    })
+  }
+
+  const handleTeamFilter = (teamIds) => {
+    setSelectedTeamIds(teamIds)
+  }
+
+  // Card action handlers - memoized to prevent re-creation
+  const handleEditCard = useCallback((card) => {
+    // Use startTransition to mark this as a non-urgent update
+    startTransition(() => {
+      setSelectedCard(card)
+      setShowEditModal(true)
+    })
+  }, [])
+
+  const handleDeleteCard = useCallback(async (card) => {
+    if (!window.confirm(`Are you sure you want to remove ${card.card_number} from your collection?`)) {
+      return
+    }
+
+    try {
+      await axios.delete(`/api/user/cards/${card.user_card_id}`)
+      success('Card removed from collection')
+      
+      // Refresh the cards list
+      setCards(prev => prev.filter(c => c.user_card_id !== card.user_card_id))
+      
+      // Refresh stats
+      await fetchDashboardData()
+    } catch (err) {
+      error('Failed to delete card: ' + (err.response?.data?.error || err.message))
+    }
+  }, [success, error])
+
+  const handleFavoriteToggle = useCallback(async (card) => {
+    try {
+      const response = await axios.put(`/api/user/cards/${card.user_card_id}`, {
+        is_special: !card.is_special
+      })
+      
+      // Update the card in the local state
+      setCards(prev => prev.map(c => 
+        c.user_card_id === card.user_card_id 
+          ? { ...c, is_special: !c.is_special }
+          : c
+      ))
+      
+      success(response.data.card.is_special ? 'Added to favorites' : 'Removed from favorites')
+    } catch (err) {
+      error('Failed to update favorite status: ' + (err.response?.data?.error || err.message))
+    }
+  }, [success, error])
+
+  const handleCardClick = useCallback((card) => {
+    // Navigate to card detail page
+    const playerSlug = card.card_player_teams?.[0]?.player 
+      ? `${card.card_player_teams[0].player.first_name}-${card.card_player_teams[0].player.last_name}`.toLowerCase().replace(/\s+/g, '-')
+      : 'unknown'
+    const seriesSlug = card.series_rel?.slug || 'unknown'
+    navigate(`/card/${seriesSlug}/${card.card_number}/${playerSlug}`)
+  }, [navigate])
+
+  const handleEditModalClose = () => {
+    setShowEditModal(false)
+    setSelectedCard(null)
+  }
+
+  const handleEditModalSave = async () => {
+    // Refresh the cards list after the modal handles the update
+    const updatedCards = await axios.get(apiEndpoint)
+    setCards(updatedCards.data.cards || [])
+    
+    // Refresh stats
+    await fetchDashboardData()
+    
+    setShowEditModal(false)
+    setSelectedCard(null)
   }
 
   const handleToggleDashboardVisibility = async (locationId, currentVisibility) => {
@@ -227,24 +412,6 @@ function CollectionDashboard() {
     }
   }
 
-  // Memoize the API endpoint for filtered cards
-  const apiEndpoint = useMemo(() => {
-    const params = []
-    
-    if (selectedLocationIds.length > 0) {
-      // Show selected locations plus unassigned cards
-      const locationParams = selectedLocationIds.map(id => `location_id=${id}`).join('&')
-      params.push(locationParams)
-      params.push('include_unassigned=true')
-    } else {
-      // If no locations selected, don't show any cards (empty state)
-      // This prevents showing all cards when dashboard locations are disabled
-      params.push('location_id=-1') // Non-existent location ID to show empty result
-    }
-    
-    return `/api/user/collection/cards?${params.join('&')}`
-  }, [selectedLocationIds])
-
   if (!isAuthenticated) {
     return (
       <div className="collection-dashboard">
@@ -278,8 +445,22 @@ function CollectionDashboard() {
         <header className="dashboard-header">
           <div className="header-top">
             <div className="header-title">
-              <Icon name="collections" size={24} className="title-icon" />
-              <h1 className="dashboard-title">My Collection</h1>
+              <div className="title-and-icon">
+                <Icon name="collections" size={24} className="title-icon" />
+                <h1 className="dashboard-title">My Collection</h1>
+              </div>
+              
+              {/* Team Filter Circles - Below title */}
+              {teams.length > 0 && (
+                <div className="collection-team-filters">
+                  <TeamFilterCircles 
+                    teams={teams}
+                    selectedTeamIds={selectedTeamIds}
+                    onTeamFilter={handleTeamFilter}
+                    compact={true}
+                  />
+                </div>
+              )}
             </div>
             
             <div className="header-stats">
@@ -305,31 +486,54 @@ function CollectionDashboard() {
               </div>
             </div>
             <div className="stat-item">
-              <Icon name="star" size={18} />
+              <Icon name="trophy" size={18} />
               <div className="stat-content">
-                <span className="stat-value">{formatNumber(dashboardStats.rookie_cards)}</span>
-                <span className="stat-label">Rookies</span>
+                <span className="stat-value">0</span>
+                <span className="stat-label">Achievements</span>
               </div>
             </div>
-            <div className="stat-item">
+            <div 
+              className={`stat-item clickable ${activeFilters.has('autos') ? 'active' : ''}`}
+              onClick={() => handleFilterToggle('autos')}
+              title="Click to filter by autographed cards"
+            >
               <Icon name="edit" size={18} />
               <div className="stat-content">
                 <span className="stat-value">{formatNumber(dashboardStats.autograph_cards)}</span>
                 <span className="stat-label">Autos</span>
               </div>
             </div>
-            <div className="stat-item">
-              <Icon name="shield" size={18} />
+            <div 
+              className={`stat-item clickable ${activeFilters.has('relics') ? 'active' : ''}`}
+              onClick={() => handleFilterToggle('relics')}
+              title="Click to filter by relic cards"
+            >
+              <Icon name="jersey" size={18} />
               <div className="stat-content">
                 <span className="stat-value">{formatNumber(dashboardStats.relic_cards)}</span>
                 <span className="stat-label">Relics</span>
               </div>
             </div>
-            <div className="stat-item">
-              <Icon name="trophy" size={18} />
+            <div 
+              className={`stat-item clickable ${activeFilters.has('graded') ? 'active' : ''}`}
+              onClick={() => handleFilterToggle('graded')}
+              title="Click to filter by graded cards"
+            >
+              <Icon name="graded-slab" size={18} />
               <div className="stat-content">
                 <span className="stat-value">{formatNumber(dashboardStats.graded_cards)}</span>
                 <span className="stat-label">Graded</span>
+              </div>
+            </div>
+            <div 
+              className={`stat-item clickable ${activeFilters.has('rookies') ? 'active' : ''}`}
+              onClick={() => handleFilterToggle('rookies')}
+              title="Click to filter by rookie cards"
+            >
+              <span className="rc-tag">RC</span>
+              <div className="stat-content">
+                <span className="stat-value">{formatNumber(dashboardStats.rookie_cards)}</span>
+                <span className="stat-label">Rookies</span>
               </div>
             </div>
           </div>
@@ -412,23 +616,20 @@ function CollectionDashboard() {
               <span>No dashboard locations selected. Click location tags above to view your cards.</span>
             </div>
           )}
-          <UniversalCardTable
-            apiEndpoint={apiEndpoint}
-            showPlayer={true}
-            showTeam={true}
-            showSeries={true}
-            defaultSort="series_name"
-            downloadFilename={`my-collection-${selectedLocationIds.length === 0 ? 'unassigned-cards' : 'location-cards'}`}
-            showSearch={true}
-            showOwned={false}
-            showAddButtons={false}
-            isCollectionView={true}
-            showCollectionColumns={true}
+          <CollectionTable
+            cards={cards}
+            loading={cardsLoading}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            viewMode={viewMode}
+            onViewModeChange={setViewMode}
             showGalleryToggle={true}
-            onCollectionDataLoaded={() => {
-              // Refresh location counts whenever collection data changes
-              fetchLocations()
-            }}
+            downloadFilename={`my-collection-${selectedLocationIds.length === 0 ? 'unassigned-cards' : 'location-cards'}`}
+            maxHeight="800px"
+            onEditCard={handleEditCard}
+            onDeleteCard={handleDeleteCard}
+            onFavoriteToggle={handleFavoriteToggle}
+            onCardClick={handleCardClick}
           />
         </section>
       </div>
@@ -698,6 +899,16 @@ function CollectionDashboard() {
           </div>
         </div>
       )}
+
+      {/* Quick Edit Modal - Lightweight and fast */}
+      <QuickEditModal
+        isOpen={showEditModal}
+        card={selectedCard}
+        onClose={handleEditModalClose}
+        onCardUpdated={handleEditModalSave}
+        locations={locations}
+        gradingAgencies={gradingAgencies}
+      />
     </div>
   )
 }

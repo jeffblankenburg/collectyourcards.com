@@ -47,6 +47,18 @@ function AdminDashboard() {
     queue_length: 0,
     jobs: []
   })
+  const [moderationStats, setModerationStats] = useState({
+    comments: {
+      visible_last_7_days: 0,
+      deleted_last_7_days: 0,
+      pending_review: 0,
+      total_last_24_hours: 0
+    },
+    users: {
+      muted: 0
+    }
+  })
+  const [recentComments, setRecentComments] = useState([])
   const [loading, setLoading] = useState(true)
 
   // Check if user has admin privileges
@@ -119,6 +131,29 @@ function AdminDashboard() {
       setRecentActivity(response.data.recentActivity || [])
       
       addToast(`Dashboard loaded in ${Math.round(endTime - startTime)}ms`, 'success')
+      
+      // Load moderation data separately
+      try {
+        const config = {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        }
+        
+        const moderationResponse = await axios.get('/api/admin/moderation/stats', config)
+        setModerationStats(moderationResponse.data)
+        
+        const commentsResponse = await axios.get('/api/admin/moderation/recent-comments', config)
+        setRecentComments(commentsResponse.data.comments || [])
+        
+        console.log('Loaded moderation data:', {
+          stats: moderationResponse.data,
+          commentsCount: commentsResponse.data.comments?.length || 0
+        })
+      } catch (moderationError) {
+        console.error('Error loading moderation data:', moderationError)
+        // Don't show toast for moderation errors, just log them
+      }
       
     } catch (error) {
       console.error('Error loading dashboard data:', error)
@@ -242,6 +277,121 @@ function AdminDashboard() {
     return total > 0 ? Math.round((score / total) * 100) : 0
   }
 
+  // Moderation Functions
+  const deleteComment = async (commentId) => {
+    try {
+      const config = {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      }
+      
+      await axios.delete(`/api/admin/moderation/comments/${commentId}`, config)
+      addToast('Comment deleted successfully', 'success')
+      
+      // Remove from local state
+      setRecentComments(prev => prev.filter(comment => comment.comment_id !== commentId))
+      
+      // Update stats
+      setModerationStats(prev => ({
+        ...prev,
+        comments: {
+          ...prev.comments,
+          deleted_last_7_days: prev.comments.deleted_last_7_days + 1,
+          visible_last_7_days: Math.max(0, prev.comments.visible_last_7_days - 1)
+        }
+      }))
+    } catch (error) {
+      console.error('Error deleting comment:', error)
+      addToast('Failed to delete comment', 'error')
+    }
+  }
+
+  const muteUser = async (userId, username) => {
+    try {
+      const config = {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      }
+      
+      await axios.post(`/api/admin/moderation/users/${userId}/mute`, {
+        reason: 'Inappropriate content'
+      }, config)
+      addToast(`User ${username} muted successfully`, 'success')
+      
+      // Update local state
+      setRecentComments(prev => 
+        prev.map(comment => 
+          comment.user.user_id === userId 
+            ? { ...comment, user: { ...comment.user, is_muted: true } }
+            : comment
+        )
+      )
+      
+      // Update stats
+      setModerationStats(prev => ({
+        ...prev,
+        users: {
+          ...prev.users,
+          muted: prev.users.muted + 1
+        }
+      }))
+    } catch (error) {
+      console.error('Error muting user:', error)
+      addToast('Failed to mute user', 'error')
+    }
+  }
+
+  const unmuteUser = async (userId, username) => {
+    try {
+      const config = {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      }
+      
+      await axios.post(`/api/admin/moderation/users/${userId}/unmute`, {}, config)
+      addToast(`User ${username} unmuted successfully`, 'success')
+      
+      // Update local state
+      setRecentComments(prev => 
+        prev.map(comment => 
+          comment.user.user_id === userId 
+            ? { ...comment, user: { ...comment.user, is_muted: false } }
+            : comment
+        )
+      )
+      
+      // Update stats
+      setModerationStats(prev => ({
+        ...prev,
+        users: {
+          ...prev.users,
+          muted: Math.max(0, prev.users.muted - 1)
+        }
+      }))
+    } catch (error) {
+      console.error('Error unmuting user:', error)
+      addToast('Failed to unmute user', 'error')
+    }
+  }
+
+  const getEntityUrl = (comment) => {
+    const { comment_type, entity_slug, entity_year, card_number, card_set_slug } = comment
+    
+    if (comment_type === 'series' && entity_slug && entity_year) {
+      return `/series/${entity_slug}`
+    } else if (comment_type === 'set' && entity_slug && entity_year) {
+      return `/sets/${entity_year}/${entity_slug}`
+    } else if (comment_type === 'card' && card_set_slug && card_number && entity_slug) {
+      // Format: /card/set-slug/number/player-name
+      return `/card/${card_set_slug}/${card_number}/${entity_slug}`
+    }
+    
+    return null
+  }
+
   const getHealthIcon = (status) => {
     switch(status) {
       case 'healthy':
@@ -251,7 +401,7 @@ function AdminDashboard() {
       case 'error':
         return <Icon name="x-circle" size={16} className="health-icon error" />
       default:
-        return <Icon name="activity" size={16} className="health-icon checking spinning" />
+        return <div className="card-icon-spinner small health-icon checking"></div>
     }
   }
 
@@ -404,6 +554,139 @@ function AdminDashboard() {
               <div className="progress-fill" style={{ width: `${databaseStats.dataCompleteness}%` }}></div>
             </div>
             <div className="completeness-value">{databaseStats.dataCompleteness}%</div>
+          </div>
+        </div>
+
+        {/* Moderation Section */}
+        <div className="dashboard-section moderation-section">
+          <h2>
+            <Icon name="shield" size={20} />
+            Content Moderation
+          </h2>
+          
+          {/* Moderation Stats */}
+          <div className="moderation-stats">
+            <div className="stat-group">
+              <h3>Comments (Last 7 Days)</h3>
+              <div className="stat-items">
+                <div className="stat-item">
+                  <span className="stat-number">{moderationStats.comments.visible_last_7_days}</span>
+                  <span className="stat-label">Visible</span>
+                </div>
+                <div className="stat-item">
+                  <span className="stat-number">{moderationStats.comments.deleted_last_7_days}</span>
+                  <span className="stat-label">Deleted</span>
+                </div>
+                <div className="stat-item">
+                  <span className="stat-number">{moderationStats.comments.pending_review}</span>
+                  <span className="stat-label">Pending</span>
+                </div>
+                <div className="stat-item">
+                  <span className="stat-number">{moderationStats.comments.total_last_24_hours}</span>
+                  <span className="stat-label">Last 24h</span>
+                </div>
+              </div>
+            </div>
+            <div className="stat-group">
+              <h3>Users</h3>
+              <div className="stat-items">
+                <div className="stat-item">
+                  <span className="stat-number">{moderationStats.users.muted}</span>
+                  <span className="stat-label">Muted</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Recent Comments for Moderation */}
+          <div className="recent-comments">
+            <h3>Recent Comments (Last 7 Days)</h3>
+            {recentComments.length === 0 ? (
+              <div className="empty-state">
+                <Icon name="message-square" size={32} />
+                <p>No recent comments to moderate</p>
+              </div>
+            ) : (
+              <div className="comments-list">
+                {recentComments.map(comment => (
+                  <div key={comment.comment_id} className="comment-item">
+                    <div className="comment-header">
+                      <div className="user-info">
+                        <div className="user-avatar">
+                          {comment.user.avatar_url ? (
+                            <img src={comment.user.avatar_url} alt={comment.user.username} />
+                          ) : (
+                            <Icon name="user" size={16} />
+                          )}
+                        </div>
+                        <span className="username">{comment.user.username}</span>
+                        {comment.user.is_muted && (
+                          <span className="mute-badge">MUTED</span>
+                        )}
+                      </div>
+                      <div className="comment-meta">
+                        <span className="timestamp">{formatTimeAgo(comment.created_at)}</span>
+                        <span className="entity-type">{comment.comment_type}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="comment-content">
+                      {comment.comment_text.length > 200 
+                        ? `${comment.comment_text.substring(0, 200)}...`
+                        : comment.comment_text
+                      }
+                    </div>
+                    
+                    <div className="comment-context">
+                      {getEntityUrl(comment) ? (
+                        <a 
+                          href={getEntityUrl(comment)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="entity-link"
+                        >
+                          <Icon name="external-link" size={14} />
+                          {comment.entity_name}
+                        </a>
+                      ) : (
+                        <span className="entity-name">{comment.entity_name}</span>
+                      )}
+                    </div>
+                    
+                    <div className="comment-actions">
+                      <button
+                        className="action-btn delete"
+                        onClick={() => deleteComment(comment.comment_id)}
+                        title="Delete comment"
+                      >
+                        <Icon name="trash" size={14} />
+                        Delete
+                      </button>
+                      
+                      {comment.user.is_muted ? (
+                        <button
+                          className="action-btn unmute"
+                          onClick={() => unmuteUser(comment.user.user_id, comment.user.username)}
+                          title="Unmute user"
+                        >
+                          <Icon name="mic" size={14} />
+                          Unmute
+                        </button>
+                      ) : (
+                        <button
+                          className="action-btn mute"
+                          onClick={() => muteUser(comment.user.user_id, comment.user.username)}
+                          title="Mute user"
+                        >
+                          <Icon name="mic-off" size={14} />
+                          Mute
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 

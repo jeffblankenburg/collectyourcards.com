@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { createPortal } from 'react-dom'
 import axios from 'axios'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
@@ -12,7 +13,7 @@ const CommentsSection = ({
   title = 'Discussion' 
 }) => {
   const { isAuthenticated, user } = useAuth()
-  const { showToast } = useToast()
+  const { addToast } = useToast()
   
   const [comments, setComments] = useState([])
   const [loading, setLoading] = useState(true)
@@ -21,6 +22,10 @@ const CommentsSection = ({
   const [submitting, setSubmitting] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [editText, setEditText] = useState('')
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [commentToDelete, setCommentToDelete] = useState(null)
+  const [deleting, setDeleting] = useState(false)
+  const [commentError, setCommentError] = useState('')
 
   useEffect(() => {
     fetchComments()
@@ -43,13 +48,16 @@ const CommentsSection = ({
   const handleSubmitComment = async (e) => {
     e.preventDefault()
     
+    // Clear any previous errors
+    setCommentError('')
+    
     if (!isAuthenticated) {
-      showToast('Please sign in to post comments', 'error')
+      addToast('Please sign in to post comments', 'error')
       return
     }
 
     if (!newComment.trim()) {
-      showToast('Please enter a comment', 'error')
+      setCommentError('Please enter a comment')
       return
     }
 
@@ -76,12 +84,13 @@ const CommentsSection = ({
       }
       
       setNewComment('')
-      showToast('Comment posted successfully!', 'success')
+      addToast('Comment posted successfully!', 'success')
       
     } catch (err) {
       console.error('Error posting comment:', err)
-      const errorMessage = err.response?.data?.error || 'Failed to post comment'
-      showToast(errorMessage, 'error')
+      const errorMessage = err.response?.data?.message || err.response?.data?.error || 'Failed to post comment'
+      setCommentError(errorMessage)
+      addToast(errorMessage, 'error')
     } finally {
       setSubmitting(false)
     }
@@ -89,7 +98,7 @@ const CommentsSection = ({
 
   const handleEditComment = async (commentId) => {
     if (!editText.trim()) {
-      showToast('Please enter a comment', 'error')
+      addToast('Please enter a comment', 'error')
       return
     }
 
@@ -115,37 +124,52 @@ const CommentsSection = ({
       
       setEditingId(null)
       setEditText('')
-      showToast('Comment updated successfully!', 'success')
+      addToast('Comment updated successfully!', 'success')
       
     } catch (err) {
       console.error('Error editing comment:', err)
-      const errorMessage = err.response?.data?.error || 'Failed to update comment'
-      showToast(errorMessage, 'error')
+      const errorMessage = err.response?.data?.message || err.response?.data?.error || 'Failed to update comment'
+      addToast(errorMessage, 'error')
     }
   }
 
-  const handleDeleteComment = async (commentId) => {
-    if (!window.confirm('Are you sure you want to delete this comment?')) {
-      return
-    }
+  const handleDeleteComment = (comment) => {
+    setCommentToDelete(comment)
+    setShowDeleteConfirm(true)
+  }
+
+  const confirmDeleteComment = async () => {
+    if (!commentToDelete) return
 
     try {
+      setDeleting(true)
       const config = {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       }
       
-      await axios.delete(`/api/comments/${commentId}`, config)
+      await axios.delete(`/api/comments/${commentToDelete.comment_id}`, config)
       
-      setComments(comments.filter(comment => comment.comment_id !== commentId))
-      showToast('Comment deleted successfully!', 'success')
+      setComments(comments.filter(comment => comment.comment_id !== commentToDelete.comment_id))
+      addToast('Comment deleted successfully!', 'success')
+      
+      // Close modal and reset state
+      setShowDeleteConfirm(false)
+      setCommentToDelete(null)
       
     } catch (err) {
       console.error('Error deleting comment:', err)
-      const errorMessage = err.response?.data?.error || 'Failed to delete comment'
-      showToast(errorMessage, 'error')
+      const errorMessage = err.response?.data?.message || err.response?.data?.error || 'Failed to delete comment'
+      addToast(errorMessage, 'error')
+    } finally {
+      setDeleting(false)
     }
+  }
+
+  const cancelDelete = () => {
+    setShowDeleteConfirm(false)
+    setCommentToDelete(null)
   }
 
   const startEdit = (comment) => {
@@ -230,7 +254,10 @@ const CommentsSection = ({
           <div className="comment-input-container">
             <textarea
               value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
+              onChange={(e) => {
+                setNewComment(e.target.value)
+                if (commentError) setCommentError('') // Clear error when user types
+              }}
               placeholder={`Share your thoughts about this ${itemType}...`}
               rows={3}
               maxLength={5000}
@@ -257,6 +284,12 @@ const CommentsSection = ({
               </button>
             </div>
           </div>
+          {commentError && (
+            <div className="comment-error-inline">
+              <Icon name="alert-circle" size={16} />
+              <span>{commentError}</span>
+            </div>
+          )}
         </form>
       ) : (
         <div className="auth-required">
@@ -308,12 +341,37 @@ const CommentsSection = ({
                   <span className="author-username">@{comment.user.username}</span>
                 </Link>
               </div>
-              <div className="comment-meta">
-                <span className="comment-time">
-                  {formatTimeAgo(comment.created_at)}
-                </span>
-                {comment.is_edited && (
-                  <span className="edited-indicator">(edited)</span>
+              <div className="comment-right">
+                <div className="comment-meta">
+                  <span className="comment-time">
+                    {formatTimeAgo(comment.created_at)}
+                  </span>
+                  {comment.is_edited && (
+                    <span className="edited-indicator">(edited)</span>
+                  )}
+                </div>
+                {/* Compact Action Buttons */}
+                {isAuthenticated && editingId !== comment.comment_id && (
+                  <div className="comment-actions-compact">
+                    {canEditComment(comment) && (
+                      <button
+                        onClick={() => startEdit(comment)}
+                        className="compact-action-btn edit-btn"
+                        title="Edit comment (within 15 minutes)"
+                      >
+                        <Icon name="edit" size={12} />
+                      </button>
+                    )}
+                    {canDeleteComment(comment) && (
+                      <button
+                        onClick={() => handleDeleteComment(comment)}
+                        className="compact-action-btn delete-btn"
+                        title="Delete comment"
+                      >
+                        <Icon name="trash" size={12} />
+                      </button>
+                    )}
+                  </div>
                 )}
               </div>
             </div>
@@ -359,34 +417,74 @@ const CommentsSection = ({
               )}
             </div>
 
-            {/* Comment Actions */}
-            {isAuthenticated && editingId !== comment.comment_id && (
-              <div className="comment-actions">
-                {canEditComment(comment) && (
-                  <button
-                    onClick={() => startEdit(comment)}
-                    className="comment-action-btn edit-btn"
-                    title="Edit comment (within 15 minutes)"
-                  >
-                    <Icon name="edit" size={14} />
-                    Edit
-                  </button>
-                )}
-                {canDeleteComment(comment) && (
-                  <button
-                    onClick={() => handleDeleteComment(comment.comment_id)}
-                    className="comment-action-btn delete-btn"
-                    title="Delete comment"
-                  >
-                    <Icon name="trash" size={14} />
-                    Delete
-                  </button>
-                )}
-              </div>
-            )}
           </div>
         ))}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && createPortal(
+        <div className="modal-overlay" onClick={cancelDelete}>
+          <div className="modal-content delete-confirm-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>
+                <Icon name="warning" size={20} />
+                Delete Comment
+              </h3>
+              <button className="modal-close-btn" onClick={cancelDelete}>
+                <Icon name="x" size={20} />
+              </button>
+            </div>
+            
+            <div className="modal-form">
+              <div className="delete-warning">
+                <p>Are you sure you want to delete this comment?</p>
+              </div>
+              
+              {commentToDelete && (
+                <div className="comment-preview">
+                  <div className="preview-author-line">
+                    <Icon name="user" size={16} />
+                    <span className="preview-author">
+                      {commentToDelete.user.username || commentToDelete.user.display_name}
+                    </span>
+                  </div>
+                  <div className="preview-text">
+                    "{commentToDelete.comment_text.length > 100 
+                      ? commentToDelete.comment_text.substring(0, 100) + '...'
+                      : commentToDelete.comment_text}"
+                  </div>
+                </div>
+              )}
+              
+              <div className="delete-note">
+                <Icon name="info" size={16} />
+                <span>This action cannot be undone.</span>
+              </div>
+              
+              <div className="modal-actions">
+                <button className="btn-cancel" onClick={cancelDelete}>
+                  Cancel
+                </button>
+                <button 
+                  className="btn-delete" 
+                  onClick={confirmDeleteComment}
+                  disabled={deleting}
+                >
+                  {deleting ? (
+                    <>
+                      <Icon name="activity" size={16} className="spinner" />
+                      Deleting...
+                    </>
+                  ) : (
+                    'Delete Comment'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   )
 }

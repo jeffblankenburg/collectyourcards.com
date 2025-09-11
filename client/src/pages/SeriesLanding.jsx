@@ -311,7 +311,7 @@ function SeriesLanding() {
       <div className="series-content">
         {loading ? (
           <div className="loading-state">
-            <Icon name="activity" size={24} className="spinning" />
+            <div className="card-icon-spinner"></div>
             <span>Loading...</span>
           </div>
         ) : (

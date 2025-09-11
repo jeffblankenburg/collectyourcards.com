@@ -3,7 +3,7 @@ import axios from 'axios'
 import Icon from './Icon'
 import './ActivityFeed.css'
 
-function ActivityFeed({ setId, title = "Recent Activity" }) {
+function ActivityFeed({ setId, seriesId, title = "Recent Activity" }) {
   const [activities, setActivities] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -12,10 +12,10 @@ function ActivityFeed({ setId, title = "Recent Activity" }) {
   const [loadingMore, setLoadingMore] = useState(false)
 
   useEffect(() => {
-    if (setId) {
+    if (setId || seriesId) {
       fetchActivities(1, true)
     }
-  }, [setId])
+  }, [setId, seriesId])
 
   const fetchActivities = async (pageNum = 1, reset = false) => {
     try {
@@ -26,7 +26,12 @@ function ActivityFeed({ setId, title = "Recent Activity" }) {
         setLoadingMore(true)
       }
 
-      const response = await axios.get(`/api/comments/set/${setId}/activity`, {
+      // Determine which endpoint to use based on props
+      const endpoint = setId 
+        ? `/api/comments/set/${setId}/activity`
+        : `/api/comments/series/${seriesId}/activity`
+        
+      const response = await axios.get(endpoint, {
         params: { page: pageNum, limit: 20 }
       })
 

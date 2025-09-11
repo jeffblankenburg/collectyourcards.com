@@ -1,0 +1,163 @@
+/* ============================================
+   GLOBAL DESIGN TOKENS
+   Single source of truth for ALL values
+   NEVER use raw values - ALWAYS use these tokens
+   ============================================ */
+
+:root {
+  /* ============================================
+     SPACING SCALE
+     Use ONLY these values for padding, margin, gap
+     ============================================ */
+  --space-0: 0;
+  --space-1: 0.25rem;  /* 4px - Tiny gaps */
+  --space-2: 0.5rem;   /* 8px - Small gaps */
+  --space-3: 0.75rem;  /* 12px - Compact spacing */
+  --space-4: 1rem;     /* 16px - Default spacing */
+  --space-5: 1.5rem;   /* 24px - Section spacing */
+  --space-6: 2rem;     /* 32px - Large spacing */
+  --space-7: 3rem;     /* 48px - Major sections */
+  --space-8: 4rem;     /* 64px - Page sections */
+
+  /* ============================================
+     BORDER RADIUS
+     Use ONLY these values for border-radius
+     ============================================ */
+  --radius-none: 0;
+  --radius-sm: 4px;     /* Small elements */
+  --radius-md: 8px;     /* Default radius */
+  --radius-lg: 12px;    /* Cards, modals */
+  --radius-xl: 16px;    /* Large containers */
+  --radius-full: 9999px; /* Pills, circles */
+
+  /* ============================================
+     TYPOGRAPHY SCALE
+     Use ONLY these values for font-size
+     ============================================ */
+  --text-xs: 0.75rem;   /* 12px - Captions */
+  --text-sm: 0.875rem;  /* 14px - Small text */
+  --text-base: 1rem;    /* 16px - Body text */
+  --text-lg: 1.125rem;  /* 18px - Large body */
+  --text-xl: 1.25rem;   /* 20px - Small headings */
+  --text-2xl: 1.5rem;   /* 24px - Headings */
+  --text-3xl: 1.875rem; /* 30px - Large headings */
+  --text-4xl: 2.25rem;  /* 36px - Page titles */
+
+  /* ============================================
+     FONT WEIGHTS
+     ============================================ */
+  --font-normal: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+
+  /* ============================================
+     LINE HEIGHTS
+     ============================================ */
+  --leading-tight: 1.25;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.75;
+
+  /* ============================================
+     COLOR SYSTEM - Dark Theme Primary
+     Based on existing Collect Your Cards palette
+     ============================================ */
+  
+  /* Brand Colors */
+  --color-primary: #0066cc;
+  --color-primary-hover: #0052a3;
+  --color-primary-active: #004080;
+  --color-primary-light: rgba(0, 102, 204, 0.1);
+  
+  --color-secondary: #28a745;
+  --color-secondary-hover: #218838;
+  --color-secondary-active: #1e7e34;
+  --color-secondary-light: rgba(40, 167, 69, 0.1);
+  
+  --color-accent: #ffc107;
+  --color-accent-hover: #e0a800;
+  --color-accent-active: #c69500;
+  --color-accent-light: rgba(255, 193, 7, 0.1);
+  
+  /* Semantic Colors */
+  --color-success: #28a745;
+  --color-success-hover: #218838;
+  --color-success-light: rgba(40, 167, 69, 0.1);
+  
+  --color-warning: #ffc107;
+  --color-warning-hover: #e0a800;
+  --color-warning-light: rgba(255, 193, 7, 0.1);
+  
+  --color-danger: #dc3545;
+  --color-danger-hover: #c82333;
+  --color-danger-active: #bd2130;
+  --color-danger-light: rgba(220, 53, 69, 0.1);
+  
+  --color-info: #17a2b8;
+  --color-info-hover: #138496;
+  --color-info-light: rgba(23, 162, 184, 0.1);
+  
+  /* Background Colors - Dark Theme */
+  --color-background: #1a1a1a;        /* Page background */
+  --color-surface: rgba(255, 255, 255, 0.05);     /* Card backgrounds */
+  --color-surface-hover: rgba(255, 255, 255, 0.08);
+  --color-surface-active: rgba(255, 255, 255, 0.1);
+  
+  /* Text Colors */
+  --color-text-primary: #ffffff;
+  --color-text-secondary: rgba(255, 255, 255, 0.7);
+  --color-text-muted: rgba(255, 255, 255, 0.5);
+  --color-text-disabled: rgba(255, 255, 255, 0.3);
+  
+  /* Border Colors */
+  --color-border: rgba(255, 255, 255, 0.1);
+  --color-border-hover: rgba(255, 255, 255, 0.2);
+  --color-border-active: rgba(255, 255, 255, 0.3);
+
+  /* ============================================
+     SHADOWS
+     Consistent elevation system
+     ============================================ */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.16), 0 4px 6px rgba(0, 0, 0, 0.23);
+  --shadow-lg: 0 10px 20px rgba(0, 0, 0, 0.19), 0 6px 6px rgba(0, 0, 0, 0.23);
+  --shadow-xl: 0 15px 35px rgba(0, 0, 0, 0.25), 0 10px 10px rgba(0, 0, 0, 0.22);
+
+  /* ============================================
+     TRANSITIONS
+     Consistent animation timing
+     ============================================ */
+  --transition-fast: 150ms ease;
+  --transition-base: 250ms ease;
+  --transition-slow: 350ms ease;
+
+  /* ============================================
+     Z-INDEX SCALE
+     Layering system
+     ============================================ */
+  --z-base: 0;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-modal: 300;
+  --z-overlay: 400;
+  --z-toast: 500;
+  --z-tooltip: 600;
+
+  /* ============================================
+     CONTAINER WIDTHS
+     ============================================ */
+  --container-sm: 640px;
+  --container-md: 768px;
+  --container-lg: 1024px;
+  --container-xl: 1280px;
+  --container-2xl: 1536px;
+
+  /* ============================================
+     BREAKPOINTS
+     ============================================ */
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+  --breakpoint-2xl: 1536px;
+}

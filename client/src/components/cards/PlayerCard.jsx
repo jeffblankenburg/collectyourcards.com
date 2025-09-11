@@ -53,14 +53,12 @@ function PlayerCard({ player, showBadge = false, onTeamClick = null, customOnCli
       
       <div className="playercard-content">
         <div className="playercard-name-section">
-          <h3 className="playercard-name">
-            {player.first_name} {player.last_name}
-          </h3>
+          <h3 className="playercard-name">{player.first_name} {player.last_name}</h3>
           <div className="playercard-nickname-header">
             {player.nick_name ? (
               <p className="playercard-nickname-text">"{player.nick_name}"</p>
             ) : (
-              <p className="playercard-nickname-text playercard-nickname-placeholder">&nbsp;</p>
+              <p className="playercard-nickname-placeholder">&nbsp;</p>
             )}
           </div>
         </div>
@@ -81,7 +79,6 @@ function PlayerCard({ player, showBadge = false, onTeamClick = null, customOnCli
             </div>
           ))}
         </div>
-
         <div className="playercard-stats">
           <div className="playercard-count">
             <span className="playercard-count-number">{(player.card_count || 0).toLocaleString()}</span>
@@ -93,14 +90,13 @@ function PlayerCard({ player, showBadge = false, onTeamClick = null, customOnCli
           </div>
           {player.is_hof && (
             <div className="playercard-hof-box">
-              <Icon name="user" size={14} className="playercard-hof-box-icon" />
+              <Icon name="crown" size={14} className="playercard-hof-box-icon" />
               <span className="playercard-hof-label">HOF</span>
             </div>
           )}
         </div>
       </div>
       
-      {/* Admin Edit Button */}
       {isAdmin && (
         <button 
           className="playercard-admin-edit-btn"

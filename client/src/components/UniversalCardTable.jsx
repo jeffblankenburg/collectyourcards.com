@@ -3,8 +3,9 @@ import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { useAuth } from '../contexts/AuthContext'
+import { useToast } from '../contexts/ToastContext'
 import Icon from './Icon'
-import AddCardModal from './AddCardModal'
+import AddCardModal from './modals/AddCardModal'
 import EditCardModal from './EditCardModal'
 import './UniversalCardTable.css'
 
@@ -24,7 +25,10 @@ const UniversalCardTable = ({
   onCardClick = null,
   onSeriesClick = null,
   showSearch = false,
+  autoFocusSearch = false,
   selectedTeamIds = [],
+  clientSideFiltering = false,
+  statFilter = null,
   showOwned = true,
   showAddButtons = true,
   isCollectionView = false,
@@ -33,6 +37,7 @@ const UniversalCardTable = ({
   onCollectionDataLoaded = null
 }) => {
   const { isAuthenticated } = useAuth()
+  const { success, error } = useToast()
   const navigate = useNavigate()
   const [cards, setCards] = useState(initialCards)
   const [sortField, setSortField] = useState(
@@ -56,6 +61,7 @@ const UniversalCardTable = ({
   const [columnWidths, setColumnWidths] = useState(customColumnWidths || {
     code: '100px',
     edit: '60px',
+    favorite: '70px',
     cardNumber: '100px',
     player: '200px',
     series: '300px',
@@ -78,9 +84,21 @@ const UniversalCardTable = ({
       setColumnWidths(customColumnWidths)
     }
   }, [customColumnWidths])
+
+  // Auto-focus search input when component loads
+  useEffect(() => {
+    if (autoFocusSearch && searchInputRef.current && showSearch) {
+      // Small delay to ensure the component is fully rendered
+      setTimeout(() => {
+        searchInputRef.current?.focus()
+      }, 100)
+    }
+  }, [autoFocusSearch, showSearch])
+
   const [isResizing, setIsResizing] = useState(false)
   const [resizeColumn, setResizeColumn] = useState(null)
   const loadingRef = useRef(false)
+  const searchInputRef = useRef(null)
 
   const loadInitialData = useCallback(async () => {
     if (!apiEndpoint) return
@@ -198,6 +216,166 @@ const UniversalCardTable = ({
     }
   }
 
+  const [shareDropdownCard, setShareDropdownCard] = useState(null)
+  const shareDropdownRef = useRef(null)
+
+  // Close share dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (shareDropdownRef.current && !shareDropdownRef.current.contains(event.target)) {
+        setShareDropdownCard(null)
+      }
+    }
+
+    if (shareDropdownCard) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [shareDropdownCard])
+
+  const handleShareCard = (event, card) => {
+    event.stopPropagation()
+    setShareDropdownCard(shareDropdownCard?.user_card_id === card.user_card_id ? null : card)
+  }
+
+  const getCardShareUrl = (card) => {
+    const playerNames = card.card_player_teams?.map((cpt, i) => cpt.player?.name).join(', ') || card.player_name || 'unknown'
+    const playerSlug = playerNames
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .trim()
+    
+    const seriesSlug = card.series_rel?.name?.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').trim() || 'unknown'
+    
+    return `${window.location.origin}/card/${seriesSlug}/${card.card_number}/${playerSlug}`
+  }
+
+  const getCardShareContent = (card) => {
+    const playerNames = card.card_player_teams?.map((cpt, i) => cpt.player?.name).join(', ') || card.player_name || 'Unknown Player'
+    const cardNumber = card.card_number || 'Unknown'
+    const seriesName = card.series_rel?.name || card.series_name || 'Unknown Series'
+    
+    return {
+      title: `Check out my ${seriesName} #${cardNumber} ${playerNames} card!`,
+      text: `${seriesName} #${cardNumber} ${playerNames}`,
+      hashtags: 'SportCards,CardCollector,CollectYourCards'
+    }
+  }
+
+  const copyCardLink = async (card) => {
+    try {
+      const url = getCardShareUrl(card)
+      await navigator.clipboard.writeText(url)
+      success('Card link copied to clipboard!')
+      setShareDropdownCard(null)
+    } catch (err) {
+      console.error('Failed to copy URL:', err)
+      error('Failed to copy link')
+    }
+  }
+
+  const shareToTwitter = (card) => {
+    const url = getCardShareUrl(card)
+    const playerNames = card.card_player_teams?.map((cpt, i) => cpt.player?.name).join(', ') || card.player_name || 'Unknown Player'
+    const cardNumber = card.card_number || 'Unknown'
+    const seriesName = card.series_rel?.name || card.series_name || 'Unknown Series'
+    const year = card.series_rel?.set_rel?.year || card.set_year || ''
+    
+    // Create more engaging tweet content
+    const tweetText = `🏀⚾ Check out my ${year} ${seriesName} #${cardNumber} ${playerNames} card! 🔥\n\nWhat do you think of this one? 👀\n\n${url}\n\n#SportCards #CardCollector #${playerNames.replace(/\s+/g, '')} #CollectYourCards`
+    
+    const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`
+    window.open(twitterUrl, '_blank', 'width=550,height=420')
+    setShareDropdownCard(null)
+  }
+
+  const shareToFacebook = (card) => {
+    const url = getCardShareUrl(card)
+    const playerNames = card.card_player_teams?.map((cpt, i) => cpt.player?.name).join(', ') || card.player_name || 'Unknown Player'
+    const cardNumber = card.card_number || 'Unknown'
+    const seriesName = card.series_rel?.name || card.series_name || 'Unknown Series'
+    const year = card.series_rel?.set_rel?.year || card.set_year || ''
+    
+    // Create Facebook-friendly content
+    const facebookQuote = `🏀⚾ Just added this amazing ${year} ${seriesName} #${cardNumber} ${playerNames} card to my collection! 🔥\n\nAny fellow collectors out there? What do you think of this one? 👀\n\n#SportCards #CardCollector #${playerNames.replace(/\s+/g, '')} #CollectYourCards #Collecting`
+    
+    const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}&quote=${encodeURIComponent(facebookQuote)}`
+    window.open(facebookUrl, '_blank', 'width=550,height=420')
+    setShareDropdownCard(null)
+  }
+
+  const shareToInstagram = (card) => {
+    const url = getCardShareUrl(card)
+    const playerNames = card.card_player_teams?.map((cpt, i) => cpt.player?.name).join(', ') || card.player_name || 'Unknown Player'
+    const cardNumber = card.card_number || 'Unknown'
+    const seriesName = card.series_rel?.name || card.series_name || 'Unknown Series'
+    const year = card.series_rel?.set_rel?.year || card.set_year || ''
+    
+    // Create Instagram-friendly content (shorter, more hashtags)
+    const instagramContent = `🏀⚾ ${year} ${seriesName} #${cardNumber} ${playerNames} 🔥\n\n${url}\n\n#SportCards #CardCollector #${playerNames.replace(/\s+/g, '')} #Collecting #Cards #Vintage #Sports #CollectYourCards #CardShow #Investment`
+    
+    navigator.clipboard.writeText(instagramContent).then(() => {
+      success('Caption copied! Now open Instagram and paste in your story or post.')
+      window.open('https://www.instagram.com/', '_blank')
+    }).catch(err => {
+      error('Failed to copy content for Instagram')
+    })
+    setShareDropdownCard(null)
+  }
+
+  const shareToBlueSky = (card) => {
+    const url = getCardShareUrl(card)
+    const playerNames = card.card_player_teams?.map((cpt, i) => cpt.player?.name).join(', ') || card.player_name || 'Unknown Player'
+    const cardNumber = card.card_number || 'Unknown'
+    const seriesName = card.series_rel?.name || card.series_name || 'Unknown Series'
+    const year = card.series_rel?.set_rel?.year || card.set_year || ''
+    
+    // Create Blue Sky friendly content
+    const blueskyText = `🏀⚾ Check out my ${year} ${seriesName} #${cardNumber} ${playerNames} card!\n\nWhat do you think? Any ${playerNames} fans out there?\n\n${url}\n\n#SportCards #CardCollecting #${playerNames.replace(/\s+/g, '')} #CollectYourCards`
+    
+    const blueSkyUrl = `https://bsky.app/intent/compose?text=${encodeURIComponent(blueskyText)}`
+    window.open(blueSkyUrl, '_blank', 'width=550,height=420')
+    setShareDropdownCard(null)
+  }
+
+  const handleToggleFavorite = async (card) => {
+    if (!isAuthenticated || !isCollectionView) return
+    
+    try {
+      const config = {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      }
+      
+      const response = await axios.post(`/api/profile/favorite-cards/${card.user_card_id}`, {}, config)
+      
+      // Update the card's favorite status locally
+      setCards(prevCards => 
+        prevCards.map(c => 
+          c.user_card_id === card.user_card_id 
+            ? { ...c, is_special: response.data.is_favorite }
+            : c
+        )
+      )
+      
+      success(response.data.message)
+      
+    } catch (err) {
+      console.error('Error toggling favorite:', err)
+      if (err.response?.status === 400) {
+        error(err.response.data.error)
+      } else {
+        error('Failed to update favorite status')
+      }
+    }
+  }
+
   const cancelDelete = () => {
     setShowDeleteConfirm(false)
     setCardToDelete(null)
@@ -288,6 +466,24 @@ const UniversalCardTable = ({
         )
       )
     }
+
+    // Apply stat filter (for player detail pages)
+    if (clientSideFiltering && statFilter) {
+      result = result.filter(card => {
+        switch (statFilter) {
+          case 'rookie':
+            return card.is_rookie
+          case 'autograph':
+            return card.is_autograph
+          case 'relic':
+            return card.is_relic
+          case 'numbered':
+            return card.print_run && card.print_run > 0
+          default:
+            return true
+        }
+      })
+    }
     
     // Then filter by search query
     if (searchQuery.trim()) {
@@ -365,7 +561,7 @@ const UniversalCardTable = ({
     }
     
     return result
-  }, [cards, searchQuery, selectedTeamIds, showCollectionColumns])
+  }, [cards, searchQuery, selectedTeamIds, showCollectionColumns, clientSideFiltering, statFilter])
 
   // Helper functions for sorting
   const getPlayerName = useCallback((card) => {
@@ -647,7 +843,7 @@ const UniversalCardTable = ({
 
   return (
     <>
-      <div className="universal-card-table">
+      <div className={`universal-card-table ${viewMode === 'gallery' ? 'gallery-view' : ''}`}>
         {/* Search Box and View Toggle */}
         {(showSearch || showGalleryToggle) && (
         <div className="table-controls">
@@ -672,6 +868,7 @@ const UniversalCardTable = ({
           {showSearch && (
             <div className="search-container">
               <input
+                ref={searchInputRef}
                 type="text"
                 placeholder="Search this list..."
                 value={searchQuery}
@@ -691,6 +888,11 @@ const UniversalCardTable = ({
               {isAuthenticated && isCollectionView && (
                 <th className="center action-header" style={{ width: columnWidths.edit }}>
                   Edit
+                </th>
+              )}
+              {isAuthenticated && isCollectionView && (
+                <th className="center action-header" style={{ width: columnWidths.favorite }}>
+                  <Icon name="star" size={16} title="Favorites" />
                 </th>
               )}
               {isAuthenticated && showOwned && (
@@ -908,6 +1110,27 @@ const UniversalCardTable = ({
                     </button>
                   </td>
                 )}
+                {isAuthenticated && isCollectionView && (
+                  <td className="action-cell center">
+                    <button
+                      className={`favorite-card-btn ${card.is_special ? 'favorited' : ''}`}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleToggleFavorite(card)
+                      }}
+                      title={card.is_special ? "Remove from favorites" : "Add to favorites"}
+                    >
+                      <Icon 
+                        name="star" 
+                        size={16} 
+                        style={{
+                          color: card.is_special ? '#fbbf24' : 'rgba(255, 255, 255, 0.5)',
+                          fill: card.is_special ? '#fbbf24' : 'none'
+                        }} 
+                      />
+                    </button>
+                  </td>
+                )}
                 {isAuthenticated && showOwned && (
                   <>
                     <td className="action-cell center">
@@ -1114,6 +1337,60 @@ const UniversalCardTable = ({
                     >
                       <Icon name="edit" size={14} />
                     </button>
+                  )}
+                  {isCollectionView && (
+                    <>
+                      <button
+                        className="gallery-share-btn"
+                        onClick={(e) => handleShareCard(e, card)}
+                        title="Share this card"
+                      >
+                        <Icon name="share-2" size={14} />
+                      </button>
+                      {shareDropdownCard?.user_card_id === card.user_card_id && (
+                        <div className="gallery-share-dropdown" ref={shareDropdownRef}>
+                          <div className="gallery-share-header">
+                            <span>Share this card</span>
+                          </div>
+                          <button 
+                            className="share-dropdown-option"
+                            onClick={() => copyCardLink(card)}
+                          >
+                            <Icon name="link" size={14} />
+                            <span>Copy Link</span>
+                          </button>
+                          <div className="share-dropdown-divider"></div>
+                          <button 
+                            className="share-dropdown-option twitter"
+                            onClick={() => shareToTwitter(card)}
+                          >
+                            <Icon name="twitter" size={14} />
+                            <span>Twitter</span>
+                          </button>
+                          <button 
+                            className="share-dropdown-option facebook"
+                            onClick={() => shareToFacebook(card)}
+                          >
+                            <Icon name="facebook" size={14} />
+                            <span>Facebook</span>
+                          </button>
+                          <button 
+                            className="share-dropdown-option instagram"
+                            onClick={() => shareToInstagram(card)}
+                          >
+                            <Icon name="camera" size={14} />
+                            <span>Instagram</span>
+                          </button>
+                          <button 
+                            className="share-dropdown-option bluesky"
+                            onClick={() => shareToBlueSky(card)}
+                          >
+                            <Icon name="cloud" size={14} />
+                            <span>Blue Sky</span>
+                          </button>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
                 <div className="gallery-card-info">

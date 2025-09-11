@@ -12,6 +12,8 @@ function TeamDetail() {
   const { isAuthenticated, user } = useAuth()
   const [team, setTeam] = useState(null)
   const [players, setPlayers] = useState([])
+  const [filteredPlayers, setFilteredPlayers] = useState([])
+  const [playerSearchTerm, setPlayerSearchTerm] = useState('')
   const [stats, setStats] = useState({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -22,6 +24,19 @@ function TeamDetail() {
   useEffect(() => {
     fetchTeamData()
   }, [teamSlug])
+
+  // Filter players based on search term
+  useEffect(() => {
+    if (!playerSearchTerm.trim()) {
+      setFilteredPlayers(players)
+    } else {
+      const filtered = players.filter(player =>
+        `${player.first_name} ${player.last_name}`.toLowerCase().includes(playerSearchTerm.toLowerCase()) ||
+        (player.nick_name && player.nick_name.toLowerCase().includes(playerSearchTerm.toLowerCase()))
+      )
+      setFilteredPlayers(filtered)
+    }
+  }, [players, playerSearchTerm])
 
   // Set page title
   useEffect(() => {
@@ -59,6 +74,7 @@ function TeamDetail() {
         const playersResponse = await axios.get(`/api/players-list?team_id=${foundTeam.team_id}&limit=100`)
         const teamPlayers = playersResponse.data.players || []
         setPlayers(teamPlayers)
+        setFilteredPlayers(teamPlayers)
         
         // Calculate additional stats for the team
         const teamStats = {
@@ -197,29 +213,56 @@ function TeamDetail() {
           </div>
         </header>
 
-        {/* Players Grid */}
-        {players.length > 0 && (
-          <div className="team-players-section">
-            <div className="section-header">
-              <h3>
-                <Icon name="users" size={20} />
-                Players ({team.player_count?.toLocaleString() || players.length})
-              </h3>
-            </div>
-            <div className="players-grid">
-              {players.map((player) => (
-                <PlayerCard
-                  key={player.player_id}
-                  player={player}
-                  onTeamClick={handleTeamClick}
-                  customOnClick={() => handlePlayerClick(player)}
-                />
-              ))}
-            </div>
-          </div>
-        )}
-
       </div>
+
+      {/* Players Search and Grid - Full Width Edge to Edge */}
+      {players.length > 0 && (
+        <>
+          <div className="players-search-container">
+            <div className="players-search-box">
+              <Icon name="search" size={20} />
+              <input
+                type="text"
+                placeholder={`Search ${team.name} players...`}
+                value={playerSearchTerm}
+                onChange={(e) => setPlayerSearchTerm(e.target.value)}
+                className="players-search-input"
+                autoFocus
+              />
+              {playerSearchTerm && (
+                <button 
+                  onClick={() => setPlayerSearchTerm('')}
+                  className="players-search-clear"
+                  title="Clear search"
+                >
+                  <Icon name="x" size={16} />
+                </button>
+              )}
+            </div>
+            {playerSearchTerm && (
+              <div className="players-search-results">
+                {filteredPlayers.length} of {players.length} players
+              </div>
+            )}
+          </div>
+          <div className="players-grid-fullwidth">
+            {filteredPlayers.map((player) => (
+              <PlayerCard
+                key={player.player_id}
+                player={player}
+                onTeamClick={handleTeamClick}
+                customOnClick={() => handlePlayerClick(player)}
+              />
+            ))}
+            {filteredPlayers.length === 0 && playerSearchTerm && (
+              <div className="no-players-found">
+                <Icon name="search" size={48} />
+                <p>No players found matching "{playerSearchTerm}"</p>
+              </div>
+            )}
+          </div>
+        </>
+      )}
 
       {/* Admin Edit Button */}
       {isAdmin && team && (

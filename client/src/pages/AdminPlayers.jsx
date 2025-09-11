@@ -528,7 +528,7 @@ function AdminPlayers() {
               value={searchTerm}
               onChange={handleSearch}
             />
-            {searching && <Icon name="activity" size={16} className="search-spinner spinning" />}
+            {searching && <div className="card-icon-spinner small"></div>}
           </div>
         </div>
       </div>
@@ -536,7 +536,7 @@ function AdminPlayers() {
       <div className="players-content">
         {loading ? (
           <div className="loading-state">
-            <Icon name="activity" size={24} className="spinning" />
+            <div className="card-icon-spinner"></div>
             <span>Loading players...</span>
           </div>
         ) : (
@@ -894,7 +894,7 @@ function AdminPlayers() {
               >
                 {saving ? (
                   <>
-                    <Icon name="activity" size={16} className="spinning" />
+                    <div className="card-icon-spinner small"></div>
                     Saving...
                   </>
                 ) : (
@@ -971,7 +971,7 @@ function AdminPlayers() {
               >
                 {reassigning ? (
                   <>
-                    <Icon name="activity" size={16} className="spinning" />
+                    <div className="card-icon-spinner small"></div>
                     Reassigning...
                   </>
                 ) : (
@@ -1192,7 +1192,7 @@ function AdminPlayers() {
               >
                 {saving ? (
                   <>
-                    <Icon name="activity" size={16} className="spinning" />
+                    <div className="card-icon-spinner small"></div>
                     Creating...
                   </>
                 ) : (

@@ -43,6 +43,8 @@ import {
   Upload,
   Database,
   Image,
+  Camera,
+  Cloud,
   RefreshCw,
   ShoppingCart,
   Palette,
@@ -75,7 +77,26 @@ import {
   Hash,
   Grid3X3,
   List,
-  Power
+  Power,
+  // Notification and social icons
+  Bell,
+  MessageSquare,
+  Share2,
+  Twitter,
+  Facebook,
+  Linkedin,
+  Edit3,
+  Inbox,
+  // Audio/moderation icons
+  Mic,
+  MicOff,
+  // More options icons
+  MoreHorizontal,
+  MoreVertical,
+  // Missing icons
+  Download,
+  Calendar,
+  Crown
 } from 'lucide-react'
 
 // Icon mapping for consistent usage across the app
@@ -95,11 +116,15 @@ const iconMap = {
   // Search & Discovery
   'search': Search,
   'card': 'custom-card', // Custom card icon
+  'credit-card': CreditCard,
   'player': User,
   'team': Shield,
   'baseball': 'custom-baseball',
   'football': 'custom-football',
   'basketball': 'custom-basketball',
+  'rc-tag': 'custom-rc-tag', // Custom RC tag for rookies
+  'jersey': 'custom-jersey', // Custom jersey for relics
+  'graded-slab': 'custom-graded-slab', // Custom graded slab
   
   // User & Account
   'user': User,
@@ -193,8 +218,59 @@ const iconMap = {
   'hash': Hash,
   'collection': Grid3X3,
   'grid': Grid3X3,
-  'list': List
+  'list': List,
+  
+  // Notification and Social Icons
+  'bell': Bell,
+  'message-square': MessageSquare,
+  'share-2': Share2,
+  'twitter': Twitter,
+  'facebook': Facebook,
+  'linkedin': Linkedin,
+  'camera': Camera,
+  'cloud': Cloud,
+  'edit-3': Edit3,
+  'inbox': Inbox,
+  
+  // Audio/moderation icons
+  'mic': Mic,
+  'mic-off': MicOff,
+  
+  // More options icons
+  'more-horizontal': MoreHorizontal,
+  'more-vertical': MoreVertical,
+  'ellipses': MoreHorizontal,
+  'download': Download,
+  'calendar': Calendar,
+  'crown': Crown
 }
+
+// Custom RC tag icon for rookies - matches the RC tags used throughout the site
+const RCTagIcon = ({ size = 16, className = '' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" className={className}>
+    <rect x="2" y="6" width="20" height="12" rx="2" fill="#22c55e" stroke="#16a34a" strokeWidth="1"/>
+    <text x="12" y="14" fontSize="8" textAnchor="middle" fill="white" fontWeight="bold" fontFamily="system-ui, -apple-system, sans-serif">RC</text>
+  </svg>
+)
+
+// Custom shirt icon for relics - by Kim Naces from Noun Project (made bolder)
+const JerseyIcon = ({ size = 16, className = '' }) => (
+  <svg width={size} height={size} viewBox="0 0 100 100" className={className} fill="currentColor" strokeWidth="2" stroke="currentColor">
+    <path d="m73.48 17.191c-4.2891-1.3711-8.7891-2.3711-13.352-2.9688l-2.1602-0.28906-0.10156 2.1797c-0.17969 3.9805-3.6406 7.1016-7.8711 7.1016-4.2305 0-7.6914-3.1211-7.8711-7.1016l-0.10156-2.1797-2.1602 0.28906c-4.5703 0.60156-9.0586 1.6016-13.352 2.9688l-0.39844 0.12891-19.703 17.352 13.379 15.672 5.3281-4.3711v39.828h49.75v-39.828l5.3281 4.3711 13.379-15.672-19.699-17.352-0.39844-0.12891zm6.2305 27.57-8.8281-7.2305v44.281l-41.762-0.003906v-44.281l-8.8281 7.2305-8.2812-9.6992 16.121-14.191c3.3398-1.0391 6.8008-1.8516 10.32-2.4102 1.25 5.0508 5.9492 8.7383 11.551 8.7383 5.6016 0 10.301-3.6992 11.551-8.7383 3.5195 0.55859 6.9883 1.3711 10.32 2.4102l16.121 14.191-8.2812 9.6992z"/>
+  </svg>
+)
+
+// Custom graded slab icon - by Rizky Mardika from Noun Project (made bolder)
+const GradedSlabIcon = ({ size = 16, className = '' }) => (
+  <svg width={size} height={size} viewBox="0 0 100 100" className={className} fill="currentColor" strokeWidth="1.5" stroke="currentColor">
+    <path d="m76.766 7.8359h-53.531c-1.6016 0-2.8984 1.3008-2.8984 2.8984v78.535c0 1.6016 1.3008 2.8984 2.8984 2.8984h53.531c1.6016 0 2.8984-1.3008 2.8984-2.8984v-78.535c0-1.6016-1.3008-2.8984-2.8984-2.8984zm1.8984 81.43c0 1.0469-0.85156 1.8984-1.8984 1.8984h-53.531c-1.0469 0-1.8984-0.85156-1.8984-1.8984v-78.531c0-1.0469 0.85156-1.8984 1.8984-1.8984h53.531c1.0469 0 1.8984 0.85156 1.8984 1.8984v78.535z"/>
+    <path d="m68.434 32.836h-36.867c-1.6016 0-2.8984 1.3008-2.8984 2.8984v45.199c0 1.6016 1.3008 2.8984 2.8984 2.8984h36.867c1.6016 0 2.8984-1.3008 2.8984-2.8984v-45.199c0-1.6016-1.3008-2.8984-2.8984-2.8984zm1.9023 48.098c0 1.0469-0.85156 1.8984-1.8984 1.8984h-36.867c-1.0469 0-1.8984-0.85156-1.8984-1.8984v-45.199c0-1.0469 0.85156-1.8984 1.8984-1.8984h36.867c1.0469 0 1.8984 0.85156 1.8984 1.8984z"/>
+    <path d="m65.066 37h-30.133c-1.1562 0-2.1016 0.94141-2.1016 2.1016v17.633c0 1.1562 0.94141 2.1016 2.1016 2.1016h30.133c1.1562 0 2.1016-0.94141 2.1016-2.1016v-17.633c0-1.1562-0.94141-2.1016-2.1016-2.1016zm1.1016 19.734c0 0.60547-0.49219 1.1016-1.1016 1.1016h-30.133c-0.60547 0-1.1016-0.49219-1.1016-1.1016v-17.633c0-0.60547 0.49219-1.1016 1.1016-1.1016h30.133c0.60547 0 1.1016 0.49219 1.1016 1.1016z"/>
+    <rect x="26" y="63" width="48" height="3" fill="currentColor"/>
+    <rect x="26" y="68" width="48" height="3" fill="currentColor"/>
+    <rect x="26" y="73" width="48" height="3" fill="currentColor"/>
+  </svg>
+)
 
 // Custom card icon component - vertically-oriented rectangle with rounded corners
 const SimpleCardIcon = ({ size = 16, className = '' }) => (
@@ -266,6 +342,21 @@ function Icon({
   // Handle custom stacked cards icon
   if (name === 'series') {
     return <StackedCardsIcon size={size} className={className} />
+  }
+  
+  // Handle custom RC tag icon
+  if (name === 'rc-tag') {
+    return <RCTagIcon size={size} className={className} />
+  }
+  
+  // Handle custom jersey icon
+  if (name === 'jersey') {
+    return <JerseyIcon size={size} className={className} />
+  }
+  
+  // Handle custom graded slab icon
+  if (name === 'graded-slab') {
+    return <GradedSlabIcon size={size} className={className} />
   }
   
   // Handle custom sports ball icons

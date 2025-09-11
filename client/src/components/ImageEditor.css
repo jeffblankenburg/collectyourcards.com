@@ -1,0 +1,277 @@
+/* Image Editor Modal */
+.image-editor-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 15000;
+  animation: fadeIn 0.2s ease;
+}
+
+.image-editor-modal {
+  background: #1e293b;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  width: 90%;
+  max-width: 800px;
+  max-height: 90vh;
+  overflow: hidden;
+  animation: slideUp 0.3s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Header */
+.image-editor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.image-editor-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: #f1f5f9;
+  font-weight: 600;
+}
+
+.image-editor-close {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.image-editor-close:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #f1f5f9;
+}
+
+/* Content */
+.image-editor-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  min-height: 400px;
+  overflow: auto;
+}
+
+.image-editor-canvas-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.image-editor-canvas {
+  max-width: 100%;
+  max-height: 500px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  cursor: crosshair;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  display: block;
+  touch-action: none; /* Prevent scrolling on touch devices */
+}
+
+.image-editor-canvas:hover {
+  border-color: rgba(59, 130, 246, 0.5);
+}
+
+.image-editor-instructions {
+  text-align: center;
+  color: #94a3b8;
+  font-size: 0.875rem;
+}
+
+.image-editor-instructions p {
+  margin: 0;
+}
+
+.image-editor-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  color: #94a3b8;
+}
+
+.card-icon-spinner {
+  display: inline-block;
+  width: 24px;
+  height: 32px;
+  background: white;
+  border-radius: 4px;
+  animation: card-spin 1s linear infinite;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.card-icon-spinner.small {
+  width: 16px;
+  height: 21px;
+  border-radius: 3px;
+  margin-right: 0.5rem;
+}
+
+.card-icon-spinner.tiny {
+  width: 12px;
+  height: 16px;
+  border-radius: 2px;
+}
+
+@keyframes card-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Controls */
+.image-editor-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.image-editor-rotate-controls,
+.image-editor-crop-controls {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.image-editor-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #cbd5e1;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.image-editor-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #f1f5f9;
+}
+
+.image-editor-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Actions */
+.image-editor-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  padding: 1.25rem;
+}
+
+.btn-cancel {
+  background: rgba(255, 255, 255, 0.1);
+  color: #cbd5e1;
+}
+
+.btn-cancel:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.15);
+  color: #f1f5f9;
+}
+
+.btn-save {
+  background: #3b82f6;
+  color: white;
+  border-color: #3b82f6;
+}
+
+.btn-save:hover:not(:disabled) {
+  background: #2563eb;
+  border-color: #2563eb;
+}
+
+.btn-save:disabled {
+  background: #374151;
+  border-color: #374151;
+  color: #9ca3af;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .image-editor-modal {
+    width: 95%;
+    max-height: 95vh;
+  }
+  
+  .image-editor-controls {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
+  
+  .image-editor-rotate-controls,
+  .image-editor-crop-controls {
+    justify-content: center;
+  }
+  
+  .image-editor-canvas {
+    max-height: 300px;
+  }
+}
+
+@media (max-width: 480px) {
+  .image-editor-header,
+  .image-editor-actions {
+    padding: 1rem;
+  }
+  
+  .image-editor-content {
+    padding: 1rem;
+    min-height: 250px;
+  }
+  
+  .image-editor-btn {
+    font-size: 0.8125rem;
+    padding: 0.5rem;
+  }
+  
+  .image-editor-actions {
+    flex-direction: column;
+  }
+}

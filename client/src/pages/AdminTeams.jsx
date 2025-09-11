@@ -367,7 +367,7 @@ function AdminTeams() {
       <div className="teams-content">
         {loading ? (
           <div className="loading-state">
-            <Icon name="activity" size={24} className="spinning" />
+            <div className="card-icon-spinner"></div>
             <span>Loading teams...</span>
           </div>
         ) : (
@@ -571,7 +571,7 @@ function AdminTeams() {
               >
                 {saving ? (
                   <>
-                    <Icon name="activity" size={16} className="spinning" />
+                    <div className="card-icon-spinner small"></div>
                     Saving...
                   </>
                 ) : (
@@ -696,7 +696,7 @@ function AdminTeams() {
               >
                 {saving ? (
                   <>
-                    <Icon name="activity" size={16} className="spinning" />
+                    <div className="card-icon-spinner small"></div>
                     Creating...
                   </>
                 ) : (

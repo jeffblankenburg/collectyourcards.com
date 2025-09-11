@@ -55,6 +55,15 @@
 
 .collection-dashboard-page .header-title {
   display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  flex: 0 0 auto;
+  max-width: 60%;
+}
+
+.collection-dashboard-page .title-and-icon {
+  display: flex;
   align-items: center;
   gap: 0.75rem;
 }
@@ -75,23 +84,56 @@
   grid-template-columns: repeat(4, 1fr);
   grid-template-rows: repeat(2, 1fr);
   gap: 0.75rem;
-  max-width: 520px;
+  max-width: 560px;
+  flex: 0 0 auto;
+  min-width: 440px;
 }
 
 .collection-dashboard-page .stat-item {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
   background: rgba(255, 255, 255, 0.05);
   padding: 0.5rem 0.75rem;
   border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   min-width: 0;
+  min-height: 60px;
+  transition: all 0.2s ease;
+}
+
+/* Fix alignment for larger icons */
+.collection-dashboard-page .stat-item > * {
+  align-self: center;
+}
+
+.collection-dashboard-page .stat-item.clickable {
+  cursor: pointer;
+}
+
+.collection-dashboard-page .stat-item.clickable:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+.collection-dashboard-page .stat-item.active {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: rgba(59, 130, 246, 0.4);
+  color: #60a5fa;
+}
+
+.collection-dashboard-page .stat-item.active:hover {
+  background: rgba(59, 130, 246, 0.3);
+  border-color: rgba(59, 130, 246, 0.5);
 }
 
 .collection-dashboard-page .stat-item .stat-content {
   display: flex;
   flex-direction: column;
+  align-items: center;
+  text-align: center;
 }
 
 .collection-dashboard-page .stat-item .stat-value {
@@ -107,6 +149,44 @@
   text-transform: uppercase;
   letter-spacing: 0.02em;
   margin: 0;
+}
+
+/* Team Filter Circles in Collection */
+.collection-dashboard-page .collection-team-filters {
+  margin-top: 0.75rem;
+  margin-bottom: 0;
+}
+
+.collection-dashboard-page .collection-team-filters .team-filter-circles {
+  max-width: none;
+}
+
+.collection-dashboard-page .collection-team-filters .team-circles-container {
+  margin-bottom: 0.75rem;
+  max-width: 100%;
+  overflow-x: auto;
+  padding: 8px;
+}
+
+.collection-dashboard-page .collection-team-filters .team-circle {
+  width: 40px;
+  height: 40px;
+}
+
+.collection-dashboard-page .collection-team-filters .team-abbreviation {
+  font-size: 0.55rem;
+}
+
+.collection-dashboard-page .collection-team-filters .team-card-count {
+  font-size: 0.55rem;
+  padding: 0.1rem 0.25rem;
+  bottom: -5px;
+  right: -5px;
+}
+
+.collection-dashboard-page .collection-team-filters .clear-filters-btn {
+  font-size: 0.8rem;
+  padding: 0.4rem 0.8rem;
 }
 
 /* Location Tags Section */
@@ -247,19 +327,17 @@
 
 /* Collection Table Section */
 .collection-dashboard-page .collection-table-section {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(10px);
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  overflow: hidden;
+  /* Removed legacy container styling - CollectionTable has its own container */
   width: 100%;
 }
 
-.collection-dashboard-page .collection-table-section .section-header {
-  padding: 1.5rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  margin-bottom: 0;
+/* Force overflow visible on page containers (but not table components) */
+.collection-dashboard-page,
+.collection-dashboard-page .dashboard-container {
+  overflow: visible !important;
 }
+
+/* Legacy section header styles removed - not needed with CollectionTable */
 
 .collection-dashboard-page .filter-info {
   font-size: 0.875rem;

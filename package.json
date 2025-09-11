@@ -44,9 +44,11 @@
     "express-rate-limit": "^7.4.1",
     "express-validator": "^7.2.1",
     "helmet": "^8.0.0",
+    "isomorphic-dompurify": "^2.26.0",
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.0.2",
     "prisma": "^6.13.0",
+    "validator": "^13.15.15",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {

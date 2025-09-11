@@ -240,7 +240,7 @@ function UniversalSearch({ className = '' }) {
   // Get icon for result type
   const getResultIcon = (type, result) => {
     switch (type) {
-      case 'card': return <Icon name="card" size={24} />
+      case 'card': return <Icon name="layers" size={24} />
       case 'player': return <Icon name="player" size={24} />
       case 'team': {
         // Get sport-specific ball icon based on organization

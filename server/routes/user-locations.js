@@ -89,15 +89,20 @@ router.post('/', async (req, res) => {
 
     const insertResult = await prisma.$queryRaw`
       INSERT INTO user_location ([user], location, card_count, is_dashboard)
-      OUTPUT INSERTED.user_location_id
+      OUTPUT INSERTED.user_location_id, INSERTED.location, INSERTED.card_count, INSERTED.is_dashboard
       VALUES (${BigInt(parseInt(userId))}, ${location.trim()}, 0, ${is_dashboard})
     `
 
-    const newLocationId = insertResult[0].user_location_id
+    const newLocation = insertResult[0]
 
     res.status(201).json({
       message: 'Location created successfully',
-      location_id: Number(newLocationId)
+      location: {
+        user_location_id: Number(newLocation.user_location_id),
+        location: newLocation.location,
+        card_count: 0,
+        is_dashboard: newLocation.is_dashboard
+      }
     })
 
   } catch (error) {

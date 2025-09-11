@@ -297,7 +297,7 @@ function SeriesPage() {
       <div className="content-area">
         {loading ? (
           <div className="loading-state">
-            <Icon name="activity" size={24} className="spinning" />
+            <div className="card-icon-spinner"></div>
             <span>Loading...</span>
           </div>
         ) : selectedSet && (
@@ -384,7 +384,9 @@ function SeriesPage() {
                     key={s.series_id}
                     hideSetName={true}
                     series={{
+                      series_id: s.series_id,
                       name: s.name === selectedSet?.name ? 'Base Set' : getCleanSeriesName(s.name),
+                      full_name: s.name,  // Pass the full name for the modal
                       set_name: selectedSet?.name,
                       card_count: s.card_count || 0,
                       rc_count: s.rookie_count || 0,
@@ -456,21 +458,19 @@ function SeriesPage() {
         document.body
       )}
 
-      {/* Activity Feed - Recent comments from series/cards within this set */}
+      {/* Social Section - Discussion and Activity Feed Side by Side */}
       {selectedSet && (
-        <ActivityFeed
-          setId={selectedSet.set_id}
-          title={`Recent Activity in ${selectedSet.name}`}
-        />
-      )}
-
-      {/* Comments Section */}
-      {selectedSet && (
-        <CommentsSection
-          itemType="set"
-          itemId={selectedSet.set_id}
-          title={`Discussion about ${selectedSet.name}`}
-        />
+        <div className="social-section">
+          <CommentsSection
+            itemType="set"
+            itemId={selectedSet.set_id}
+            title="Discussion"
+          />
+          <ActivityFeed
+            setId={selectedSet.set_id}
+            title="Recent Activity"
+          />
+        </div>
       )}
 
       {/* Admin Edit Button */}

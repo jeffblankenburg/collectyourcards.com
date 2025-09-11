@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useRef, useEffect } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import Icon from '../Icon'
 import './CardTableScoped.css'
@@ -10,10 +10,10 @@ import './CardTableScoped.css'
  * Features:
  * - Shows basic card information: Card #, Player(s), Series, Color, Attributes, Notes
  * - For authenticated users: ADD button and OWNED count
- * - Sorting by Card #, Player name, Series name, Print Run
+ * - Sorting by Card #, Player name, Series name, Print Run (defaults to Series)
  * - Search functionality
  * - Bulk selection mode for authenticated users
- * - Customizable height via maxHeight prop
+ * - Customizable height via maxHeight prop (defaults to 600px)
  * - Horizontal scrolling on small screens with minimum width protection
  * - Responsive design
  */
@@ -31,10 +31,14 @@ const CardTable = ({
   onBulkAction = null,
   searchQuery = '',
   onSearchChange = null,
-  maxHeight = null // Custom height for the table wrapper
+  maxHeight = '600px', // Default max height for the table wrapper
+  showDownload = true,
+  downloadFilename = 'cards',
+  defaultSort = 'series_name',
+  autoFocusSearch = false
 }) => {
   const { isAuthenticated } = useAuth()
-  const [sortField, setSortField] = useState('sort_order')
+  const [sortField, setSortField] = useState(defaultSort)
   const [sortDirection, setSortDirection] = useState('asc')
   
   // Column resizing state
@@ -46,11 +50,23 @@ const CardTable = ({
     series: 'auto',    // Series column between player and color
     color: 'auto',
     print_run: 120,    // Width for "PRINT RUN" header text
-    attributes: 120,
+    auto: 80,          // Width for "AUTO" column (split from attributes)
+    relic: 80,         // Width for "RELIC" column (split from attributes)
     notes: 'auto'
   })
   const [isResizing, setIsResizing] = useState(false)
   const [resizingColumn, setResizingColumn] = useState(null)
+  const searchInputRef = useRef(null)
+
+  // Auto-focus search input when component loads
+  useEffect(() => {
+    if (autoFocusSearch && searchInputRef.current && showSearch) {
+      // Small delay to ensure the component is fully rendered
+      setTimeout(() => {
+        searchInputRef.current?.focus()
+      }, 100)
+    }
+  }, [autoFocusSearch, showSearch])
 
   // Filter cards based on search query
   const filteredCards = useMemo(() => {
@@ -89,6 +105,11 @@ const CardTable = ({
           `${a.card_player_teams[0].player.first_name || ''} ${a.card_player_teams[0].player.last_name || ''}`.trim() : ''
         bVal = b.card_player_teams?.[0]?.player ? 
           `${b.card_player_teams[0].player.first_name || ''} ${b.card_player_teams[0].player.last_name || ''}`.trim() : ''
+      } else if (sortField === 'is_autograph' || sortField === 'is_relic') {
+        // Boolean sorting: true values first when ascending
+        aVal = a[sortField] ? 1 : 0
+        bVal = b[sortField] ? 1 : 0
+        return sortDirection === 'asc' ? bVal - aVal : aVal - bVal
       } else if (sortField === 'sort_order') {
         // Handle sort_order as numeric
         const aNum = parseInt(a.sort_order) || 0
@@ -99,6 +120,10 @@ const CardTable = ({
         const aNum = a.print_run ? parseInt(a.print_run) : 999999
         const bNum = b.print_run ? parseInt(b.print_run) : 999999
         return sortDirection === 'asc' ? aNum - bNum : bNum - aNum
+      } else if (sortField === 'color') {
+        // Handle color sorting using color_rel
+        aVal = a.color_rel?.color || ''
+        bVal = b.color_rel?.color || ''
       } else if (sortField === 'card_number') {
         // Smart card number sorting: numeric if all are numbers, alphabetic if mixed
         const aNum = parseInt(a.card_number)
@@ -140,14 +165,14 @@ const CardTable = ({
 
   const SortIcon = ({ field }) => {
     if (sortField !== field) {
-      return <Icon name="chevron-up" size={14} className="card-table-sort-icon card-table-sort-neutral" />
+      return null // Don't show any icon when column is not sorted
     }
     
     return (
       <Icon 
-        name="chevron-up" 
+        name={sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'} 
         size={14} 
-        className={`card-table-sort-icon card-table-sort-active ${sortDirection === 'desc' ? 'card-table-sort-desc' : ''}`}
+        className={`card-table-sort-icon card-table-sort-active ${sortDirection}`}
       />
     )
   }
@@ -199,6 +224,64 @@ const CardTable = ({
     />
   )
 
+  const handleDownload = async () => {
+    try {
+      const dataToExport = sortedCards
+      
+      // Create headers that match the table columns
+      const headers = [
+        'Card #',
+        'Player(s)',
+        'Series',
+        'Print Run',
+        'Color',
+        'Auto',
+        'Relic',
+        'Notes'
+      ]
+
+      const csvData = [
+        headers.join(','),
+        ...dataToExport.map(card => {
+          // Format players
+          const players = card.card_player_teams?.map(cpt => 
+            `${cpt.player?.first_name || ''} ${cpt.player?.last_name || ''}`.trim()
+          ).join('; ') || ''
+          
+          // Format auto and relic separately
+          const auto = card.is_autograph ? 'AUTO' : ''
+          const relic = card.is_relic ? 'RELIC' : ''
+
+          const row = [
+            `"${card.card_number || ''}"`,
+            `"${players}"`,
+            `"${card.series_rel?.name || ''}"`,
+            `"${card.print_run ? `/${card.print_run}` : ''}"`,
+            `"${card.color_rel?.color || ''}"`,
+            `"${auto}"`,
+            `"${relic}"`,
+            `"${card.notes || ''}"`
+          ]
+          
+          return row.join(',')
+        })
+      ].join('\n')
+
+      // Download file
+      const blob = new Blob([csvData], { type: 'text/csv' })
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `${downloadFilename}.csv`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
+    } catch (error) {
+      console.error('Error downloading data:', error)
+    }
+  }
+
   if (loading) {
     return (
       <div className="card-table-loading">
@@ -216,6 +299,7 @@ const CardTable = ({
           {showSearch && (
             <div className="card-table-search-container">
               <input
+                ref={searchInputRef}
                 type="text"
                 placeholder="Search cards..."
                 value={searchQuery}
@@ -241,7 +325,7 @@ const CardTable = ({
                   onClick={onBulkSelectionToggle}
                   title="Multiple selection mode"
                 >
-                  <Icon name="check-square" size={16} />
+                  <Icon name="list" size={16} />
                   Multiple
                 </button>
               </div>
@@ -265,8 +349,8 @@ const CardTable = ({
       <div 
         className="card-table-wrapper"
         style={{ 
-          maxHeight: maxHeight || 'none',
-          overflowY: maxHeight ? 'auto' : 'hidden'
+          maxHeight: maxHeight,
+          overflowY: maxHeight === 'none' ? 'hidden' : 'auto'
         }}
       >
         <table className="card-table">
@@ -289,7 +373,9 @@ const CardTable = ({
                           />
                         </div>
                       ) : (
-                        "ADD"
+                        <div className="card-table-header-content">
+                          ADD
+                        </div>
                       )}
                       <ResizeHandle columnKey="checkbox" />
                     </div>
@@ -336,10 +422,26 @@ const CardTable = ({
                   <ResizeHandle columnKey="print_run" />
                 </div>
               </th>
-              <th className="attributes-header" style={{ width: columnWidths.attributes }}>
+              <th 
+                className="sortable auto-header" 
+                style={{ width: columnWidths.auto }}
+              >
                 <div className="card-table-header-with-resize">
-                  ATTRIBUTES
-                  <ResizeHandle columnKey="attributes" />
+                  <div className="card-table-header-content" onClick={() => handleSort('is_autograph')}>
+                    AUTO <SortIcon field="is_autograph" />
+                  </div>
+                  <ResizeHandle columnKey="auto" />
+                </div>
+              </th>
+              <th 
+                className="sortable relic-header" 
+                style={{ width: columnWidths.relic }}
+              >
+                <div className="card-table-header-with-resize">
+                  <div className="card-table-header-content" onClick={() => handleSort('is_relic')}>
+                    RELIC <SortIcon field="is_relic" />
+                  </div>
+                  <ResizeHandle columnKey="relic" />
                 </div>
               </th>
               <th className="notes-header" style={{ width: columnWidths.notes }}>
@@ -350,7 +452,7 @@ const CardTable = ({
             </tr>
           </thead>
           <tbody>
-            {sortedCards.map((card, cardIndex) => {
+            {sortedCards.map((card) => {
               const isOwned = isAuthenticated && (card.user_card_count > 0)
               
               return (
@@ -435,20 +537,20 @@ const CardTable = ({
                     </span>
                   </td>
                   <td className="color-cell">
-                    {card.color_name && (
+                    {card.color_rel?.color && (
                       <span 
                         className="color-tag"
                         style={{
-                          backgroundColor: card.color_hex_value || '#ec4899',
-                          color: card.color_hex_value ? (
-                            parseInt(card.color_hex_value.slice(1, 3), 16) * 0.299 +
-                            parseInt(card.color_hex_value.slice(3, 5), 16) * 0.587 +
-                            parseInt(card.color_hex_value.slice(5, 7), 16) * 0.114 > 186
+                          backgroundColor: card.color_rel?.hex_color || '#ec4899',
+                          color: card.color_rel?.hex_color ? (
+                            parseInt(card.color_rel.hex_color.slice(1, 3), 16) * 0.299 +
+                            parseInt(card.color_rel.hex_color.slice(3, 5), 16) * 0.587 +
+                            parseInt(card.color_rel.hex_color.slice(5, 7), 16) * 0.114 > 128
                             ? '#000000' : '#ffffff'
                           ) : '#ffffff'
                         }}
                       >
-                        {card.color_name}
+                        {card.color_rel.color}
                       </span>
                     )}
                   </td>
@@ -459,11 +561,11 @@ const CardTable = ({
                       </span>
                     )}
                   </td>
-                  <td className="attributes-cell">
-                    <div className="attribute-tags">
-                      {card.is_autograph && <span className="cardcard-tag cardcard-insert cardcard-rc-inline">AUTO</span>}
-                      {card.is_relic && <span className="cardcard-tag cardcard-relic cardcard-rc-inline">RELIC</span>}
-                    </div>
+                  <td className="auto-cell">
+                    {card.is_autograph && <span className="cardcard-tag cardcard-insert">AUTO</span>}
+                  </td>
+                  <td className="relic-cell">
+                    {card.is_relic && <span className="cardcard-tag cardcard-relic">RELIC</span>}
                   </td>
                   <td className="notes-cell">
                     {card.notes}
@@ -481,6 +583,20 @@ const CardTable = ({
           Showing {sortedCards.length} of {cards.length} cards
           {searchQuery && ` (filtered by "${searchQuery}")`}
         </div>
+        
+        {showDownload && (
+          <div className="card-table-actions">
+            <button 
+              className="card-table-download-button"
+              onClick={handleDownload}
+              disabled={sortedCards.length === 0}
+              title="Download table data as CSV"
+            >
+              <Icon name="download" size={16} />
+              Download
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )

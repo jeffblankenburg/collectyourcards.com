@@ -1,0 +1,116 @@
+/* Photo Count Hover Component */
+.photo-count-container {
+  position: relative;
+  display: inline-block;
+  overflow: visible; /* Ensure container doesn't clip */
+}
+
+.photo-thumbnails-strip {
+  /* Position is now handled by inline styles - fixed positioning */
+  background: rgba(0, 0, 0, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  gap: 10px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  z-index: 9999;
+  pointer-events: none; /* Don't interfere with interactions */
+  animation: fadeInUp 0.2s ease;
+  white-space: nowrap;
+  max-width: 500px;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.photo-thumbnails-strip::-webkit-scrollbar {
+  height: 3px;
+}
+
+.photo-thumbnails-strip::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+}
+
+.photo-thumbnails-strip::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 2px;
+}
+
+.photo-thumbnail {
+  position: relative;
+  height: 100px; /* Set consistent height */
+  width: auto; /* Let width adjust to maintain aspect ratio */
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  flex-shrink: 0; /* Don't shrink thumbnails */
+  background: rgba(255, 255, 255, 0.05);
+  transition: transform 0.2s ease, border-color 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.photo-thumbnail img {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain; /* Show full image, maintain aspect ratio */
+  transition: opacity 0.2s, transform 0.2s;
+}
+
+.photo-thumbnail:hover {
+  transform: scale(1.05);
+  border-color: rgba(59, 130, 246, 0.4);
+}
+
+.photo-thumbnail:hover img {
+  opacity: 0.9;
+}
+
+
+/* Animation */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .photo-thumbnails-strip {
+    max-width: 350px; /* Larger for mobile too */
+    padding: 8px;
+    gap: 6px;
+    top: -85px; /* Adjust for smaller mobile thumbnails */
+  }
+  
+  .photo-thumbnail {
+    height: 80px; /* Smaller height for mobile */
+    width: auto; /* Let width adjust naturally */
+  }
+  
+}
+
+/* Handle edge positioning - if near right edge, position to the left */
+.photo-count-container:last-child .photo-thumbnails-strip,
+.photo-count-container:nth-last-child(2) .photo-thumbnails-strip {
+  left: auto;
+  right: 0;
+  transform: none;
+}
+
+/* Handle edge positioning - if near left edge, position to the right */
+.photo-count-container:first-child .photo-thumbnails-strip,
+.photo-count-container:nth-child(2) .photo-thumbnails-strip {
+  left: 0;
+  transform: none;
+}

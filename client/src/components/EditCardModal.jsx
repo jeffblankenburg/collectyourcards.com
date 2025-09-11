@@ -10,7 +10,9 @@ const EditCardModal = ({
   isOpen, 
   onClose, 
   card, 
-  onCardUpdated 
+  onCardUpdated,
+  preloadedLocations = [],
+  preloadedGradingAgencies = []
 }) => {
   const { user } = useAuth()
   const { success, error } = useToast()
@@ -29,6 +31,8 @@ const EditCardModal = ({
   const [draggedPhotoId, setDraggedPhotoId] = useState(null)
   const [dragOverPhotoId, setDragOverPhotoId] = useState(null)
   const [reordering, setReordering] = useState(false)
+  const [newLocationName, setNewLocationName] = useState('')
+  const [showNewLocationInput, setShowNewLocationInput] = useState(false)
   
   const [formData, setFormData] = useState({
     random_code: '',
@@ -45,27 +49,31 @@ const EditCardModal = ({
 
   useEffect(() => {
     if (isOpen && card) {
-      loadLocations()
-      loadGradingAgencies()
+      // Use preloaded data if available
+      if (preloadedLocations.length > 0) {
+        setLocations(preloadedLocations)
+      } else {
+        loadLocations()
+      }
+      
+      if (preloadedGradingAgencies.length > 0) {
+        setGradingAgencies(preloadedGradingAgencies)
+      } else {
+        loadGradingAgencies()
+      }
+      
+      // Always load photos as they're card-specific
       loadExistingPhotos()
-    }
-  }, [isOpen, card])
-
-  // Populate form after locations and grading agencies are loaded
-  useEffect(() => {
-    if (isOpen && card && locations.length > 0 && gradingAgencies.length > 0) {
+      
+      // Populate form immediately
       populateForm()
     }
-  }, [isOpen, card, locations, gradingAgencies])
+  }, [isOpen, card, preloadedLocations, preloadedGradingAgencies])
 
   const populateForm = () => {
     if (card) {
       // For collection cards, we need to find the user_location from the location_name
       const userLocationId = locations.find(loc => loc.location === card.location_name)?.user_location_id || ''
-      
-      console.log('Populating form with card data:', card)
-      console.log('Available grading agencies:', gradingAgencies)
-      console.log('Card grading agency:', card.grading_agency)
       
       const newFormData = {
         random_code: card.random_code || '',
@@ -80,7 +88,6 @@ const EditCardModal = ({
         grade_id: card.grade_id || ''
       }
       
-      console.log('Setting form data:', newFormData)
       setFormData(newFormData)
       
       // Show sections if they have data
@@ -91,12 +98,9 @@ const EditCardModal = ({
 
   const loadLocations = async () => {
     try {
-      console.log('Loading user locations...')
       const response = await axios.get('/api/user/locations')
-      console.log('Locations response:', response.data)
       setLocations(response.data.locations || [])
     } catch (err) {
-      console.error('Error loading locations:', err.response?.data || err.message)
       setLocations([])
     }
   }
@@ -107,6 +111,29 @@ const EditCardModal = ({
       setGradingAgencies(response.data.agencies || [])
     } catch (err) {
       console.error('Error loading grading agencies:', err)
+    }
+  }
+
+  const handleCreateLocation = async () => {
+    if (!newLocationName.trim()) {
+      error('Please enter a location name')
+      return
+    }
+
+    try {
+      const response = await axios.post('/api/user/locations', {
+        location: newLocationName.trim()
+      })
+      
+      const newLocation = response.data.location
+      setLocations([...locations, newLocation])
+      setFormData(prev => ({...prev, user_location: newLocation.user_location_id.toString()}))
+      setNewLocationName('')
+      setShowNewLocationInput(false)
+      success('Location created successfully')
+    } catch (err) {
+      console.error('Error creating location:', err)
+      error(err.response?.data?.message || 'Failed to create location')
     }
   }
 
@@ -381,9 +408,12 @@ const EditCardModal = ({
     return luminance > 0.5 ? '#000000' : '#ffffff'
   }
 
+  // Don't render anything if modal is not open
+  if (!isOpen) return null
+
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content add-card-modal" onClick={e => e.stopPropagation()}>
+    <div className="edit-modal-overlay" onClick={onClose}>
+      <div className="modal-content edit-card-modal" onClick={e => e.stopPropagation()}>
         {/* Card Header */}
         <div className="card-header">
           <button className="modal-close" onClick={onClose}>
@@ -469,18 +499,60 @@ const EditCardModal = ({
 
               <div className={`form-group ${!hasSerial ? 'full-width' : ''}`}>
                 <label>Location</label>
-                <select
-                  name="user_location"
-                  value={formData.user_location}
-                  onChange={handleInputChange}
-                >
-                  <option value="">Select location</option>
-                  {locations.map(location => (
-                    <option key={location.user_location_id} value={location.user_location_id}>
-                      {location.location}
-                    </option>
-                  ))}
-                </select>
+                {!showNewLocationInput ? (
+                  <div className="location-select-row">
+                    <select
+                      name="user_location"
+                      value={formData.user_location}
+                      onChange={handleInputChange}
+                      className="form-select"
+                    >
+                      <option value="">Select location</option>
+                      {locations.map(location => (
+                        <option key={location.user_location_id} value={location.user_location_id}>
+                          {location.location}
+                        </option>
+                      ))}
+                    </select>
+                    <button 
+                      type="button" 
+                      className="new-location-btn"
+                      onClick={() => setShowNewLocationInput(true)}
+                      title="Create new location"
+                    >
+                      <Icon name="plus" size={16} />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="new-location-input">
+                    <input
+                      type="text"
+                      placeholder="Enter location name"
+                      value={newLocationName}
+                      onChange={(e) => setNewLocationName(e.target.value)}
+                      className="form-input"
+                      onKeyPress={(e) => e.key === 'Enter' && handleCreateLocation()}
+                      autoFocus
+                    />
+                    <button 
+                      type="button" 
+                      className="create-location-btn"
+                      onClick={handleCreateLocation}
+                    >
+                      <Icon name="check" size={16} />
+                    </button>
+                    <button 
+                      type="button" 
+                      className="cancel-location-btn"
+                      onClick={() => {
+                        setShowNewLocationInput(false)
+                        setNewLocationName('')
+                      }}
+                    >
+                      <Icon name="x" size={16} />
+                    </button>
+                  </div>
+                )}
               </div>
               <div className="form-group">
                 <label>Notes</label>

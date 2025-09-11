@@ -1,6 +1,8 @@
 import React, { useState, useMemo } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import Icon from '../Icon'
+import { CardCard, GalleryCard } from '../cards'
+import PhotoCountHover from './PhotoCountHover'
 import './CollectionTableScoped.css'
 
 /**
@@ -30,7 +32,9 @@ const CollectionTable = ({
   onViewModeChange = null,
   searchQuery = '',
   onSearchChange = null,
-  maxHeight = null // Custom height for the table wrapper
+  maxHeight = null, // Custom height for the table wrapper
+  showDownload = true,
+  downloadFilename = 'collection'
 }) => {
   const { isAuthenticated } = useAuth()
   const [sortField, setSortField] = useState('series_name')
@@ -46,11 +50,13 @@ const CollectionTable = ({
     series: 300,       // Generous width for series names (most important)
     serial: 110,       // Width for "SERIAL #" header text
     color: 120,        // Fixed width for color tags
-    attributes: 140,   // Width for "ATTRIBUTES" header text
+    photos: 100,       // Width for photo count - repositioned after COLOR
+    auto: 80,          // Width for "AUTO" column (split from attributes)
+    relic: 80,         // Width for "RELIC" column (split from attributes)
     price: 130,        // Width for "PURCHASE $" header text
     value: 140,        // Width for "ESTIMATED $" header text
     current_value: 120, // Width for "CURRENT $" header text
-    location: 150,     // Fixed width for location names
+    location: 200,     // Wider width for location names like "OFFICE ALPHABET BOX"
     grade: 100,        // Fixed width for grades
     am_auto: 100,      // Width for "AM AUTO" header text
     notes: 200,        // Generous width for notes
@@ -102,6 +108,9 @@ const CollectionTable = ({
       if (card.grade && String(card.grade).includes(query)) return true
       if (card.grading_agency_name?.toLowerCase().includes(query)) return true
       
+      // Search in photo count
+      if (card.photo_count && String(card.photo_count).includes(query)) return true
+      
       // Search in notes
       if (card.notes?.toLowerCase().includes(query)) return true
       
@@ -124,7 +133,15 @@ const CollectionTable = ({
       } else if (sortField === 'series_name') {
         aVal = a.series_rel?.name || ''
         bVal = b.series_rel?.name || ''
-      } else if (['purchase_price', 'estimated_value', 'current_value', 'grade', 'serial_number'].includes(sortField)) {
+      } else if (sortField === 'color') {
+        aVal = a.color_rel?.color || ''
+        bVal = b.color_rel?.color || ''
+      } else if (sortField === 'is_autograph' || sortField === 'is_relic') {
+        // Boolean sorting: true values first when ascending
+        aVal = a[sortField] ? 1 : 0
+        bVal = b[sortField] ? 1 : 0
+        return sortDirection === 'asc' ? bVal - aVal : aVal - bVal
+      } else if (['purchase_price', 'estimated_value', 'current_value', 'grade', 'serial_number', 'photo_count'].includes(sortField)) {
         // Numeric sorting
         aVal = parseFloat(aVal) || 0
         bVal = parseFloat(bVal) || 0
@@ -170,7 +187,7 @@ const CollectionTable = ({
 
   const SortIcon = ({ field }) => {
     if (sortField !== field) {
-      return <Icon name="chevron-up" size={14} className="collection-table-sort-icon collection-table-sort-neutral" />
+      return null // Don't show any icon when column is not sorted
     }
     
     return (
@@ -193,7 +210,15 @@ const CollectionTable = ({
     
     const handleMouseMove = (e) => {
       const diff = e.clientX - startX
-      const newWidth = Math.max(50, startWidth + diff) // Minimum 50px width
+      // Set appropriate minimum widths for different column types
+      const minWidths = {
+        photos: 80,    // Minimum for "PHOTOS" header and count display
+        edit: 50,      // Minimum for edit buttons
+        favorite: 50,  // Minimum for favorite buttons
+        delete: 50     // Minimum for delete buttons
+      }
+      const minWidth = minWidths[columnKey] || 50 // Default 50px minimum
+      const newWidth = Math.max(minWidth, startWidth + diff)
       
       setColumnWidths(prev => ({
         ...prev,
@@ -227,6 +252,92 @@ const CollectionTable = ({
       style: 'currency',
       currency: 'USD'
     }).format(value)
+  }
+
+  const handleDownload = async () => {
+    try {
+      const dataToExport = sortedCards
+      
+      // Create headers that match the table columns
+      const headers = [
+        'Code',
+        'Card #',
+        'Player(s)',
+        'Series',
+        'Serial #',
+        'Color',
+        'Photos',
+        'Auto',
+        'Relic',
+        'Purchase Price',
+        'Estimated Value',
+        'Current Value',
+        'Location',
+        'Grade',
+        'AM Auto',
+        'Notes'
+      ]
+
+      const csvData = [
+        headers.join(','),
+        ...dataToExport.map(card => {
+          // Format players
+          const players = card.card_player_teams?.map(cpt => 
+            `${cpt.player?.first_name || ''} ${cpt.player?.last_name || ''}`.trim()
+          ).join('; ') || ''
+          
+          // Format serial number like the table
+          const serialNumber = card.serial_number && card.print_run ? 
+            `${card.serial_number}/${card.print_run}` : 
+            card.serial_number || (card.print_run ? `/${card.print_run}` : '')
+          
+          // Format auto and relic separately
+          const auto = card.is_autograph ? 'AUTO' : ''
+          const relic = card.is_relic ? 'RELIC' : ''
+
+          // Format grade
+          const grade = card.grade ? (
+            card.grading_agency_abbr ? 
+              `${card.grading_agency_abbr} ${card.grade}` : 
+              String(card.grade)
+          ) : ''
+
+          const row = [
+            `"${card.random_code || ''}"`,
+            `"${card.card_number || ''}"`,
+            `"${players}"`,
+            `"${card.series_rel?.name || ''}"`,
+            `"${serialNumber}"`,
+            `"${card.color_rel?.color || ''}"`,
+            `"${card.photo_count || 0}"`,
+            `"${auto}"`,
+            `"${relic}"`,
+            `"${card.purchase_price ? formatCurrency(card.purchase_price) : ''}"`,
+            `"${card.estimated_value ? formatCurrency(card.estimated_value) : ''}"`,
+            `"${card.current_value ? formatCurrency(card.current_value) : ''}"`,
+            `"${card.location_name || ''}"`,
+            `"${grade}"`,
+            `"${card.aftermarket_autograph ? '✓' : ''}"`,
+            `"${card.notes || ''}"`
+          ]
+          
+          return row.join(',')
+        })
+      ].join('\n')
+
+      // Download file
+      const blob = new Blob([csvData], { type: 'text/csv' })
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `${downloadFilename}.csv`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
+    } catch (error) {
+      console.error('Error downloading data:', error)
+    }
   }
 
   if (loading) {
@@ -275,63 +386,18 @@ const CollectionTable = ({
           )}
         </div>
 
-        {/* Gallery Grid */}
-        <div className="collection-gallery-grid">
+        {/* Gallery Grid using GalleryCard component */}
+        <div className="gallery-cards-grid">
           {sortedCards.map(card => (
-            <div 
+            <GalleryCard 
               key={card.user_card_id}
-              className="gallery-card"
+              card={card}
               onClick={() => onCardClick?.(card)}
-            >
-              <div className="gallery-card-content">
-                <div className="gallery-header">
-                  <div className="gallery-card-number">#{card.card_number}</div>
-                  <div className="gallery-actions">
-                    <button
-                      className={`favorite-btn ${card.is_special ? 'active' : ''}`}
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        onFavoriteToggle?.(card)
-                      }}
-                      title={card.is_special ? "Remove from favorites" : "Add to favorites"}
-                    >
-                      <Icon name="star" size={14} />
-                    </button>
-                  </div>
-                </div>
-                
-                <div className="gallery-player">
-                  {card.card_player_teams?.map((cpt, index) => (
-                    <div key={index} className="gallery-player-info">
-                      {cpt.team && (
-                        <div 
-                          className="team-circle-base team-circle-sm"
-                          style={{
-                            '--primary-color': cpt.team.primary_color || '#333',
-                            '--secondary-color': cpt.team.secondary_color || '#666'
-                          }}
-                        >
-                          {cpt.team.abbreviation}
-                        </div>
-                      )}
-                      <span className="gallery-player-name">
-                        {cpt.player?.first_name} {cpt.player?.last_name}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-                
-                <div className="gallery-series">{card.series_rel?.name}</div>
-                
-                {card.random_code && (
-                  <div className="gallery-code">{card.random_code}</div>
-                )}
-                
-                {card.estimated_value && (
-                  <div className="gallery-value">{formatCurrency(card.estimated_value)}</div>
-                )}
-              </div>
-            </div>
+              onFavoriteToggle={onFavoriteToggle}
+              showFavorite={!!onFavoriteToggle}
+              isFavorite={card.is_special}
+              imageUrl={card.primary_photo_url || card.front_image_url}
+            />
           ))}
         </div>
 
@@ -341,6 +407,20 @@ const CollectionTable = ({
             Showing {sortedCards.length} of {cards.length} cards
             {searchQuery && ` (filtered by "${searchQuery}")`}
           </div>
+          
+          {showDownload && (
+            <div className="collection-table-actions">
+              <button 
+                className="collection-table-download-button"
+                onClick={handleDownload}
+                disabled={sortedCards.length === 0}
+                title="Download table data as CSV"
+              >
+                <Icon name="download" size={16} />
+                Download
+              </button>
+            </div>
+          )}
         </div>
       </div>
     )
@@ -403,10 +483,10 @@ const CollectionTable = ({
                 CODE
               </th>
               <th 
-                className="sortable card-header"
+                className="sortable collection-table-card-header"
                 style={{ width: columnWidths.card_number }}
               >
-                <div className="collection-table-header-with-resize">
+                <div className="header-with-resize">
                   <div className="collection-table-header-content" onClick={() => handleSort('card_number')}>
                     CARD # <SortIcon field="card_number" />
                   </div>
@@ -417,7 +497,7 @@ const CollectionTable = ({
                 className="sortable player-header"
                 style={{ width: columnWidths.player }}
               >
-                <div className="collection-table-header-with-resize">
+                <div className="header-with-resize">
                   <div className="collection-table-header-content" onClick={() => handleSort('player_name')}>
                     PLAYER(S) <SortIcon field="player_name" />
                   </div>
@@ -428,7 +508,7 @@ const CollectionTable = ({
                 className="sortable collection-table-series-header"
                 style={{ width: columnWidths.series }}
               >
-                <div className="collection-table-header-with-resize">
+                <div className="header-with-resize">
                   <div className="collection-table-header-content" onClick={() => handleSort('series_name')}>
                     SERIES <SortIcon field="series_name" />
                   </div>
@@ -439,29 +519,62 @@ const CollectionTable = ({
                 className="sortable serial-header"
                 style={{ width: columnWidths.serial }}
               >
-                <div className="collection-table-header-with-resize">
+                <div className="header-with-resize">
                   <div className="collection-table-header-content" onClick={() => handleSort('serial_number')}>
                     SERIAL # <SortIcon field="serial_number" />
                   </div>
                   <ResizeHandle columnKey="serial" />
                 </div>
               </th>
-              <th className="color-header" style={{ width: columnWidths.color }}>
-                <div className="collection-table-header-with-resize">
-                  COLOR
+              <th 
+                className="sortable color-header" 
+                style={{ width: columnWidths.color }}
+              >
+                <div className="header-with-resize">
+                  <div className="collection-table-header-content" onClick={() => handleSort('color')}>
+                    COLOR <SortIcon field="color" />
+                  </div>
+                  <ResizeHandle columnKey="color" />
                 </div>
               </th>
-              <th className="attributes-header" style={{ width: columnWidths.attributes }}>
-                <div className="collection-table-header-with-resize">
-                  ATTRIBUTES
-                  <ResizeHandle columnKey="attributes" />
+              <th 
+                className="sortable photos-header"
+                style={{ width: columnWidths.photos }}
+              >
+                <div className="header-with-resize">
+                  <div className="collection-table-header-content" onClick={() => handleSort('photo_count')}>
+                    PHOTOS <SortIcon field="photo_count" />
+                  </div>
+                  <ResizeHandle columnKey="photos" />
+                </div>
+              </th>
+              <th 
+                className="sortable auto-header" 
+                style={{ width: columnWidths.auto }}
+              >
+                <div className="header-with-resize">
+                  <div className="collection-table-header-content" onClick={() => handleSort('is_autograph')}>
+                    AUTO <SortIcon field="is_autograph" />
+                  </div>
+                  <ResizeHandle columnKey="auto" />
+                </div>
+              </th>
+              <th 
+                className="sortable relic-header" 
+                style={{ width: columnWidths.relic }}
+              >
+                <div className="header-with-resize">
+                  <div className="collection-table-header-content" onClick={() => handleSort('is_relic')}>
+                    RELIC <SortIcon field="is_relic" />
+                  </div>
+                  <ResizeHandle columnKey="relic" />
                 </div>
               </th>
               <th 
                 className="sortable price-header"
                 style={{ width: columnWidths.price }}
               >
-                <div className="collection-table-header-with-resize">
+                <div className="header-with-resize">
                   <div className="collection-table-header-content" onClick={() => handleSort('purchase_price')}>
                     PURCHASE $ <SortIcon field="purchase_price" />
                   </div>
@@ -471,7 +584,7 @@ const CollectionTable = ({
                 className="sortable value-header"
                 style={{ width: columnWidths.value }}
               >
-                <div className="collection-table-header-with-resize">
+                <div className="header-with-resize">
                   <div className="collection-table-header-content" onClick={() => handleSort('estimated_value')}>
                     ESTIMATED $ <SortIcon field="estimated_value" />
                   </div>
@@ -481,7 +594,7 @@ const CollectionTable = ({
                 className="sortable current-value-header"
                 style={{ width: columnWidths.current_value }}
               >
-                <div className="collection-table-header-with-resize">
+                <div className="header-with-resize">
                   <div className="collection-table-header-content" onClick={() => handleSort('current_value')}>
                     CURRENT $ <SortIcon field="current_value" />
                   </div>
@@ -491,7 +604,7 @@ const CollectionTable = ({
                 className="sortable location-header"
                 style={{ width: columnWidths.location }}
               >
-                <div className="collection-table-header-with-resize">
+                <div className="header-with-resize">
                   <div className="collection-table-header-content" onClick={() => handleSort('location_name')}>
                     LOCATION <SortIcon field="location_name" />
                   </div>
@@ -501,20 +614,20 @@ const CollectionTable = ({
                 className="sortable grade-header"
                 style={{ width: columnWidths.grade }}
               >
-                <div className="collection-table-header-with-resize">
+                <div className="header-with-resize">
                   <div className="collection-table-header-content" onClick={() => handleSort('grade')}>
                     GRADE <SortIcon field="grade" />
                   </div>
                 </div>
               </th>
               <th className="am-auto-header" style={{ width: columnWidths.am_auto }}>
-                <div className="collection-table-header-with-resize">
+                <div className="header-with-resize">
                   AM AUTO
                   <ResizeHandle columnKey="am_auto" />
                 </div>
               </th>
               <th className="notes-header" style={{ width: columnWidths.notes }}>
-                <div className="collection-table-header-with-resize">
+                <div className="header-with-resize">
                   NOTES
                 </div>
               </th>
@@ -598,13 +711,14 @@ const CollectionTable = ({
                 <td className="color-cell">
                   {card.color_rel?.color && (
                     <span 
-                      className="color-tag"
+                      className="cardcard-tag cardcard-color"
                       style={{
                         backgroundColor: card.color_rel?.hex_color || '#ec4899',
                         color: card.color_rel?.hex_color ? (
-                          parseInt(card.color_rel.hex_color.slice(1, 3), 16) * 0.299 +
-                          parseInt(card.color_rel.hex_color.slice(3, 5), 16) * 0.587 +
-                          parseInt(card.color_rel.hex_color.slice(5, 7), 16) * 0.114 > 186
+                          // Simple luminance calculation: if sum of RGB values > 400, it's light
+                          parseInt(card.color_rel.hex_color.slice(1, 3), 16) +
+                          parseInt(card.color_rel.hex_color.slice(3, 5), 16) +
+                          parseInt(card.color_rel.hex_color.slice(5, 7), 16) > 400
                           ? '#000000' : '#ffffff'
                         ) : '#ffffff'
                       }}
@@ -613,11 +727,17 @@ const CollectionTable = ({
                     </span>
                   )}
                 </td>
-                <td className="attributes-cell">
-                  <div className="attribute-tags">
-                    {card.is_autograph && <span className="cardcard-tag cardcard-insert cardcard-rc-inline">AUTO</span>}
-                    {card.is_relic && <span className="cardcard-tag cardcard-relic cardcard-rc-inline">RELIC</span>}
-                  </div>
+                <td className="photos-cell">
+                  <PhotoCountHover 
+                    photoCount={card.photo_count}
+                    allPhotos={card.all_photos || []}
+                  />
+                </td>
+                <td className="auto-cell">
+                  {card.is_autograph && <span className="cardcard-tag cardcard-insert">AUTO</span>}
+                </td>
+                <td className="relic-cell">
+                  {card.is_relic && <span className="cardcard-tag cardcard-relic">RELIC</span>}
                 </td>
                 <td className="price-cell">
                   {formatCurrency(card.purchase_price)}
@@ -674,9 +794,32 @@ const CollectionTable = ({
           Showing {sortedCards.length} of {cards.length} cards
           {searchQuery && ` (filtered by "${searchQuery}")`}
         </div>
+        
+        {showDownload && (
+          <div className="collection-table-actions">
+            <button 
+              className="collection-table-download-button"
+              onClick={handleDownload}
+              disabled={sortedCards.length === 0}
+              title="Download table data as CSV"
+            >
+              <Icon name="download" size={16} />
+              Download
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )
 }
 
-export default CollectionTable
+export default React.memo(CollectionTable, (prevProps, nextProps) => {
+  // Only re-render if these specific props change
+  return (
+    prevProps.cards === nextProps.cards &&
+    prevProps.loading === nextProps.loading &&
+    prevProps.searchQuery === nextProps.searchQuery &&
+    prevProps.viewMode === nextProps.viewMode &&
+    prevProps.maxHeight === nextProps.maxHeight
+  )
+})

@@ -157,6 +157,15 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
+  const updateUserAvatar = (avatarUrl) => {
+    if (user) {
+      setUser(prevUser => ({
+        ...prevUser,
+        avatar_url: avatarUrl
+      }))
+    }
+  }
+
   const value = {
     user,
     isAuthenticated,
@@ -168,7 +177,8 @@ export const AuthProvider = ({ children }) => {
     resetPassword,
     verifyEmail,
     resendVerification,
-    checkAuthStatus
+    checkAuthStatus,
+    updateUserAvatar
   }
 
   return (

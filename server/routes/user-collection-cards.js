@@ -19,26 +19,72 @@ router.get('/', async (req, res) => {
 
     console.log('Getting collection cards for user:', userId)
     
-    // Get location IDs from query parameters
-    const { location_id, include_unassigned } = req.query
+    // Get location IDs and filters from query parameters
+    const { 
+      location_id, 
+      include_unassigned, 
+      only_unassigned, 
+      series_id,
+      is_rookie,
+      is_autograph,
+      is_relic,
+      has_grade,
+      team_id
+    } = req.query
     const locationIds = Array.isArray(location_id) ? location_id : (location_id ? [location_id] : [])
     const includeUnassigned = include_unassigned === 'true'
+    const onlyUnassigned = only_unassigned === 'true'
+    const seriesFilter = series_id ? parseInt(series_id) : null
+    const rookieFilter = is_rookie === 'true'
+    const autographFilter = is_autograph === 'true'
+    const relicFilter = is_relic === 'true'
+    const gradedFilter = has_grade === 'true'
+    const teamIds = Array.isArray(team_id) ? team_id : (team_id ? [team_id] : [])
     
-    console.log('Location IDs filter:', locationIds, 'Include unassigned:', includeUnassigned)
+    console.log('Location IDs filter:', locationIds, 'Include unassigned:', includeUnassigned, 'Only unassigned:', onlyUnassigned, 'Series filter:', seriesFilter)
+    console.log('Card filters - Rookie:', rookieFilter, 'Auto:', autographFilter, 'Relic:', relicFilter, 'Graded:', gradedFilter, 'Teams:', teamIds)
     
-    // Build location filter
-    let whereClause
-    if (locationIds.length === 0) {
-      // If no specific locations selected, show all cards for the user
-      whereClause = `WHERE uc.[user] = ${parseInt(userId)}`
-    } else if (includeUnassigned) {
-      // Show selected locations AND unassigned cards
+    // Build where clause with location and series filters
+    let whereClause = `WHERE uc.[user] = ${parseInt(userId)}`
+    
+    // Add location filter
+    if (onlyUnassigned) {
+      // Show only cards without a location
+      whereClause += ` AND uc.user_location IS NULL`
+    } else if (locationIds.length > 0) {
       const locationFilter = locationIds.map(id => parseInt(id)).join(',')
-      whereClause = `WHERE uc.[user] = ${parseInt(userId)} AND (uc.user_location IN (${locationFilter}) OR uc.user_location IS NULL)`
-    } else {
-      // Show only selected locations (backward compatibility)
-      const locationFilter = locationIds.map(id => parseInt(id)).join(',')
-      whereClause = `WHERE uc.[user] = ${parseInt(userId)} AND uc.user_location IN (${locationFilter})`
+      if (includeUnassigned) {
+        // Show selected locations AND unassigned cards
+        whereClause += ` AND (uc.user_location IN (${locationFilter}) OR uc.user_location IS NULL)`
+      } else {
+        // Show only selected locations
+        whereClause += ` AND uc.user_location IN (${locationFilter})`
+      }
+    }
+    
+    // Add series filter
+    if (seriesFilter) {
+      whereClause += ` AND c.series = ${seriesFilter}`
+    }
+    
+    // Add card attribute filters
+    if (rookieFilter) {
+      whereClause += ` AND c.is_rookie = 1`
+    }
+    if (autographFilter) {
+      whereClause += ` AND c.is_autograph = 1`
+    }
+    if (relicFilter) {
+      whereClause += ` AND c.is_relic = 1`
+    }
+    if (gradedFilter) {
+      whereClause += ` AND uc.grade IS NOT NULL`
+    }
+    
+    // Add team filtering
+    if (teamIds.length > 0) {
+      const teamFilter = teamIds.map(id => parseInt(id)).join(',')
+      whereClause += ` AND t.team_id IN (${teamFilter})`
     }
     
     // Single optimized query to get all collection cards with player-team data and primary photo
@@ -77,7 +123,8 @@ router.get('/', async (req, res) => {
         t.abbreviation as team_abbr,
         t.primary_color,
         t.secondary_color,
-        ucp.photo_url as primary_photo_url
+        ucp.photo_url as primary_photo_url,
+        ISNULL(photo_count.count, 0) as photo_count
       FROM user_card uc
       JOIN card c ON uc.card = c.card_id
       JOIN series s ON c.series = s.series_id
@@ -85,6 +132,11 @@ router.get('/', async (req, res) => {
       LEFT JOIN user_location ul ON uc.user_location = ul.user_location_id
       LEFT JOIN grading_agency ga ON uc.grading_agency = ga.grading_agency_id
       LEFT JOIN user_card_photo ucp ON uc.user_card_id = ucp.user_card AND ucp.sort_order = 1
+      LEFT JOIN (
+        SELECT user_card, COUNT(*) as count
+        FROM user_card_photo
+        GROUP BY user_card
+      ) photo_count ON uc.user_card_id = photo_count.user_card
       LEFT JOIN card_player_team cpt ON cpt.card = c.card_id
       LEFT JOIN player_team pt ON cpt.player_team = pt.player_team_id
       LEFT JOIN player p ON pt.player = p.player_id
@@ -128,6 +180,7 @@ router.get('/', async (req, res) => {
           date_added: row.date_added,
           location_name: row.location_name,
           primary_photo_url: row.primary_photo_url,
+          photo_count: Number(row.photo_count) || 0,
           series_rel: {
             series_id: typeof row.series_id === 'bigint' ? Number(row.series_id) : row.series_id,
             name: row.series_name
@@ -163,6 +216,52 @@ router.get('/', async (req, res) => {
     // Convert Map to array for response
     const cards = Array.from(cardMap.values())
     
+    // Now fetch all photos for cards that have photos
+    const cardIdsWithPhotos = cards.filter(card => card.photo_count > 0).map(card => card.user_card_id)
+    
+    if (cardIdsWithPhotos.length > 0) {
+      const allPhotosQuery = `
+        SELECT 
+          user_card,
+          user_card_photo_id,
+          photo_url,
+          sort_order
+        FROM user_card_photo
+        WHERE user_card IN (${cardIdsWithPhotos.join(',')})
+        ORDER BY user_card ASC, sort_order ASC
+      `
+      
+      const allPhotosResults = await prisma.$queryRawUnsafe(allPhotosQuery)
+      
+      // Group photos by user_card_id
+      const photosByCard = new Map()
+      allPhotosResults.forEach(photo => {
+        const userCardId = Number(photo.user_card)
+        if (!photosByCard.has(userCardId)) {
+          photosByCard.set(userCardId, [])
+        }
+        photosByCard.get(userCardId).push({
+          user_card_photo_id: Number(photo.user_card_photo_id),
+          photo_url: photo.photo_url,
+          sort_order: photo.sort_order
+        })
+      })
+      
+      // Add all photos to each card
+      cards.forEach(card => {
+        if (photosByCard.has(card.user_card_id)) {
+          card.all_photos = photosByCard.get(card.user_card_id)
+        } else {
+          card.all_photos = []
+        }
+      })
+    } else {
+      // No cards have photos, add empty arrays
+      cards.forEach(card => {
+        card.all_photos = []
+      })
+    }
+    
     // Sort cards by series name, then sort order, then date added (matching original query intent)
     cards.sort((a, b) => {
       // First by series name
@@ -193,6 +292,69 @@ router.get('/', async (req, res) => {
     res.status(500).json({
       error: 'Database error',
       message: 'Failed to get collection cards'
+    })
+  }
+})
+
+// GET /api/user/collection/teams-with-players - Get teams with unique player counts from user's collection
+router.get('/teams-with-players', async (req, res) => {
+  try {
+    const userId = req.user?.userId
+    if (!userId) {
+      return res.status(401).json({
+        error: 'Authentication error',
+        message: 'User ID not found in authentication token'
+      })
+    }
+
+    console.log('Getting teams with player counts for user:', userId)
+    
+    // Query to get teams with unique player counts from user's collection
+    const teamsQuery = `
+      SELECT 
+        t.team_id,
+        t.name,
+        t.abbreviation,
+        t.primary_color,
+        t.secondary_color,
+        COUNT(DISTINCT p.player_id) as card_count
+      FROM user_card uc
+      INNER JOIN card c ON uc.card = c.card_id
+      INNER JOIN card_player_team cpt ON c.card_id = cpt.card
+      INNER JOIN player_team pt ON cpt.player_team = pt.player_team_id
+      INNER JOIN team t ON pt.team = t.team_id
+      INNER JOIN player p ON pt.player = p.player_id
+      WHERE uc.[user] = ${parseInt(userId)}
+      GROUP BY t.team_id, t.name, t.abbreviation, t.primary_color, t.secondary_color
+      HAVING COUNT(DISTINCT p.player_id) > 0
+      ORDER BY COUNT(DISTINCT p.player_id) DESC, t.name ASC
+    `
+    
+    const teamsResult = await prisma.$queryRawUnsafe(teamsQuery)
+    
+    // Process the results
+    const teams = teamsResult.map(row => ({
+      team_id: Number(row.team_id),
+      name: row.name,
+      abbreviation: row.abbreviation,
+      primary_color: row.primary_color,
+      secondary_color: row.secondary_color,
+      card_count: Number(row.card_count) // This represents unique players, not total cards
+    }))
+
+    console.log(`Found ${teams.length} teams with players in collection`)
+
+    res.json({
+      teams,
+      total: teams.length
+    })
+
+  } catch (error) {
+    console.error('Error getting teams with players:', error)
+    console.error('Error details:', error.message)
+    res.status(500).json({
+      error: 'Database error',
+      message: 'Failed to get teams with players'
     })
   }
 })

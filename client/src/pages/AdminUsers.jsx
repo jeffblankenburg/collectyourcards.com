@@ -293,7 +293,7 @@ function AdminUsers() {
       <div className="users-container">
         {loading ? (
           <div className="loading-state">
-            <Icon name="activity" size={24} className="spinning" />
+            <div className="card-icon-spinner"></div>
             <p>Loading users...</p>
           </div>
         ) : filteredUsers.length === 0 ? (
@@ -458,7 +458,7 @@ function AdminUsers() {
               >
                 {saving ? (
                   <>
-                    <Icon name="activity" size={16} className="spinning" />
+                    <div className="card-icon-spinner small"></div>
                     Saving...
                   </>
                 ) : (
@@ -550,7 +550,7 @@ function AdminUsers() {
               >
                 {creating ? (
                   <>
-                    <Icon name="activity" size={16} className="spinning" />
+                    <div className="card-icon-spinner small"></div>
                     Creating...
                   </>
                 ) : (
@@ -605,7 +605,7 @@ function AdminUsers() {
               >
                 {sendingReset ? (
                   <>
-                    <Icon name="activity" size={16} className="spinning" />
+                    <div className="card-icon-spinner small"></div>
                     Sending...
                   </>
                 ) : (

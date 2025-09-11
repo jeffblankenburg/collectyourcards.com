@@ -56,6 +56,41 @@ function Attributions() {
           </section>
 
           <section className="attribution-section">
+            <h2>Card & Collection Icons</h2>
+            <div className="attribution-grid">
+              
+              <div className="attribution-card">
+                <div className="attribution-icon">
+                  <svg width="48" height="48" viewBox="-5.0 -10.0 110.0 135.0" fill="currentColor">
+                    <path d="m76.766 7.8359h-53.531c-1.6016 0-2.8984 1.3008-2.8984 2.8984v78.535c0 1.6016 1.3008 2.8984 2.8984 2.8984h53.531c1.6016 0 2.8984-1.3008 2.8984-2.8984v-78.535c0-1.6016-1.3008-2.8984-2.8984-2.8984zm1.8984 81.43c0 1.0469-0.85156 1.8984-1.8984 1.8984h-53.531c-1.0469 0-1.8984-0.85156-1.8984-1.8984v-78.531c0-1.0469 0.85156-1.8984 1.8984-1.8984h53.531c1.0469 0 1.8984 0.85156 1.8984 1.8984v78.535z"/>
+                    <path d="m68.434 32.836h-36.867c-1.6016 0-2.8984 1.3008-2.8984 2.8984v45.199c0 1.6016 1.3008 2.8984 2.8984 2.8984h36.867c1.6016 0 2.8984-1.3008 2.8984-2.8984v-45.199c0-1.6016-1.3008-2.8984-2.8984-2.8984zm1.9023 48.098c0 1.0469-0.85156 1.8984-1.8984 1.8984h-36.867c-1.0469 0-1.8984-0.85156-1.8984-1.8984v-45.199c0-1.0469 0.85156-1.8984 1.8984-1.8984h36.867c1.0469 0 1.8984 0.85156 1.8984 1.8984z"/>
+                    <path d="m65.066 37h-30.133c-1.1562 0-2.1016 0.94141-2.1016 2.1016v17.633c0 1.1562 0.94141 2.1016 2.1016 2.1016h30.133c1.1562 0 2.1016-0.94141 2.1016-2.1016v-17.633c0-1.1562-0.94141-2.1016-2.1016-2.1016zm1.1016 19.734c0 0.60547-0.49219 1.1016-1.1016 1.1016h-30.133c-0.60547 0-1.1016-0.49219-1.1016-1.1016v-17.633c0-0.60547 0.49219-1.1016 1.1016-1.1016h30.133c0.60547 0 1.1016 0.49219 1.1016 1.1016z"/>
+                    <path d="m73.398 12h-46.801c-1.1562 0-2.1016 0.94141-2.1016 2.1016v9.3008c0 1.1562 0.94141 2.1016 2.1016 2.1016h46.801c1.1562 0 2.1016-0.94141 2.1016-2.1016v-9.3008c0-1.1562-0.94141-2.1016-2.1016-2.1016zm1.1016 11.398c0 0.60547-0.49219 1.1016-1.1016 1.1016h-46.801c-0.60547 0-1.1016-0.49219-1.1016-1.1016v-9.3008c0-0.60547 0.49219-1.1016 1.1016-1.1016h46.801c0.60547 0 1.1016 0.49219 1.1016 1.1016z"/>
+                    <path d="m70.836 16.164h-4.1641c-0.27734 0-0.5 0.22266-0.5 0.5v4.1641c0 0.27734 0.22266 0.5 0.5 0.5h4.1641c0.27734 0 0.5-0.22266 0.5-0.5v-4.1641c0-0.27734-0.22266-0.5-0.5-0.5zm-0.5 4.1719h-3.1641v-3.1641h3.1641z"/>
+                  </svg>
+                </div>
+                <div className="attribution-info">
+                  <h3>Graded Card</h3>
+                  <p>trading card game graded by Rizky Mardika from <a href="https://thenounproject.com/browse/icons/term/trading-card-game-graded/" target="_blank" rel="noopener noreferrer" title="trading card game graded Icons">Noun Project</a> (CC BY 3.0)</p>
+                </div>
+              </div>
+
+              <div className="attribution-card">
+                <div className="attribution-icon">
+                  <svg width="48" height="48" viewBox="-5.0 -10.0 110.0 135.0" fill="currentColor">
+                    <path d="m73.48 17.191c-4.2891-1.3711-8.7891-2.3711-13.352-2.9688l-2.1602-0.28906-0.10156 2.1797c-0.17969 3.9805-3.6406 7.1016-7.8711 7.1016-4.2305 0-7.6914-3.1211-7.8711-7.1016l-0.10156-2.1797-2.1602 0.28906c-4.5703 0.60156-9.0586 1.6016-13.352 2.9688l-0.39844 0.12891-19.703 17.352 13.379 15.672 5.3281-4.3711v39.828h49.75v-39.828l5.3281 4.3711 13.379-15.672-19.699-17.352-0.39844-0.12891zm6.2305 27.57-8.8281-7.2305v44.281l-41.762-0.003906v-44.281l-8.8281 7.2305-8.2812-9.6992 16.121-14.191c3.3398-1.0391 6.8008-1.8516 10.32-2.4102 1.25 5.0508 5.9492 8.7383 11.551 8.7383 5.6016 0 10.301-3.6992 11.551-8.7383 3.5195 0.55859 6.9883 1.3711 10.32 2.4102l16.121 14.191-8.2812 9.6992z"/>
+                  </svg>
+                </div>
+                <div className="attribution-info">
+                  <h3>Shirt (Relics)</h3>
+                  <p>Shirt by Kim Naces from <a href="https://thenounproject.com/browse/icons/term/shirt/" target="_blank" rel="noopener noreferrer" title="Shirt Icons">Noun Project</a> (CC BY 3.0)</p>
+                </div>
+              </div>
+
+            </div>
+          </section>
+
+          <section className="attribution-section">
             <h2>About Licensing</h2>
             <div className="license-info">
               <p>All icons from The Noun Project are used under the Creative Commons Attribution 3.0 License (CC BY 3.0), which allows us to use these icons freely as long as we provide proper attribution to the artists.</p>

@@ -656,7 +656,7 @@ function AdminSets() {
               value={searchTerm}
               onChange={handleSearch}
             />
-            {searching && <Icon name="activity" size={16} className="search-spinner spinning" />}
+            {searching && <div className="card-icon-spinner small"></div>}
           </div>
         </div>
       </div>
@@ -664,7 +664,7 @@ function AdminSets() {
       <div className="sets-content">
         {loading ? (
           <div className="loading-state">
-            <Icon name="activity" size={24} className="spinning" />
+            <div className="card-icon-spinner"></div>
             <span>Loading sets...</span>
           </div>
         ) : (
@@ -1033,7 +1033,7 @@ function AdminSets() {
               >
                 {saving ? (
                   <>
-                    <Icon name="activity" size={16} className="spinning" />
+                    <div className="card-icon-spinner small"></div>
                     Saving...
                   </>
                 ) : (

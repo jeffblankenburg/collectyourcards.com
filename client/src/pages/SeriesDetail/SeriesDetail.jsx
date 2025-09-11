@@ -4,8 +4,11 @@ import { createPortal } from 'react-dom'
 import axios from 'axios'
 import { useAuth } from '../../contexts/AuthContext'
 import Icon from '../../components/Icon'
-import AddCardModal from '../../components/AddCardModal'
+import CardTable from '../../components/tables/CardTable'
+import AddCardModal from '../../components/modals/AddCardModal'
+import BulkCardModal from '../../components/modals/BulkCardModal'
 import CommentsSection from '../../components/CommentsSection'
+import ActivityFeed from '../../components/ActivityFeed'
 import './SeriesDetail.css'
 
 
@@ -24,14 +27,16 @@ function SeriesDetail() {
   
   // Table-specific state
   const [cards, setCards] = useState([])
-  const [sortField, setSortField] = useState('sort_order')
-  const [sortDirection, setSortDirection] = useState('asc')
   const [tableLoading, setTableLoading] = useState(false)
-  const [searchQuery, setSearchQuery] = useState('')
   
   // Modal state
   const [showAddCardModal, setShowAddCardModal] = useState(false)
   const [selectedCard, setSelectedCard] = useState(null)
+  
+  // Bulk selection state
+  const [bulkSelectionMode, setBulkSelectionMode] = useState(false)
+  const [selectedCards, setSelectedCards] = useState(new Set())
+  const [showBulkActionsModal, setShowBulkActionsModal] = useState(false)
 
   // Check if user is admin
   const isAdmin = user && ['admin', 'superadmin', 'data_admin'].includes(user.role)
@@ -252,89 +257,6 @@ function SeriesDetail() {
     }
   }, [series?.series_id])
 
-  // Filter cards based on search query
-  const filteredCards = useMemo(() => {
-    if (!searchQuery.trim()) return cards
-    
-    const query = searchQuery.toLowerCase()
-    return cards.filter(card => {
-      // Search in card number
-      if (card.card_number?.toLowerCase().includes(query)) return true
-      
-      // Search in player names
-      const playerNames = card.card_player_teams?.map(cpt => 
-        `${cpt.player?.first_name || ''} ${cpt.player?.last_name || ''}`.trim()
-      ).join(' ').toLowerCase()
-      if (playerNames.includes(query)) return true
-      
-      // Search in team names
-      const teamNames = card.card_player_teams?.map(cpt => 
-        cpt.team?.name || ''
-      ).join(' ').toLowerCase()
-      if (teamNames.includes(query)) return true
-      
-      return false
-    })
-  }, [cards, searchQuery])
-
-  // Sort filtered cards
-  const sortedCards = useMemo(() => {
-    const sorted = [...filteredCards].sort((a, b) => {
-      let aVal = a[sortField]
-      let bVal = b[sortField]
-
-      // Handle special sorting cases
-      if (sortField === 'player_name') {
-        aVal = a.card_player_teams?.[0]?.player ? 
-          `${a.card_player_teams[0].player.first_name || ''} ${a.card_player_teams[0].player.last_name || ''}`.trim() : ''
-        bVal = b.card_player_teams?.[0]?.player ? 
-          `${b.card_player_teams[0].player.first_name || ''} ${b.card_player_teams[0].player.last_name || ''}`.trim() : ''
-      } else if (sortField === 'sort_order') {
-        // Handle sort_order as numeric
-        const aNum = parseInt(a.sort_order) || 0
-        const bNum = parseInt(b.sort_order) || 0
-        return sortDirection === 'asc' ? aNum - bNum : bNum - aNum
-      } else if (sortField === 'card_number') {
-        // Smart card number sorting: numeric if all are numbers, alphabetic if mixed
-        const aNum = parseInt(a.card_number)
-        const bNum = parseInt(b.card_number)
-        
-        // Check if both are valid integers and the string representations match (no letters)
-        if (!isNaN(aNum) && !isNaN(bNum) && 
-            a.card_number === aNum.toString() && 
-            b.card_number === bNum.toString()) {
-          // Both are pure integers, sort numerically
-          return sortDirection === 'asc' ? aNum - bNum : bNum - aNum
-        } else {
-          // At least one has letters, sort alphabetically
-          aVal = String(a.card_number || '').toLowerCase()
-          bVal = String(b.card_number || '').toLowerCase()
-        }
-      }
-
-      // Convert to strings for comparison (if not already handled above)
-      if (sortField !== 'card_number' || typeof aVal === 'string') {
-        aVal = String(aVal || '').toLowerCase()
-        bVal = String(bVal || '').toLowerCase()
-
-        if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1
-        if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1
-      }
-      
-      return 0
-    })
-
-    return sorted
-  }, [filteredCards, sortField, sortDirection])
-
-  const handleSort = (field) => {
-    if (sortField === field) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
-    } else {
-      setSortField(field)
-      setSortDirection('asc')
-    }
-  }
 
   const handleAddCard = (card) => {
     setSelectedCard(card)
@@ -345,20 +267,6 @@ function SeriesDetail() {
     // Reload data to get updated counts
     loadTableData()
     setShowAddCardModal(false)
-  }
-
-  const SortIcon = ({ field }) => {
-    if (sortField !== field) {
-      return <Icon name="chevron-up" size={14} className="sort-icon neutral" />
-    }
-    
-    return (
-      <Icon 
-        name={sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'} 
-        size={14} 
-        className={`sort-icon active ${sortDirection}`}
-      />
-    )
   }
 
   const handleCardClick = (card) => {
@@ -599,172 +507,24 @@ function SeriesDetail() {
 
         {/* Cards Table */}
         {series && (
-          <div className="table-wrapper">
-            {tableLoading ? (
-              <div className="series-table-loading">
-                <Icon name="activity" size={24} className="spinner" />
-                <p>Loading cards...</p>
-              </div>
-            ) : (
-              <>
-                {/* Search */}
-                <div className="table-controls">
-                  <div className="search-container">
-                    <input
-                      type="text"
-                      placeholder="Search this list..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="search-input"
-                    />
-                  </div>
-                </div>
-
-                {/* Table */}
-                <div className="table-container">
-                  <table className="cards-table">
-                    <thead>
-                      <tr>
-                        {isAuthenticated && (
-                          <>
-                            <th className="action-header">ADD</th>
-                            <th className="owned-header">OWNED</th>
-                          </>
-                        )}
-                        <th 
-                          className="sortable card-header"
-                          onClick={() => handleSort('card_number')}
-                        >
-                          <div className="header-content">
-                            Card # <SortIcon field="card_number" />
-                          </div>
-                        </th>
-                        <th 
-                          className="sortable player-header"
-                          onClick={() => handleSort('player_name')}
-                        >
-                          <div className="header-content">
-                            Player(s) <SortIcon field="player_name" />
-                          </div>
-                        </th>
-                        <th className="color-header">Color</th>
-                        <th className="attributes-header">Attributes</th>
-                        <th className="notes-header">Notes</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {sortedCards.map(card => {
-                        const isOwned = isAuthenticated && (card.user_card_count > 0)
-                        
-                        return (
-                          <tr 
-                            key={card.card_id}
-                            className={`card-row ${handleCardClick ? 'clickable' : ''} ${isOwned ? 'owned-card' : ''}`}
-                            onClick={() => handleCardClick && handleCardClick(card)}
-                          >
-                            {isAuthenticated && (
-                              <>
-                                <td className="action-cell">
-                                  <button
-                                    className="add-card-btn"
-                                    onClick={(e) => {
-                                      e.stopPropagation()
-                                      handleAddCard(card)
-                                    }}
-                                    title="Add to Collection"
-                                  >
-                                    <Icon name="plus" size={16} />
-                                  </button>
-                                </td>
-                                <td className="owned-cell">
-                                  {card.user_card_count || 0}
-                                </td>
-                              </>
-                            )}
-                            <td className="card-number-cell">
-                              {card.card_number}
-                            </td>
-                            <td className="player-cell">
-                              {card.card_player_teams?.map((cpt, index) => (
-                                <div key={index} className="player-info">
-                                  {/* Team Circle */}
-                                  {cpt.team && (
-                                    <div 
-                                      className="team-circle"
-                                      style={{
-                                        backgroundColor: cpt.team.primary_color || '#333',
-                                        borderColor: cpt.team.secondary_color || '#666',
-                                        color: '#fff'
-                                      }}
-                                      title={cpt.team.name}
-                                    >
-                                      {cpt.team.abbreviation || cpt.team.name?.slice(0, 3).toUpperCase()}
-                                    </div>
-                                  )}
-                                  <span className="player-name">
-                                    {cpt.player?.first_name} {cpt.player?.last_name}
-                                  </span>
-                                  {card.is_rookie && <span className="rc-tag">RC</span>}
-                                </div>
-                              ))}
-                            </td>
-                            <td className="color-cell">
-                              {card.color_name && (
-                                <span 
-                                  className="color-tag"
-                                  style={{
-                                    backgroundColor: card.color_hex_value || '#ec4899',
-                                    color: card.color_hex_value ? (
-                                      // Calculate if we need dark or light text
-                                      parseInt(card.color_hex_value.slice(1, 3), 16) * 0.299 +
-                                      parseInt(card.color_hex_value.slice(3, 5), 16) * 0.587 +
-                                      parseInt(card.color_hex_value.slice(5, 7), 16) * 0.114 > 186
-                                      ? '#000000' : '#ffffff'
-                                    ) : '#ffffff'
-                                  }}
-                                >
-                                  {card.color_name}
-                                </span>
-                              )}
-                            </td>
-                            <td className="attributes-cell">
-                              <div className="attribute-tags">
-                                {card.is_autograph && <span className="auto-tag">AUTO</span>}
-                                {card.is_relic && <span className="relic-tag">RELIC</span>}
-                              </div>
-                            </td>
-                            <td className="notes-cell">
-                              {card.notes}
-                            </td>
-                          </tr>
-                        )
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Footer */}
-                <div className="table-footer">
-                  <div className="table-info">
-                    Showing {sortedCards.length} of {cards.length} cards
-                    {searchQuery && ` (filtered by "${searchQuery}")`}
-                  </div>
-                  <div className="table-actions">
-                    <button 
-                      className="action-button secondary"
-                      onClick={() => {
-                        // TODO: Implement download functionality
-                        console.log('Download clicked')
-                      }}
-                    >
-                      <Icon name="import" size={16} />
-                      Download
-                    </button>
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
+          <CardTable
+            cards={cards}
+            loading={tableLoading}
+            onAddCard={handleAddCard}
+            onCardClick={handleCardClick}
+            bulkSelectionMode={bulkSelectionMode}
+            selectedCards={selectedCards}
+            onBulkSelectionToggle={(mode) => {
+              setBulkSelectionMode(mode)
+              setSelectedCards(new Set()) // Clear selections when switching modes
+            }}
+            onCardSelection={(cardIds) => setSelectedCards(cardIds)}
+            onBulkAction={() => setShowBulkActionsModal(true)}
+            defaultSort="sort_order"
+            downloadFilename={`${series.name?.replace(/[^a-zA-Z0-9]/g, '_') || 'series'}_cards`}
+            maxHeight="800px"
+            autoFocusSearch={false}
+          />
         )}
 
       </div>
@@ -780,13 +540,36 @@ function SeriesDetail() {
         document.body
       )}
 
-      {/* Comments Section */}
+      {/* Bulk Actions Modal */}
+      {showBulkActionsModal && createPortal(
+        <BulkCardModal
+          isOpen={showBulkActionsModal}
+          onClose={() => {
+            setShowBulkActionsModal(false)
+            setSelectedCards(new Set()) // Clear selections after bulk action
+          }}
+          series={series}
+          selectedCardIds={Array.from(selectedCards)}
+          selectedCards={cards.filter(card => selectedCards.has(card.card_id))}
+          onComplete={() => {
+            loadTableData() // Reload data to get updated counts
+            setShowBulkActionsModal(false)
+            setSelectedCards(new Set())
+          }}
+        />,
+        document.body
+      )}
+
+      {/* Social Section - Discussion and Activity Feed side-by-side */}
       {series && (
-        <CommentsSection
-          itemType="series"
-          itemId={series.series_id}
-          title={`Discussion about ${series.name}`}
-        />
+        <div className="social-section">
+          <CommentsSection
+            itemType="series"
+            itemId={series.series_id}
+            title={`Discussion about ${series.name}`}
+          />
+          <ActivityFeed seriesId={series.series_id} title="Recent Activity" />
+        </div>
       )}
 
       {/* Admin Edit Button */}

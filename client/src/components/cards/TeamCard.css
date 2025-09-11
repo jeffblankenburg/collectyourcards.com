@@ -54,11 +54,20 @@
   min-height: 0;
 }
 
-/* Team Name Section - At the very top */
+/* Header Row Layout */
+.teamcard-header-row {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  align-items: flex-start;
+}
+
+/* Team Name Section - Left side of header row */
 .teamcard-name-section {
+  flex: 2;
   display: block;
   margin: 0;
-  padding: 0 0 0.5rem 0;
+  padding: 0;
 }
 
 .teamcard-name {
@@ -122,6 +131,14 @@
 .teamcard-team-circle:hover {
   transform: scale(1.1);
   box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2);
+}
+
+/* Large Team Circle for TeamCard */
+.team-circle-xl {
+  width: 100px;
+  height: 100px;
+  font-size: 1.5rem;
+  border-width: 4px;
 }
 
 /* Team Stats Section */

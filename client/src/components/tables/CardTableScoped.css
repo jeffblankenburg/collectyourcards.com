@@ -147,14 +147,17 @@
   text-align: left; /* Default alignment */
   box-sizing: border-box;
   min-width: 60px; /* Prevent header crushing on small screens */
+  border-radius: 0; /* Override any inherited rounded corners */
 }
 
 .card-table-container .card-table thead th:first-child {
   border-left: none;
+  border-top-left-radius: 8px; /* Match table wrapper's top-left corner */
 }
 
 .card-table-container .card-table thead th:last-child {
   border-right: none;
+  border-top-right-radius: 8px; /* Match table wrapper's top-right corner */
 }
 
 .card-table-container .card-table thead th.sortable {
@@ -234,9 +237,11 @@
   text-align: center;
 }
 
-.card-table-container .attributes-header,
-.card-table-container .attributes-cell {
-  text-align: left;
+.card-table-container .auto-header,
+.card-table-container .auto-cell,
+.card-table-container .relic-header,
+.card-table-container .relic-cell {
+  text-align: center;
 }
 
 .card-table-container .notes-header,
@@ -448,6 +453,40 @@
   border-top: none;
   border-radius: 0 0 8px 8px;
   margin-top: -1px;
+}
+
+.card-table-container .card-table-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.card-table-container .card-table-download-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.card-table-container .card-table-download-button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: rgba(255, 255, 255, 0.9);
+  transform: translateY(-1px);
+}
+
+.card-table-container .card-table-download-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* Column resizing */

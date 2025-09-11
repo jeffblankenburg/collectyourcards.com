@@ -50,7 +50,7 @@ function Dashboard() {
             </div>
           </div>
           <div className="stat-card">
-            <div className="stat-icon"><Icon name="card" size={24} /></div>
+            <div className="stat-icon"><Icon name="layers" size={24} /></div>
             <div className="stat-content">
               <h3>Cards</h3>
               <p className="stat-number">0</p>

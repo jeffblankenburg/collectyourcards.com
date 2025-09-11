@@ -232,6 +232,167 @@
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
 }
 
+/* Card Stats Boxes in Header - Match PlayerDetail styling */
+.card-detail-page .card-stats-header {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  min-width: 240px;
+}
+
+.card-detail-page .card-stats-header .stat-box {
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  transition: all 0.2s ease;
+  height: 60px;
+}
+
+.card-detail-page .card-stats-header .stat-box:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+.card-detail-page .card-stats-header .stat-box label {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.card-detail-page .card-stats-header .stat-box .stat-value {
+  color: white;
+  font-size: 1.1rem;
+  font-weight: 600;
+  line-height: 1.2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card-detail-page .card-stats-header .stat-box-clickable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.card-detail-page .card-stats-header .stat-box-clickable:hover {
+  background: rgba(59, 130, 246, 0.15);
+  border-color: rgba(59, 130, 246, 0.3);
+  transform: translateY(-2px);
+}
+
+/* Logo-only stat boxes */
+.card-detail-page .card-stats-header .stat-box-logo {
+  padding: 0.5rem;
+}
+
+.card-detail-page .card-stats-header .stat-box-logo .stat-value {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+.card-detail-page .card-stats-header .logo-image {
+  width: 83px;
+  height: 83px;
+  object-fit: contain;
+  margin-top: 8px;
+}
+
+/* Player Actions Row */
+.card-detail-page .player-actions-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0.5rem;
+  width: 100%;
+}
+
+.card-detail-page .player-action-buttons {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.card-detail-page .squircle-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.card-detail-page .squircle-button:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.4);
+  color: white;
+  transform: translateY(-1px);
+}
+
+/* Both add and share buttons use transparent white styling */
+.card-detail-page .squircle-button.add-button,
+.card-detail-page .squircle-button.share-button {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.card-detail-page .squircle-button.add-button:hover,
+.card-detail-page .squircle-button.share-button:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.4);
+  color: white;
+}
+
+/* Override SocialShareButton styles when used as squircle button */
+.card-detail-page .squircle-button.share-button .social-share-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+  gap: 0;
+}
+
+.card-detail-page .squircle-button.share-button .social-share-trigger:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.4);
+  color: white;
+  transform: translateY(-1px);
+}
+
+/* Card Header Right Section */
+.card-detail-page .card-header-right-section {
+  display: flex;
+  flex-direction: row;
+  gap: 2rem;
+  align-items: center;
+}
+
 /* Card Images in Header */
 .card-detail-page .card-images-header {
   display: flex;
@@ -242,9 +403,8 @@
 }
 
 .card-detail-page .card-image-placeholder {
-  aspect-ratio: 2.5/3.5;
-  width: 100%;
-  max-width: 120px;
+  width: 80px;
+  height: 132px; /* Same height as 2 stat boxes (60px each) + gap (1rem = 16px) + padding adjustments */
   background: rgba(255, 255, 255, 0.05);
   border: 2px dashed rgba(255, 255, 255, 0.2);
   border-radius: 8px;
@@ -436,7 +596,24 @@
   text-decoration: underline;
 }
 
-/* User Collection Section */
+/* User Collection Section - Full Width */
+.card-detail-page .user-collection-full-width {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 2rem;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  width: 100%;
+}
+
+.card-detail-page .user-collection-full-width h3 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0 0 1.5rem 0;
+  color: white;
+}
+
+/* Legacy User Collection Section */
 .card-detail-page .user-collection-section h3 {
   font-size: 1.25rem;
   font-weight: 700;
@@ -626,7 +803,7 @@
   background: rgba(255, 255, 255, 0.05);
   border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.08);
-  margin-bottom: 0.5rem;
+  margin-bottom: 2rem;
 }
 
 .card-detail-page .nav-card-button {

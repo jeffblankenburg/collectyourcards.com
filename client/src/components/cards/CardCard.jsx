@@ -66,18 +66,18 @@ function CardCard({ card, showBadge = false, customOnClick = null }) {
       className="cardcard-container"
       onClick={handleCardClick}
     >
-      {/* Color stripe for parallel cards */}
+      {/* Color stripe */}
       {(card.is_parallel || card.color_name) && (
         <div 
-          className="cardcard-color-stripe"
-          style={{
-            '--stripe-color': card.color_hex || '#ec4899',
-            '--text-color': isLightColor(card.color_hex) ? '#000000' : '#ffffff'
+          className="cardcard-color-stripe" 
+          style={{ 
+            '--stripe-color': card.color_hex || '#ec4899', 
+            '--text-color': isLightColor(card.color_hex) ? '#000000' : '#ffffff' 
           }}
         >
           <div className="cardcard-stripe-text">
             {card.color_name || 'Parallel'}
-            {getPrintRunDisplay() && `  ${getPrintRunDisplay()}`}
+            {getPrintRunDisplay() && ` ${getPrintRunDisplay()}`}
           </div>
         </div>
       )}
@@ -85,20 +85,24 @@ function CardCard({ card, showBadge = false, customOnClick = null }) {
       {/* Result Type Badge */}
       {showBadge && (
         <div className="cardcard-result-type-badge">
-          <Icon name="card" size={14} />
+          <Icon name="layers" size={14} />
           Card
         </div>
       )}
 
       <div className="cardcard-content">
-        {/* Card Number as Title */}
         <div className="cardcard-header">
           <h3 className="cardcard-number">
             {card.card_number || 'N/A'}
+            {card.is_autograph && (
+              <span className="cardcard-tag cardcard-insert cardcard-rc-inline">AUTO</span>
+            )}
+            {card.is_relic && (
+              <span className="cardcard-tag cardcard-relic cardcard-rc-inline">RELIC</span>
+            )}
           </h3>
         </div>
 
-        {/* Player Name */}
         <div className="cardcard-player-line">
           <p className="cardcard-player-name">
             {card.player_name || card.title || 'Unknown'}
@@ -106,14 +110,9 @@ function CardCard({ card, showBadge = false, customOnClick = null }) {
               <span className="cardcard-tag cardcard-rc cardcard-rc-inline"> RC</span>
             )}
           </p>
-          {card.series_name && (
-            <p className="cardcard-series-name">
-              {card.series_name}
-            </p>
-          )}
+          <p className="cardcard-series-name">{card.series_name}</p>
         </div>
 
-        {/* Team Circle and Tags */}
         <div className="cardcard-tags-line">
           {card.team_name && (
             <div 
@@ -127,37 +126,16 @@ function CardCard({ card, showBadge = false, customOnClick = null }) {
               <span>{card.team_abbreviation || card.team_name.substring(0, 3).toUpperCase()}</span>
             </div>
           )}
-          {card.is_autograph && (
-            <span className="cardcard-tag cardcard-auto">AUTO</span>
-          )}
-          {card.is_relic && (
-            <span className="cardcard-tag cardcard-relic">RELIC</span>
-          )}
-          {card.is_insert && (
-            <span className="cardcard-tag cardcard-insert">INSERT</span>
-          )}
         </div>
 
-        {/* Card Stats Section */}
         <div className="cardcard-stats">
-          {/* Estimated Value */}
           <div className="cardcard-estimated-value">
-            <div className="cardcard-estimated-value-number">
-              ${card.estimated_value || '0.00'}
-            </div>
-            <div className="cardcard-estimated-value-label">
-              Value
-            </div>
+            <div className="cardcard-estimated-value-number">${card.estimated_value || '0.00'}</div>
+            <div className="cardcard-estimated-value-label">Value</div>
           </div>
-          
-          {/* User Owned Count */}
           <div className="cardcard-user-count">
-            <div className="cardcard-user-count-number">
-              {card.user_count || 0}
-            </div>
-            <div className="cardcard-user-count-label">
-              Owned
-            </div>
+            <div className="cardcard-user-count-number">{card.user_count || 0}</div>
+            <div className="cardcard-user-count-label">Owned</div>
           </div>
         </div>
       </div>

@@ -39,32 +39,34 @@ function TeamCard({ team, showBadge = false, customOnClick = null }) {
       )}
       
       <div className="teamcard-content">
-        <div className="teamcard-name-section">
-          <h3 className="teamcard-name">
-            {team.name}
-          </h3>
-          <div className="teamcard-organization-header">
-            {team.organization_abbreviation ? (
-              <p className="teamcard-organization-text">{team.organization_abbreviation}</p>
-            ) : (
-              <p className="teamcard-organization-text teamcard-organization-placeholder">&nbsp;</p>
-            )}
+        <div className="teamcard-header-row">
+          <div className="teamcard-name-section">
+            <h3 className="teamcard-name">
+              {team.name}
+            </h3>
+            <div className="teamcard-organization-header">
+              {team.organization_abbreviation ? (
+                <p className="teamcard-organization-text">{team.organization_abbreviation}</p>
+              ) : (
+                <p className="teamcard-organization-text teamcard-organization-placeholder">&nbsp;</p>
+              )}
+            </div>
+          </div>
+          
+          <div className="teamcard-circles">
+            <div
+              className="teamcard-team-circle team-circle-xl"
+              style={{
+                background: team.primary_color || '#666',
+                borderColor: team.secondary_color || '#999'
+              }}
+              title={team.name}
+            >
+              {team.abbreviation}
+            </div>
           </div>
         </div>
         
-        <div className="teamcard-circles">
-          <div
-            className="teamcard-team-circle"
-            style={{
-              '--primary-color': team.primary_color || '#666',
-              '--secondary-color': team.secondary_color || '#999'
-            }}
-            title={team.name}
-          >
-            {team.abbreviation}
-          </div>
-        </div>
-
         <div className="teamcard-stats">
           <div className="teamcard-count">
             <span className="teamcard-count-number">{(team.card_count || 0).toLocaleString()}</span>

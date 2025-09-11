@@ -333,6 +333,29 @@
   transform: translateY(-1px);
 }
 
+.player-detail-page .stat-item-inline.clickable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.player-detail-page .stat-item-inline.clickable:hover {
+  background: rgba(59, 130, 246, 0.15);
+  border-color: rgba(59, 130, 246, 0.3);
+  transform: translateY(-2px);
+}
+
+.player-detail-page .stat-item-inline.clickable.active {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: rgba(59, 130, 246, 0.4);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+}
+
+.player-detail-page .stat-item-inline.clickable.active:hover {
+  background: rgba(59, 130, 246, 0.25);
+  border-color: rgba(59, 130, 246, 0.5);
+}
+
 .player-detail-page .stat-icon-inline {
   color: white;
   opacity: 0.8;

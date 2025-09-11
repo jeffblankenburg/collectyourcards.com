@@ -332,7 +332,7 @@ function AdminSeries() {
           </div>
         </div>
         <div className="loading-state">
-          <Icon name="activity" size={24} className="spinning" />
+          <div className="card-icon-spinner"></div>
           <p>Loading series...</p>
         </div>
       </div>
@@ -666,7 +666,7 @@ function AdminSeries() {
               >
                 {creating ? (
                   <>
-                    <Icon name="activity" size={16} className="spinning" />
+                    <div className="card-icon-spinner small"></div>
                     Creating...
                   </>
                 ) : (
@@ -812,7 +812,7 @@ function AdminSeries() {
               >
                 {saving ? (
                   <>
-                    <Icon name="activity" size={16} className="spinning" />
+                    <div className="card-icon-spinner small"></div>
                     Saving...
                   </>
                 ) : (

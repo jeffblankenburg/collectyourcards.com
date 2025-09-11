@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Collect Your Cards - Design System</title>
+    <style>
+        /* ============================================
+           STANDALONE DESIGN SYSTEM STYLES
+           Complete CSS definitions for all components
+           ============================================ */
+
+        /* CSS Reset & Variables */
+        * {
+            box-sizing: border-box;
+        }
+
+        :root {
+            /* Colors */
+            --color-primary: #0066cc;
+            --color-primary-hover: #0052a3;
+            --color-secondary: #6b7280;
+            --color-success: #10b981;
+            --color-danger: #ef4444;
+            --color-warning: #f59e0b;
+            --color-info: #3b82f6;
+            
+            /* Text Colors */
+            --color-text-primary: #f9fafb;
+            --color-text-secondary: #d1d5db;
+            --color-text-muted: #9ca3af;
+            
+            /* Surface Colors */
+            --color-background: #111827;
+            --color-surface: rgba(255, 255, 255, 0.05);
+            --color-surface-elevated: rgba(255, 255, 255, 0.1);
+            --color-border: rgba(255, 255, 255, 0.1);
+            --color-input-bg: rgba(255, 255, 255, 0.05);
+            
+            /* Spacing */
+            --space-1: 4px;
+            --space-2: 8px;
+            --space-3: 12px;
+            --space-4: 16px;
+            --space-5: 20px;
+            --space-6: 24px;
+            --space-8: 32px;
+            --space-10: 40px;
+            --space-12: 48px;
+            --space-16: 64px;
+            
+            /* Typography */
+            --text-xs: 0.75rem;
+            --text-sm: 0.875rem;
+            --text-base: 1rem;
+            --text-lg: 1.125rem;
+            --text-xl: 1.25rem;
+            --text-2xl: 1.5rem;
+            --text-3xl: 1.875rem;
+            --text-4xl: 2.25rem;
+            
+            /* Font Weights */
+            --font-normal: 400;
+            --font-medium: 500;
+            --font-semibold: 600;
+            --font-bold: 700;
+            
+            /* Border Radius */
+            --radius-sm: 4px;
+            --radius-md: 6px;
+            --radius-lg: 8px;
+            --radius-xl: 12px;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--color-background);
+            color: var(--color-text-primary);
+            margin: 0;
+            padding: 0;
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Utility Classes */
+        .mb-3 { margin-bottom: var(--space-3); }
+        .mb-4 { margin-bottom: var(--space-4); }
+        .mb-5 { margin-bottom: var(--space-5); }
+        .p-4 { padding: var(--space-4); }
+        .d-flex { display: flex; }
+        .d-grid { display: grid; }
+
+        /* Button Styles */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-2);
+            padding: var(--space-3) var(--space-4);
+            border: 1px solid transparent;
+            border-radius: var(--radius-md);
+            font-size: var(--text-base);
+            font-weight: var(--font-medium);
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-height: 44px;
+        }
+
+        .btn-primary {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.3);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: rgba(107, 114, 128, 0.2);
+            border-color: rgba(107, 114, 128, 0.3);
+            color: white;
+        }
+
+        .btn-success {
+            background: rgba(16, 185, 129, 0.2);
+            border-color: rgba(16, 185, 129, 0.3);
+            color: #10b981;
+        }
+
+        .btn-danger {
+            background: rgba(239, 68, 68, 0.2);
+            border-color: rgba(239, 68, 68, 0.3);
+            color: #ef4444;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border-color: rgba(255, 255, 255, 0.3);
+            color: var(--color-text-primary);
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            filter: brightness(1.1);
+        }
+
+        /* Form Styles */
+        input, select, textarea {
+            width: 100%;
+            padding: var(--space-3);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            background: var(--color-input-bg);
+            color: var(--color-text-primary);
+            font-size: var(--text-base);
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--color-primary);
+        }
+
+        /* Table Styles */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--color-surface);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+        }
+
+        th, td {
+            padding: var(--space-3);
+            text-align: left;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        th {
+            background: var(--color-surface-elevated);
+            font-weight: var(--font-semibold);
+            color: var(--color-text-primary);
+        }
+
+        /* Card Tag Styles */
+        .cardcard-tag {
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.625rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: inline-block;
+        }
+
+        .cardcard-rc {
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+            border-color: rgba(34, 197, 94, 0.3);
+        }
+
+        .cardcard-insert {
+            background: rgba(59, 130, 246, 0.2);
+            color: #3b82f6;
+            border-color: rgba(59, 130, 246, 0.3);
+        }
+
+        .cardcard-relic {
+            background: rgba(168, 85, 247, 0.2);
+            color: #a855f7;
+            border-color: rgba(168, 85, 247, 0.3);
+        }
+
+        .cardcard-rc-inline {
+            margin-left: 0.5rem;
+            font-style: normal;
+            font-size: 0.55rem;
+            padding: 0.15rem 0.3rem;
+            vertical-align: middle;
+            display: inline-block;
+            line-height: 1;
+            transform: translateY(-0.05em);
+        }
+
+        /* Card Component Styles */
+        .card-component {
+            position: relative;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            padding: 0.75rem;
+            transition: all 0.2s ease;
+            backdrop-filter: blur(10px);
+            cursor: pointer;
+            height: 210px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card-component:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(229, 231, 235, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .component-filename {
+            position: absolute;
+            top: -8px;
+            left: 12px;
+            background: var(--color-primary);
+            color: white;
+            padding: 2px 8px;
+            border-radius: var(--radius-sm);
+            font-size: var(--text-xs);
+            font-weight: var(--font-medium);
+            z-index: 1;
+        }
+
+        /* PlayerCard Styles */
+        .playercard-container {
+            position: relative;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            padding: 0.75rem;
+            transition: all 0.2s ease;
+            backdrop-filter: blur(10px);
+            cursor: pointer;
+            height: 210px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .playercard-content {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            min-height: 0;
+        }
+
+        .playercard-name-section {
+            display: block;
+            margin: 0;
+            padding: 0 0 0.5rem 0;
+        }
+
+        .playercard-name {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin: 0;
+            padding: 0;
+            color: white;
+            line-height: 1.1;
+        }
+
+        .playercard-nickname-header {
+            min-height: 1.2rem;
+            margin-top: 0.25rem;
+        }
+
+        .playercard-nickname-text {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.7);
+            font-style: italic;
+            margin: 0;
+            line-height: 1.2;
+        }
+
+        .playercard-teams {
+            flex: 1;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            padding: 0.5rem 0;
+        }
+
+        .playercard-team-circle {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: white;
+            background: linear-gradient(135deg, var(--primary-color, #333), var(--secondary-color, #666));
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            transition: transform 0.2s ease;
+        }
+
+        .playercard-stats {
+            display: flex;
+            align-items: flex-end;
+            justify-content: flex-start;
+            gap: 0.5rem;
+            padding: 0.75rem 0 0 0;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            margin-top: auto;
+            flex-shrink: 0;
+        }
+
+        .playercard-count, .playercard-rc-count {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            padding: 0.5rem 0.75rem;
+            text-align: center;
+            min-width: 60px;
+        }
+
+        .playercard-count-number, .playercard-rc-count-number {
+            display: block;
+            font-size: 1rem;
+            font-weight: 600;
+            color: white;
+            line-height: 1;
+        }
+
+        .playercard-count-label, .playercard-rc-count-label {
+            display: block;
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.7);
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
+            margin-top: 0.25rem;
+            line-height: 1;
+        }
+
+        .playercard-hof-box {
+            background: linear-gradient(135deg, #ffd700, #ffed4e);
+            border: 1px solid rgba(255, 215, 0, 0.5);
+            border-radius: 4px;
+            padding: 0.5rem 0.75rem;
+            text-align: center;
+            min-width: 60px;
+            animation: hof-shimmer 2s infinite;
+        }
+
+        .playercard-hof-box-icon {
+            display: block;
+            color: #b45309;
+            margin: 0 auto;
+        }
+
+        .playercard-hof-label {
+            display: block;
+            font-size: 0.7rem;
+            color: #b45309;
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
+            margin-top: 0.25rem;
+            line-height: 1;
+            font-weight: 600;
+        }
+
+        @keyframes hof-shimmer {
+            0%, 100% { box-shadow: 0 0 5px rgba(255, 215, 0, 0.3); }
+            50% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.6); }
+        }
+
+        /* SeriesCard Styles */
+        .seriescard-container {
+            position: relative;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            padding: 0.75rem;
+            transition: all 0.2s ease;
+            backdrop-filter: blur(10px);
+            cursor: pointer;
+            height: 210px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .seriescard-color-stripe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 24px;
+            background: var(--stripe-color, #ec4899);
+            border-radius: 6px 6px 0 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1;
+        }
+
+        .seriescard-stripe-text {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-color, white);
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
+        }
+
+        .seriescard-content {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            min-height: 0;
+            padding-top: 1.5rem;
+        }
+
+        .seriescard-name-section {
+            display: block;
+            margin: 0;
+            padding: 0 0 0.5rem 0;
+        }
+
+        .seriescard-name {
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin: 0;
+            color: white;
+            line-height: 1.1;
+        }
+
+        .seriescard-set-header {
+            min-height: 1.2rem;
+            margin-top: 0.25rem;
+        }
+
+        .seriescard-set-text {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.7);
+            margin: 0;
+            line-height: 1.2;
+        }
+
+        .seriescard-middle-space {
+            flex: 1;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+        }
+
+        .seriescard-parallel-parent {
+            font-size: 0.875rem;
+            color: rgba(255, 255, 255, 0.8);
+            font-style: italic;
+            text-align: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .seriescard-stats {
+            display: flex;
+            align-items: flex-end;
+            justify-content: flex-start;
+            gap: 0.25rem;
+            padding: 0.75rem 0 0 0;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            margin-top: auto;
+            flex-shrink: 0;
+        }
+
+        .seriescard-count, .seriescard-rc-count, .seriescard-parallel-count {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            padding: 0.375rem 0.5rem;
+            text-align: center;
+            min-width: 50px;
+        }
+
+        .seriescard-count-number, .seriescard-rc-count-number, .seriescard-parallel-count-number {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: white;
+            line-height: 1;
+        }
+
+        .seriescard-count-label, .seriescard-rc-count-label, .seriescard-parallel-count-label {
+            display: block;
+            font-size: 0.625rem;
+            color: rgba(255, 255, 255, 0.7);
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
+            margin-top: 0.25rem;
+            line-height: 1;
+        }
+
+        /* YearCard Styles */
+        .yearcard-container {
+            position: relative;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            padding: 0.75rem;
+            transition: all 0.2s ease;
+            backdrop-filter: blur(10px);
+            cursor: pointer;
+            height: 210px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .yearcard-content {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            min-height: 0;
+        }
+
+        .yearcard-middle-space {
+            flex: 1;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+        }
+
+        .yearcard-name {
+            font-size: 5rem;
+            font-weight: 700;
+            margin: 15px 0 0 0;
+            padding: 0;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0;
+            line-height: 1;
+            text-align: center;
+        }
+
+        .yearcard-century {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .yearcard-decade {
+            color: white;
+        }
+
+        .yearcard-stats {
+            display: flex;
+            align-items: flex-end;
+            justify-content: flex-start;
+            gap: 0.5rem;
+            padding: 0.75rem 0 0 0;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            margin-top: auto;
+            flex-shrink: 0;
+        }
+
+        .yearcard-count, .yearcard-set-count {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            padding: 0.5rem 0.75rem;
+            text-align: center;
+            min-width: 60px;
+        }
+
+        .yearcard-count-number, .yearcard-set-count-number {
+            display: block;
+            font-size: 1rem;
+            font-weight: 600;
+            color: white;
+            line-height: 1;
+        }
+
+        .yearcard-count-label, .yearcard-set-count-label {
+            display: block;
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.7);
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
+            margin-top: 0.25rem;
+            line-height: 1;
+        }
+
+        /* Icon styles - simplified SVG icons */
+        .icon {
+            display: inline-block;
+            width: 1em;
+            height: 1em;
+            fill: currentColor;
+            vertical-align: middle;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            .d-grid {
+                grid-template-columns: 1fr !important;
+            }
+            
+            .card-component {
+                height: auto;
+                min-height: 180px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        
+        <!-- HEADER -->
+        <header style="text-align: center; margin-bottom: 3rem; padding-bottom: 2rem; border-bottom: 1px solid var(--color-border);">
+            <h1 style="
+                font-size: 2.5rem; 
+                font-weight: 700; 
+                color: var(--color-text-primary); 
+                margin-bottom: 0.5rem;
+                background: linear-gradient(135deg, #0066cc, #4a9eff);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-clip: text;
+            ">
+                Collect Your Cards Design System
+            </h1>
+            <p style="font-size: 1.1rem; color: var(--color-text-secondary); max-width: 600px; margin: 0 auto;">
+                Comprehensive design standards, components, and guidelines for the sports card collection platform.
+            </p>
+        </header>
+
+        <!-- DESIGN TOKENS -->
+        <section class="mb-5">
+            <h2 style="color: var(--color-text-primary); margin-bottom: var(--space-4);">Design Tokens</h2>
+            <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+                Core design values that ensure consistency across all components and pages.
+            </p>
+            
+            <!-- Colors -->
+            <div class="mb-4">
+                <h3 style="color: var(--color-text-primary); margin-bottom: var(--space-3); font-size: var(--text-lg); font-weight: var(--font-semibold);">Colors</h3>
+                <div class="d-grid" style="grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: var(--space-3);">
+                    <div style="background: var(--color-primary); color: white; padding: var(--space-3); border-radius: var(--radius-md);">
+                        <div style="font-weight: var(--font-semibold);">Primary</div>
+                        <div style="font-size: var(--text-sm); opacity: 0.9;">#0066cc</div>
+                    </div>
+                    <div style="background: var(--color-secondary); color: white; padding: var(--space-3); border-radius: var(--radius-md);">
+                        <div style="font-weight: var(--font-semibold);">Secondary</div>
+                        <div style="font-size: var(--text-sm); opacity: 0.9;">#6b7280</div>
+                    </div>
+                    <div style="background: var(--color-success); color: white; padding: var(--space-3); border-radius: var(--radius-md);">
+                        <div style="font-weight: var(--font-semibold);">Success</div>
+                        <div style="font-size: var(--text-sm); opacity: 0.9;">#10b981</div>
+                    </div>
+                    <div style="background: var(--color-danger); color: white; padding: var(--space-3); border-radius: var(--radius-md);">
+                        <div style="font-weight: var(--font-semibold);">Danger</div>
+                        <div style="font-size: var(--text-sm); opacity: 0.9;">#ef4444</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Typography -->
+            <div class="mb-4">
+                <h3 style="color: var(--color-text-primary); margin-bottom: var(--space-3); font-size: var(--text-lg); font-weight: var(--font-semibold);">Typography</h3>
+                <div style="display: flex; flex-direction: column; gap: var(--space-2);">
+                    <div style="font-size: var(--text-4xl); font-weight: var(--font-bold); color: var(--color-text-primary);">Heading 1 - 36px Bold</div>
+                    <div style="font-size: var(--text-2xl); font-weight: var(--font-semibold); color: var(--color-text-primary);">Heading 2 - 24px Semibold</div>
+                    <div style="font-size: var(--text-xl); font-weight: var(--font-medium); color: var(--color-text-primary);">Heading 3 - 20px Medium</div>
+                    <div style="font-size: var(--text-base); font-weight: var(--font-normal); color: var(--color-text-primary);">Body Text - 16px Regular</div>
+                    <div style="font-size: var(--text-sm); font-weight: var(--font-normal); color: var(--color-text-secondary);">Small Text - 14px Regular</div>
+                    <div style="font-size: var(--text-xs); font-weight: var(--font-normal); color: var(--color-text-muted);">Extra Small - 12px Regular</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- BUTTONS -->
+        <section class="mb-5">
+            <h2 style="color: var(--color-text-primary); margin-bottom: var(--space-4);">Buttons</h2>
+            <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+                Button components with consistent styling and translucent backgrounds.
+            </p>
+            
+            <div style="display: flex; flex-wrap: wrap; gap: var(--space-3); margin-bottom: var(--space-4);">
+                <button class="btn btn-primary">Primary Button</button>
+                <button class="btn btn-secondary">Secondary Button</button>
+                <button class="btn btn-success">Success Button</button>
+                <button class="btn btn-danger">Danger Button</button>
+                <button class="btn btn-outline">Outline Button</button>
+            </div>
+        </section>
+
+        <!-- CARD TAGS -->
+        <section class="mb-5">
+            <h2 style="color: var(--color-text-primary); margin-bottom: var(--space-4);">Card Tags</h2>
+            <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+                Standardized tags with perfect inline sizing: RC (green), AUTO (blue), and RELIC (purple).
+            </p>
+            
+            <div class="d-flex" style="gap: var(--space-4); margin-bottom: var(--space-4); flex-wrap: wrap; align-items: center;">
+                
+                <!-- RC Tag -->
+                <div style="display: flex; flex-direction: column; align-items: center; gap: var(--space-2);">
+                    <span class="cardcard-tag cardcard-rc cardcard-rc-inline">RC</span>
+                    <code style="font-size: var(--text-xs); color: var(--color-text-secondary);">cardcard-rc</code>
+                </div>
+                
+                <!-- AUTO Tag -->
+                <div style="display: flex; flex-direction: column; align-items: center; gap: var(--space-2);">
+                    <span class="cardcard-tag cardcard-insert cardcard-rc-inline">AUTO</span>
+                    <code style="font-size: var(--text-xs); color: var(--color-text-secondary);">cardcard-auto</code>
+                </div>
+                
+                <!-- RELIC Tag -->
+                <div style="display: flex; flex-direction: column; align-items: center; gap: var(--space-2);">
+                    <span class="cardcard-tag cardcard-relic cardcard-rc-inline">RELIC</span>
+                    <code style="font-size: var(--text-xs); color: var(--color-text-secondary);">cardcard-relic</code>
+                </div>
+
+            </div>
+            
+            <!-- Inline Example -->
+            <div class="mb-3">
+                <h4 style="color: var(--color-text-primary); margin-bottom: var(--space-2); font-size: var(--text-base); font-weight: var(--font-semibold);">
+                    Inline Tag Usage
+                </h4>
+                <p style="color: var(--color-text-secondary); font-size: var(--text-base);">
+                    Example: Mike Trout<span class="cardcard-tag cardcard-rc cardcard-rc-inline"> RC</span>
+                </p>
+                <p style="color: var(--color-text-secondary); font-size: var(--text-base);">
+                    Card #123<span class="cardcard-tag cardcard-insert cardcard-rc-inline">AUTO</span><span class="cardcard-tag cardcard-relic cardcard-rc-inline">RELIC</span>
+                </p>
+            </div>
+        </section>
+
+        <!-- CARD COMPONENTS -->
+        <section class="mb-5">
+            <h2 style="color: var(--color-text-primary); margin-bottom: var(--space-4);">Card Components</h2>
+            <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+                Complete card component examples showing all sports card types with authentic styling.
+            </p>
+            
+            <div class="d-grid" style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: var(--space-4); margin-bottom: var(--space-4);">
+                
+                <!-- Player Card -->
+                <div style="position: relative;">
+                    <div class="component-filename">PlayerCard.jsx</div>
+                    <div class="playercard-container">
+                        <div class="playercard-content">
+                            <div class="playercard-name-section">
+                                <h3 class="playercard-name">Mike Trout</h3>
+                                <div class="playercard-nickname-header">
+                                    <p class="playercard-nickname-text">"The Millville Meteor"</p>
+                                </div>
+                            </div>
+                            
+                            <div class="playercard-teams">
+                                <div class="playercard-team-circle" style="--primary-color: #ba0021; --secondary-color: #003263;" title="Los Angeles Angels">
+                                    LAA
+                                </div>
+                            </div>
+
+                            <div class="playercard-stats">
+                                <div class="playercard-count">
+                                    <span class="playercard-count-number">1,247</span>
+                                    <span class="playercard-count-label">Cards</span>
+                                </div>
+                                <div class="playercard-rc-count">
+                                    <span class="playercard-rc-count-number">89</span>
+                                    <span class="playercard-rc-count-label">Rookies</span>
+                                </div>
+                                <div class="playercard-hof-box">
+                                    <svg class="playercard-hof-box-icon icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                                    </svg>
+                                    <span class="playercard-hof-label">HOF</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Series Card -->
+                <div style="position: relative;">
+                    <div class="component-filename">SeriesCard.jsx</div>
+                    <div class="seriescard-container">
+                        <div class="seriescard-color-stripe" style="--stripe-color: #ec4899; --text-color: #ffffff;">
+                            <div class="seriescard-stripe-text">Orange /25</div>
+                        </div>
+                        
+                        <div class="seriescard-content">
+                            <div class="seriescard-name-section">
+                                <h3 class="seriescard-name">Chrome Refractor</h3>
+                                <div class="seriescard-set-header">
+                                    <p class="seriescard-set-text">2024 Topps Chrome</p>
+                                </div>
+                            </div>
+                            
+                            <div class="seriescard-middle-space"></div>
+                            
+                            <div class="seriescard-parallel-parent">
+                                Base Refractor
+                            </div>
+
+                            <div class="seriescard-stats">
+                                <div class="seriescard-count">
+                                    <span class="seriescard-count-number">330</span>
+                                    <span class="seriescard-count-label">Cards</span>
+                                </div>
+                                <div class="seriescard-rc-count">
+                                    <span class="seriescard-rc-count-number">18</span>
+                                    <span class="seriescard-rc-count-label">Rookies</span>
+                                </div>
+                                <div class="seriescard-parallel-count">
+                                    <span class="seriescard-parallel-count-number">5</span>
+                                    <span class="seriescard-parallel-count-label">Parallels</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Year Card -->
+                <div style="position: relative;">
+                    <div class="component-filename">YearCard.jsx</div>
+                    <div class="yearcard-container">
+                        <div class="yearcard-content">
+                            <div class="yearcard-middle-space">
+                                <h3 class="yearcard-name">
+                                    <span class="yearcard-century">20</span>
+                                    <span class="yearcard-decade">24</span>
+                                </h3>
+                            </div>
+
+                            <div class="yearcard-stats">
+                                <div class="yearcard-count">
+                                    <span class="yearcard-count-number">15,847</span>
+                                    <span class="yearcard-count-label">Cards</span>
+                                </div>
+                                <div class="yearcard-set-count">
+                                    <span class="yearcard-set-count-number">47</span>
+                                    <span class="yearcard-set-count-label">Sets</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- TABLES -->
+        <section class="mb-5">
+            <h2 style="color: var(--color-text-primary); margin-bottom: var(--space-4);">Table Components</h2>
+            <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+                Responsive table design with search functionality and consistent styling.
+            </p>
+            
+            <!-- Table Controls -->
+            <div style="
+                display: flex; 
+                justify-content: space-between; 
+                align-items: center; 
+                margin-bottom: var(--space-4);
+                padding: var(--space-3);
+                background: var(--color-surface);
+                border-radius: var(--radius-md);
+                flex-wrap: wrap;
+                gap: var(--space-3);
+            ">
+                <input type="text" placeholder="Search players or teams..." style="
+                    padding: var(--space-2) var(--space-3);
+                    border: 1px solid var(--color-border);
+                    border-radius: var(--radius-md);
+                    background: var(--color-input-bg);
+                    color: var(--color-text-primary);
+                    font-size: var(--text-sm);
+                    min-width: 200px;
+                "/>
+                <div style="display: flex; gap: var(--space-2);">
+                    <button class="btn btn-primary" style="font-size: var(--text-sm); padding: var(--space-2) var(--space-3);">Grid</button>
+                    <button class="btn btn-outline" style="font-size: var(--text-sm); padding: var(--space-2) var(--space-3);">List</button>
+                </div>
+            </div>
+
+            <!-- Sample Table -->
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Team</th>
+                            <th style="text-align: right;">Cards</th>
+                            <th style="text-align: right;">Value</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Mike Trout</td>
+                            <td style="color: var(--color-text-secondary);">Angels</td>
+                            <td style="text-align: right;">1,247</td>
+                            <td style="text-align: right;">$12,500</td>
+                        </tr>
+                        <tr>
+                            <td>Ronald Acuña Jr.</td>
+                            <td style="color: var(--color-text-secondary);">Braves</td>
+                            <td style="text-align: right;">892</td>
+                            <td style="text-align: right;">$8,900</td>
+                        </tr>
+                        <tr>
+                            <td>Shohei Ohtani</td>
+                            <td style="color: var(--color-text-secondary);">Angels</td>
+                            <td style="text-align: right;">634</td>
+                            <td style="text-align: right;">$15,200</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- USAGE GUIDELINES -->
+        <section class="mb-5">
+            <h2 style="color: var(--color-text-primary); margin-bottom: var(--space-4);">Usage Guidelines</h2>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--space-4);">
+                
+                <div class="p-4" style="background: var(--color-surface); border-radius: var(--radius-md); border-left: 4px solid var(--color-success);">
+                    <h4 style="color: var(--color-text-primary); margin: 0 0 var(--space-2) 0; font-size: var(--text-base); font-weight: var(--font-semibold);">
+                        ✅ Do
+                    </h4>
+                    <ul style="margin: 0; padding-left: var(--space-4); color: var(--color-text-secondary); font-size: var(--text-sm);">
+                        <li>Use consistent spacing from the design token scale</li>
+                        <li>Follow established color palette</li>
+                        <li>Ensure mobile-first responsive design</li>
+                        <li>Use translucent button backgrounds (15% opacity)</li>
+                        <li>Maintain proper tag vertical centering</li>
+                    </ul>
+                </div>
+
+                <div class="p-4" style="background: var(--color-surface); border-radius: var(--radius-md); border-left: 4px solid var(--color-danger);">
+                    <h4 style="color: var(--color-text-primary); margin: 0 0 var(--space-2) 0; font-size: var(--text-base); font-weight: var(--font-semibold);">
+                        ❌ Don't
+                    </h4>
+                    <ul style="margin: 0; padding-left: var(--space-4); color: var(--color-text-secondary); font-size: var(--text-sm);">
+                        <li>Use arbitrary spacing values</li>
+                        <li>Create custom colors outside the palette</li>
+                        <li>Use JavaScript alerts instead of toast messages</li>
+                        <li>Show database IDs in URLs or on screen</li>
+                        <li>Implement manual pagination (use infinite scroll)</li>
+                    </ul>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- FOOTER -->
+        <footer style="text-align: center; margin-top: 4rem; padding-top: 2rem; border-top: 1px solid var(--color-border);">
+            <p style="color: var(--color-text-muted); font-size: var(--text-sm);">
+                Collect Your Cards Design System • Version 1.0 • Last Updated: January 2025
+            </p>
+        </footer>
+
+    </div>
+
+    <script>
+        // Add basic interactivity for demonstration
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add hover effects to card components
+            const cards = document.querySelectorAll('.playercard-container, .seriescard-container, .yearcard-container');
+            cards.forEach(card => {
+                card.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-2px)';
+                    this.style.boxShadow = '0 8px 32px rgba(0, 0, 0, 0.3)';
+                });
+                card.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0)';
+                    this.style.boxShadow = 'none';
+                });
+            });
+
+            // Add button click effects
+            const buttons = document.querySelectorAll('.btn');
+            buttons.forEach(button => {
+                button.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-1px)';
+                    this.style.filter = 'brightness(1.1)';
+                });
+                button.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0)';
+                    this.style.filter = 'brightness(1)';
+                });
+            });
+        });
+    </script>
+</body>
+</html>

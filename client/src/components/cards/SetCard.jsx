@@ -50,9 +50,7 @@ function SetCard({ set, showBadge = false, customOnClick = null, onEditClick = n
       
       <div className="setcard-content">
         <div className="setcard-name-section">
-          <h3 className="setcard-name">
-            {set.name}
-          </h3>
+          <h3 className="setcard-name">{set.name}</h3>
         </div>
         
         <div className="setcard-middle-space">
@@ -78,7 +76,7 @@ function SetCard({ set, showBadge = false, customOnClick = null, onEditClick = n
       {/* Admin Edit Button */}
       {isAdmin && (
         <button 
-          className="setcard-admin-edit-btn"
+          className="setcard-admin-edit-btn" 
           onClick={(e) => {
             e.stopPropagation()
             if (onEditClick) {

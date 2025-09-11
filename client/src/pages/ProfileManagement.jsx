@@ -1,13 +1,16 @@
 import React, { useState, useEffect, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
 import axios from 'axios'
 import Icon from '../components/Icon'
 import FavoriteCardsModal from '../components/modals/FavoriteCardsModal'
+import ChangePasswordModal from '../components/modals/ChangePasswordModal'
 import './ProfileManagementScoped.css'
 
 function ProfileManagement() {
-  const { isAuthenticated, user } = useAuth()
+  const navigate = useNavigate()
+  const { isAuthenticated, user, updateUserAvatar } = useAuth()
   const { showToast } = useToast()
   
   const [profile, setProfile] = useState(null)
@@ -28,6 +31,9 @@ function ProfileManagement() {
   const [usernameMessage, setUsernameMessage] = useState('')
   const [favoriteCards, setFavoriteCards] = useState([])
   const [showFavoriteCardsModal, setShowFavoriteCardsModal] = useState(false)
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false)
+  const [uploadingPicture, setUploadingPicture] = useState(false)
+  const [deletingPicture, setDeletingPicture] = useState(false)
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -84,6 +90,24 @@ function ProfileManagement() {
       console.error('Error fetching favorite cards:', err)
       // Don't show error toast here, as this is secondary data
     }
+  }
+
+  const handlePlayerClick = (playerNames) => {
+    if (!playerNames) return
+    
+    // For multiple players, just navigate to the first player
+    // TODO: Could implement a modal to choose which player if there are multiple
+    const firstPlayer = playerNames.split(', ')[0].trim()
+    const playerSlug = firstPlayer.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+$/, '')
+    navigate(`/players/${playerSlug}`)
+  }
+
+  const handleSeriesClick = (seriesName) => {
+    if (!seriesName) return
+    
+    // Navigate to series detail page
+    const seriesSlug = seriesName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+$/, '')
+    navigate(`/series/${seriesSlug}`)
   }
 
   const handleInputChange = (e) => {
@@ -180,6 +204,92 @@ function ProfileManagement() {
       }
       clearTimeout(timeout)
       timeout = setTimeout(later, wait)
+    }
+  }
+
+  const handleProfilePictureUpload = async (event) => {
+    const file = event.target.files[0]
+    if (!file) return
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg']
+    if (!allowedTypes.includes(file.type)) {
+      showToast('Please select a JPEG, PNG, or WebP image file', 'error')
+      return
+    }
+
+    // Validate file size (2MB limit)
+    if (file.size > 2 * 1024 * 1024) {
+      showToast('Profile picture must be smaller than 2MB', 'error')
+      return
+    }
+
+    try {
+      setUploadingPicture(true)
+      
+      const formData = new FormData()
+      formData.append('picture', file)
+      
+      const config = {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'multipart/form-data'
+        }
+      }
+      
+      const response = await axios.post('/api/profile/picture', formData, config)
+      
+      showToast('Profile picture uploaded successfully!', 'success')
+      
+      // Update profile with new avatar URL
+      setProfile(prev => ({
+        ...prev,
+        avatar_url: response.data.avatar_url
+      }))
+      
+      // Update user avatar in AuthContext so header updates immediately
+      updateUserAvatar(response.data.avatar_url)
+      
+    } catch (err) {
+      console.error('Error uploading profile picture:', err)
+      const errorMessage = err.response?.data?.message || 'Failed to upload profile picture'
+      showToast(errorMessage, 'error')
+    } finally {
+      setUploadingPicture(false)
+      // Clear the file input
+      event.target.value = ''
+    }
+  }
+
+  const handleProfilePictureDelete = async () => {
+    try {
+      setDeletingPicture(true)
+      
+      const config = {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      }
+      
+      await axios.delete('/api/profile/picture', config)
+      
+      showToast('Profile picture deleted successfully!', 'success')
+      
+      // Update profile to remove avatar URL
+      setProfile(prev => ({
+        ...prev,
+        avatar_url: null
+      }))
+      
+      // Update user avatar in AuthContext so header updates immediately
+      updateUserAvatar(null)
+      
+    } catch (err) {
+      console.error('Error deleting profile picture:', err)
+      const errorMessage = err.response?.data?.message || 'Failed to delete profile picture'
+      showToast(errorMessage, 'error')
+    } finally {
+      setDeletingPicture(false)
     }
   }
 
@@ -285,10 +395,23 @@ function ProfileManagement() {
     <div className="profile-management-page">
       <div className="profile-container">
         <div className="profile-header">
-          <h1>
-            <Icon name="user" size={24} />
-            Profile Settings
-          </h1>
+          <div className="header-top">
+            <h1>
+              <Icon name="user" size={24} />
+              Profile Settings
+            </h1>
+            {profile?.username && (
+              <a
+                href={`/${profile.username}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="view-profile-btn-header"
+              >
+                <Icon name="external-link" size={14} />
+                View Profile
+              </a>
+            )}
+          </div>
           <p>Manage your public profile and account preferences</p>
         </div>
 
@@ -296,55 +419,126 @@ function ProfileManagement() {
           <div className="form-section">
             <h3>Basic Information</h3>
             
-            <div className="form-group">
-              <label htmlFor="username">Username</label>
-              <div className="input-wrapper">
-                <input
-                  type="text"
-                  id="username"
-                  value={usernameData.new_username}
-                  onChange={handleUsernameChange}
-                  minLength={3}
-                  maxLength={30}
-                  pattern="[a-zA-Z0-9._-]{3,30}"
-                  className="form-input"
-                  placeholder="Choose your unique username"
-                />
-                {usernameStatus && (
-                  <div className={`username-status ${usernameStatus}`}>
-                    {usernameStatus === 'checking' && <Icon name="activity" size={16} className="spinner" />}
-                    {usernameStatus === 'available' && <Icon name="check" size={16} />}
-                    {usernameStatus === 'taken' && <Icon name="x" size={16} />}
-                    {usernameStatus === 'invalid' && <Icon name="alert-circle" size={16} />}
-                    <span className="status-text">{usernameMessage}</span>
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="username">Username</label>
+                <div className="input-wrapper">
+                  <input
+                    type="text"
+                    id="username"
+                    value={usernameData.new_username}
+                    onChange={handleUsernameChange}
+                    minLength={3}
+                    maxLength={30}
+                    pattern="[a-zA-Z0-9._-]{3,30}"
+                    className="form-input"
+                    placeholder="Choose your unique username"
+                  />
+                  {usernameStatus && (
+                    <div className={`username-status ${usernameStatus}`}>
+                      {usernameStatus === 'checking' && <Icon name="activity" size={16} className="spinner" />}
+                      {usernameStatus === 'available' && <Icon name="check" size={16} />}
+                      {usernameStatus === 'taken' && <Icon name="x" size={16} />}
+                      {usernameStatus === 'invalid' && <Icon name="alert-circle" size={16} />}
+                      <span className="status-text">{usernameMessage}</span>
+                    </div>
+                  )}
+                  {usernameData.new_username !== usernameData.current_username && usernameStatus === 'available' && (
+                    <div className="username-actions">
+                      <button
+                        type="button"
+                        onClick={handleUsernameUpdate}
+                        disabled={savingUsername}
+                        className="update-username-btn"
+                      >
+                        {savingUsername ? (
+                          <>
+                            <Icon name="activity" size={14} className="spinner" />
+                            Updating...
+                          </>
+                        ) : (
+                          <>
+                            <Icon name="check" size={14} />
+                            Update Username
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  )}
+                </div>
+                <small className="form-help">Username must be unique and 3-30 characters</small>
+                <button
+                  type="button"
+                  onClick={() => setShowChangePasswordModal(true)}
+                  className="change-password-link"
+                >
+                  <Icon name="lock" size={14} />
+                  Change Password
+                </button>
+              </div>
+
+              <div className="form-group">
+                <label>Profile Picture</label>
+                <div className="profile-picture-section">
+                  <div className="current-picture">
+                    {profile?.avatar_url ? (
+                      <img 
+                        src={profile.avatar_url} 
+                        alt="Profile" 
+                        className="profile-avatar"
+                      />
+                    ) : (
+                      <div className="default-avatar">
+                        <Icon name="user" size={32} />
+                      </div>
+                    )}
                   </div>
-                )}
-                {usernameData.new_username !== usernameData.current_username && usernameStatus === 'available' && (
-                  <div className="username-actions">
-                    <button
-                      type="button"
-                      onClick={handleUsernameUpdate}
-                      disabled={savingUsername}
-                      className="update-username-btn"
-                    >
-                      {savingUsername ? (
+                  <div className="picture-actions">
+                    <label className="upload-btn">
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        onChange={handleProfilePictureUpload}
+                        disabled={uploadingPicture}
+                        style={{ display: 'none' }}
+                      />
+                      {uploadingPicture ? (
                         <>
-                          <Icon name="activity" size={14} className="spinner" />
-                          Updating...
+                          <Icon name="activity" size={16} className="spinner" />
+                          Uploading...
                         </>
                       ) : (
                         <>
-                          <Icon name="check" size={14} />
-                          Update Username
+                          <Icon name="upload" size={16} />
+                          {profile?.avatar_url ? 'Change Picture' : 'Upload Picture'}
                         </>
                       )}
-                    </button>
+                    </label>
+                    {profile?.avatar_url && (
+                      <button
+                        type="button"
+                        onClick={handleProfilePictureDelete}
+                        disabled={deletingPicture}
+                        className="delete-picture-btn"
+                      >
+                        {deletingPicture ? (
+                          <>
+                            <Icon name="activity" size={16} className="spinner" />
+                            Deleting...
+                          </>
+                        ) : (
+                          <>
+                            <Icon name="trash" size={16} />
+                            Remove
+                          </>
+                        )}
+                      </button>
+                    )}
                   </div>
-                )}
+                </div>
+                <small className="form-help">Recommended: Square image, max 2MB (JPEG, PNG, WebP)</small>
               </div>
-              <small className="form-help">Username must be unique and 3-30 characters</small>
             </div>
-
 
             <div className="form-group">
               <label htmlFor="bio">Bio</label>
@@ -434,22 +628,45 @@ function ProfileManagement() {
                         <div className="slot-number">{position}</div>
                         {card ? (
                           <div className="favorite-card-preview">
-                            {card.primary_photo && (
-                              <img src={card.primary_photo} alt="Card" className="card-image" />
-                            )}
-                            <div className="card-info">
-                              <div className="card-name">
-                                {card.set_year && `${card.set_year} `}
-                                {card.set_name}
-                                {card.card_number && ` #${card.card_number}`}
-                              </div>
-                              {(card.is_rookie || card.is_autograph || card.is_relic) && (
-                                <div className="card-attributes">
-                                  {card.is_rookie && <span className="attribute rookie">RC</span>}
-                                  {card.is_autograph && <span className="attribute auto">AUTO</span>}
-                                  {card.is_relic && <span className="attribute relic">RELIC</span>}
+                            <div className="favorite-card-image">
+                              {card.primary_photo ? (
+                                <img src={card.primary_photo} alt="Card" className="card-image" />
+                              ) : (
+                                <div className="card-placeholder">
+                                  <Icon name="image" size={24} />
+                                  <span>No Image</span>
                                 </div>
                               )}
+                            </div>
+                            <div className="card-info">
+                              <div className="card-number">
+                                #{card.card_number || 'N/A'}
+                              </div>
+                              {card.player_names && (
+                                <div 
+                                  className="card-player"
+                                  onClick={() => handlePlayerClick(card.player_names)}
+                                  title={`View ${card.player_names.split(', ')[0]} details`}
+                                >
+                                  {card.player_names}
+                                </div>
+                              )}
+                              <div 
+                                className="card-series"
+                                onClick={() => handleSeriesClick(card.series_name || card.set_name)}
+                                title={`View ${card.series_name || card.set_name} details`}
+                              >
+                                {card.series_name || card.set_name}
+                              </div>
+                              <div className="card-attributes">
+                                {card.is_rookie && <span className="attribute rookie">RC</span>}
+                                {card.is_autograph && <span className="attribute auto">AUTO</span>}
+                                {card.is_relic && <span className="attribute relic">RELIC</span>}
+                                {card.print_run && <span className="attribute print-run">/{card.print_run}</span>}
+                                {card.grade && card.grading_agency_abbr && (
+                                  <span className="attribute grade">{card.grading_agency_abbr} {card.grade}</span>
+                                )}
+                              </div>
                             </div>
                           </div>
                         ) : (
@@ -472,11 +689,11 @@ function ProfileManagement() {
               
               <button
                 type="button"
-                onClick={() => setShowFavoriteCardsModal(true)}
+                onClick={() => navigate('/collection')}
                 className="manage-favorites-btn"
               >
                 <Icon name="star" size={16} />
-                {favoriteCards.length > 0 ? 'Manage Favorite Cards' : 'Add Favorite Cards'}
+                Add Favorite Cards From Your Collection
               </button>
             </div>
           </div>
@@ -493,24 +710,9 @@ function ProfileManagement() {
                   Saving...
                 </>
               ) : (
-                <>
-                  <Icon name="check" size={16} />
-                  Save Changes
-                </>
+                'Save Changes'
               )}
             </button>
-            
-            {profile?.username && (
-              <a
-                href={`/${profile.username}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="view-profile-btn"
-              >
-                <Icon name="external-link" size={16} />
-                View Public Profile
-              </a>
-            )}
           </div>
         </form>
         
@@ -518,6 +720,11 @@ function ProfileManagement() {
           isOpen={showFavoriteCardsModal}
           onClose={() => setShowFavoriteCardsModal(false)}
           onUpdate={fetchFavoriteCards}
+        />
+        
+        <ChangePasswordModal
+          isOpen={showChangePasswordModal}
+          onClose={() => setShowChangePasswordModal(false)}
         />
       </div>
     </div>

@@ -41,8 +41,9 @@ router.put('/:id', requireDataAdmin, async (req, res) => {
         data: updateData
       })
 
-      // Handle player-team relationships if provided
-      if (players && Array.isArray(players)) {
+      // Handle player-team relationships only if explicitly provided
+      // This prevents accidental deletion of existing players when only updating other fields
+      if (players !== undefined && Array.isArray(players)) {
         // Delete existing card-player-team relationships
         await tx.card_player_team.deleteMany({
           where: { card: cardId }

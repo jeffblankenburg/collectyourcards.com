@@ -1946,3 +1946,85 @@ select.form-input option {
   width: 4px;
   border-radius: 0 4px 4px 0;
 }
+
+/* Inline Player Search Styles */
+.inline-player-search {
+  position: relative;
+  margin-top: 0.5rem;
+}
+
+.inline-player-search .player-search-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  padding: 0.75rem;
+  gap: 0.5rem;
+}
+
+.inline-player-search .search-icon {
+  color: rgba(255, 255, 255, 0.5);
+  flex-shrink: 0;
+}
+
+.inline-player-search-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: white;
+  font-size: 0.9rem;
+  outline: none;
+}
+
+.inline-player-search-input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.inline-player-search-results {
+  position: fixed;
+  background: rgba(30, 41, 59, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+  z-index: 9999;
+  max-height: 200px;
+  overflow-y: auto;
+  min-width: 300px;
+}
+
+.inline-player-search-result {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: white;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.inline-player-search-result:last-child {
+  border-bottom: none;
+}
+
+.inline-player-search-result:hover,
+.inline-player-search-result.selected {
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.inline-player-result-name {
+  font-weight: 500;
+  color: white;
+}
+
+.inline-team-result-name {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.6);
+  margin-left: auto;
+}

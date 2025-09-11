@@ -55,18 +55,6 @@ const TeamFilterCircles = ({ teams, selectedTeamIds, onTeamFilter, compact = fal
           )
         })}
       </div>
-      
-      {selectedTeamIds.length > 0 && (
-        <div className="team-filter-actions">
-          <button 
-            className="clear-filters-btn"
-            onClick={clearAllFilters}
-            title="Clear all team filters"
-          >
-            Clear Filters ({selectedTeamIds.length})
-          </button>
-        </div>
-      )}
     </div>
   )
 }

@@ -47,6 +47,35 @@
   flex: 1;
 }
 
+/* Social Section - Discussion and Activity Feed Side by Side */
+.series-page .social-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin-top: 2rem;
+  align-items: start;
+}
+
+/* Remove individual margins when in social-section grid */
+.series-page .social-section .activity-feed,
+.series-page .social-section .comments-section {
+  margin-top: 0;
+}
+
+@media (max-width: 1024px) {
+  .series-page .social-section {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .series-page .social-section {
+    margin-top: 1rem;
+    gap: 1rem;
+  }
+}
+
 /* Set Detail Header */
 .series-page .set-detail-header {
   background: rgba(255, 255, 255, 0.05);

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CSS Test</title>
+    <style>
+        @import url('./client/src/styles/global-design-system.css');
+        
+        body {
+            background: var(--color-background);
+            color: var(--color-text-primary);
+            padding: var(--space-4);
+            font-family: var(--font-family-base);
+        }
+        
+        .test-button {
+            background: var(--color-primary);
+            color: white;
+            padding: var(--space-3) var(--space-5);
+            border-radius: var(--radius-md);
+            border: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>CSS Design System Test</h1>
+    <button class="btn btn-primary">Primary Button</button>
+    <button class="test-button">Test Button with Variables</button>
+    
+    <script>
+        // Test CSS variables
+        const styles = getComputedStyle(document.documentElement);
+        const primary = styles.getPropertyValue('--color-primary');
+        console.log('Primary color:', primary);
+        
+        if (primary) {
+            document.body.innerHTML += '<p style="color: green;">✅ CSS Variables loaded successfully!</p>';
+        } else {
+            document.body.innerHTML += '<p style="color: red;">❌ CSS Variables failed to load</p>';
+        }
+    </script>
+</body>
+</html>

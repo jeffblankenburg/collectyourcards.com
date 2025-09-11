@@ -398,7 +398,8 @@ router.post('/login',
           name: user.name,
           role: user.role,
           is_verified: user.is_verified,
-          last_login: user.last_login
+          last_login: user.last_login,
+          avatar_url: user.avatar_url
         }
       })
 
@@ -699,7 +700,8 @@ router.get('/profile', authMiddleware, async (req, res) => {
         is_active: true,
         is_verified: true,
         last_login: true,
-        created: true
+        created: true,
+        avatar_url: true
       }
     })
 
@@ -718,7 +720,8 @@ router.get('/profile', authMiddleware, async (req, res) => {
         is_active: user.is_active,
         is_verified: user.is_verified,
         last_login: user.last_login,
-        created: user.created
+        created: user.created,
+        avatar_url: user.avatar_url
       }
     })
 

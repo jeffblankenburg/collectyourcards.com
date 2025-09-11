@@ -41,20 +41,21 @@ function SeriesCard({ series, showBadge = false, customOnClick = null, hideSetNa
       className="seriescard-container"
       onClick={handleSeriesClick}
     >
-      {/* Color stripe for parallel series */}
-      {series.parallel_of && series.color_name && (
+      {/* Color stripe */}
+      {series.color_name && (
         <div 
-          className="seriescard-color-stripe"
-          style={{
-            '--stripe-color': series.color_hex || '#ec4899',
+          className="seriescard-color-stripe" 
+          style={{ 
+            '--stripe-color': series.color_hex || '#ec4899', 
             '--text-color': isLightColor(series.color_hex) ? '#000000' : '#ffffff'
           }}
         >
           <div className="seriescard-stripe-text">
-            {series.color_name}{series.print_run_display ? `  ${series.print_run_display}` : ''}
+            {series.color_name}{series.print_run_display ? ` ${series.print_run_display}` : ''}
           </div>
         </div>
       )}
+      
       {showBadge && (
         <div className="seriescard-result-type-badge seriescard-result-type-badge-series">
           <Icon name="collection" size={14} />
@@ -64,25 +65,16 @@ function SeriesCard({ series, showBadge = false, customOnClick = null, hideSetNa
       
       <div className="seriescard-content">
         <div className="seriescard-name-section">
-          <h3 className="seriescard-name">
-            {series.name}
-          </h3>
+          <h3 className="seriescard-name">{series.name}</h3>
           {!hideSetName && (
             <div className="seriescard-set-header">
-              {series.set_name ? (
-                <p className="seriescard-set-text">{series.set_name}</p>
-              ) : (
-                <p className="seriescard-set-text seriescard-set-placeholder">&nbsp;</p>
-              )}
+              <p className="seriescard-set-text">{series.set_name}</p>
             </div>
           )}
         </div>
         
-        <div className="seriescard-middle-space">
-          {/* Empty space in middle */}
-        </div>
-
-        {/* Parallel parent name - shown above stats */}
+        <div className="seriescard-middle-space"></div>
+        
         {series.parallel_parent_name && (
           <div className="seriescard-parallel-parent">
             {series.parallel_parent_name.replace(series.set_name || '', '').trim()}
@@ -98,19 +90,17 @@ function SeriesCard({ series, showBadge = false, customOnClick = null, hideSetNa
             <span className="seriescard-rc-count-number">{(series.rc_count || 0).toLocaleString()}</span>
             <span className="seriescard-rc-count-label">Rookies</span>
           </div>
-          {series.parallel_count > 0 && (
-            <div className="seriescard-parallel-count">
-              <span className="seriescard-parallel-count-number">{series.parallel_count}</span>
-              <span className="seriescard-parallel-count-label">Parallels</span>
-            </div>
-          )}
+          <div className="seriescard-parallel-count">
+            <span className="seriescard-parallel-count-number">{series.parallel_count || 0}</span>
+            <span className="seriescard-parallel-count-label">Parallels</span>
+          </div>
         </div>
       </div>
       
       {/* Admin Edit Button */}
       {isAdmin && (
         <button 
-          className="seriescard-admin-edit-btn"
+          className="seriescard-admin-edit-btn" 
           onClick={(e) => {
             e.stopPropagation()
             navigate(`/admin/series?search=${encodeURIComponent(series.name)}`)

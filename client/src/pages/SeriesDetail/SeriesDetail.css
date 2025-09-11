@@ -118,8 +118,9 @@
   padding: 1rem 1.5rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   align-items: center;
+  gap: 1rem;
 }
 
 .series-detail-page .search-container {
@@ -346,8 +347,15 @@
   background: rgba(255, 255, 255, 0.05);
 }
 
-.series-detail-page .cards-table tbody tr.clickable {
+/* Remove row-level clickable behavior - now handled by individual cells */
+.series-detail-page .clickable-cell {
   cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.series-detail-page .clickable-cell:hover {
+  background: rgba(59, 130, 246, 0.1);
+  border-radius: 4px;
 }
 
 .series-detail-page .cards-table tbody tr.owned-card {
@@ -373,6 +381,8 @@
   padding: 0.1rem 0.25rem;
   text-align: center;
   border-right: 1px solid rgba(255, 255, 255, 0.3);
+  height: 44px;
+  vertical-align: middle;
 }
 
 .series-detail-page .owned-cell {
@@ -515,8 +525,8 @@
   align-items: center;
   justify-content: center;
   margin: 0 auto;
-  width: auto;
-  height: auto;
+  width: 28px;
+  height: 28px;
 }
 
 .series-detail-page .add-card-btn:hover {
@@ -947,5 +957,165 @@
     right: 1rem;
     width: 48px;
     height: 48px;
+  }
+}
+
+/* Social Section - Discussion and Activity Feed side-by-side */
+.series-detail-page .social-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  align-items: start;
+  margin-top: 3rem;
+}
+
+/* Ensure components within social section have no top margin to align properly */
+.series-detail-page .social-section .activity-feed,
+.series-detail-page .social-section .comments-section {
+  margin-top: 0;
+}
+
+/* Responsive design for social section */
+@media (max-width: 1024px) {
+  .series-detail-page .social-section {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+  
+  .series-detail-page .social-section .activity-feed,
+  .series-detail-page .social-section .comments-section {
+    margin-top: 1rem;
+  }
+}
+
+/* Bulk Selection Styles */
+.series-detail-page .selection-mode-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.series-detail-page .toggle-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.series-detail-page .toggle-button:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: white;
+}
+
+.series-detail-page .toggle-button.active {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: rgba(59, 130, 246, 0.4);
+  color: #3b82f6;
+}
+
+.series-detail-page .toggle-button.active:hover {
+  background: rgba(59, 130, 246, 0.3);
+  border-color: rgba(59, 130, 246, 0.5);
+  color: white;
+}
+
+.series-detail-page .bulk-action-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: rgba(34, 197, 94, 0.2);
+  border: 1px solid rgba(34, 197, 94, 0.4);
+  border-radius: 6px;
+  color: #22c55e;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  animation: series-pulse 2s infinite;
+}
+
+.series-detail-page .bulk-action-button:hover {
+  background: rgba(34, 197, 94, 0.3);
+  border-color: rgba(34, 197, 94, 0.5);
+  color: white;
+  transform: translateY(-1px);
+}
+
+@keyframes series-pulse {
+  0%, 100% { 
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4);
+  }
+  50% { 
+    box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.1);
+  }
+}
+
+/* Checkbox Column Styles */
+.series-detail-page .cards-table .checkbox-header {
+  width: 75px;
+  min-width: 75px;
+  max-width: 75px;
+  padding: 1rem 0.75rem;
+  text-align: center;
+  color: white;
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  position: relative;
+  overflow: hidden;
+  margin: 0;
+  background: rgba(30, 41, 59, 0.95);
+  white-space: nowrap;
+  border-radius: 0;
+  border-bottom: 2px solid rgba(229, 231, 235, 0.2);
+  border-right: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.series-detail-page .checkbox-cell {
+  width: 75px;
+  min-width: 75px;
+  max-width: 75px;
+  padding: 0.1rem 0.25rem;
+  text-align: center;
+  border-right: 1px solid rgba(255, 255, 255, 0.3);
+  height: 44px;
+  vertical-align: middle;
+}
+
+.series-detail-page .checkbox-header input[type="checkbox"],
+.series-detail-page .checkbox-cell input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #3b82f6;
+  cursor: pointer;
+}
+
+/* Responsive adjustments for bulk selection */
+@media (max-width: 768px) {
+  .series-detail-page .table-controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+  
+  .series-detail-page .selection-mode-toggle {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  
+  .series-detail-page .search-container {
+    min-width: auto;
+    width: 100%;
   }
 }

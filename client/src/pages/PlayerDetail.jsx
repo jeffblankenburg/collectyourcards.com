@@ -2,11 +2,14 @@ import React, { useState, useEffect, useMemo } from 'react'
 import { useParams, useLocation, useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { useAuth } from '../contexts/AuthContext'
-import UniversalCardTable from '../components/UniversalCardTable'
+import { useToast } from '../contexts/ToastContext'
+import PlayerDetailHeader from '../components/PlayerDetailHeader'
+import CardTable from '../components/tables/CardTable'
 import TeamFilterCircles from '../components/TeamFilterCircles'
 import PlayerStats from '../components/PlayerStats'
 import Icon from '../components/Icon'
 import EditPlayerModal from '../components/modals/EditPlayerModal'
+import AddCardModal from '../components/modals/AddCardModal'
 import './PlayerDetailScoped.css'
 
 function PlayerDetail() {
@@ -14,6 +17,7 @@ function PlayerDetail() {
   const location = useLocation()
   const navigate = useNavigate()
   const { isAuthenticated, user } = useAuth()
+  const { success, error: showToastError } = useToast()
   const [player, setPlayer] = useState(null)
   const [cards, setCards] = useState([])
   const [teams, setTeams] = useState([])
@@ -22,6 +26,13 @@ function PlayerDetail() {
   const [error, setError] = useState(null)
   const [selectedTeamIds, setSelectedTeamIds] = useState([])
   const [showEditModal, setShowEditModal] = useState(false)
+  const [activeStatFilter, setActiveStatFilter] = useState(null)
+  const [cardsLoading, setCardsLoading] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [bulkSelectionMode, setBulkSelectionMode] = useState(false)
+  const [selectedCards, setSelectedCards] = useState(new Set())
+  const [showAddCardModal, setShowAddCardModal] = useState(false)
+  const [cardToAdd, setCardToAdd] = useState(null)
 
   // Check if user is admin
   const isAdmin = user && ['admin', 'superadmin', 'data_admin'].includes(user.role)
@@ -84,15 +95,32 @@ function PlayerDetail() {
       const { player: playerData, cards: cardsData, teams: teamsData, stats: statsData } = response.data
 
       setPlayer(playerData)
-      setCards(cardsData)
       setTeams(teamsData)
       setStats(statsData)
       setError(null)
+      
+      // Fetch cards separately for CardTable
+      if (playerData) {
+        await fetchCards(playerData)
+      }
     } catch (err) {
       console.error('Error fetching player data:', err)
       setError(err.response?.data?.error || 'Failed to load player data')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchCards = async (playerData) => {
+    try {
+      setCardsLoading(true)
+      const response = await axios.get(`/api/cards?player_name=${encodeURIComponent(`${playerData.first_name} ${playerData.last_name}`)}&limit=10000`)
+      setCards(response.data.cards || [])
+    } catch (err) {
+      console.error('Error fetching cards:', err)
+      setCards([])
+    } finally {
+      setCardsLoading(false)
     }
   }
 
@@ -154,6 +182,16 @@ function PlayerDetail() {
     setSelectedTeamIds(teamIds)
   }
 
+  const handleStatFilter = (statType) => {
+    if (activeStatFilter === statType) {
+      // If clicking the same filter, turn it off
+      setActiveStatFilter(null)
+    } else {
+      // Set new active filter
+      setActiveStatFilter(statType)
+    }
+  }
+
   const handleSeriesClick = (series) => {
     if (series?.name) {
       const slug = series.name
@@ -166,22 +204,135 @@ function PlayerDetail() {
     }
   }
 
-  // Filter cards based on selected teams
-  const filteredCards = selectedTeamIds.length > 0 
-    ? cards.filter(card => 
+  // Filter cards based on selected teams and stat filters
+  const filteredCards = useMemo(() => {
+    let filtered = [...cards]
+
+    // Apply team filtering
+    if (selectedTeamIds.length > 0) {
+      filtered = filtered.filter(card => 
         card.card_player_teams?.some(cpt => 
-          cpt.team?.team_id && 
-          selectedTeamIds.includes(cpt.team.team_id)
+          selectedTeamIds.includes(cpt.team?.team_id)
         )
       )
-    : cards
+    }
 
-  // Memoize the API endpoint (no team filter - we'll filter client-side)
-  const apiEndpoint = useMemo(() => {
-    if (!player) return null
+    // Apply stat filtering
+    if (activeStatFilter) {
+      switch (activeStatFilter) {
+        case 'rookie':
+          filtered = filtered.filter(card => card.is_rookie)
+          break
+        case 'autograph':
+          filtered = filtered.filter(card => card.is_autograph)
+          break
+        case 'relic':
+          filtered = filtered.filter(card => card.is_relic)
+          break
+        case 'numbered':
+          filtered = filtered.filter(card => card.print_run && card.print_run > 0)
+          break
+        default:
+          break
+      }
+    }
+
+    return filtered
+  }, [cards, selectedTeamIds, activeStatFilter])
+
+  const handleSearchChange = (query) => {
+    setSearchQuery(query)
+  }
+
+  const handleCardClick = (card) => {
+    // Navigate to card detail page
+    if (card.series_rel?.name && card.card_number) {
+      const seriesSlug = card.series_rel.name
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .trim()
+      
+      const playerSlug = card.card_player_teams?.[0]?.player ? 
+        `${card.card_player_teams[0].player.first_name}-${card.card_player_teams[0].player.last_name}`
+          .toLowerCase()
+          .replace(/[^a-z0-9\s-]/g, '')
+          .replace(/\s+/g, '-')
+          .replace(/-+/g, '-')
+          .trim() : 'unknown'
+      
+      navigate(`/card/${seriesSlug}/${card.card_number}/${playerSlug}`)
+    }
+  }
+
+  const handleAddCard = (card) => {
+    if (!isAuthenticated) {
+      showToastError('Please log in to add cards to your collection')
+      return
+    }
+
+    // Open modal with card data
+    setCardToAdd(card)
+    setShowAddCardModal(true)
+  }
+
+  const handleCardAdded = (newUserCard) => {
+    // Update the card's user_card_count to reflect it's now owned
+    setCards(prevCards => 
+      prevCards.map(c => 
+        c.card_id === newUserCard.card 
+          ? { ...c, user_card_count: (c.user_card_count || 0) + 1 }
+          : c
+      )
+    )
     
-    return `/api/cards?player_name=${encodeURIComponent(`${player.first_name} ${player.last_name}`)}`
-  }, [player?.first_name, player?.last_name])
+    // Close modal
+    setShowAddCardModal(false)
+    setCardToAdd(null)
+  }
+
+  const handleBulkAddCards = async () => {
+    if (!isAuthenticated) {
+      showToastError('Please log in to add cards to your collection')
+      return
+    }
+
+    if (selectedCards.size === 0) return
+
+    try {
+      // Add multiple cards to collection
+      const cardIds = Array.from(selectedCards)
+      const response = await axios.post('/api/user/cards/bulk', {
+        card_ids: cardIds
+      })
+      
+      success(`Added ${selectedCards.size} cards to your collection`)
+      
+      // Update all selected cards' user_card_count
+      setCards(prevCards => 
+        prevCards.map(c => 
+          selectedCards.has(c.card_id)
+            ? { ...c, user_card_count: (c.user_card_count || 0) + 1 }
+            : c
+        )
+      )
+      
+      // Clear selection after successful bulk add
+      setSelectedCards(new Set())
+      setBulkSelectionMode(false)
+    } catch (err) {
+      console.error('Error adding cards:', err)
+      showToastError(err.response?.data?.error || 'Failed to add cards to collection')
+    }
+  }
+
+  const handleBulkSelectionToggle = () => {
+    setBulkSelectionMode(!bulkSelectionMode)
+    setSelectedCards(new Set()) // Clear selection when toggling modes
+  }
+
+
 
 
   if (loading) {
@@ -223,111 +374,34 @@ function PlayerDetail() {
     <div className="player-detail-page">
       <div className="player-detail-container">
         
-        {/* Combined Player Header with Stats and Card Photo Space */}
-        <header className="player-header-combined">
-          <div className="player-header-layout">
-            {/* Left side - Player Info */}
-            <div className="player-identity">
-              <h1 className="player-header-name">
-                {player.first_name} {player.last_name}
-                {player.is_hof && <Icon name="trophy" size={20} className="hof-icon" title="Hall of Fame" />}
-              </h1>
-              {player.nick_name && (
-                <p className="player-nickname">"{player.nick_name}"</p>
-              )}
-              {player.birthdate && (
-                <p className="player-birthdate">
-                  Born: {new Date(player.birthdate).toLocaleDateString()}
-                </p>
-              )}
-              
-              {/* Team Circles in Header */}
-              {teams.length > 0 && (
-                <div className="header-teams">
-                  <TeamFilterCircles 
-                    teams={teams}
-                    selectedTeamIds={selectedTeamIds}
-                    onTeamFilter={handleTeamFilter}
-                    compact={true}
-                  />
-                </div>
-              )}
-            </div>
-
-            {/* Card Photos */}
-            <div className="card-photo-placeholder">
-              <div className="card-placeholder">
-                <Icon name="card" size={48} className="card-icon" />
-                <span>Card Photo 1</span>
-              </div>
-            </div>
-
-            <div className="card-photo-placeholder">
-              <div className="card-placeholder">
-                <Icon name="card" size={48} className="card-icon" />
-                <span>Card Photo 2</span>
-              </div>
-            </div>
-
-            {/* Right side - Stats */}
-            <div className="player-stats-inline">
-              <div className="stats-grid-inline">
-                <div className="stat-item-inline">
-                  <div className="stat-content-inline">
-                    <span className="stat-value-inline">{stats.total_cards?.toLocaleString() || 0}</span>
-                    <span className="stat-label-inline">Total Cards</span>
-                  </div>
-                </div>
-                
-                <div className="stat-item-inline">
-                  <div className="stat-content-inline">
-                    <span className="stat-value-inline">{stats.rookie_cards?.toLocaleString() || 0}</span>
-                    <span className="stat-label-inline">Rookie Cards</span>
-                  </div>
-                </div>
-                
-                <div className="stat-item-inline">
-                  <div className="stat-content-inline">
-                    <span className="stat-value-inline">{stats.autograph_cards?.toLocaleString() || 0}</span>
-                    <span className="stat-label-inline">Autographs</span>
-                  </div>
-                </div>
-                
-                <div className="stat-item-inline">
-                  <div className="stat-content-inline">
-                    <span className="stat-value-inline">{stats.relic_cards?.toLocaleString() || 0}</span>
-                    <span className="stat-label-inline">Relics</span>
-                  </div>
-                </div>
-                
-                <div className="stat-item-inline">
-                  <div className="stat-content-inline">
-                    <span className="stat-value-inline">{stats.numbered_cards?.toLocaleString() || 0}</span>
-                    <span className="stat-label-inline">Numbered</span>
-                  </div>
-                </div>
-                
-                <div className="stat-item-inline">
-                  <div className="stat-content-inline">
-                    <span className="stat-value-inline">{stats.unique_series?.toLocaleString() || 0}</span>
-                    <span className="stat-label-inline">Series</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </header>
-
+        {/* Player Header Component */}
+        <PlayerDetailHeader
+          player={player}
+          teams={teams}
+          stats={stats}
+          selectedTeamIds={selectedTeamIds}
+          onTeamFilter={handleTeamFilter}
+          activeStatFilter={activeStatFilter}
+          onStatFilter={handleStatFilter}
+        />
 
         {/* Cards Table */}
-        <UniversalCardTable
-          apiEndpoint={apiEndpoint}
-          showPlayer={true}
-          defaultSort="series_name"
-          downloadFilename={`${player.first_name}-${player.last_name}-cards`}
+        <CardTable
+          cards={filteredCards}
+          loading={cardsLoading}
+          onCardClick={handleCardClick}
           showSearch={true}
-          selectedTeamIds={selectedTeamIds}
-          onSeriesClick={handleSeriesClick}
+          autoFocusSearch={true}
+          searchQuery={searchQuery}
+          onSearchChange={handleSearchChange}
+          downloadFilename={`${player?.first_name || 'player'}-${player?.last_name || 'cards'}-cards`}
+          showBulkActions={true}
+          bulkSelectionMode={bulkSelectionMode}
+          selectedCards={selectedCards}
+          onBulkSelectionToggle={handleBulkSelectionToggle}
+          onCardSelection={setSelectedCards}
+          onBulkAction={handleBulkAddCards}
+          onAddCard={handleAddCard}
         />
 
       </div>
@@ -353,6 +427,19 @@ function PlayerDetail() {
             setShowEditModal(false)
             fetchPlayerData() // Reload player data after save
           }}
+        />
+      )}
+      
+      {/* Add Card Modal */}
+      {showAddCardModal && cardToAdd && (
+        <AddCardModal
+          isOpen={showAddCardModal}
+          onClose={() => {
+            setShowAddCardModal(false)
+            setCardToAdd(null)
+          }}
+          card={cardToAdd}
+          onCardAdded={handleCardAdded}
         />
       )}
     </div>
