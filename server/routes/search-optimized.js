@@ -214,89 +214,81 @@ async function performConsolidatedSearch(query, searchPattern, limit, category) 
 function formatSearchResult(row) {
   const baseResult = {
     type: row.result_type,
-    relevance: Number(row.relevance_score),
+    id: row.entity_id,
+    title: row.primary_text,
+    subtitle: row.secondary_text || '',
+    description: row.tertiary_text || '',
+    relevanceScore: Number(row.relevance_score),
     data: {
-      id: row.entity_id,
-      primary: row.primary_text,
-      secondary: row.secondary_text || '',
-      tertiary: row.tertiary_text || ''
+      id: row.entity_id
     }
   }
   
-  // Add type-specific data
+  // Add type-specific data to match original search format
   switch (row.result_type) {
     case 'card':
-      baseResult.data.card_number = row.primary_text
-      baseResult.data.is_rookie = Boolean(row.is_rookie)
-      baseResult.data.is_autograph = Boolean(row.is_autograph)
-      baseResult.data.is_relic = Boolean(row.is_relic)
-      baseResult.data.print_run = row.print_run
-      
-      if (row.color_hex) {
-        baseResult.data.color = {
-          name: row.color_name,
-          hex: row.color_hex
-        }
-      }
-      
-      // Parse teams data
-      if (row.teams_data) {
-        baseResult.data.teams = row.teams_data.split('~').map(teamStr => {
-          const [id, name, primary, secondary] = teamStr.split('|')
-          return {
-            team_id: Number(id),
-            name,
-            primary_color: primary || null,
-            secondary_color: secondary || null
-          }
-        })
+      // Format card title like original: "#123 Player Name • Series Name"
+      baseResult.title = `#${row.primary_text} ${row.tertiary_text} • ${row.secondary_text}`
+      baseResult.data = {
+        card_id: row.entity_id,
+        card_number: row.primary_text,
+        is_rookie: Boolean(row.is_rookie),
+        is_autograph: Boolean(row.is_autograph),
+        is_relic: Boolean(row.is_relic),
+        print_run: row.print_run ? Number(row.print_run) : null,
+        series_name: row.secondary_text,
+        player_names: row.tertiary_text,
+        color_name: row.color_name,
+        color_hex: row.color_hex,
+        // Add navigation slugs
+        series_slug: generateSlug(row.secondary_text),
+        player_slug: generateSlug(row.tertiary_text)
       }
       break
       
     case 'player':
-      baseResult.data.name = row.primary_text
-      baseResult.data.nickname = row.secondary_text
-      baseResult.data.card_count = parseInt(row.tertiary_text) || 0
-      baseResult.data.slug = generateSlug(row.primary_text)
-      
-      // Parse teams data
-      if (row.teams_data) {
-        baseResult.data.teams = row.teams_data.split('~').map(teamStr => {
-          const [id, name, primary, secondary] = teamStr.split('|')
-          return {
-            team_id: Number(id),
-            name,
-            primary_color: primary || null,
-            secondary_color: secondary || null
-          }
-        })
+      // Format player title like original: "First Last" or "First 'Nick' Last"  
+      const playerName = row.primary_text
+      const nickname = row.secondary_text
+      baseResult.title = nickname ? `${playerName.split(' ')[0]} "${nickname}" ${playerName.split(' ').slice(1).join(' ')}` : playerName
+      baseResult.data = {
+        player_id: row.entity_id,
+        first_name: playerName.split(' ')[0],
+        last_name: playerName.split(' ').slice(1).join(' '),
+        nick_name: nickname || null,
+        card_count: Number(row.tertiary_text.replace(' cards', '')) || 0,
+        teams: []
       }
       break
       
     case 'team':
-      baseResult.data.name = row.primary_text
-      baseResult.data.city = row.secondary_text
-      baseResult.data.sport_org = row.tertiary_text
-      baseResult.data.slug = generateSlug(row.primary_text)
-      
-      if (row.teams_data) {
-        const [id, name, primary, secondary] = row.teams_data.split('|')
-        baseResult.data.primary_color = primary || null
-        baseResult.data.secondary_color = secondary || null
+      baseResult.title = row.primary_text
+      baseResult.data = {
+        team_id: row.entity_id,
+        name: row.primary_text,
+        city: row.secondary_text,
+        organization_name: row.tertiary_text,
+        primary_color: row.color_hex,
+        card_count: 0,
+        player_count: 0
       }
       break
       
     case 'series':
-      baseResult.data.name = row.primary_text
-      baseResult.data.set_name = row.secondary_text
-      baseResult.data.card_count = row.tertiary_text
-      baseResult.data.slug = generateSlug(row.primary_text)
-      
-      if (row.color_hex) {
-        baseResult.data.color = {
-          name: row.color_name,
-          hex: row.color_hex
-        }
+      baseResult.title = row.primary_text
+      baseResult.data = {
+        series_id: row.entity_id,
+        name: row.primary_text,
+        series_name: row.primary_text,
+        set_name: row.secondary_text,
+        card_count: Number(row.tertiary_text.replace(' cards', '')) || 0,
+        color_name: row.color_name,
+        color_hex_value: row.color_hex,
+        color_hex: row.color_hex,
+        // Add navigation slugs
+        slug: generateSlug(row.primary_text),
+        series_slug: generateSlug(row.primary_text),
+        set_slug: generateSlug(row.secondary_text)
       }
       break
   }
