@@ -362,6 +362,7 @@ function AdminSeries() {
               placeholder="Search series by name..."
               value={searchTerm}
               onChange={handleSearchChange}
+              autoFocus
             />
           </div>
         </div>

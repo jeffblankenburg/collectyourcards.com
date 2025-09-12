@@ -24,28 +24,35 @@ router.use(requireAdmin)
 // GET /api/admin/users - Get list of all users
 router.get('/users', async (req, res) => {
   try {
-    const users = await prisma.user.findMany({
-      select: {
-        user_id: true,
-        name: true,
-        email: true,
-        role: true,
-        is_active: true,
-        is_verified: true,
-        created: true,
-        last_login: true,
-        login_attempts: true
-      },
-      orderBy: {
-        created: 'desc'
-      }
-    })
+    // Get users with their card collection counts using raw SQL for better performance
+    const usersWithCounts = await prisma.$queryRawUnsafe(`
+      SELECT 
+        u.user_id,
+        u.username,
+        u.first_name,
+        u.last_name,
+        u.name,
+        u.email,
+        u.role,
+        u.is_active,
+        u.is_verified,
+        u.created,
+        u.last_login,
+        u.login_attempts,
+        ISNULL(COUNT(uc.user_card_id), 0) as card_count
+      FROM [user] u
+      LEFT JOIN user_card uc ON u.user_id = uc.[user]
+      GROUP BY u.user_id, u.username, u.first_name, u.last_name, u.name, u.email, 
+               u.role, u.is_active, u.is_verified, u.created, u.last_login, u.login_attempts
+      ORDER BY u.created DESC
+    `)
 
     // Convert BigInt to Number for JSON serialization
-    const serializedUsers = users.map(user => ({
+    const serializedUsers = usersWithCounts.map(user => ({
       ...user,
       user_id: Number(user.user_id),
-      login_attempts: user.login_attempts ? Number(user.login_attempts) : 0
+      login_attempts: user.login_attempts ? Number(user.login_attempts) : 0,
+      card_count: Number(user.card_count) || 0
     }))
 
     res.json({
@@ -116,6 +123,9 @@ router.post('/users', async (req, res) => {
       },
       select: {
         user_id: true,
+        username: true,
+        first_name: true,
+        last_name: true,
         name: true,
         email: true,
         role: true,
@@ -331,6 +341,9 @@ router.put('/users/:id', async (req, res) => {
       data: cleanUpdateData,
       select: {
         user_id: true,
+        username: true,
+        first_name: true,
+        last_name: true,
         name: true,
         email: true,
         role: true,
@@ -398,6 +411,9 @@ router.post('/users/:id/reset-password', async (req, res) => {
       where: { user_id: BigInt(userId) },
       select: {
         user_id: true,
+        username: true,
+        first_name: true,
+        last_name: true,
         name: true,
         email: true,
         is_active: true

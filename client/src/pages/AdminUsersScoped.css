@@ -133,7 +133,7 @@
 
 .admin-users-page .table-header {
   display: grid;
-  grid-template-columns: 80px 1fr 1fr 120px 140px 150px 150px 100px;
+  grid-template-columns: 80px 140px 1fr 1fr 120px 100px 140px 150px 150px 100px;
   gap: 1rem;
   padding: 1rem;
   background: rgba(255, 255, 255, 0.1);
@@ -147,7 +147,7 @@
 
 .admin-users-page .user-row {
   display: grid;
-  grid-template-columns: 80px 1fr 1fr 120px 140px 150px 150px 100px;
+  grid-template-columns: 80px 140px 1fr 1fr 120px 100px 140px 150px 150px 100px;
   gap: 1rem;
   padding: 1rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
@@ -170,6 +170,36 @@
   font-size: 0.8rem;
   color: rgba(255, 255, 255, 0.6);
   text-align: center;
+}
+
+.admin-users-page .col-username {
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.8);
+  overflow: visible;
+  white-space: nowrap;
+}
+
+.admin-users-page .username-link {
+  color: rgba(255, 255, 255, 0.9);
+  text-decoration: none;
+  transition: text-decoration 0.2s ease;
+  font-weight: 500;
+}
+
+.admin-users-page .username-link:hover {
+  text-decoration: underline;
+}
+
+.admin-users-page .no-username {
+  color: rgba(255, 255, 255, 0.4);
+  font-style: italic;
+}
+
+.admin-users-page .col-cards {
+  text-align: center;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .admin-users-page .col-name {
@@ -579,7 +609,7 @@
   
   .admin-users-page .table-header,
   .admin-users-page .user-row {
-    grid-template-columns: 60px 1fr 1fr 100px 120px 100px 100px 80px;
+    grid-template-columns: 60px 120px 1fr 1fr 100px 80px 120px 100px 100px 80px;
     gap: 0.75rem;
     padding: 0.75rem;
   }
@@ -602,7 +632,7 @@
 
   .admin-users-page .table-header,
   .admin-users-page .user-row {
-    grid-template-columns: 50px 1fr 80px 100px 60px;
+    grid-template-columns: 50px 100px 1fr 80px 60px 100px 60px;
     gap: 0.5rem;
     padding: 0.75rem 0.5rem;
   }
@@ -629,6 +659,7 @@
   /* Show only essential columns */
   .admin-users-page .col-id,
   .admin-users-page .col-email,
+  .admin-users-page .col-cards,
   .admin-users-page .col-created,
   .admin-users-page .col-login {
     display: none;

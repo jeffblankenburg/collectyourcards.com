@@ -457,9 +457,17 @@ function AdminPlayers() {
       )
     }
     
+    // Remove duplicates based on team_id
+    const uniqueTeams = player.teams.reduce((acc, team) => {
+      if (!acc.some(t => t.team_id === team.team_id)) {
+        acc.push(team)
+      }
+      return acc
+    }, [])
+    
     return (
       <div className="player-teams">
-        {player.teams.map(team => (
+        {uniqueTeams.map(team => (
           <div
             key={team.team_id}
             className="team-circle-base team-circle-sm"
@@ -467,7 +475,7 @@ function AdminPlayers() {
               '--primary-color': team.primary_color || '#666',
               '--secondary-color': team.secondary_color || '#999'
             }}
-            title={`${team.city ? team.city + ' ' : ''}${team.name || 'Unknown Team'}`}
+            title={team.name || 'Unknown Team'}
           >
             {team.abbreviation || '?'}
           </div>
@@ -484,9 +492,9 @@ function AdminPlayers() {
     // If we have both first and last name, and a nickname, return JSX with styling
     if (firstName && lastName && nickname) {
       return (
-        <>
+        <span>
           {firstName} <span className="player-nickname-inline">"{nickname}"</span> {lastName}
-        </>
+        </span>
       )
     }
     
@@ -527,6 +535,7 @@ function AdminPlayers() {
               placeholder="Search players by name..."
               value={searchTerm}
               onChange={handleSearch}
+              autoFocus
             />
             {searching && <div className="card-icon-spinner small"></div>}
           </div>
@@ -540,7 +549,7 @@ function AdminPlayers() {
             <span>Loading players...</span>
           </div>
         ) : (
-          <>
+          <div className="players-section">
             <div className="section-header">
               <div className="section-info">
                 <h2>
@@ -656,18 +665,21 @@ function AdminPlayers() {
                 </div>
               )}
             </div>
-          </>
+          </div>
         )}
       </div>
 
       {/* Edit Player Modal */}
       {editingPlayer && (
-        <div className="modal-overlay">
-          <div className="edit-player-modal">
+        <div className="modal-overlay" onClick={handleCloseModal}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>Edit Player #{editingPlayer.player_id}</h3>
+              <h3>
+                <Icon name="user" size={20} />
+                Edit Player #{editingPlayer.player_id}
+              </h3>
               <button 
-                className="close-btn" 
+                className="modal-close-btn" 
                 onClick={handleCloseModal}
                 type="button"
               >
@@ -675,65 +687,61 @@ function AdminPlayers() {
               </button>
             </div>
 
-            <div className="modal-content">
-              <div className="edit-form">
-                {/* Player Details - Label/Input Layout */}
-                <div className="player-details-form">
-                  <div className="form-field-row">
-                    <label className="field-label">First Name</label>
-                    <input
-                      type="text"
-                      className="field-input"
-                      value={editForm.first_name || ''}
-                      onChange={(e) => handleFormChange('first_name', e.target.value)}
-                      placeholder="First name"
-                    />
-                  </div>
+            <div className="modal-form">
+                <div className="form-group">
+                  <label>First Name</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={editForm.first_name || ''}
+                    onChange={(e) => handleFormChange('first_name', e.target.value)}
+                    placeholder="First name"
+                  />
+                </div>
 
-                  <div className="form-field-row">
-                    <label className="field-label">Last Name</label>
-                    <input
-                      type="text"
-                      className="field-input"
-                      value={editForm.last_name || ''}
-                      onChange={(e) => handleFormChange('last_name', e.target.value)}
-                      placeholder="Last name"
-                    />
-                  </div>
+                <div className="form-group">
+                  <label>Last Name</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={editForm.last_name || ''}
+                    onChange={(e) => handleFormChange('last_name', e.target.value)}
+                    placeholder="Last name"
+                  />
+                </div>
 
-                  <div className="form-field-row">
-                    <label className="field-label">Nickname</label>
-                    <input
-                      type="text"
-                      className="field-input"
-                      value={editForm.nick_name || ''}
-                      onChange={(e) => handleFormChange('nick_name', e.target.value)}
-                      placeholder="Optional"
-                    />
-                  </div>
+                <div className="form-group">
+                  <label>Nickname</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={editForm.nick_name || ''}
+                    onChange={(e) => handleFormChange('nick_name', e.target.value)}
+                    placeholder="Optional"
+                  />
+                </div>
 
-                  <div className="form-field-row">
-                    <label className="field-label">Birthdate</label>
-                    <input
-                      type="date"
-                      className="field-input"
-                      value={editForm.birthdate || ''}
-                      onChange={(e) => handleFormChange('birthdate', e.target.value)}
-                    />
-                  </div>
+                <div className="form-group">
+                  <label>Birthdate</label>
+                  <input
+                    type="date"
+                    className="form-input"
+                    value={editForm.birthdate || ''}
+                    onChange={(e) => handleFormChange('birthdate', e.target.value)}
+                  />
+                </div>
 
-                  <div className="form-field-row">
-                    <label className="field-label">Hall of Fame</label>
-                    <button
-                      type="button"
-                      className={`hof-toggle ${editForm.is_hof ? 'hof-active' : ''}`}
-                      onClick={() => handleFormChange('is_hof', !editForm.is_hof)}
-                    >
-                      <Icon name="star" size={16} />
-                      <span>Hall of Fame</span>
-                      {editForm.is_hof && <Icon name="check" size={16} className="hof-check" />}
-                    </button>
-                  </div>
+                <div className="form-group">
+                  <label>Hall of Fame</label>
+                  <button
+                    type="button"
+                    className={`hof-toggle ${editForm.is_hof ? 'hof-active' : ''}`}
+                    onClick={() => handleFormChange('is_hof', !editForm.is_hof)}
+                  >
+                    <Icon name="star" size={16} />
+                    <span>Hall of Fame</span>
+                    {editForm.is_hof && <Icon name="check" size={16} className="hof-check" />}
+                  </button>
                 </div>
 
                 {/* Teams Section */}
@@ -874,46 +882,51 @@ function AdminPlayers() {
                     )}
                   </div>
                 </div>
+
+                <div className="modal-actions">
+                  <button 
+                    type="button" 
+                    className="btn-cancel" 
+                    onClick={handleCloseModal}
+                    disabled={saving}
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    type="button" 
+                    className="btn-primary" 
+                    onClick={handleSavePlayer}
+                    disabled={saving || (!editForm.first_name?.trim() && !editForm.last_name?.trim() && !editForm.nick_name?.trim())}
+                  >
+                    {saving ? (
+                      <>
+                        <div className="spinner"></div>
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Icon name="check" size={16} />
+                        Save Changes
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
-
-            <div className="modal-actions">
-              <button 
-                type="button" 
-                className="cancel-btn" 
-                onClick={handleCloseModal}
-                disabled={saving}
-              >
-                Cancel
-              </button>
-              <button 
-                type="button" 
-                className="save-btn" 
-                onClick={handleSavePlayer}
-                disabled={saving || (!editForm.first_name?.trim() && !editForm.last_name?.trim() && !editForm.nick_name?.trim())}
-              >
-                {saving ? (
-                  <>
-                    <div className="card-icon-spinner small"></div>
-                    Saving...
-                  </>
-                ) : (
-                  'Save Changes'
-                )}
-              </button>
-            </div>
           </div>
-        </div>
       )}
 
       {/* Card Reassignment Modal */}
       {showReassignModal && teamToRemove && (
-        <div className="modal-overlay">
-          <div className="reassign-modal">
+        <div className="modal-overlay" onClick={() => setShowReassignModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>Reassign Cards</h3>
+              <h3>
+                <Icon name="refresh-cw" size={20} />
+                Reassign Cards
+              </h3>
               <button 
-                className="close-btn" 
+                className="modal-close-btn" 
                 onClick={() => setShowReassignModal(false)}
                 type="button"
               >
@@ -921,22 +934,24 @@ function AdminPlayers() {
               </button>
             </div>
 
-            <div className="modal-content">
-              <div className="reassign-info">
-                <p>
-                  <strong>{editingPlayer.first_name} {editingPlayer.last_name}</strong> has{' '}
-                  <span className="card-count">{teamToRemove.card_count} cards</span>{' '}
-                  assigned to <strong>{teamToRemove.name}</strong>.
-                </p>
-                <p>
-                  Before removing this team, you must reassign these cards to another team that {editingPlayer.first_name} {editingPlayer.last_name} is already assigned to.
-                </p>
+            <div className="modal-form">
+              <div className="form-group">
+                <div className="reassign-info">
+                  <p>
+                    <strong>{editingPlayer.first_name} {editingPlayer.last_name}</strong> has{' '}
+                    <span className="card-count">{teamToRemove.card_count} cards</span>{' '}
+                    assigned to <strong>{teamToRemove.name}</strong>.
+                  </p>
+                  <p>
+                    Before removing this team, you must reassign these cards to another team that {editingPlayer.first_name} {editingPlayer.last_name} is already assigned to.
+                  </p>
+                </div>
               </div>
 
-              <div className="reassign-form">
-                <label className="reassign-label">Reassign cards to:</label>
+              <div className="form-group">
+                <label>Reassign cards to:</label>
                 <select 
-                  className="reassign-select"
+                  className="form-input"
                   value={reassignToTeam}
                   onChange={(e) => setReassignToTeam(e.target.value)}
                   disabled={reassigning}
@@ -952,32 +967,35 @@ function AdminPlayers() {
                   }
                 </select>
               </div>
-            </div>
 
-            <div className="modal-actions">
-              <button 
-                type="button" 
-                className="cancel-btn" 
-                onClick={() => setShowReassignModal(false)}
-                disabled={reassigning}
-              >
-                Cancel
-              </button>
-              <button 
-                type="button" 
-                className="reassign-btn" 
-                onClick={handleReassignCards}
-                disabled={reassigning || !reassignToTeam}
-              >
-                {reassigning ? (
-                  <>
-                    <div className="card-icon-spinner small"></div>
-                    Reassigning...
-                  </>
-                ) : (
-                  `Reassign ${teamToRemove.card_count} Cards & Remove Team`
-                )}
-              </button>
+              <div className="modal-actions">
+                <button 
+                  type="button" 
+                  className="btn-cancel" 
+                  onClick={() => setShowReassignModal(false)}
+                  disabled={reassigning}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="button" 
+                  className="btn-primary" 
+                  onClick={handleReassignCards}
+                  disabled={reassigning || !reassignToTeam}
+                >
+                  {reassigning ? (
+                    <>
+                      <div className="spinner"></div>
+                      Reassigning...
+                    </>
+                  ) : (
+                    <>
+                      <Icon name="refresh-cw" size={16} />
+                      Reassign {teamToRemove.card_count} Cards & Remove Team
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -985,12 +1003,15 @@ function AdminPlayers() {
 
       {/* Add Player Modal */}
       {showAddModal && (
-        <div className="modal-overlay">
-          <div className="edit-player-modal">
+        <div className="modal-overlay" onClick={handleCloseModal}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>Add New Player</h3>
+              <h3>
+                <Icon name="user-plus" size={20} />
+                Add New Player
+              </h3>
               <button 
-                className="close-btn" 
+                className="modal-close-btn" 
                 onClick={handleCloseModal}
                 type="button"
               >
@@ -998,65 +1019,61 @@ function AdminPlayers() {
               </button>
             </div>
 
-            <div className="modal-content">
-              <div className="edit-form">
-                {/* Player Details - Label/Input Layout */}
-                <div className="player-details-form">
-                  <div className="form-field-row">
-                    <label className="field-label">First Name</label>
-                    <input
-                      type="text"
-                      className="field-input"
-                      value={editForm.first_name || ''}
-                      onChange={(e) => handleFormChange('first_name', e.target.value)}
-                      placeholder="First name"
-                    />
-                  </div>
+            <div className="modal-form">
+                <div className="form-group">
+                  <label>First Name</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={editForm.first_name || ''}
+                    onChange={(e) => handleFormChange('first_name', e.target.value)}
+                    placeholder="First name"
+                  />
+                </div>
 
-                  <div className="form-field-row">
-                    <label className="field-label">Last Name</label>
-                    <input
-                      type="text"
-                      className="field-input"
-                      value={editForm.last_name || ''}
-                      onChange={(e) => handleFormChange('last_name', e.target.value)}
-                      placeholder="Last name"
-                    />
-                  </div>
+                <div className="form-group">
+                  <label>Last Name</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={editForm.last_name || ''}
+                    onChange={(e) => handleFormChange('last_name', e.target.value)}
+                    placeholder="Last name"
+                  />
+                </div>
 
-                  <div className="form-field-row">
-                    <label className="field-label">Nickname</label>
-                    <input
-                      type="text"
-                      className="field-input"
-                      value={editForm.nick_name || ''}
-                      onChange={(e) => handleFormChange('nick_name', e.target.value)}
-                      placeholder="Optional"
-                    />
-                  </div>
+                <div className="form-group">
+                  <label>Nickname</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={editForm.nick_name || ''}
+                    onChange={(e) => handleFormChange('nick_name', e.target.value)}
+                    placeholder="Optional"
+                  />
+                </div>
 
-                  <div className="form-field-row">
-                    <label className="field-label">Birthdate</label>
-                    <input
-                      type="date"
-                      className="field-input"
-                      value={editForm.birthdate || ''}
-                      onChange={(e) => handleFormChange('birthdate', e.target.value)}
-                    />
-                  </div>
+                <div className="form-group">
+                  <label>Birthdate</label>
+                  <input
+                    type="date"
+                    className="form-input"
+                    value={editForm.birthdate || ''}
+                    onChange={(e) => handleFormChange('birthdate', e.target.value)}
+                  />
+                </div>
 
-                  <div className="form-field-row">
-                    <label className="field-label">Hall of Fame</label>
-                    <button
-                      type="button"
-                      className={`hof-toggle ${editForm.is_hof ? 'hof-active' : ''}`}
-                      onClick={() => handleFormChange('is_hof', !editForm.is_hof)}
-                    >
-                      <Icon name="star" size={16} />
-                      <span>Hall of Fame</span>
-                      {editForm.is_hof && <Icon name="check" size={16} className="hof-check" />}
-                    </button>
-                  </div>
+                <div className="form-group">
+                  <label>Hall of Fame</label>
+                  <button
+                    type="button"
+                    className={`hof-toggle ${editForm.is_hof ? 'hof-active' : ''}`}
+                    onClick={() => handleFormChange('is_hof', !editForm.is_hof)}
+                  >
+                    <Icon name="star" size={16} />
+                    <span>Hall of Fame</span>
+                    {editForm.is_hof && <Icon name="check" size={16} className="hof-check" />}
+                  </button>
                 </div>
 
                 {/* Teams Section for Add Modal */}
@@ -1172,33 +1189,35 @@ function AdminPlayers() {
                     )}
                   </div>
                 </div>
-              </div>
-            </div>
 
-            <div className="modal-actions">
-              <button 
-                type="button" 
-                className="cancel-btn" 
-                onClick={handleCloseModal}
-                disabled={saving}
-              >
-                Cancel
-              </button>
-              <button 
-                type="button" 
-                className="save-btn" 
-                onClick={handleAddPlayer}
-                disabled={saving || (!editForm.first_name?.trim() && !editForm.last_name?.trim() && !editForm.nick_name?.trim())}
-              >
-                {saving ? (
-                  <>
-                    <div className="card-icon-spinner small"></div>
-                    Creating...
-                  </>
-                ) : (
-                  'Create Player'
-                )}
-              </button>
+                <div className="modal-actions">
+                <button 
+                  type="button" 
+                  className="btn-cancel" 
+                  onClick={handleCloseModal}
+                  disabled={saving}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="button" 
+                  className="btn-primary" 
+                  onClick={handleAddPlayer}
+                  disabled={saving || (!editForm.first_name?.trim() && !editForm.last_name?.trim() && !editForm.nick_name?.trim())}
+                >
+                  {saving ? (
+                    <>
+                      <div className="spinner"></div>
+                      Creating...
+                    </>
+                  ) : (
+                    <>
+                      <Icon name="user-plus" size={16} />
+                      Create Player
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>

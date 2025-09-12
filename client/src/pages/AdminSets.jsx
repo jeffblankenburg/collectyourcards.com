@@ -655,6 +655,7 @@ function AdminSets() {
               placeholder="Search sets by name, year, organization, manufacturer..."
               value={searchTerm}
               onChange={handleSearch}
+              autoFocus
             />
             {searching && <div className="card-icon-spinner small"></div>}
           </div>

@@ -359,6 +359,7 @@ function AdminTeams() {
               placeholder="Search teams by name, city, mascot, abbreviation, or organization..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              autoFocus
             />
           </div>
         </div>
@@ -452,7 +453,7 @@ function AdminTeams() {
                     {getColorPreview(team.secondary_color)}
                   </div>
                 </div>
-                <div className="col-cards">{team.card_count || 0}</div>
+                <div className="col-cards">{(team.card_count || 0).toLocaleString()}</div>
               </div>
             ))}
           </div>
@@ -462,22 +463,23 @@ function AdminTeams() {
       {/* Edit Team Modal */}
       {showEditModal && editingTeam && (
         <div className="modal-overlay" onClick={handleCloseModal}>
-          <div className="edit-player-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>Edit Team #{editingTeam.team_id}</h3>
-              <button className="close-btn" onClick={handleCloseModal}>
+              <h3>
+                <Icon name="shield" size={20} />
+                Edit Team #{editingTeam.team_id}
+              </h3>
+              <button className="modal-close-btn" onClick={handleCloseModal}>
                 <Icon name="x" size={20} />
               </button>
             </div>
             
-            <div className="modal-content">
-              <div className="edit-form">
-                <div className="player-details-form">
-                  <div className="form-field-row">
-                    <label className="field-label">Name</label>
+            <div className="modal-form">
+                  <div className="form-group">
+                    <label>Name</label>
                     <input
                       type="text"
-                      className="field-input"
+                      className="form-input"
                       value={editForm.name}
                       onChange={(e) => handleFormChange('name', e.target.value)}
                       placeholder="Team name"
@@ -485,33 +487,33 @@ function AdminTeams() {
                     />
                   </div>
 
-                  <div className="form-field-row">
-                    <label className="field-label">City</label>
+                  <div className="form-group">
+                    <label>City</label>
                     <input
                       type="text"
-                      className="field-input"
+                      className="form-input"
                       value={editForm.city}
                       onChange={(e) => handleFormChange('city', e.target.value)}
                       placeholder="City"
                     />
                   </div>
 
-                  <div className="form-field-row">
-                    <label className="field-label">Mascot</label>
+                  <div className="form-group">
+                    <label>Mascot</label>
                     <input
                       type="text"
-                      className="field-input"
+                      className="form-input"
                       value={editForm.mascot}
                       onChange={(e) => handleFormChange('mascot', e.target.value)}
                       placeholder="Mascot"
                     />
                   </div>
 
-                  <div className="form-field-row">
-                    <label className="field-label">Abbreviation</label>
+                  <div className="form-group">
+                    <label>Abbreviation</label>
                     <input
                       type="text"
-                      className="field-input"
+                      className="form-input"
                       value={editForm.abbreviation}
                       onChange={(e) => handleFormChange('abbreviation', e.target.value)}
                       placeholder="e.g., NYY"
@@ -519,10 +521,10 @@ function AdminTeams() {
                     />
                   </div>
 
-                  <div className="form-field-row">
-                    <label className="field-label">Organization</label>
+                  <div className="form-group">
+                    <label>Organization</label>
                     <select
-                      className="field-input"
+                      className="form-input"
                       value={editForm.organization_id || ''}
                       onChange={(e) => handleFormChange('organization_id', e.target.value)}
                     >
@@ -535,49 +537,50 @@ function AdminTeams() {
                     </select>
                   </div>
 
-                  <div className="form-field-row">
-                    <label className="field-label">Primary Color</label>
+                  <div className="form-group">
+                    <label>Primary Color (darker)</label>
                     <input
                       type="text"
-                      className="field-input"
+                      className="form-input"
                       value={editForm.primary_color || ''}
                       onChange={(e) => handleFormChange('primary_color', e.target.value)}
                       placeholder="#000000"
                     />
                   </div>
 
-                  <div className="form-field-row">
-                    <label className="field-label">Secondary Color</label>
+                  <div className="form-group">
+                    <label>Secondary Color (lighter)</label>
                     <input
                       type="text"
-                      className="field-input"
+                      className="form-input"
                       value={editForm.secondary_color || ''}
                       onChange={(e) => handleFormChange('secondary_color', e.target.value)}
                       placeholder="#000000"
                     />
                   </div>
-                </div>
-              </div>
-            </div>
             
-            <div className="modal-actions">
-              <button className="cancel-btn" onClick={handleCloseModal} disabled={saving}>
-                Cancel
-              </button>
-              <button 
-                className="save-btn" 
-                onClick={handleSaveTeam}
-                disabled={saving}
-              >
-                {saving ? (
-                  <>
-                    <div className="card-icon-spinner small"></div>
-                    Saving...
-                  </>
-                ) : (
-                  'Save Changes'
-                )}
-              </button>
+              <div className="modal-actions">
+                <button className="btn-cancel" onClick={handleCloseModal} disabled={saving}>
+                  Cancel
+                </button>
+                <button 
+                  className="btn-primary" 
+                  onClick={handleSaveTeam}
+                  disabled={saving}
+                >
+                  {saving ? (
+                    <>
+                      <div className="spinner"></div>
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Icon name="check" size={16} />
+                      Save Changes
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -585,124 +588,126 @@ function AdminTeams() {
 
       {/* New Team Modal */}
       {showNewModal && (
-        <div className="modal-overlay">
-          <div className="edit-player-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-overlay" onClick={handleCloseModal}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>New Team</h3>
-              <button className="close-btn" onClick={handleCloseModal}>
+              <h3>
+                <Icon name="shield" size={20} />
+                Add New Team
+              </h3>
+              <button className="modal-close-btn" onClick={handleCloseModal}>
                 <Icon name="x" size={20} />
               </button>
             </div>
             
-            <div className="modal-content">
-              <div className="edit-form">
-                <div className="player-details-form">
-                  <div className="form-field-row">
-                  <label className="field-label">Name</label>
-                  <input
-                    type="text"
-                    className="field-input"
-                    value={newTeamForm.name}
-                    onChange={(e) => handleNewTeamFormChange('name', e.target.value)}
-                    placeholder="Team name"
-                    required
-                  />
-                </div>
-
-                <div className="form-field-row">
-                  <label className="field-label">City</label>
-                  <input
-                    type="text"
-                    className="field-input"
-                    value={newTeamForm.city}
-                    onChange={(e) => handleNewTeamFormChange('city', e.target.value)}
-                    placeholder="City"
-                  />
-                </div>
-
-                <div className="form-field-row">
-                  <label className="field-label">Mascot</label>
-                  <input
-                    type="text"
-                    className="field-input"
-                    value={newTeamForm.mascot}
-                    onChange={(e) => handleNewTeamFormChange('mascot', e.target.value)}
-                    placeholder="Mascot"
-                  />
-                </div>
-
-                <div className="form-field-row">
-                  <label className="field-label">Abbreviation</label>
-                  <input
-                    type="text"
-                    className="field-input"
-                    value={newTeamForm.abbreviation}
-                    onChange={(e) => handleNewTeamFormChange('abbreviation', e.target.value)}
-                    placeholder="e.g., NYY"
-                    maxLength={5}
-                    required
-                  />
-                </div>
-
-                <div className="form-field-row">
-                  <label className="field-label">Organization</label>
-                  <select
-                    className="field-input"
-                    value={newTeamForm.organization_id || ''}
-                    onChange={(e) => handleNewTeamFormChange('organization_id', e.target.value)}
-                  >
-                    <option value="">Select organization...</option>
-                    {organizations.map(org => (
-                      <option key={org.organization_id} value={org.organization_id}>
-                        {org.name} ({org.abbreviation})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                  <div className="form-field-row">
-                    <label className="field-label">Primary Color</label>
+            <div className="modal-form">
+                  <div className="form-group">
+                    <label>Name</label>
                     <input
                       type="text"
-                      className="field-input"
+                      className="form-input"
+                      value={newTeamForm.name}
+                      onChange={(e) => handleNewTeamFormChange('name', e.target.value)}
+                      placeholder="Team name"
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>City</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={newTeamForm.city}
+                      onChange={(e) => handleNewTeamFormChange('city', e.target.value)}
+                      placeholder="City"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>Mascot</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={newTeamForm.mascot}
+                      onChange={(e) => handleNewTeamFormChange('mascot', e.target.value)}
+                      placeholder="Mascot"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>Abbreviation</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={newTeamForm.abbreviation}
+                      onChange={(e) => handleNewTeamFormChange('abbreviation', e.target.value)}
+                      placeholder="e.g., NYY"
+                      maxLength={5}
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>Organization</label>
+                    <select
+                      className="form-input"
+                      value={newTeamForm.organization_id || ''}
+                      onChange={(e) => handleNewTeamFormChange('organization_id', e.target.value)}
+                    >
+                      <option value="">Select organization...</option>
+                      {organizations.map(org => (
+                        <option key={org.organization_id} value={org.organization_id}>
+                          {org.name} ({org.abbreviation})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label>Primary Color (darker)</label>
+                    <input
+                      type="text"
+                      className="form-input"
                       value={newTeamForm.primary_color || ''}
                       onChange={(e) => handleNewTeamFormChange('primary_color', e.target.value)}
                       placeholder="#000000"
                     />
                   </div>
 
-                  <div className="form-field-row">
-                    <label className="field-label">Secondary Color</label>
+                  <div className="form-group">
+                    <label>Secondary Color (lighter)</label>
                     <input
                       type="text"
-                      className="field-input"
+                      className="form-input"
                       value={newTeamForm.secondary_color || ''}
                       onChange={(e) => handleNewTeamFormChange('secondary_color', e.target.value)}
                       placeholder="#000000"
                     />
                   </div>
-                </div>
-              </div>
-            </div>
             
-            <div className="modal-actions">
-              <button className="cancel-btn" onClick={handleCloseModal} disabled={saving}>
-                Cancel
-              </button>
-              <button 
-                className="save-btn" 
-                onClick={handleCreateTeam}
-                disabled={saving || !newTeamForm.name.trim() || !newTeamForm.abbreviation.trim() || !newTeamForm.organization_id}
-              >
-                {saving ? (
-                  <>
-                    <div className="card-icon-spinner small"></div>
-                    Creating...
-                  </>
-                ) : (
-                  'Create Team'
-                )}
-              </button>
+              <div className="modal-actions">
+                <button className="btn-cancel" onClick={handleCloseModal} disabled={saving}>
+                  Cancel
+                </button>
+                <button 
+                  className="btn-primary" 
+                  onClick={handleCreateTeam}
+                  disabled={saving || !newTeamForm.name.trim() || !newTeamForm.abbreviation.trim() || !newTeamForm.organization_id}
+                >
+                  {saving ? (
+                    <>
+                      <div className="spinner"></div>
+                      Creating...
+                    </>
+                  ) : (
+                    <>
+                      <Icon name="shield" size={16} />
+                      Create Team
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>

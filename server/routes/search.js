@@ -1,5 +1,5 @@
 const express = require('express')
-const { prisma } = require('../config/prisma-singleton')
+const { prisma, executeWithRetry } = require('../config/prisma-singleton')
 
 const router = express.Router()
 
@@ -56,7 +56,9 @@ router.get('/universal', async (req, res) => {
     }
 
     const searchQuery = query.trim()
-    const results = await performIntelligentSearch(searchQuery, parseInt(limit), category)
+    const results = await executeWithRetry(async () => {
+      return await performIntelligentSearch(searchQuery, parseInt(limit), category)
+    })
     
     res.json({
       query: searchQuery,

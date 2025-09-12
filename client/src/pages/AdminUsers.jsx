@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
 import axios from 'axios'
@@ -65,9 +66,13 @@ function AdminUsers() {
 
   // Filter users based on search term
   const filteredUsers = users.filter(u => 
+    u.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     u.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    u.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    u.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     u.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    u.role?.toLowerCase().includes(searchTerm.toLowerCase())
+    u.role?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (u.card_count && u.card_count.toString().includes(searchTerm))
   )
 
   const formatDate = (dateString) => {
@@ -282,9 +287,10 @@ function AdminUsers() {
             <Icon name="search" size={20} />
             <input
               type="text"
-              placeholder="Search users by name, email, or role..."
+              placeholder="Search users by username, name, email, role, or card count..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              autoFocus
             />
           </div>
         </div>
@@ -305,9 +311,11 @@ function AdminUsers() {
           <div className="users-table">
             <div className="table-header">
               <div className="col-id">ID</div>
+              <div className="col-username">Username</div>
               <div className="col-name">Name</div>
               <div className="col-email">Email</div>
               <div className="col-role">Role</div>
+              <div className="col-cards">Cards</div>
               <div className="col-status">Status</div>
               <div className="col-created">Joined</div>
               <div className="col-login">Last Login</div>
@@ -322,12 +330,33 @@ function AdminUsers() {
                 title="Double-click to edit user"
               >
                 <div className="col-id">{u.user_id}</div>
+                <div className="col-username">
+                  {u.username ? (
+                    <Link 
+                      to={`/profile/${u.username}`} 
+                      className="username-link"
+                      title={`View ${u.username}'s profile`}
+                    >
+                      {u.username}
+                    </Link>
+                  ) : (
+                    <span className="no-username">-</span>
+                  )}
+                </div>
                 <div className="col-name">
-                  <div className="user-name">{u.name || 'Unnamed User'}</div>
+                  <div className="user-name">
+                    {u.first_name || u.last_name 
+                      ? `${u.first_name || ''} ${u.last_name || ''}`.trim()
+                      : (u.name || 'Unnamed User')
+                    }
+                  </div>
                 </div>
                 <div className="col-email">{u.email}</div>
                 <div className="col-role">
                   <span className={getRoleBadgeClass(u.role)}>{u.role}</span>
+                </div>
+                <div className="col-cards">
+                  {u.card_count ? u.card_count.toLocaleString() : '0'}
                 </div>
                 <div className="col-status">
                   {getStatusBadge(u.is_active, u.is_verified)}
@@ -370,104 +399,99 @@ function AdminUsers() {
       {/* Edit User Modal */}
       {showEditModal && editingUser && (
         <div className="modal-overlay" onClick={handleCloseModal}>
-          <div className="edit-player-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>Edit User #{editingUser.user_id}</h3>
-              <button className="close-btn" onClick={handleCloseModal}>
+              <h3>
+                <Icon name="user" size={20} />
+                Edit User #{editingUser.user_id}
+              </h3>
+              <button className="modal-close-btn" onClick={handleCloseModal}>
                 <Icon name="x" size={20} />
               </button>
             </div>
             
-            <div className="modal-content">
-              <div className="edit-form">
-                <div className="player-details-form">
-                  <div className="form-field-row">
-                    <label className="field-label">Name</label>
+            <div className="modal-form">
+              <div className="form-group">
+                <label>Name</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={editForm.name}
+                  onChange={(e) => handleFormChange('name', e.target.value)}
+                  placeholder="Enter user name"
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Email</label>
+                <input
+                  type="email"
+                  className="form-input"
+                  value={editForm.email}
+                  onChange={(e) => handleFormChange('email', e.target.value)}
+                  placeholder="Enter email address"
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Role</label>
+                <select
+                  className="form-input"
+                  value={editForm.role}
+                  onChange={(e) => handleFormChange('role', e.target.value)}
+                >
+                  <option value="user">User</option>
+                  <option value="data_admin">Data Admin</option>
+                  <option value="admin">Admin</option>
+                  <option value="superadmin">Super Admin</option>
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label>Account Settings</label>
+                <div className="checkbox-group">
+                  <label className="checkbox-item">
                     <input
-                      type="text"
-                      className="field-input"
-                      value={editForm.name}
-                      onChange={(e) => handleFormChange('name', e.target.value)}
-                      placeholder="Enter user name"
+                      type="checkbox"
+                      checked={editForm.is_active}
+                      onChange={(e) => handleFormChange('is_active', e.target.checked)}
                     />
-                  </div>
-
-                  <div className="form-field-row">
-                    <label className="field-label">Email</label>
+                    <span className="checkbox-label">Account Active</span>
+                  </label>
+                  <label className="checkbox-item">
                     <input
-                      type="email"
-                      className="field-input"
-                      value={editForm.email}
-                      onChange={(e) => handleFormChange('email', e.target.value)}
-                      placeholder="Enter email address"
-                      required
+                      type="checkbox"
+                      checked={editForm.is_verified}
+                      onChange={(e) => handleFormChange('is_verified', e.target.checked)}
                     />
-                  </div>
-
-                  <div className="form-field-row">
-                    <label className="field-label">Role</label>
-                    <select
-                      className="field-input"
-                      value={editForm.role}
-                      onChange={(e) => handleFormChange('role', e.target.value)}
-                    >
-                      <option value="user">User</option>
-                      <option value="data_admin">Data Admin</option>
-                      <option value="admin">Admin</option>
-                      <option value="superadmin">Super Admin</option>
-                    </select>
-                  </div>
-
-                  <div className="form-field-row">
-                    <label className="field-label">Account Active</label>
-                    <button
-                      type="button"
-                      className={`hof-toggle ${editForm.is_active ? 'hof-active' : ''}`}
-                      onClick={() => handleFormChange('is_active', !editForm.is_active)}
-                    >
-                      <Icon name="power" size={16} />
-                      <span>Account Active</span>
-                      {editForm.is_active && <Icon name="check" size={16} className="hof-check" />}
-                    </button>
-                  </div>
-
-                  <div className="form-field-row">
-                    <label className="field-label">Email Verified</label>
-                    <button
-                      type="button"
-                      className={`hof-toggle ${editForm.is_verified ? 'hof-active' : ''}`}
-                      onClick={() => handleFormChange('is_verified', !editForm.is_verified)}
-                    >
-                      <Icon name="check-circle" size={16} />
-                      <span>Email Verified</span>
-                      {editForm.is_verified && <Icon name="check" size={16} className="hof-check" />}
-                    </button>
-                  </div>
+                    <span className="checkbox-label">Email Verified</span>
+                  </label>
                 </div>
               </div>
-            </div>
-            
-            <div className="modal-actions">
-              <button className="cancel-btn" onClick={handleCloseModal} disabled={saving}>
-                Cancel
-              </button>
-              <button 
-                className="save-btn" 
-                onClick={handleSaveUser}
-                disabled={saving || !editForm.email.trim()}
-              >
-                {saving ? (
-                  <>
-                    <div className="card-icon-spinner small"></div>
-                    Saving...
-                  </>
-                ) : (
-                  <>
-                    <Icon name="check" size={16} />
-                    Save Changes
-                  </>
-                )}
-              </button>
+
+              <div className="modal-actions">
+                <button className="btn-cancel" onClick={handleCloseModal} disabled={saving}>
+                  Cancel
+                </button>
+                <button 
+                  className="btn-primary" 
+                  onClick={handleSaveUser}
+                  disabled={saving || !editForm.email.trim()}
+                >
+                  {saving ? (
+                    <>
+                      <div className="spinner"></div>
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Icon name="check" size={16} />
+                      Save Changes
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -476,87 +500,84 @@ function AdminUsers() {
       {/* Add User Modal */}
       {showAddModal && (
         <div className="modal-overlay" onClick={handleCloseAddModal}>
-          <div className="edit-player-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>Add New User</h3>
-              <button className="close-btn" onClick={handleCloseAddModal}>
+              <h3>
+                <Icon name="user-plus" size={20} />
+                Add New User
+              </h3>
+              <button className="modal-close-btn" onClick={handleCloseAddModal}>
                 <Icon name="x" size={20} />
               </button>
             </div>
             
-            <div className="modal-content">
-              <div className="edit-form">
-                <div className="player-details-form">
-                  <div className="form-field-row">
-                    <label className="field-label">Name</label>
-                    <input
-                      type="text"
-                      className="field-input"
-                      value={addForm.name}
-                      onChange={(e) => handleAddFormChange('name', e.target.value)}
-                      placeholder="Enter user name (optional)"
-                    />
-                  </div>
+            <div className="modal-form">
+              <div className="form-group">
+                <label>Name</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={addForm.name}
+                  onChange={(e) => handleAddFormChange('name', e.target.value)}
+                  placeholder="Enter user name (optional)"
+                />
+              </div>
 
-                  <div className="form-field-row">
-                    <label className="field-label">Email</label>
-                    <input
-                      type="email"
-                      className="field-input"
-                      value={addForm.email}
-                      onChange={(e) => handleAddFormChange('email', e.target.value)}
-                      placeholder="Enter email address"
-                      required
-                    />
-                  </div>
+              <div className="form-group">
+                <label>Email</label>
+                <input
+                  type="email"
+                  className="form-input"
+                  value={addForm.email}
+                  onChange={(e) => handleAddFormChange('email', e.target.value)}
+                  placeholder="Enter email address"
+                  required
+                />
+              </div>
 
-                  <div className="form-field-row">
-                    <label className="field-label">Role</label>
-                    <select 
-                      className="field-input"
-                      value={addForm.role}
-                      onChange={(e) => handleAddFormChange('role', e.target.value)}
-                    >
-                      <option value="user">User</option>
-                      <option value="data_admin">Data Admin</option>
-                      <option value="admin">Admin</option>
-                      <option value="superadmin">Super Admin</option>
-                    </select>
-                  </div>
+              <div className="form-group">
+                <label>Role</label>
+                <select 
+                  className="form-input"
+                  value={addForm.role}
+                  onChange={(e) => handleAddFormChange('role', e.target.value)}
+                >
+                  <option value="user">User</option>
+                  <option value="data_admin">Data Admin</option>
+                  <option value="admin">Admin</option>
+                  <option value="superadmin">Super Admin</option>
+                </select>
+              </div>
 
-                  <div style={{ 
-                    background: 'rgba(59, 130, 246, 0.1)', 
-                    border: '1px solid rgba(59, 130, 246, 0.2)', 
-                    borderRadius: '6px', 
-                    padding: '1rem', 
-                    marginTop: '1rem',
-                    fontSize: '0.875rem',
-                    color: 'rgba(255, 255, 255, 0.9)'
-                  }}>
-                    <strong>📧 Automatic Setup:</strong> A welcome email with password setup instructions will be automatically sent to the user.
-                  </div>
+              <div className="info-box">
+                <Icon name="mail" size={16} />
+                <div>
+                  <strong>Automatic Setup:</strong> A welcome email with password setup instructions will be automatically sent to the user.
                 </div>
               </div>
-            </div>
-            
-            <div className="modal-actions">
-              <button className="cancel-btn" onClick={handleCloseAddModal} disabled={creating}>
-                Cancel
-              </button>
-              <button 
-                className="save-btn"
-                onClick={handleCreateUser}
-                disabled={creating || !addForm.email.trim()}
-              >
-                {creating ? (
-                  <>
-                    <div className="card-icon-spinner small"></div>
-                    Creating...
-                  </>
-                ) : (
-                  'Create User'
-                )}
-              </button>
+
+              <div className="modal-actions">
+                <button className="btn-cancel" onClick={handleCloseAddModal} disabled={creating}>
+                  Cancel
+                </button>
+                <button 
+                  className="btn-primary"
+                  onClick={handleCreateUser}
+                  disabled={creating || !addForm.email.trim()}
+                >
+                  {creating ? (
+                    <>
+                      <div className="spinner"></div>
+                      Creating...
+                    </>
+                  ) : (
+                    <>
+                      <Icon name="user-plus" size={16} />
+                      Create User
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -565,18 +586,21 @@ function AdminUsers() {
       {/* Password Reset Confirmation Modal */}
       {showResetConfirm && resetUser && (
         <div className="modal-overlay" onClick={handleCancelReset}>
-          <div className="reset-confirm-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>Send Password Reset</h3>
-              <button className="close-btn" onClick={handleCancelReset}>
+              <h3>
+                <Icon name="mail" size={20} />
+                Send Password Reset
+              </h3>
+              <button className="modal-close-btn" onClick={handleCancelReset}>
                 <Icon name="x" size={20} />
               </button>
             </div>
             
-            <div className="modal-content">
-              <div className="reset-confirmation">
-                <div className="warning-icon">
-                  <Icon name="mail" size={48} />
+            <div className="modal-form">
+              <div className="confirmation-content">
+                <div className="confirmation-icon">
+                  <Icon name="alert-triangle" size={48} />
                 </div>
                 
                 <div className="confirmation-text">
@@ -592,29 +616,29 @@ function AdminUsers() {
                   </p>
                 </div>
               </div>
-            </div>
-            
-            <div className="modal-actions">
-              <button className="cancel-btn" onClick={handleCancelReset} disabled={sendingReset}>
-                Cancel
-              </button>
-              <button 
-                className="reset-confirm-btn" 
-                onClick={handleConfirmPasswordReset}
-                disabled={sendingReset}
-              >
-                {sendingReset ? (
-                  <>
-                    <div className="card-icon-spinner small"></div>
-                    Sending...
-                  </>
-                ) : (
-                  <>
-                    <Icon name="mail" size={16} />
-                    Send Reset Email
-                  </>
-                )}
-              </button>
+
+              <div className="modal-actions">
+                <button className="btn-cancel" onClick={handleCancelReset} disabled={sendingReset}>
+                  Cancel
+                </button>
+                <button 
+                  className="btn-primary" 
+                  onClick={handleConfirmPasswordReset}
+                  disabled={sendingReset}
+                >
+                  {sendingReset ? (
+                    <>
+                      <div className="spinner"></div>
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <Icon name="mail" size={16} />
+                      Send Reset Email
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>

@@ -440,6 +440,7 @@ function AdminCards() {
               placeholder="Search cards..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              autoFocus
             />
           </div>
         </div>
