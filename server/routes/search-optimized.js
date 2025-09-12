@@ -68,34 +68,27 @@ async function performConsolidatedSearch(query, searchPattern, limit, category) 
           'card' as result_type,
           CAST(c.card_id as varchar) as entity_id,
           c.card_number as primary_text,
-          CONCAT(STRING_AGG(CONCAT(p.first_name, ' ', p.last_name), ', '), ' - ', s.name) as secondary_text,
-          s.name as tertiary_text,
-          CASE 
-            WHEN c.card_number LIKE '${searchPattern}' THEN 100
-            WHEN CONCAT(p.first_name, ' ', p.last_name) LIKE '${searchPattern}' THEN 90
-            WHEN s.name LIKE '${searchPattern}' THEN 80
-            ELSE 70
-          END as relevance_score,
+          s.name as secondary_text,
+          ISNULL(STRING_AGG(CONCAT(p.first_name, ' ', p.last_name), ', '), 'Unknown Player') as tertiary_text,
+          80 as relevance_score,
           c.is_rookie,
           c.is_autograph,
           c.is_relic,
           c.print_run,
           col.hex_value as color_hex,
           col.name as color_name,
-          STRING_AGG(CONVERT(varchar(max), CONCAT(t.team_id, '|', t.name, '|', ISNULL(t.primary_color, ''), '|', ISNULL(t.secondary_color, ''))), '~') as teams_data
+          '' as teams_data
         FROM card c
         JOIN series s ON c.series = s.series_id
         LEFT JOIN color col ON s.color = col.color_id
         LEFT JOIN card_player_team cpt ON c.card_id = cpt.card
         LEFT JOIN player_team pt ON cpt.player_team = pt.player_team_id
         LEFT JOIN player p ON pt.player = p.player_id
-        LEFT JOIN team t ON pt.team = t.team_id
         WHERE 
           c.card_number LIKE '${searchPattern}'
           OR s.name LIKE '${searchPattern}'
           OR p.first_name LIKE '${searchPattern}'
           OR p.last_name LIKE '${searchPattern}'
-          OR CONCAT(p.first_name, ' ', p.last_name) LIKE '${searchPattern}'
         GROUP BY c.card_id, c.card_number, c.is_rookie, c.is_autograph, c.is_relic, c.print_run,
                  s.name, s.series_id, col.name, col.hex_value
       `)
@@ -108,30 +101,21 @@ async function performConsolidatedSearch(query, searchPattern, limit, category) 
           'player' as result_type,
           CAST(p.player_id as varchar) as entity_id,
           CONCAT(p.first_name, ' ', p.last_name) as primary_text,
-          CASE WHEN p.nick_name IS NOT NULL THEN CONCAT('"', p.nick_name, '"') ELSE '' END as secondary_text,
-          CONCAT(CAST(p.card_count as varchar), ' cards') as tertiary_text,
-          CASE 
-            WHEN CONCAT(p.first_name, ' ', p.last_name) LIKE '${searchPattern}' THEN 100
-            WHEN p.first_name LIKE '${searchPattern}' OR p.last_name LIKE '${searchPattern}' THEN 90
-            WHEN p.nick_name LIKE '${searchPattern}' THEN 85
-            ELSE 70
-          END as relevance_score,
+          ISNULL(p.nick_name, '') as secondary_text,
+          CONCAT(CAST(ISNULL(p.card_count, 0) as varchar), ' cards') as tertiary_text,
+          75 as relevance_score,
           0 as is_rookie,
           0 as is_autograph,
           0 as is_relic,
           NULL as print_run,
           NULL as color_hex,
           NULL as color_name,
-          STRING_AGG(DISTINCT CONVERT(varchar(max), CONCAT(t.team_id, '|', t.name, '|', ISNULL(t.primary_color, ''), '|', ISNULL(t.secondary_color, ''))), '~') as teams_data
+          '' as teams_data
         FROM player p
-        LEFT JOIN player_team pt ON p.player_id = pt.player
-        LEFT JOIN team t ON pt.team = t.team_id
         WHERE 
           p.first_name LIKE '${searchPattern}'
           OR p.last_name LIKE '${searchPattern}'
           OR p.nick_name LIKE '${searchPattern}'
-          OR CONCAT(p.first_name, ' ', p.last_name) LIKE '${searchPattern}'
-        GROUP BY p.player_id, p.first_name, p.last_name, p.nick_name, p.card_count
       `)
     }
     
@@ -143,23 +127,17 @@ async function performConsolidatedSearch(query, searchPattern, limit, category) 
           CAST(t.team_id as varchar) as entity_id,
           t.name as primary_text,
           t.city as secondary_text,
-          CONCAT(o.name, ' - ', s.name) as tertiary_text,
-          CASE 
-            WHEN t.name LIKE '${searchPattern}' THEN 100
-            WHEN t.city LIKE '${searchPattern}' THEN 90
-            WHEN t.abbreviation = '${query.toUpperCase()}' THEN 95
-            ELSE 70
-          END as relevance_score,
+          ISNULL(o.name, 'Unknown Organization') as tertiary_text,
+          85 as relevance_score,
           0 as is_rookie,
           0 as is_autograph,
           0 as is_relic,
           NULL as print_run,
           t.primary_color as color_hex,
           NULL as color_name,
-          CONCAT(t.team_id, '|', t.name, '|', ISNULL(t.primary_color, ''), '|', ISNULL(t.secondary_color, '')) as teams_data
+          '' as teams_data
         FROM team t
         LEFT JOIN organization o ON t.organization = o.organization_id
-        LEFT JOIN sport s ON o.sport = s.sport_id
         WHERE 
           t.name LIKE '${searchPattern}'
           OR t.city LIKE '${searchPattern}'
@@ -176,19 +154,15 @@ async function performConsolidatedSearch(query, searchPattern, limit, category) 
           CAST(s.series_id as varchar) as entity_id,
           s.name as primary_text,
           st.name as secondary_text,
-          CONCAT(CAST(s.card_count as varchar), ' cards') as tertiary_text,
-          CASE 
-            WHEN s.name LIKE '${searchPattern}' THEN 100
-            WHEN st.name LIKE '${searchPattern}' THEN 85
-            ELSE 70
-          END as relevance_score,
+          CONCAT(CAST(ISNULL(s.card_count, 0) as varchar), ' cards') as tertiary_text,
+          90 as relevance_score,
           0 as is_rookie,
           0 as is_autograph,
           0 as is_relic,
           s.min_print_run as print_run,
           col.hex_value as color_hex,
           col.name as color_name,
-          NULL as teams_data
+          '' as teams_data
         FROM series s
         JOIN [set] st ON s.[set] = st.set_id
         LEFT JOIN color col ON s.color = col.color_id
