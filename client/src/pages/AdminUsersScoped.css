@@ -84,6 +84,10 @@
   font-size: 0.875rem;
 }
 
+.admin-users-page .search-box input:focus-visible {
+  outline: none;
+}
+
 .admin-users-page .search-box input::placeholder {
   color: rgba(255, 255, 255, 0.6);
 }

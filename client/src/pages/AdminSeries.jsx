@@ -493,12 +493,10 @@ function AdminSeries() {
               </div>
               <div className="col-id">{seriesItem.series_id}</div>
               <div className="col-name">
-                <div className="series-info">
-                  <div className="series-name">{seriesItem.name}</div>
-                  {seriesItem.parallel_of_name && seriesItem.parallel_of_name.trim() && (
-                    <span className="parallel-badge">{seriesItem.parallel_of_name}</span>
-                  )}
-                </div>
+                {seriesItem.name}
+                {seriesItem.parallel_of_name && seriesItem.parallel_of_name.trim() && (
+                  <span className="parallel-badge" style={{ marginLeft: '0.5rem' }}>{seriesItem.parallel_of_name}</span>
+                )}
               </div>
               <div className="col-base center">
                 {seriesItem.is_base && <Icon name="check" size={16} className="base-icon" />}
@@ -506,10 +504,15 @@ function AdminSeries() {
               <div className="col-color center">
                 {seriesItem.color_name && (
                   <span 
-                    className="color-badge"
-                    style={{ 
-                      backgroundColor: seriesItem.color_hex || 'transparent',
-                      color: seriesItem.color_hex ? '#fff' : 'inherit'
+                    className="color-tag"
+                    style={{
+                      backgroundColor: seriesItem.color_hex || '#ec4899',
+                      color: seriesItem.color_hex ? (
+                        parseInt(seriesItem.color_hex.slice(1, 3), 16) * 0.299 +
+                        parseInt(seriesItem.color_hex.slice(3, 5), 16) * 0.587 +
+                        parseInt(seriesItem.color_hex.slice(5, 7), 16) * 0.114 > 128
+                        ? '#000000' : '#ffffff'
+                      ) : '#ffffff'
                     }}
                   >
                     {seriesItem.color_name}
