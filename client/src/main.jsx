@@ -33,6 +33,8 @@ import CardDetail from './pages/CardDetail.jsx'
 import PublicProfile from './pages/PublicProfile.jsx'
 import ProfileManagement from './pages/ProfileManagement.jsx'
 import DesignSystemDemo from './pages/DesignSystemDemo.jsx'
+import Achievements from './pages/Achievements.jsx'
+import AdminAchievements from './pages/AdminAchievements.jsx'
 import './index.css'
 // import './styles/global-design-system.css' // Temporarily removed to prevent conflicts
 
@@ -86,6 +88,10 @@ ReactDOM.createRoot(document.getElementById('root')).render(
               
               {/* Design System Demo - Testing new CSS system */}
               <Route path="/design-system-demo" element={<DesignSystemDemo />} />
+              
+              {/* Achievements routes - MUST BE BEFORE username route */}
+              <Route path="/achievements" element={<ProtectedRoute><Achievements /></ProtectedRoute>} />
+              <Route path="/admin/achievements" element={<ProtectedRoute><AdminAchievements /></ProtectedRoute>} />
               
               {/* Public profile route - MUST BE LAST to avoid conflicts with other routes */}
               <Route path="/:username" element={<PublicProfile />} />

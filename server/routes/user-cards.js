@@ -3,6 +3,7 @@ const { PrismaClient, Prisma } = require('@prisma/client')
 const { authMiddleware } = require('../middleware/auth')
 const { sanitizeInput, sanitizeParams } = require('../middleware/inputSanitization')
 const { BlobServiceClient } = require('@azure/storage-blob')
+const { onCardAdded, onCardUpdated, onCardRemoved } = require('../middleware/achievementHooks')
 const router = express.Router()
 const prisma = new PrismaClient({ log: ['error'] }) // Only log errors, not queries
 
@@ -210,7 +211,7 @@ router.post('/counts', async (req, res) => {
 })
 
 // POST /api/user/cards - Add a card to user's collection
-router.post('/', async (req, res) => {
+router.post('/', async (req, res, next) => {
   try {
     const userId = req.user?.userId
     // Use sanitized inputs instead of raw req.body
@@ -292,9 +293,24 @@ router.post('/', async (req, res) => {
       )
     `
 
+    // Store card data for achievement hook
+    req.cardId = card_id
+    req.cardData = {
+      card_id,
+      serial_number,
+      purchase_price,
+      estimated_value,
+      grading_agency,
+      grade,
+      aftermarket_autograph
+    }
+
     res.status(201).json({
       message: 'Card added to collection successfully'
     })
+
+    // Call achievement hook after successful response
+    next()
 
   } catch (error) {
     console.error('Error adding card to collection:', error)
@@ -312,7 +328,7 @@ router.post('/', async (req, res) => {
       message: 'Failed to add card to collection'
     })
   }
-})
+}, onCardAdded)
 
 // GET /api/user/cards - Get user's card collection
 router.get('/', async (req, res) => {
@@ -397,7 +413,7 @@ router.get('/', async (req, res) => {
 })
 
 // PUT /api/user/cards/:userCardId - Update a user's card
-router.put('/:userCardId', async (req, res) => {
+router.put('/:userCardId', async (req, res, next) => {
   try {
     const userId = req.user?.userId
     const { userCardId } = req.params
@@ -411,9 +427,9 @@ router.put('/:userCardId', async (req, res) => {
 
     console.log('Updating user card:', { userId, userCardId, body: req.body })
 
-    // Verify the user_card belongs to this user
+    // Verify the user_card belongs to this user and get old values for achievement tracking
     const existingCard = await prisma.$queryRaw`
-      SELECT user_card_id 
+      SELECT user_card_id, purchase_price, estimated_value, current_value
       FROM user_card 
       WHERE user_card_id = ${parseInt(userCardId)} 
       AND [user] = ${BigInt(parseInt(userId))}
@@ -425,6 +441,10 @@ router.put('/:userCardId', async (req, res) => {
         message: 'User card not found or does not belong to you'
       })
     }
+
+    // Store old values for achievement tracking
+    req.oldCardValues = existingCard[0]
+    req.userCardId = userCardId
 
     // Extract sanitized update data
     const {
@@ -501,6 +521,9 @@ router.put('/:userCardId', async (req, res) => {
       user_card_id: parseInt(userCardId)
     })
 
+    // Call achievement hook after successful response
+    next()
+
   } catch (error) {
     console.error('Error updating user card:', error)
     res.status(500).json({
@@ -508,15 +531,18 @@ router.put('/:userCardId', async (req, res) => {
       message: 'Failed to update card'
     })
   }
-})
+}, onCardUpdated)
 
 // DELETE /api/user/cards/:userCardId - Remove card from collection
-router.delete('/:userCardId', async (req, res) => {
+router.delete('/:userCardId', async (req, res, next) => {
   try {
     const userId = req.user?.userId
     const { userCardId } = req.params
 
     console.log('Removing card from collection:', { userId, userCardId })
+
+    // Store data for achievement hook
+    req.userCardId = userCardId
 
     // Validate authentication
     if (!userId) {
@@ -583,6 +609,9 @@ router.delete('/:userCardId', async (req, res) => {
       message: 'Card and associated photos removed from collection successfully'
     })
 
+    // Call achievement hook after successful response
+    next()
+
   } catch (error) {
     console.error('Error removing card from collection:', error)
     res.status(500).json({
@@ -590,6 +619,6 @@ router.delete('/:userCardId', async (req, res) => {
       message: 'Failed to remove card from collection'
     })
   }
-})
+}, onCardRemoved)
 
 module.exports = router

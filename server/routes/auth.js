@@ -8,6 +8,7 @@ const emailService = require('../services/emailService')
 const { authMiddleware } = require('../middleware/auth')
 const rateLimiter = require('../middleware/rateLimiter')
 const dynatraceService = require('../services/dynatraceService')
+const { onUserLogin } = require('../middleware/achievementHooks')
 
 const router = express.Router()
 
@@ -279,7 +280,7 @@ router.post('/login',
     body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
     body('password').notEmpty().withMessage('Password is required')
   ],
-  async (req, res) => {
+  async (req, res, next) => {
     try {
       // Validate input
       const errors = validationResult(req)
@@ -389,6 +390,9 @@ router.post('/login',
 
       await logAuthEvent(email, 'login_success', true, null, user.user_id, req)
 
+      // Set user for achievement hook
+      req.user = { user_id: user.user_id }
+
       res.json({
         message: 'Login successful',
         token,
@@ -403,6 +407,9 @@ router.post('/login',
         }
       })
 
+      // Call achievement hook after successful response
+      next()
+
     } catch (error) {
       console.error('Login error:', error)
       await logAuthEvent(req.body.email, 'login_failed', false, error.message, null, req)
@@ -411,7 +418,8 @@ router.post('/login',
         message: 'An internal error occurred. Please try again later.'
       })
     }
-  }
+  },
+  onUserLogin
 )
 
 // Email Verification

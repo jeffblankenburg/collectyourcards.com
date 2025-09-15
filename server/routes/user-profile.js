@@ -335,11 +335,83 @@ router.get('/user/:username', optionalAuthMiddleware, async (req, res) => {
       }
     }
 
+    // Get user's achievement data
+    let achievementData = {
+      total_points: 0,
+      total_achievements: 0,
+      recent_achievements: []
+    }
+
+    if (user.is_public_profile || isOwnProfile) {
+      try {
+        // Get achievement stats
+        const achievementStats = await prisma.$queryRaw`
+          SELECT 
+            total_points,
+            total_achievements,
+            common_achievements,
+            uncommon_achievements,
+            rare_achievements,
+            epic_achievements,
+            legendary_achievements,
+            mythic_achievements
+          FROM user_achievement_stats
+          WHERE user_id = ${Number(user.user_id)}
+        `
+
+        if (achievementStats.length > 0) {
+          const stats = achievementStats[0]
+          achievementData.total_points = Number(stats.total_points) || 0
+          achievementData.total_achievements = Number(stats.total_achievements) || 0
+          achievementData.tier_breakdown = {
+            common: Number(stats.common_achievements) || 0,
+            uncommon: Number(stats.uncommon_achievements) || 0,
+            rare: Number(stats.rare_achievements) || 0,
+            epic: Number(stats.epic_achievements) || 0,
+            legendary: Number(stats.legendary_achievements) || 0,
+            mythic: Number(stats.mythic_achievements) || 0
+          }
+        }
+
+        // Get recent achievements
+        const recentAchievements = await prisma.$queryRaw`
+          SELECT TOP 5
+            a.achievement_id,
+            a.name,
+            a.description,
+            a.points,
+            a.tier,
+            a.icon_url,
+            ua.completed_at
+          FROM user_achievements ua
+          INNER JOIN achievements a ON ua.achievement_id = a.achievement_id
+          WHERE ua.user_id = ${Number(user.user_id)}
+            AND ua.is_completed = 1
+          ORDER BY ua.completed_at DESC
+        `
+
+        achievementData.recent_achievements = recentAchievements.map(ach => ({
+          achievement_id: Number(ach.achievement_id),
+          name: ach.name,
+          description: ach.description,
+          points: Number(ach.points),
+          tier: ach.tier,
+          icon_url: ach.icon_url,
+          completed_at: ach.completed_at
+        }))
+
+      } catch (achievementError) {
+        console.error('Error fetching achievement data for profile:', achievementError)
+        // Continue with default achievement data if there's an error
+      }
+    }
+
     res.json({
       profile: serializedProfile,
       favorite_cards: favoriteCards,
       stats: stats,
-      recent_activity: recentActivity
+      recent_activity: recentActivity,
+      achievements: achievementData
     })
 
   } catch (error) {

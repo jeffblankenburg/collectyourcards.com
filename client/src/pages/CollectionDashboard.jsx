@@ -24,6 +24,11 @@ function CollectionDashboard() {
     graded_cards: 0
   })
   
+  const [achievementStats, setAchievementStats] = useState({
+    total_achievements: 0,
+    total_points: 0
+  })
+  
   const [locations, setLocations] = useState([])
   const [selectedLocationIds, setSelectedLocationIds] = useState([])
   const [loading, setLoading] = useState(true)
@@ -115,8 +120,24 @@ function CollectionDashboard() {
   const fetchDashboardData = async () => {
     try {
       setLoading(true)
+      
+      // Fetch collection stats
       const response = await axios.get('/api/user/collection/stats')
       setDashboardStats(response.data.stats || {})
+      
+      // Fetch achievement stats
+      try {
+        const achievementResponse = await axios.get('/api/user/achievements/stats')
+        if (achievementResponse.data.success) {
+          setAchievementStats({
+            total_achievements: achievementResponse.data.stats.total_achievements || 0,
+            total_points: achievementResponse.data.stats.total_points || 0
+          })
+        }
+      } catch (achievementErr) {
+        console.error('Error fetching achievement stats:', achievementErr)
+        // Continue without achievements if they fail
+      }
     } catch (err) {
       console.error('Error fetching dashboard stats:', err)
       error('Failed to load collection statistics')
@@ -485,11 +506,18 @@ function CollectionDashboard() {
                 <span className="stat-label">Players</span>
               </div>
             </div>
-            <div className="stat-item">
+            <div 
+              className="stat-item clickable achievement-stat"
+              onClick={() => navigate('/achievements')}
+              title="View your achievements"
+            >
               <Icon name="trophy" size={18} />
               <div className="stat-content">
-                <span className="stat-value">0</span>
+                <span className="stat-value">{formatNumber(achievementStats.total_achievements)}</span>
                 <span className="stat-label">Achievements</span>
+                {achievementStats.total_points > 0 && (
+                  <span className="achievement-points">{achievementStats.total_points.toLocaleString()} pts</span>
+                )}
               </div>
             </div>
             <div 

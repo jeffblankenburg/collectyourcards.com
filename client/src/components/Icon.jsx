@@ -96,7 +96,10 @@ import {
   // Missing icons
   Download,
   Calendar,
-  Crown
+  Crown,
+  Square,
+  Folder,
+  Award
 } from 'lucide-react'
 
 // Icon mapping for consistent usage across the app
@@ -242,7 +245,10 @@ const iconMap = {
   'ellipses': MoreHorizontal,
   'download': Download,
   'calendar': Calendar,
-  'crown': Crown
+  'crown': Crown,
+  'square': Square,
+  'folder': Folder,
+  'award': Award
 }
 
 // Custom RC tag icon for rookies - matches the RC tags used throughout the site

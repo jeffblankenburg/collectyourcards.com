@@ -13,6 +13,7 @@ function PublicProfile() {
   const [stats, setStats] = useState(null)
   const [recentActivity, setRecentActivity] = useState([])
   const [favoriteCards, setFavoriteCards] = useState([])
+  const [achievements, setAchievements] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
@@ -44,6 +45,7 @@ function PublicProfile() {
       setStats(response.data.stats)
       setRecentActivity(response.data.recent_activity || [])
       setFavoriteCards(response.data.favorite_cards || [])
+      setAchievements(response.data.achievements || null)
     } catch (err) {
       console.error('Error fetching profile:', err)
       if (err.response?.status === 404) {
@@ -222,6 +224,85 @@ function PublicProfile() {
                 <span className="stat-value">${Number(stats.avg_card_value).toFixed(2)}</span>
                 <span className="stat-label">Avg Card Value</span>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Achievements */}
+        {achievements && achievements.total_achievements > 0 && (
+          <div className="achievements-section">
+            <h3>
+              <Icon name="trophy" size={20} />
+              Achievements
+            </h3>
+            <div className="achievement-stats">
+              <div className="achievement-overview">
+                <div className="achievement-total">
+                  <span className="achievement-count">{achievements.total_achievements}</span>
+                  <span className="achievement-label">Achievements</span>
+                </div>
+                <div className="achievement-points">
+                  <span className="points-value">{achievements.total_points.toLocaleString()}</span>
+                  <span className="points-label">Points</span>
+                </div>
+              </div>
+              
+              {achievements.tier_breakdown && (
+                <div className="tier-breakdown">
+                  {achievements.tier_breakdown.mythic > 0 && (
+                    <span className="tier-badge mythic" title="Mythic">
+                      {achievements.tier_breakdown.mythic}
+                    </span>
+                  )}
+                  {achievements.tier_breakdown.legendary > 0 && (
+                    <span className="tier-badge legendary" title="Legendary">
+                      {achievements.tier_breakdown.legendary}
+                    </span>
+                  )}
+                  {achievements.tier_breakdown.epic > 0 && (
+                    <span className="tier-badge epic" title="Epic">
+                      {achievements.tier_breakdown.epic}
+                    </span>
+                  )}
+                  {achievements.tier_breakdown.rare > 0 && (
+                    <span className="tier-badge rare" title="Rare">
+                      {achievements.tier_breakdown.rare}
+                    </span>
+                  )}
+                  {achievements.tier_breakdown.uncommon > 0 && (
+                    <span className="tier-badge uncommon" title="Uncommon">
+                      {achievements.tier_breakdown.uncommon}
+                    </span>
+                  )}
+                  {achievements.tier_breakdown.common > 0 && (
+                    <span className="tier-badge common" title="Common">
+                      {achievements.tier_breakdown.common}
+                    </span>
+                  )}
+                </div>
+              )}
+              
+              {achievements.recent_achievements && achievements.recent_achievements.length > 0 && (
+                <div className="recent-achievements">
+                  <h4>Recent Achievements</h4>
+                  {achievements.recent_achievements.map(achievement => (
+                    <div key={achievement.achievement_id} className={`achievement-item tier-${achievement.tier.toLowerCase()}`}>
+                      <div className="achievement-info">
+                        <span className="achievement-name">{achievement.name}</span>
+                        <span className="achievement-description">{achievement.description}</span>
+                      </div>
+                      <span className="achievement-points">+{achievement.points}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              {profile.is_own_profile && (
+                <Link to="/achievements" className="view-all-achievements">
+                  View All Achievements
+                  <Icon name="arrow-right" size={16} />
+                </Link>
+              )}
             </div>
           </div>
         )}

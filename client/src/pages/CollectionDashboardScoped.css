@@ -129,6 +129,26 @@
   border-color: rgba(59, 130, 246, 0.5);
 }
 
+/* Achievement Stat Styling */
+.collection-dashboard-page .stat-item.achievement-stat {
+  background: rgba(251, 191, 36, 0.1);
+  border-color: rgba(251, 191, 36, 0.2);
+}
+
+.collection-dashboard-page .stat-item.achievement-stat:hover {
+  background: rgba(251, 191, 36, 0.15);
+  border-color: rgba(251, 191, 36, 0.3);
+  box-shadow: 0 2px 8px rgba(251, 191, 36, 0.2);
+}
+
+.collection-dashboard-page .achievement-points {
+  font-size: 0.65rem;
+  color: #fbbf24;
+  font-weight: 600;
+  margin-top: 2px;
+  letter-spacing: 0.025em;
+}
+
 .collection-dashboard-page .stat-item .stat-content {
   display: flex;
   flex-direction: column;

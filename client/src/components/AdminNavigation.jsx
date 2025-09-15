@@ -41,6 +41,11 @@ function AdminNavigation() {
       path: '/admin/cards',
       name: 'Cards',
       icon: 'grid'
+    },
+    {
+      path: '/admin/achievements',
+      name: 'Achievements',
+      icon: 'trophy'
     }
   ]
 

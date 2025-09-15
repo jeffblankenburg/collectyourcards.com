@@ -4,6 +4,7 @@ const { PrismaClient } = require('@prisma/client')
 const prisma = new PrismaClient({ log: ['error'] }) // Only log errors, not queries
 const { authMiddleware } = require('../middleware/auth')
 const { commentModerationMiddleware, mutedUserMiddleware } = require('../middleware/contentModeration')
+const { onCommentAdded } = require('../middleware/achievementHooks')
 
 // GET /api/comments/:type/:itemId - Get comments for a card/series/set
 router.get('/:type/:itemId', async (req, res) => {
@@ -96,7 +97,7 @@ router.get('/:type/:itemId', async (req, res) => {
 })
 
 // POST /api/comments/:type/:itemId - Add comment (authentication required)
-router.post('/:type/:itemId', authMiddleware, mutedUserMiddleware, commentModerationMiddleware, async (req, res) => {
+router.post('/:type/:itemId', authMiddleware, mutedUserMiddleware, commentModerationMiddleware, async (req, res, next) => {
   try {
     const { type, itemId } = req.params
     const { comment_text, parent_comment_id } = req.body
@@ -191,6 +192,10 @@ router.post('/:type/:itemId', authMiddleware, mutedUserMiddleware, commentModera
     
     if (newComment.length > 0) {
       const comment = newComment[0]
+      
+      // Store comment data for achievement hook
+      req.commentId = Number(comment.comment_id)
+
       res.status(201).json({
         comment: {
           comment_id: Number(comment.comment_id),
@@ -208,15 +213,21 @@ router.post('/:type/:itemId', authMiddleware, mutedUserMiddleware, commentModera
           }
         }
       })
+
+      // Call achievement hook after successful response
+      next()
     } else {
       res.status(201).json({ message: 'Comment created successfully' })
+      
+      // Call achievement hook even without comment details
+      next()
     }
     
   } catch (error) {
     console.error('Error creating comment:', error)
     res.status(500).json({ error: 'Failed to create comment' })
   }
-})
+}, onCommentAdded)
 
 // PUT /api/comments/:commentId - Edit comment (authentication required, 15 minute window)
 router.put('/:commentId', authMiddleware, mutedUserMiddleware, commentModerationMiddleware, async (req, res) => {
