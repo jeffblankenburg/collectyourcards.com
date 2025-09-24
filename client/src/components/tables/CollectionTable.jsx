@@ -57,6 +57,7 @@ const CollectionTable = ({
     value: 140,        // Width for "ESTIMATED $" header text
     current_value: 120, // Width for "CURRENT $" header text
     location: 200,     // Wider width for location names like "OFFICE ALPHABET BOX"
+    added: 100,        // Width for "ADDED" column showing MM/DD/YY
     grade: 100,        // Fixed width for grades
     am_auto: 100,      // Width for "AM AUTO" header text
     notes: 200,        // Generous width for notes
@@ -104,6 +105,9 @@ const CollectionTable = ({
       // Search in location
       if (card.location_name?.toLowerCase().includes(query)) return true
       
+      // Search in added date (formatted)
+      if (card.date_added && formatDateAdded(card.date_added).includes(query)) return true
+      
       // Search in grade
       if (card.grade && String(card.grade).includes(query)) return true
       if (card.grading_agency_name?.toLowerCase().includes(query)) return true
@@ -136,6 +140,11 @@ const CollectionTable = ({
       } else if (sortField === 'color') {
         aVal = a.color_rel?.color || ''
         bVal = b.color_rel?.color || ''
+      } else if (sortField === 'added_date') {
+        // Date sorting: convert to timestamps for comparison
+        aVal = a.date_added ? new Date(a.date_added).getTime() : 0
+        bVal = b.date_added ? new Date(b.date_added).getTime() : 0
+        return sortDirection === 'asc' ? aVal - bVal : bVal - aVal
       } else if (sortField === 'is_autograph' || sortField === 'is_relic') {
         // Boolean sorting: true values first when ascending
         aVal = a[sortField] ? 1 : 0
@@ -254,6 +263,19 @@ const CollectionTable = ({
     }).format(value)
   }
 
+  const formatDateAdded = (dateString) => {
+    if (!dateString) return ''
+    const date = new Date(dateString)
+    if (isNaN(date.getTime())) return ''
+    
+    // Format as MM/DD/YY
+    const month = (date.getMonth() + 1).toString().padStart(2, '0')
+    const day = date.getDate().toString().padStart(2, '0')
+    const year = date.getFullYear().toString().slice(-2)
+    
+    return `${month}/${day}/${year}`
+  }
+
   const handleDownload = async () => {
     try {
       const dataToExport = sortedCards
@@ -273,6 +295,7 @@ const CollectionTable = ({
         'Estimated Value',
         'Current Value',
         'Location',
+        'Added',
         'Grade',
         'AM Auto',
         'Notes'
@@ -316,6 +339,7 @@ const CollectionTable = ({
             `"${card.estimated_value ? formatCurrency(card.estimated_value) : ''}"`,
             `"${card.current_value ? formatCurrency(card.current_value) : ''}"`,
             `"${card.location_name || ''}"`,
+            `"${formatDateAdded(card.date_added)}"`,
             `"${grade}"`,
             `"${card.aftermarket_autograph ? '✓' : ''}"`,
             `"${card.notes || ''}"`
@@ -608,6 +632,18 @@ const CollectionTable = ({
                   <div className="collection-table-header-content" onClick={() => handleSort('location_name')}>
                     LOCATION <SortIcon field="location_name" />
                   </div>
+                  <ResizeHandle columnKey="location" />
+                </div>
+              </th>
+              <th 
+                className="sortable added-header"
+                style={{ width: columnWidths.added }}
+              >
+                <div className="header-with-resize">
+                  <div className="collection-table-header-content" onClick={() => handleSort('added_date')}>
+                    ADDED <SortIcon field="added_date" />
+                  </div>
+                  <ResizeHandle columnKey="added" />
                 </div>
               </th>
               <th 
@@ -754,6 +790,9 @@ const CollectionTable = ({
                       {card.location_name}
                     </span>
                   )}
+                </td>
+                <td className="added-cell">
+                  {formatDateAdded(card.date_added)}
                 </td>
                 <td className="grade-cell">
                   {card.grade ? (

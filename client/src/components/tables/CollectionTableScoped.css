@@ -247,6 +247,8 @@
 .collection-table-container .value-cell,
 .collection-table-container .current-value-header,
 .collection-table-container .current-value-cell,
+.collection-table-container .added-header,
+.collection-table-container .added-cell,
 .collection-table-container .am-auto-header,
 .collection-table-container .am-auto-cell {
   text-align: center;
