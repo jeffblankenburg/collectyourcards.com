@@ -243,21 +243,9 @@ router.post('/', async (req, res) => {
       })
     }
 
-    // Check if player already exists
-    const existingPlayer = await prisma.player.findFirst({
-      where: {
-        first_name: first_name.trim(),
-        last_name: last_name.trim(),
-        nick_name: nick_name?.trim() || null
-      }
-    })
-
-    if (existingPlayer) {
-      return res.status(409).json({
-        error: 'Player already exists',
-        message: 'A player with this name already exists'
-      })
-    }
+    // Note: We allow duplicate player names since players across different sports,
+    // teams, and eras can have the same name (e.g., Mike Johnson in baseball and football)
+    // Any true duplicates can be cleaned up manually later
 
     const newPlayer = await prisma.player.create({
       data: {
