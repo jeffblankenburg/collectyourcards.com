@@ -70,6 +70,12 @@ function AdminAchievements() {
     if (!cleanQuery.startsWith('SELECT')) {
       return { valid: false, error: 'Query must start with SELECT' }
     }
+
+    // Block semicolons to prevent multiple statements
+    const semicolonPattern = /;(?=(?:[^']*'[^']*')*[^']*$)/
+    if (semicolonPattern.test(query)) {
+      return { valid: false, error: 'Multiple statements not allowed (semicolons detected)' }
+    }
     
     // Check for dangerous keywords
     const dangerousKeywords = [

@@ -34,6 +34,7 @@ import PublicProfile from './pages/PublicProfile.jsx'
 import ProfileManagement from './pages/ProfileManagement.jsx'
 import DesignSystemDemo from './pages/DesignSystemDemo.jsx'
 import Achievements from './pages/Achievements.jsx'
+import Notifications from './pages/Notifications.jsx'
 import AdminAchievements from './pages/AdminAchievements.jsx'
 import AdminQueryTester from './pages/AdminQueryTester.jsx'
 import './index.css'
@@ -93,6 +94,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
               
               {/* Achievements routes - MUST BE BEFORE username route */}
               <Route path="/achievements" element={<ProtectedRoute><Achievements /></ProtectedRoute>} />
+              <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
               <Route path="/admin/achievements" element={<ProtectedRoute><AdminAchievements /></ProtectedRoute>} />
               <Route path="/admin/query-tester" element={<ProtectedRoute><AdminQueryTester /></ProtectedRoute>} />
               

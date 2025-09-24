@@ -228,6 +228,7 @@ if (config.environment === 'test') {
     { path: '/api/card-detail', file: './routes/card-detail', name: 'Card Detail' },
     { path: '/api/card', file: './routes/simple-card-detail', name: 'Simple Card Detail' },
     { path: '/api/comments', file: './routes/comments', name: 'Comments' },
+    { path: '/api/notifications', file: './routes/notifications', name: 'Notifications' },
     { path: '/api/profile', file: './routes/user-profile', name: 'User Profiles' },
     { path: '/api/achievements', file: './routes/achievements', name: 'Achievements' },
     { path: '/api/user/achievements', file: './routes/user-achievements', name: 'User Achievements' },

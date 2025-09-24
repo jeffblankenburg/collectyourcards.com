@@ -27,6 +27,16 @@ router.post('/test-query', authMiddleware, requireAdmin, async (req, res) => {
       })
     }
 
+    // Additional check: prevent multiple statements by blocking semicolons
+    // This prevents attacks like "SELECT 1; DROP TABLE users"
+    const semicolonPattern = /;(?=(?:[^']*'[^']*')*[^']*$)/
+    if (semicolonPattern.test(query)) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Multiple statements not allowed (semicolons detected outside quoted strings)' 
+      })
+    }
+
     // Check for dangerous keywords
     const dangerousKeywords = [
       'INSERT', 'UPDATE', 'DELETE', 'DROP', 'ALTER', 'CREATE', 'TRUNCATE',

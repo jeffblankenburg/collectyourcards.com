@@ -61,15 +61,12 @@ function Header() {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       }
-      // For now, use a mock count since the API isn't implemented yet
-      // const response = await axios.get('/api/notifications/unread-count', config)
-      // setUnreadNotifications(response.data.count || 0)
-      
-      // Mock notification count for demonstration
-      setUnreadNotifications(3)
+      const response = await axios.get('/api/notifications/unread-count', config)
+      setUnreadNotifications(response.data.count || 0)
     } catch (err) {
       // Silent fail - notifications shouldn't break the app
       console.error('Error fetching notification count:', err)
+      setUnreadNotifications(0)
     }
   }
 
@@ -82,42 +79,45 @@ function Header() {
         }
       }
       
-      // Mock notifications for demonstration
-      const mockNotifications = [
-        {
-          id: 1,
-          type: 'comment',
-          title: 'New comment on your card',
-          message: 'Someone commented on your 1992 Topps Derek Jeter',
-          timestamp: new Date(Date.now() - 5 * 60 * 1000),
-          is_read: false,
-          link: '/card/1992-topps/98/derek-jeter'
-        },
-        {
-          id: 2,
-          type: 'collection',
-          title: 'Card added to collection',
-          message: 'You added 2023 Topps Chrome #123 to your collection',
-          timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000),
-          is_read: false,
-          link: '/collection'
-        },
-        {
-          id: 3,
-          type: 'system',
-          title: 'Collection milestone',
-          message: 'You now have 500 cards in your collection!',
-          timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000),
-          is_read: true,
-          link: '/collection'
+      const response = await axios.get('/api/notifications?limit=10', config)
+      
+      // Check if response has the expected structure
+      if (!response.data || !response.data.notifications) {
+        console.error('Unexpected response structure:', response.data)
+        setNotifications([])
+        return
+      }
+      
+      // Process notifications to add links based on type
+      const processedNotifications = response.data.notifications.map(notif => {
+        let link = null
+        
+        // Generate appropriate link based on notification type and context
+        if (notif.notification_type === 'comment' && notif.item_type && notif.item_id) {
+          // Link to the commented item
+          if (notif.item_type === 'card') {
+            link = `/card/${notif.item_id}` // You might need to fetch card details for full URL
+          } else if (notif.item_type === 'series') {
+            link = `/series/${notif.item_id}`
+          } else if (notif.item_type === 'set') {
+            link = `/sets/${notif.item_id}`
+          }
+        } else if (notif.notification_type === 'achievement') {
+          link = '/achievements'
+        } else if (notif.notification_type === 'collection') {
+          link = '/collection'
         }
-      ]
+        
+        return {
+          ...notif,
+          id: notif.notification_id,
+          type: notif.notification_type,
+          timestamp: new Date(notif.created_at),
+          link
+        }
+      })
       
-      setNotifications(mockNotifications)
-      
-      // Real API call when implemented:
-      // const response = await axios.get('/api/notifications?limit=5', config)
-      // setNotifications(response.data.notifications || [])
+      setNotifications(processedNotifications)
     } catch (err) {
       console.error('Error fetching notifications:', err)
       setNotifications([])
@@ -134,8 +134,8 @@ function Header() {
         }
       }
       
-      // Real API call when implemented:
-      // await axios.put(`/api/notifications/${notificationId}/read`, {}, config)
+      // Call real API
+      await axios.put(`/api/notifications/${notificationId}/read`, {}, config)
       
       // Update local state
       setNotifications(prev => 
@@ -159,8 +159,8 @@ function Header() {
         }
       }
       
-      // Real API call when implemented:
-      // await axios.put('/api/notifications/mark-all-read', {}, config)
+      // Call real API
+      await axios.put('/api/notifications/mark-all-read', {}, config)
       
       // Update local state
       setNotifications(prev => 
@@ -363,10 +363,16 @@ function Header() {
                   {/* Notifications Section */}
                   <div className="dropdown-notifications">
                     <div className="notifications-header">
-                      <h4>
-                        <Icon name="bell" size={14} />
-                        Notifications
-                      </h4>
+                      <Link 
+                        to="/notifications" 
+                        onClick={() => setShowUserMenu(false)}
+                        className="notifications-title-link"
+                      >
+                        <h4>
+                          <Icon name="bell" size={14} />
+                          Notifications
+                        </h4>
+                      </Link>
                       {unreadNotifications > 0 && (
                         <button className="mark-all-read" onClick={markAllAsRead}>
                           Mark all read

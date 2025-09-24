@@ -960,6 +960,16 @@
   gap: 0.5rem;
 }
 
+.notifications-title-link {
+  text-decoration: none;
+  color: inherit;
+  transition: color 0.2s ease;
+}
+
+.notifications-title-link:hover h4 {
+  color: rgba(255, 255, 255, 0.9);
+}
+
 .mark-all-read {
   background: none;
   border: none;
