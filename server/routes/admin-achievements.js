@@ -91,7 +91,7 @@ router.get('/', async (req, res) => {
       ...achievement,
       achievement_id: Number(achievement.achievement_id),
       category_id: Number(achievement.category_id),
-      completion_count: Number(achievement.completion_count) || 0,
+      user_count: Number(achievement.completion_count) || 0,
       in_progress_count: Number(achievement.in_progress_count) || 0
     }))
 
@@ -255,10 +255,24 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params
-    const { is_active } = req.body
+    const {
+      name,
+      description,
+      category_id,
+      tier,
+      points,
+      requirement_type,
+      requirement_value,
+      requirement_query,
+      completion_query,
+      is_active,
+      is_secret,
+      is_repeatable,
+      cooldown_days
+    } = req.body
 
-    // For now, only support toggling active/inactive status
-    if (is_active !== undefined) {
+    // If only is_active is provided, handle quick toggle
+    if (Object.keys(req.body).length === 1 && is_active !== undefined) {
       await prisma.$queryRaw`
         UPDATE achievements
         SET is_active = ${is_active}, updated_at = GETDATE()
@@ -269,12 +283,74 @@ router.put('/:id', async (req, res) => {
         success: true,
         message: `Achievement ${is_active ? 'activated' : 'deactivated'} successfully`
       })
-    } else {
-      res.status(400).json({
+      return
+    }
+
+    // Full achievement update
+    await prisma.$queryRaw`
+      UPDATE achievements
+      SET 
+        name = ${name},
+        description = ${description},
+        category_id = ${BigInt(category_id)},
+        tier = ${tier},
+        points = ${Number(points)},
+        requirement_type = ${requirement_type},
+        requirement_value = ${Number(requirement_value)},
+        requirement_query = ${requirement_query || null},
+        completion_query = ${completion_query || null},
+        is_active = ${Boolean(is_active)},
+        is_secret = ${Boolean(is_secret)},
+        is_repeatable = ${Boolean(is_repeatable)},
+        cooldown_days = ${Number(cooldown_days) || 0},
+        updated_at = GETDATE()
+      WHERE achievement_id = ${BigInt(id)}
+    `
+
+    // Fetch the updated achievement to return
+    const updatedAchievement = await prisma.$queryRaw`
+      SELECT 
+        a.achievement_id,
+        a.name,
+        a.description,
+        a.category_id,
+        a.tier,
+        a.points,
+        a.requirement_type,
+        a.requirement_value,
+        a.requirement_query,
+        a.completion_query,
+        a.is_active,
+        a.is_secret,
+        a.is_repeatable,
+        a.cooldown_days,
+        a.created_at,
+        a.updated_at,
+        c.name as category_name
+      FROM achievements a
+      INNER JOIN achievement_categories c ON a.category_id = c.category_id
+      WHERE a.achievement_id = ${BigInt(id)}
+    `
+
+    if (!updatedAchievement || updatedAchievement.length === 0) {
+      return res.status(404).json({
         success: false,
-        message: 'Only activation/deactivation is currently supported'
+        message: 'Achievement not found'
       })
     }
+
+    // Serialize BigInt fields
+    const serializedAchievement = {
+      ...updatedAchievement[0],
+      achievement_id: Number(updatedAchievement[0].achievement_id),
+      category_id: Number(updatedAchievement[0].category_id)
+    }
+
+    res.json({
+      success: true,
+      message: 'Achievement updated successfully',
+      achievement: serializedAchievement
+    })
 
   } catch (error) {
     console.error('Error updating achievement:', error)
@@ -286,28 +362,49 @@ router.put('/:id', async (req, res) => {
   }
 })
 
-// Delete achievement (soft delete - deactivate instead)
+// Delete achievement (hard delete for cleanup)
 router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params
 
-    // Deactivate the achievement
+    // Delete in proper order to handle foreign key constraints
+    
+    // 1. Delete achievement history records
     await prisma.$queryRaw`
-      UPDATE achievements
-      SET is_active = 0, updated_at = GETDATE()
+      DELETE FROM achievement_history
       WHERE achievement_id = ${BigInt(id)}
     `
 
+    // 2. Delete user progress for this achievement
+    await prisma.$queryRaw`
+      DELETE FROM user_achievements
+      WHERE achievement_id = ${BigInt(id)}
+    `
+
+    // 3. Finally delete the achievement itself
+    const deleteResult = await prisma.$queryRaw`
+      DELETE FROM achievements
+      WHERE achievement_id = ${BigInt(id)}
+    `
+
+    if (deleteResult === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Achievement not found'
+      })
+    }
+
     res.json({
       success: true,
-      message: 'Achievement has been deactivated'
+      message: 'Achievement and all related data deleted successfully'
     })
 
   } catch (error) {
     console.error('Error deleting achievement:', error)
     res.status(500).json({
       success: false,
-      message: 'Failed to delete achievement'
+      message: 'Failed to delete achievement',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     })
   }
 })

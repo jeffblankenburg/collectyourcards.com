@@ -49,6 +49,133 @@ code {
   to { transform: rotate(360deg); }
 }
 
+/* Toast Notification System */
+.toast-container {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-width: 400px;
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  color: white;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  max-width: 100%;
+  pointer-events: auto;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  animation: toast-slide-in 0.3s ease;
+}
+
+.toast:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+}
+
+.toast-success {
+  border-left: 3px solid #10b981;
+}
+
+.toast-error {
+  border-left: 3px solid #ef4444;
+}
+
+.toast-warning {
+  border-left: 3px solid #f59e0b;
+}
+
+.toast-info {
+  border-left: 3px solid #3b82f6;
+}
+
+.toast-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+.toast-success .toast-icon {
+  color: #10b981;
+}
+
+.toast-error .toast-icon {
+  color: #ef4444;
+}
+
+.toast-warning .toast-icon {
+  color: #f59e0b;
+}
+
+.toast-info .toast-icon {
+  color: #3b82f6;
+}
+
+.toast-message {
+  flex: 1;
+  word-wrap: break-word;
+}
+
+.toast-close {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 1.25rem;
+  cursor: pointer;
+  padding: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease;
+}
+
+.toast-close:hover {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+@keyframes toast-slide-in {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 768px) {
+  .toast-container {
+    top: 0.5rem;
+    right: 0.5rem;
+    left: 0.5rem;
+    max-width: none;
+  }
+  
+  .toast {
+    padding: 0.875rem 1rem;
+    font-size: 0.8rem;
+  }
+}
+
 #root {
   min-height: 100vh;
 }

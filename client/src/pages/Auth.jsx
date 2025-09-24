@@ -69,7 +69,7 @@ function Auth() {
     if (location.state?.email) {
       setFormData(prev => ({ ...prev, email: location.state.email }))
     }
-  }, [location.state, success])
+  }, [location.state])
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -254,7 +254,6 @@ function Auth() {
           confirmPassword: formData.confirmPassword
         })
         if (result.success) {
-          success('Account created successfully! Please check your email to verify your account.')
           navigate('/auth/login', { 
             state: { 
               email: formData.email,
@@ -489,7 +488,7 @@ function Auth() {
           </button>
         </form>
 
-        {isLogin && (
+        {/* {isLogin && (
           <div className="auth-demo">
             <h3>Demo Account</h3>
             <p>Try the platform with our demo account:</p>
@@ -498,7 +497,7 @@ function Auth() {
               <p><strong>Password:</strong> testpassword</p>
             </div>
           </div>
-        )}
+        )} */}
       </div>
     </div>
   )

@@ -22,6 +22,7 @@ const CardTable = ({
   loading = false,
   onAddCard = null,
   onCardClick = null,
+  onSeriesClick = null,
   showSearch = true,
   showBulkActions = true,
   bulkSelectionMode = false,
@@ -532,9 +533,22 @@ const CardTable = ({
                     ))}
                   </td>
                   <td className="card-table-series-cell">
-                    <span className="card-table-series-name">
-                      {card.series_rel?.name}
-                    </span>
+                    {onSeriesClick ? (
+                      <button 
+                        className="card-table-series-link"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onSeriesClick(card.series_rel)
+                        }}
+                        title={`View ${card.series_rel?.name} series details`}
+                      >
+                        {card.series_rel?.name}
+                      </button>
+                    ) : (
+                      <span className="card-table-series-name">
+                        {card.series_rel?.name}
+                      </span>
+                    )}
                   </td>
                   <td className="color-cell">
                     {card.color_rel?.color && (

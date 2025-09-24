@@ -85,9 +85,16 @@ function PlayerCard({ player, showBadge = false, onTeamClick = null, customOnCli
             <span className="playercard-count-label">Cards</span>
           </div>
           <div className="playercard-rc-count">
-            <span className="playercard-rc-count-number">{(player.rc_count || 0).toLocaleString()}</span>
+            <span className="playercard-rc-count-number">{(player.rookie_count || 0).toLocaleString()}</span>
             <span className="playercard-rc-count-label">Rookies</span>
           </div>
+          {/* User Collection Stats for Authenticated Users */}
+          {user && player.user_card_count !== undefined && (
+            <div className="playercard-user-collection">
+              <span className="playercard-user-collection-number">{(player.user_card_count || 0).toLocaleString()}</span>
+              <span className="playercard-user-collection-label">Owned</span>
+            </div>
+          )}
           {player.is_hof && (
             <div className="playercard-hof-box">
               <Icon name="crown" size={14} className="playercard-hof-box-icon" />

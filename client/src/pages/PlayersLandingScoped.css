@@ -112,6 +112,24 @@
   color: rgba(255, 255, 255, 0.5);
 }
 
+.players-landing-page .search-loading {
+  position: absolute;
+  right: 1rem;
+  display: flex;
+  align-items: center;
+  color: rgba(255, 255, 255, 0.6);
+  pointer-events: none;
+}
+
+.players-landing-page .search-loading .spinner {
+  animation: searchSpinner 1s linear infinite;
+}
+
+@keyframes searchSpinner {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
 /* Force a row break after header */
 .players-landing-page .grid-row-break {
   grid-column: 1 / -1; /* Span entire grid width */

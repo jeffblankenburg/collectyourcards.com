@@ -6,6 +6,7 @@ import axios from 'axios'
 import Icon from '../components/Icon'
 import FavoriteCardsModal from '../components/modals/FavoriteCardsModal'
 import ChangePasswordModal from '../components/modals/ChangePasswordModal'
+import EBayAccountSection from '../components/EBayAccountSection'
 import './ProfileManagementScoped.css'
 
 function ProfileManagement() {
@@ -608,6 +609,9 @@ function ProfileManagement() {
               </label>
             </div>
           </div>
+
+          {/* eBay Integration Section */}
+          <EBayAccountSection />
 
           <div className="form-section">
             <h3>

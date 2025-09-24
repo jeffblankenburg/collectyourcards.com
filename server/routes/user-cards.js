@@ -446,7 +446,7 @@ router.put('/:userCardId', async (req, res, next) => {
     req.oldCardValues = existingCard[0]
     req.userCardId = userCardId
 
-    // Extract sanitized update data
+    // Extract sanitized update data and is_special from body
     const {
       random_code,
       serial_number,
@@ -458,7 +458,10 @@ router.put('/:userCardId', async (req, res, next) => {
       current_value,
       grading_agency,
       grade
-    } = req.sanitized
+    } = req.sanitized || {}
+    
+    // Get is_special directly from body since it's not in sanitized fields
+    const { is_special } = req.body
 
     // Build update data object for simpler approach
     const updateData = {}
@@ -473,6 +476,7 @@ router.put('/:userCardId', async (req, res, next) => {
     if (current_value !== undefined) updateData.current_value = current_value || null
     if (grading_agency !== undefined) updateData.grading_agency = grading_agency || null
     if (grade !== undefined) updateData.grade = grade || null
+    if (is_special !== undefined) updateData.is_special = is_special ? 1 : 0
 
     if (Object.keys(updateData).length === 0) {
       return res.status(400).json({
@@ -515,10 +519,20 @@ router.put('/:userCardId', async (req, res, next) => {
     if (updateData.grade !== undefined) {
       await prisma.$queryRaw`UPDATE user_card SET grade = ${updateData.grade} WHERE user_card_id = ${parseInt(userCardId)} AND [user] = ${BigInt(parseInt(userId))}`
     }
+    if (updateData.is_special !== undefined) {
+      await prisma.$queryRaw`UPDATE user_card SET is_special = ${updateData.is_special} WHERE user_card_id = ${parseInt(userCardId)} AND [user] = ${BigInt(parseInt(userId))}`
+    }
 
+    // Return updated values in response
+    const responseCard = {}
+    if (updateData.is_special !== undefined) {
+      responseCard.is_special = updateData.is_special === 1
+    }
+    
     res.json({
       message: 'Card updated successfully',
-      user_card_id: parseInt(userCardId)
+      user_card_id: parseInt(userCardId),
+      card: responseCard
     })
 
     // Call achievement hook after successful response

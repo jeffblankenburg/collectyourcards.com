@@ -336,7 +336,7 @@ const ImageEditor = ({
 
     // Check if CORS is available for saving
     if (!corsEnabled) {
-      alert('Cannot save edited image: The image is from a domain that doesn\'t allow editing. You can view and rotate/crop for preview, but saving requires server configuration changes.')
+      showToast('Cannot save edited image: The image is from a domain that doesn\'t allow editing. You can view and rotate/crop for preview, but saving requires server configuration changes.', 'error')
       return
     }
 
@@ -384,9 +384,9 @@ const ImageEditor = ({
     } catch (error) {
       console.error('Error saving image:', error)
       if (error.name === 'SecurityError' || error.message.includes('tainted')) {
-        alert('Unable to save image due to security restrictions. The image may be from a different domain that doesn\'t allow editing.')
+        showToast('Unable to save image due to security restrictions. The image may be from a different domain that doesn\'t allow editing.', 'error')
       } else {
-        alert('Failed to save image. Please try again.')
+        showToast('Failed to save image. Please try again.', 'error')
       }
     } finally {
       setSaving(false)

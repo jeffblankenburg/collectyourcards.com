@@ -257,6 +257,37 @@
   line-height: 1;
 }
 
+/* User Collection Stats */
+.playercard-user-collection {
+  background: rgba(34, 197, 94, 0.15);
+  border: 1px solid rgba(34, 197, 94, 0.4);
+  border-radius: 4px;
+  padding: 0.5rem 0.75rem;
+  text-align: center;
+  min-width: 70px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.125rem;
+  flex-shrink: 0;
+}
+
+.playercard-user-collection-number {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #22c55e;
+  line-height: 1;
+}
+
+.playercard-user-collection-label {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: rgba(34, 197, 94, 0.8);
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  line-height: 1;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .playercard-name {

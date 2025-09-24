@@ -262,10 +262,7 @@ function CardDetail() {
   }
 
   const handleDeleteCard = async (cardToDelete) => {
-    if (!window.confirm('Are you sure you want to remove this card from your collection?')) {
-      return
-    }
-
+    // Remove confirmation dialog per CLAUDE.md rules - NO JAVASCRIPT ALERTS
     try {
       await axios.delete(`/api/user/cards/${cardToDelete.user_card_id}`)
       success('Card removed from collection')

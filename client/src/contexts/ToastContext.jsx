@@ -14,11 +14,42 @@ export const useToast = () => {
 export const ToastProvider = ({ children }) => {
   const [toasts, setToasts] = useState([])
 
+  // Cleanup expired toasts periodically
+  React.useEffect(() => {
+    const cleanup = setInterval(() => {
+      const now = Date.now()
+      setToasts(prev => prev.filter(toast => 
+        (now - toast.timestamp) < (toast.duration + 1000) // Keep for duration + 1 second buffer
+      ))
+    }, 5000) // Run cleanup every 5 seconds
+
+    return () => clearInterval(cleanup)
+  }, [])
+
   const addToast = (message, type = 'info', duration = 5000) => {
-    const id = Date.now() + Math.random()
-    const toast = { id, message, type, duration }
+    // Check for duplicate messages (prevent identical messages within 1 second)
+    const now = Date.now()
+    const isDuplicate = toasts.some(existingToast => 
+      existingToast.message === message && 
+      existingToast.type === type &&
+      (now - existingToast.timestamp) < 1000 // 1 second deduplication window
+    )
     
-    setToasts(prev => [...prev, toast])
+    if (isDuplicate) {
+      return null // Don't add duplicate toast
+    }
+    
+    const id = now + Math.random()
+    const toast = { id, message, type, duration, timestamp: now }
+    
+    setToasts(prev => {
+      // Limit to maximum 5 toasts to prevent UI flooding
+      const newToasts = [...prev, toast]
+      if (newToasts.length > 5) {
+        return newToasts.slice(-5) // Keep only the last 5 toasts
+      }
+      return newToasts
+    })
     
     // Auto remove toast after duration
     setTimeout(() => {

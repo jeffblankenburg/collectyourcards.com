@@ -183,8 +183,11 @@ router.get('/user/:username', optionalAuthMiddleware, async (req, res) => {
              INNER JOIN player_team pt2 ON cpt2.player_team = pt2.player_team_id
              INNER JOIN team t ON pt2.team = t.team_Id
              WHERE cpt2.card = c.card_id) as team_secondary_color,
-            -- Get primary photo
-            uc.photo as primary_photo
+            -- Get primary photo from user_card_photo table
+            (SELECT TOP 1 photo_url 
+             FROM user_card_photo ucp 
+             WHERE ucp.user_card = uc.user_card_id 
+             ORDER BY ucp.user_card_photo_id ASC) as primary_photo
           FROM user_card uc
           INNER JOIN card c ON uc.card = c.card_id
           LEFT JOIN series s ON c.series = s.series_id
@@ -195,7 +198,7 @@ router.get('/user/:username', optionalAuthMiddleware, async (req, res) => {
           WHERE uc.[user] = ${Number(user.user_id)}
             AND uc.is_special = 1
           GROUP BY 
-            uc.user_card_id, uc.serial_number, uc.estimated_value, uc.grade, uc.photo,
+            uc.user_card_id, uc.serial_number, uc.estimated_value, uc.grade,
             c.card_id, c.card_number, c.is_rookie, c.is_autograph, c.is_relic, c.print_run,
             s.name, set_info.name, set_info.year
           ORDER BY uc.user_card_id DESC
@@ -896,8 +899,11 @@ router.get('/collection-cards', authMiddleware, async (req, res) => {
         set_info.name as set_name,
         set_info.year as set_year,
         CONCAT(p.first_name, ' ', p.last_name) as player_name,
-        -- Get primary photo
-        uc.photo as primary_photo,
+        -- Get primary photo from user_card_photo table
+        (SELECT TOP 1 photo_url 
+         FROM user_card_photo ucp 
+         WHERE ucp.user_card = uc.user_card_id 
+         ORDER BY ucp.user_card_photo_id ASC) as primary_photo,
         -- Check if marked as special/favorite
         uc.is_special as is_favorite
       FROM user_card uc

@@ -186,7 +186,7 @@ const optionalAuthMiddleware = async (req, res, next) => {
     console.log('User found and active:', user.email)
     // Add user info to request
     req.user = {
-      id: user.user_id,
+      id: Number(user.user_id), // Convert BigInt to Number for consistency
       email: user.email,
       firstName: user.first_name,
       lastName: user.last_name,

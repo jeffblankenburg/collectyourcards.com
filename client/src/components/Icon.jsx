@@ -99,7 +99,9 @@ import {
   Crown,
   Square,
   Folder,
-  Award
+  Award,
+  Package,
+  Play
 } from 'lucide-react'
 
 // Icon mapping for consistent usage across the app
@@ -248,7 +250,9 @@ const iconMap = {
   'crown': Crown,
   'square': Square,
   'folder': Folder,
-  'award': Award
+  'award': Award,
+  'package': Package,
+  'play': Play
 }
 
 // Custom RC tag icon for rookies - matches the RC tags used throughout the site

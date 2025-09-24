@@ -1,13 +1,13 @@
 const express = require('express')
 const { getPrismaClient, runBatchedQueries } = require('../utils/prisma-pool-manager')
-const { authMiddleware } = require('../middleware/auth')
+const { optionalAuthMiddleware } = require('../middleware/auth')
 const router = express.Router()
 
 // Use global Prisma instance
 const prisma = getPrismaClient()
 
 // GET /api/players-list - Get paginated list of all players with their teams
-router.get('/', async (req, res) => {
+router.get('/', optionalAuthMiddleware, async (req, res) => {
   try {
     const { 
       page = 1, 
@@ -22,16 +22,8 @@ router.get('/', async (req, res) => {
     const pageSize = Math.min(Math.max(1, parseInt(limit)), 100)
     const offset = (currentPage - 1) * pageSize
 
-    // Get user ID if authenticated
-    let userId = null
-    if (req.headers.authorization) {
-      try {
-        const authResult = await authMiddleware(req, res, () => {})
-        userId = req.user?.user_id
-      } catch (err) {
-        // User not authenticated, continue without user ID
-      }
-    }
+    // Get user ID if authenticated (set by optionalAuthMiddleware)
+    const userId = req.user?.id || null
 
     // Build sort clause
     const sortColumn = ['first_name', 'last_name', 'card_count', 'is_hof'].includes(sortBy) ? sortBy : 'card_count'
@@ -84,6 +76,21 @@ router.get('/', async (req, res) => {
             p.nick_name,
             p.is_hof,
             p.card_count,
+            (
+              SELECT COUNT(DISTINCT c.card_id) 
+              FROM card c
+              JOIN card_player_team cpt ON c.card_id = cpt.card
+              JOIN player_team pt ON cpt.player_team = pt.player_team_id
+              WHERE pt.player = p.player_id AND c.is_rookie = 1
+            ) as rookie_count,
+            (
+              SELECT COUNT(DISTINCT uc.card) 
+              FROM user_card uc
+              JOIN card c ON uc.card = c.card_id
+              JOIN card_player_team cpt ON c.card_id = cpt.card
+              JOIN player_team pt ON cpt.player_team = pt.player_team_id
+              WHERE pt.player = p.player_id AND uc.[user] = ${userId}
+            ) as user_card_count,
             MAX(pv.viewed_at) as last_viewed
           FROM player_views pv
           JOIN player p ON pv.player_id = p.player_id
@@ -111,6 +118,21 @@ router.get('/', async (req, res) => {
             p.nick_name,
             p.is_hof,
             p.card_count,
+            (
+              SELECT COUNT(DISTINCT c.card_id) 
+              FROM card c
+              JOIN card_player_team cpt ON c.card_id = cpt.card
+              JOIN player_team pt ON cpt.player_team = pt.player_team_id
+              WHERE pt.player = p.player_id AND c.is_rookie = 1
+            ) as rookie_count,
+            (
+              SELECT COUNT(DISTINCT uc.card) 
+              FROM user_card uc
+              JOIN card c ON uc.card = c.card_id
+              JOIN card_player_team cpt ON c.card_id = cpt.card
+              JOIN player_team pt ON cpt.player_team = pt.player_team_id
+              WHERE pt.player = p.player_id AND uc.[user] = ${userId}
+            ) as user_card_count,
             COUNT(pv.view_id) as view_count
           FROM player_views pv
           JOIN player p ON pv.player_id = p.player_id
@@ -147,7 +169,22 @@ router.get('/', async (req, res) => {
           p.last_name,
           p.nick_name,
           p.is_hof,
-          p.card_count
+          p.card_count,
+          (
+            SELECT COUNT(DISTINCT c.card_id) 
+            FROM card c
+            JOIN card_player_team cpt ON c.card_id = cpt.card
+            JOIN player_team pt ON cpt.player_team = pt.player_team_id
+            WHERE pt.player = p.player_id AND c.is_rookie = 1
+          ) as rookie_count${userId ? `,
+          (
+            SELECT COUNT(DISTINCT uc.card) 
+            FROM user_card uc
+            JOIN card c ON uc.card = c.card_id
+            JOIN card_player_team cpt ON c.card_id = cpt.card
+            JOIN player_team pt ON cpt.player_team = pt.player_team_id
+            WHERE pt.player = p.player_id AND uc.[user] = ${userId}
+          ) as user_card_count` : ''}
         FROM player p
         ${searchCondition}
         ORDER BY ${sortColumn} ${sortDirection}
@@ -187,7 +224,7 @@ router.get('/', async (req, res) => {
         ) WITHIN GROUP (ORDER BY pt.team_card_count DESC) as teams_json
       FROM PlayerData pd
       LEFT JOIN PlayerTeams pt ON pd.player_id = pt.player_id
-      GROUP BY pd.player_id, pd.first_name, pd.last_name, pd.nick_name, pd.is_hof, pd.card_count
+      GROUP BY pd.player_id, pd.first_name, pd.last_name, pd.nick_name, pd.is_hof, pd.card_count, pd.rookie_count${userId ? ', pd.user_card_count' : ''}
       ORDER BY ${sortColumn} ${sortDirection}
     `
 
@@ -201,6 +238,8 @@ router.get('/', async (req, res) => {
       nick_name: player.nick_name,
       is_hof: player.is_hof,
       card_count: Number(player.card_count),
+      rookie_count: Number(player.rookie_count || 0),
+      user_card_count: userId ? Number(player.user_card_count || 0) : undefined,
       teams: player.teams_json ? 
         player.teams_json.split('|||').map(teamStr => {
           try {
@@ -271,6 +310,8 @@ router.get('/', async (req, res) => {
         nick_name: player.nick_name,
         is_hof: player.is_hof,
         card_count: Number(player.card_count),
+        rookie_count: Number(player.rookie_count || 0),
+        user_card_count: userId ? Number(player.user_card_count || 0) : undefined,
         teams: teamsMap[Number(player.player_id)] || [],
         is_priority: true
       }))
@@ -307,7 +348,7 @@ router.get('/', async (req, res) => {
 })
 
 // GET /api/players-list/alphabet - Get players grouped by first letter
-router.get('/alphabet', async (req, res) => {
+router.get('/alphabet', optionalAuthMiddleware, async (req, res) => {
   try {
     // Optimized query to get player counts by first letter
     const alphabetQuery = `
@@ -342,7 +383,7 @@ router.get('/alphabet', async (req, res) => {
 })
 
 // GET /api/players-list/by-letter/:letter - Get players by first letter
-router.get('/by-letter/:letter', async (req, res) => {
+router.get('/by-letter/:letter', optionalAuthMiddleware, async (req, res) => {
   try {
     const { letter } = req.params
     const { 
@@ -409,7 +450,7 @@ router.get('/by-letter/:letter', async (req, res) => {
         ) WITHIN GROUP (ORDER BY pt.team_card_count DESC) as teams_json
       FROM PlayerData pd
       LEFT JOIN PlayerTeams pt ON pd.player_id = pt.player_id
-      GROUP BY pd.player_id, pd.first_name, pd.last_name, pd.nick_name, pd.is_hof, pd.card_count
+      GROUP BY pd.player_id, pd.first_name, pd.last_name, pd.nick_name, pd.is_hof, pd.card_count, pd.rookie_count
       ORDER BY ${sortColumn} ${sortDirection}
     `
 
@@ -433,6 +474,8 @@ router.get('/by-letter/:letter', async (req, res) => {
       nick_name: player.nick_name,
       is_hof: player.is_hof,
       card_count: Number(player.card_count),
+      rookie_count: Number(player.rookie_count || 0),
+      user_card_count: userId ? Number(player.user_card_count || 0) : undefined,
       teams: player.teams_json ? 
         player.teams_json.split('|||').map(teamStr => {
           try {

@@ -215,35 +215,39 @@ function TeamDetail() {
 
       </div>
 
-      {/* Players Search and Grid - Full Width Edge to Edge */}
+      {/* Players Search and Grid - Simple Right-Aligned Search */}
       {players.length > 0 && (
         <>
-          <div className="players-search-container">
-            <div className="players-search-box">
-              <Icon name="search" size={20} />
-              <input
-                type="text"
-                placeholder={`Search ${team.name} players...`}
-                value={playerSearchTerm}
-                onChange={(e) => setPlayerSearchTerm(e.target.value)}
-                className="players-search-input"
-                autoFocus
-              />
-              {playerSearchTerm && (
-                <button 
-                  onClick={() => setPlayerSearchTerm('')}
-                  className="players-search-clear"
-                  title="Clear search"
-                >
-                  <Icon name="x" size={16} />
-                </button>
-              )}
-            </div>
-            {playerSearchTerm && (
-              <div className="players-search-results">
-                {filteredPlayers.length} of {players.length} players
+          <div className="players-search-container-grid-aligned">
+            <div className="players-search-grid">
+              <div className="players-search-content">
+                <div className="players-search-box">
+                  <Icon name="search" size={20} />
+                  <input
+                    type="text"
+                    placeholder="Search players..."
+                    value={playerSearchTerm}
+                    onChange={(e) => setPlayerSearchTerm(e.target.value)}
+                    className="players-search-input"
+                    autoFocus
+                  />
+                  {playerSearchTerm && (
+                    <button 
+                      onClick={() => setPlayerSearchTerm('')}
+                      className="players-search-clear"
+                      title="Clear search"
+                    >
+                      <Icon name="x" size={16} />
+                    </button>
+                  )}
+                </div>
+                {playerSearchTerm && (
+                  <div className="players-search-results">
+                    {filteredPlayers.length} of {players.length} players
+                  </div>
+                )}
               </div>
-            )}
+            </div>
           </div>
           <div className="players-grid-fullwidth">
             {filteredPlayers.map((player) => (

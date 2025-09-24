@@ -46,6 +46,11 @@ function AdminNavigation() {
       path: '/admin/achievements',
       name: 'Achievements',
       icon: 'trophy'
+    },
+    {
+      path: '/admin/query-tester',
+      name: 'Query Tester',
+      icon: 'search'
     }
   ]
 

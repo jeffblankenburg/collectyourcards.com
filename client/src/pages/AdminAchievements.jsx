@@ -20,6 +20,16 @@ function AdminAchievements() {
   const [showEditModal, setShowEditModal] = useState(false)
   const [editingAchievement, setEditingAchievement] = useState(null)
   const [saving, setSaving] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [achievementToDelete, setAchievementToDelete] = useState(null)
+  
+  // Query testing states
+  const [showQueryTestModal, setShowQueryTestModal] = useState(false)
+  const [testingAchievement, setTestingAchievement] = useState(null)
+  const [testUserId, setTestUserId] = useState('1')
+  const [queryResults, setQueryResults] = useState(null)
+  const [testingQuery, setTestingQuery] = useState(false)
+  const [users, setUsers] = useState([])
   
   // Form state
   const [achievementForm, setAchievementForm] = useState({
@@ -52,16 +62,103 @@ function AdminAchievements() {
     loadData()
   }, [])
 
+  // Query testing functions
+  const validateQuery = (query) => {
+    const cleanQuery = query.trim().toUpperCase()
+    
+    // Must start with SELECT
+    if (!cleanQuery.startsWith('SELECT')) {
+      return { valid: false, error: 'Query must start with SELECT' }
+    }
+    
+    // Check for dangerous keywords
+    const dangerousKeywords = [
+      'INSERT', 'UPDATE', 'DELETE', 'DROP', 'ALTER', 'CREATE', 'TRUNCATE',
+      'EXEC', 'EXECUTE', 'SP_', 'XP_', 'BULK', 'BACKUP', 'RESTORE',
+      'GRANT', 'REVOKE', 'DENY'
+    ]
+    
+    for (const keyword of dangerousKeywords) {
+      if (cleanQuery.includes(keyword)) {
+        return { valid: false, error: `Dangerous keyword detected: ${keyword}` }
+      }
+    }
+    
+    // Check for SQL injection patterns
+    const injectionPatterns = [
+      /;\s*--/, // Comment injection
+      /;\s*\/\*/, // Block comment injection
+      /'\s*OR\s+'1'\s*=\s*'1/, // Classic OR injection
+      /'\s*OR\s+1\s*=\s*1/, // Numeric OR injection
+      /UNION\s+SELECT/i // Union injection
+    ]
+    
+    for (const pattern of injectionPatterns) {
+      if (pattern.test(query)) {
+        return { valid: false, error: 'Potential SQL injection pattern detected' }
+      }
+    }
+    
+    return { valid: true }
+  }
+
+  const handleTestQuery = (achievement) => {
+    setTestingAchievement(achievement)
+    setQueryResults(null)
+    setShowQueryTestModal(true)
+  }
+
+  const executeTestQuery = async () => {
+    if (!testingAchievement || !testUserId) {
+      addToast('Missing achievement or user ID', 'error')
+      return
+    }
+
+    const validation = validateQuery(testingAchievement.requirement_query)
+    if (!validation.valid) {
+      addToast(validation.error, 'error')
+      return
+    }
+
+    setTestingQuery(true)
+    setQueryResults(null)
+
+    try {
+      const response = await axios.post('/api/admin/test-query', {
+        query: testingAchievement.requirement_query,
+        userId: testUserId
+      })
+      
+      setQueryResults(response.data)
+      addToast('Query executed successfully', 'success')
+      
+    } catch (error) {
+      console.error('Query execution error:', error)
+      const errorMessage = error.response?.data?.error || error.message || 'Query execution failed'
+      addToast(errorMessage, 'error')
+      
+      setQueryResults({
+        success: false,
+        error: errorMessage,
+        executionTime: 0
+      })
+    } finally {
+      setTestingQuery(false)
+    }
+  }
+
   const loadData = async () => {
     try {
       setLoading(true)
-      const [achievementsRes, categoriesRes] = await Promise.all([
+      const [achievementsRes, categoriesRes, usersRes] = await Promise.all([
         axios.get('/api/admin/achievements'),
-        axios.get('/api/admin/achievements/categories')
+        axios.get('/api/admin/achievements/categories'),
+        axios.get('/api/admin/users')
       ])
       
       setAchievements(achievementsRes.data.achievements || [])
       setCategories(categoriesRes.data.categories || [])
+      setUsers((usersRes.data.users || []).slice(0, 20)) // Limit to first 20 users
     } catch (error) {
       console.error('Error loading data:', error)
       addToast('Failed to load achievements data', 'error')
@@ -130,7 +227,7 @@ function AdminAchievements() {
       if (bVal === null || bVal === undefined) bVal = ''
       
       // Handle numeric fields
-      if (['points', 'requirement_value', 'cooldown_days'].includes(sortField)) {
+      if (['points', 'requirement_value', 'cooldown_days', 'user_count'].includes(sortField)) {
         aVal = Number(aVal) || 0
         bVal = Number(bVal) || 0
       }
@@ -271,6 +368,33 @@ function AdminAchievements() {
       console.error('Error toggling achievement status:', error)
       addToast('Failed to update achievement status', 'error')
     }
+  }
+
+  const handleDeleteAchievement = (achievement) => {
+    setAchievementToDelete(achievement)
+    setShowDeleteModal(true)
+  }
+
+  const confirmDeleteAchievement = async () => {
+    if (!achievementToDelete) return
+    
+    try {
+      await axios.delete(`/api/admin/achievements/${achievementToDelete.achievement_id}`)
+      
+      setAchievements(prev => prev.filter(a => a.achievement_id !== achievementToDelete.achievement_id))
+      addToast('Achievement deleted successfully', 'success')
+      setShowDeleteModal(false)
+      setAchievementToDelete(null)
+    } catch (error) {
+      console.error('Error deleting achievement:', error)
+      const errorMessage = error.response?.data?.message || error.message
+      addToast(`Failed to delete achievement: ${errorMessage}`, 'error')
+    }
+  }
+
+  const cancelDeleteAchievement = () => {
+    setShowDeleteModal(false)
+    setAchievementToDelete(null)
   }
 
   const getTierColor = (tier) => {
@@ -435,6 +559,18 @@ function AdminAchievements() {
                 )}
               </div>
               <div className="col-header requirement">Requirement</div>
+              <div 
+                className={`col-header users sortable ${sortField === 'user_count' ? 'active' : ''}`}
+                onClick={() => handleSort('user_count')}
+              >
+                Users
+                {sortField === 'user_count' && (
+                  <Icon 
+                    name={sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'} 
+                    size={14} 
+                  />
+                )}
+              </div>
               <div className="col-header flags">Flags</div>
               <div className="col-header actions">Actions</div>
             </div>
@@ -484,17 +620,35 @@ function AdminAchievements() {
                     <span className="requirement-value">{achievement.requirement_value}</span>
                   </div>
                 </div>
+                <div className="col-users">
+                  <span className="user-count">{achievement.user_count || 0}</span>
+                  <span className="user-count-label">users</span>
+                </div>
                 <div className="col-flags">
                   {achievement.is_secret && <span className="flag secret" title="Secret Achievement">S</span>}
                   {achievement.is_repeatable && <span className="flag repeatable" title="Repeatable Achievement">R</span>}
                 </div>
                 <div className="col-actions">
                   <button 
+                    className="test-btn"
+                    title="Test query"
+                    onClick={() => handleTestQuery(achievement)}
+                  >
+                    <Icon name="play" size={16} />
+                  </button>
+                  <button 
                     className="edit-btn"
                     title="Edit achievement"
                     onClick={() => handleEditAchievement(achievement)}
                   >
                     <Icon name="edit" size={16} />
+                  </button>
+                  <button 
+                    className="delete-btn"
+                    title="Delete achievement"
+                    onClick={() => handleDeleteAchievement(achievement)}
+                  >
+                    <Icon name="x" size={16} />
                   </button>
                 </div>
               </div>
@@ -523,8 +677,7 @@ function AdminAchievements() {
               </button>
             </div>
             
-            <div className="modal-content">
-              <div className="achievement-form">
+            <div className="achievement-form">
                 <div className="form-grid">
                   <div className="form-group">
                     <label className="form-label">Name *</label>
@@ -706,7 +859,6 @@ function AdminAchievements() {
                   </div>
                 )}
               </div>
-            </div>
             
             <div className="modal-actions">
               <button 
@@ -731,6 +883,188 @@ function AdminAchievements() {
                   </>
                 ) : (
                   editingAchievement ? 'Save Changes' : 'Create Achievement'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && achievementToDelete && (
+        <div className="modal-overlay" onClick={cancelDeleteAchievement}>
+          <div className="achievement-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Delete Achievement</h3>
+              <button className="close-btn" onClick={cancelDeleteAchievement}>
+                <Icon name="x" size={20} />
+              </button>
+            </div>
+            
+            <div className="delete-confirmation">
+                <div className="delete-warning">
+                  <Icon name="alert-triangle" size={48} />
+                  <h4>Are you sure you want to delete this achievement?</h4>
+                  <p>
+                    <strong>{achievementToDelete.name}</strong>
+                  </p>
+                  <p>{achievementToDelete.description}</p>
+                  <div className="delete-details">
+                    <p><strong>User Count:</strong> {achievementToDelete.user_count || 0} users have earned this achievement</p>
+                    <p><strong>Points:</strong> {achievementToDelete.points} points</p>
+                  </div>
+                  <div className="delete-warning-text">
+                    <strong>This action cannot be undone.</strong> All user progress for this achievement will also be permanently deleted.
+                  </div>
+                </div>
+              </div>
+            
+            <div className="modal-actions">
+              <button 
+                className="btn-cancel" 
+                onClick={cancelDeleteAchievement}
+              >
+                Cancel
+              </button>
+              <button 
+                className="btn-delete"
+                onClick={confirmDeleteAchievement}
+              >
+                <Icon name="trash-2" size={16} />
+                Delete Achievement
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Query Test Modal */}
+      {showQueryTestModal && testingAchievement && (
+        <div className="modal-overlay" onClick={() => setShowQueryTestModal(false)}>
+          <div className="achievement-modal query-test-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Test Query: {testingAchievement.name}</h3>
+              <button className="close-btn" onClick={() => setShowQueryTestModal(false)}>
+                <Icon name="x" size={20} />
+              </button>
+            </div>
+            
+            <div className="query-test-content">
+              <div className="test-config">
+                <div className="form-group">
+                  <label className="form-label">Test User:</label>
+                  <select
+                    value={testUserId}
+                    onChange={(e) => setTestUserId(e.target.value)}
+                    className="form-select"
+                  >
+                    <option value="">Select a user...</option>
+                    {users.map(user => (
+                      <option key={user.user_id} value={user.user_id}>
+                        {user.first_name} {user.last_name} ({user.email}) - ID: {user.user_id}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Query:</label>
+                  <textarea
+                    value={testingAchievement.requirement_query || ''}
+                    readOnly
+                    className="form-textarea code"
+                    rows={6}
+                  />
+                  <div className="query-info">
+                    <Icon name="info" size={16} />
+                    <span>This query will be executed with user ID {testUserId} substituted for @user_id</span>
+                  </div>
+                </div>
+              </div>
+
+              {queryResults && (
+                <div className="query-results">
+                  <h4>
+                    <Icon name={queryResults.success ? "check-circle" : "alert-circle"} size={20} />
+                    Results
+                  </h4>
+                  
+                  <div className="result-summary">
+                    <span className={`status ${queryResults.success ? 'success' : 'error'}`}>
+                      {queryResults.success ? 'SUCCESS' : 'ERROR'}
+                    </span>
+                    <span className="execution-time">
+                      {queryResults.executionTime}ms
+                    </span>
+                    {queryResults.rowCount !== undefined && (
+                      <span className="row-count">
+                        {queryResults.rowCount} rows
+                      </span>
+                    )}
+                  </div>
+
+                  {queryResults.success ? (
+                    <div className="result-data">
+                      {queryResults.result && queryResults.result.length > 0 ? (
+                        <div className="result-table">
+                          <table>
+                            <thead>
+                              <tr>
+                                {Object.keys(queryResults.result[0]).map(key => (
+                                  <th key={key}>{key}</th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {queryResults.result.map((row, index) => (
+                                <tr key={index}>
+                                  {Object.values(row).map((value, i) => (
+                                    <td key={i}>{value?.toString() || 'null'}</td>
+                                  ))}
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      ) : (
+                        <div className="no-results">
+                          <Icon name="database" size={24} />
+                          <p>Query executed successfully but returned no results</p>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="error-details">
+                      <Icon name="alert-triangle" size={20} />
+                      <pre>{queryResults.error}</pre>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            
+            <div className="modal-actions">
+              <button 
+                className="btn-cancel" 
+                onClick={() => setShowQueryTestModal(false)}
+              >
+                Close
+              </button>
+              <button 
+                className="btn-primary"
+                onClick={executeTestQuery}
+                disabled={testingQuery || !testUserId}
+              >
+                {testingQuery ? (
+                  <>
+                    <Icon name="loader" size={16} className="spinning" />
+                    Testing...
+                  </>
+                ) : (
+                  <>
+                    <Icon name="play" size={16} />
+                    Execute Query
+                  </>
                 )}
               </button>
             </div>

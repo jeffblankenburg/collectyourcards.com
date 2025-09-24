@@ -125,158 +125,173 @@ function PublicProfile() {
     <div className="public-profile-page">
       <div className="profile-container">
         
-        {/* Profile Header */}
-        <div className="profile-header">
-          <div className="profile-info">
-            <div className="profile-avatar">
-              {profile.avatar_url ? (
-                <img src={profile.avatar_url} alt={`${profile.username}'s avatar`} />
-              ) : (
-                <Icon name="user" size={48} />
-              )}
+        {/* Compact Header with Integrated Stats */}
+        <header className="profile-header">
+          <div className="header-top">
+            <div className="header-title">
+              <div className="title-and-info">
+                <div className="profile-avatar">
+                  {profile.avatar_url ? (
+                    <img src={profile.avatar_url} alt={`${profile.username}'s avatar`} />
+                  ) : (
+                    <Icon name="user" size={40} />
+                  )}
+                </div>
+                <div className="profile-title-details">
+                  <h1 className="profile-name">
+                    {profile.display_name || profile.username}
+                  </h1>
+                  <p className="profile-username">@{profile.username}</p>
+                </div>
+              </div>
+              
+              {/* Profile meta info below title */}
+              <div className="profile-meta">
+                {profile.bio && (
+                  <p className="profile-bio">{profile.bio}</p>
+                )}
+                <div className="profile-meta-items">
+                  {profile.location && (
+                    <span className="profile-location">
+                      <Icon name="map" size={14} />
+                      {profile.location}
+                    </span>
+                  )}
+                  {profile.website && (
+                    <a 
+                      href={profile.website.startsWith('http') ? profile.website : `https://${profile.website}`}
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="profile-website"
+                    >
+                      <Icon name="external-link" size={14} />
+                      Website
+                    </a>
+                  )}
+                  <span className="profile-joined">
+                    <Icon name="clock" size={14} />
+                    Joined {formatJoinDate(profile.joined_date)}
+                  </span>
+                  {profile.is_own_profile && (
+                    <Link to="/settings/profile" className="edit-profile-btn">
+                      <Icon name="edit" size={14} />
+                      Edit Profile
+                    </Link>
+                  )}
+                </div>
+              </div>
             </div>
             
-            <div className="profile-details">
-              <h1 className="profile-name">
-                {profile.display_name || profile.username}
-              </h1>
-              <p className="profile-username">@{profile.username}</p>
-              
-              {profile.bio && (
-                <p className="profile-bio">{profile.bio}</p>
-              )}
-              
-              <div className="profile-meta">
-                {profile.location && (
-                  <span className="profile-location">
-                    <Icon name="map" size={14} />
-                    {profile.location}
-                  </span>
-                )}
-                
-                {profile.website && (
-                  <a 
-                    href={profile.website.startsWith('http') ? profile.website : `https://${profile.website}`}
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="profile-website"
-                  >
-                    <Icon name="external-link" size={14} />
-                    Website
-                  </a>
-                )}
-                
-                <span className="profile-joined">
-                  <Icon name="clock" size={14} />
-                  Joined {formatJoinDate(profile.joined_date)}
-                </span>
-              </div>
-
-              {profile.is_own_profile && (
-                <div className="profile-actions">
-                  <Link to="/settings/profile" className="edit-profile-btn">
-                    <Icon name="edit" size={16} />
-                    Edit Profile
-                  </Link>
+            {/* Stats Grid on the right */}
+            {stats && (
+              <div className="header-stats">
+                <div className="stat-item">
+                  <Icon name="layers" size={18} />
+                  <div className="stat-content">
+                    <span className="stat-value">{stats.total_cards.toLocaleString()}</span>
+                    <span className="stat-label">Cards</span>
+                  </div>
                 </div>
-              )}
-            </div>
+                <div className="stat-item">
+                  <Icon name="diamond" size={18} />
+                  <div className="stat-content">
+                    <span className="stat-value">{stats.unique_cards.toLocaleString()}</span>
+                    <span className="stat-label">Unique</span>
+                  </div>
+                </div>
+                <div className="stat-item">
+                  <Icon name="value" size={18} />
+                  <div className="stat-content">
+                    <span className="stat-value">${Number(stats.estimated_value).toLocaleString()}</span>
+                    <span className="stat-label">Value</span>
+                  </div>
+                </div>
+                <div className="stat-item">
+                  <Icon name="star" size={18} />
+                  <div className="stat-content">
+                    <span className="stat-value">{stats.rookie_cards.toLocaleString()}</span>
+                    <span className="stat-label">Rookies</span>
+                  </div>
+                </div>
+                <div className="stat-item">
+                  <Icon name="edit" size={18} />
+                  <div className="stat-content">
+                    <span className="stat-value">{stats.autograph_cards.toLocaleString()}</span>
+                    <span className="stat-label">Autos</span>
+                  </div>
+                </div>
+                <div className="stat-item">
+                  <Icon name="patch" size={18} />
+                  <div className="stat-content">
+                    <span className="stat-value">{stats.relic_cards.toLocaleString()}</span>
+                    <span className="stat-label">Relics</span>
+                  </div>
+                </div>
+                <div className="stat-item">
+                  <Icon name="collections" size={18} />
+                  <div className="stat-content">
+                    <span className="stat-value">{stats.unique_sets.toLocaleString()}</span>
+                    <span className="stat-label">Sets</span>
+                  </div>
+                </div>
+                {achievements && (
+                  <div className="stat-item">
+                    <Icon name="trophy" size={18} />
+                    <div className="stat-content">
+                      <span className="stat-value">{achievements.total_achievements}</span>
+                      <span className="stat-label">Achievements</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
-        </div>
+        </header>
 
-        {/* Collection Stats */}
-        {stats && (
-          <div className="collection-stats">
-            <h3>
-              <Icon name="collections" size={20} />
-              Collection Stats
-            </h3>
-            <div className="stats-grid">
-              <div className="stat-item">
-                <span className="stat-value">{stats.total_cards.toLocaleString()}</span>
-                <span className="stat-label">Total Cards</span>
-              </div>
-              <div className="stat-item">
-                <span className="stat-value">{stats.unique_cards.toLocaleString()}</span>
-                <span className="stat-label">Unique Cards</span>
-              </div>
-              <div className="stat-item">
-                <span className="stat-value">{stats.unique_sets.toLocaleString()}</span>
-                <span className="stat-label">Sets</span>
-              </div>
-              <div className="stat-item">
-                <span className="stat-value">{stats.rookie_cards.toLocaleString()}</span>
-                <span className="stat-label">Rookies</span>
-              </div>
-              <div className="stat-item">
-                <span className="stat-value">{stats.autograph_cards.toLocaleString()}</span>
-                <span className="stat-label">Autographs</span>
-              </div>
-              <div className="stat-item">
-                <span className="stat-value">{stats.relic_cards.toLocaleString()}</span>
-                <span className="stat-label">Relics</span>
-              </div>
-              <div className="stat-item">
-                <span className="stat-value">${Number(stats.estimated_value).toLocaleString()}</span>
-                <span className="stat-label">Est. Value</span>
-              </div>
-              <div className="stat-item">
-                <span className="stat-value">${Number(stats.avg_card_value).toFixed(2)}</span>
-                <span className="stat-label">Avg Card Value</span>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Achievements */}
-        {achievements && achievements.total_achievements > 0 && (
+        {/* Two Column Layout: Achievements and Favorite Cards */}
+        <div className="content-columns">
+          {/* Achievements */}
+          {achievements && achievements.total_achievements > 0 && (
           <div className="achievements-section">
-            <h3>
-              <Icon name="trophy" size={20} />
-              Achievements
-            </h3>
+            <div className="achievements-header">
+              <h3>
+                <Icon name="trophy" size={20} />
+                Achievements ({achievements.total_achievements})
+              </h3>
+              <span className="achievement-points-badge">{achievements.total_points.toLocaleString()} pts</span>
+            </div>
             <div className="achievement-stats">
-              <div className="achievement-overview">
-                <div className="achievement-total">
-                  <span className="achievement-count">{achievements.total_achievements}</span>
-                  <span className="achievement-label">Achievements</span>
-                </div>
-                <div className="achievement-points">
-                  <span className="points-value">{achievements.total_points.toLocaleString()}</span>
-                  <span className="points-label">Points</span>
-                </div>
-              </div>
               
               {achievements.tier_breakdown && (
                 <div className="tier-breakdown">
                   {achievements.tier_breakdown.mythic > 0 && (
                     <span className="tier-badge mythic" title="Mythic">
-                      {achievements.tier_breakdown.mythic}
+                      {achievements.tier_breakdown.mythic} MYTHIC
                     </span>
                   )}
                   {achievements.tier_breakdown.legendary > 0 && (
                     <span className="tier-badge legendary" title="Legendary">
-                      {achievements.tier_breakdown.legendary}
+                      {achievements.tier_breakdown.legendary} LEGENDARY
                     </span>
                   )}
                   {achievements.tier_breakdown.epic > 0 && (
                     <span className="tier-badge epic" title="Epic">
-                      {achievements.tier_breakdown.epic}
+                      {achievements.tier_breakdown.epic} EPIC
                     </span>
                   )}
                   {achievements.tier_breakdown.rare > 0 && (
                     <span className="tier-badge rare" title="Rare">
-                      {achievements.tier_breakdown.rare}
+                      {achievements.tier_breakdown.rare} RARE
                     </span>
                   )}
                   {achievements.tier_breakdown.uncommon > 0 && (
                     <span className="tier-badge uncommon" title="Uncommon">
-                      {achievements.tier_breakdown.uncommon}
+                      {achievements.tier_breakdown.uncommon} UNCOMMON
                     </span>
                   )}
                   {achievements.tier_breakdown.common > 0 && (
                     <span className="tier-badge common" title="Common">
-                      {achievements.tier_breakdown.common}
+                      {achievements.tier_breakdown.common} COMMON
                     </span>
                   )}
                 </div>
@@ -297,18 +312,16 @@ function PublicProfile() {
                 </div>
               )}
               
-              {profile.is_own_profile && (
-                <Link to="/achievements" className="view-all-achievements">
-                  View All Achievements
-                  <Icon name="arrow-right" size={16} />
-                </Link>
-              )}
+              <Link to="/achievements" className="view-all-achievements">
+                View All Achievements
+                <Icon name="arrow-right" size={16} />
+              </Link>
             </div>
           </div>
-        )}
+          )}
 
-        {/* Favorite Cards */}
-        {favoriteCards.length > 0 && (
+          {/* Favorite Cards */}
+          {favoriteCards.length > 0 && (
           <div className="favorite-cards">
             <h3>
               <Icon name="star" size={20} />
@@ -409,9 +422,10 @@ function PublicProfile() {
               })}
             </div>
           </div>
-        )}
+          )}
+        </div>
 
-        {/* Recent Activity */}
+        {/* Recent Activity - Full Width Below */}
         {recentActivity.length > 0 && (
           <div className="recent-activity">
             <h3>

@@ -374,6 +374,24 @@
   white-space: nowrap;
 }
 
+.card-table-container .card-table-series-cell .card-table-series-link {
+  background: none;
+  border: none;
+  color: #60a5fa;
+  font-size: 0.8rem;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.card-table-container .card-table-series-cell .card-table-series-link:hover {
+  color: #93c5fd;
+  text-decoration: underline;
+}
+
 /* Tag styles */
 .card-table-container .color-tag {
   display: inline-block;

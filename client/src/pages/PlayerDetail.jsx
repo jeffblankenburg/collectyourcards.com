@@ -390,6 +390,7 @@ function PlayerDetail() {
           cards={filteredCards}
           loading={cardsLoading}
           onCardClick={handleCardClick}
+          onSeriesClick={handleSeriesClick}
           showSearch={true}
           autoFocusSearch={true}
           searchQuery={searchQuery}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import axios from 'axios'
@@ -11,35 +11,69 @@ function PlayersLanding() {
   const navigate = useNavigate()
   
   const [players, setPlayers] = useState([])
-  const [filteredPlayers, setFilteredPlayers] = useState([])
   const [searchTerm, setSearchTerm] = useState('')
   const [loading, setLoading] = useState(true)
+  const [searching, setSearching] = useState(false)
   const [error, setError] = useState(null)
+  const [hasMore, setHasMore] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const searchTimeoutRef = useRef(null)
 
   useEffect(() => {
-    loadPlayersData()
     document.title = 'All Players - Collect Your Cards'
+  }, [])
+
+  // Initial load
+  useEffect(() => {
+    if (!searchTerm) {
+      loadPlayersData()
+    }
   }, [isAuthenticated])
 
-  // Filter players based on search term
+  // Handle search with debouncing
   useEffect(() => {
-    if (!searchTerm.trim()) {
-      setFilteredPlayers(players)
-    } else {
-      const filtered = players.filter(player =>
-        `${player.first_name} ${player.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (player.nick_name && player.nick_name.toLowerCase().includes(searchTerm.toLowerCase()))
-      )
-      setFilteredPlayers(filtered)
+    // Clear previous timeout
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current)
     }
-  }, [players, searchTerm])
 
-  const loadPlayersData = async () => {
+    // Don't search if term is empty
+    if (!searchTerm.trim()) {
+      // Reset to initial data if search is cleared
+      loadPlayersData()
+      return
+    }
+
+    // Set searching state immediately for user feedback
+    setSearching(true)
+
+    // Debounce the search
+    searchTimeoutRef.current = setTimeout(() => {
+      loadPlayersData(searchTerm)
+    }, 300) // 300ms debounce delay
+
+    // Cleanup function
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current)
+      }
+    }
+  }, [searchTerm])
+
+  const loadPlayersData = async (search = '') => {
     try {
-      setLoading(true)
+      // Set appropriate loading state
+      if (search) {
+        setSearching(true)
+      } else {
+        setLoading(true)
+      }
       
-      // Load players list with authentication if available
+      // Build API URL with search parameter
       let apiUrl = '/api/players-list?limit=100'
+      if (search && search.trim()) {
+        apiUrl += `&search=${encodeURIComponent(search.trim())}`
+      }
       
       // Include auth header if authenticated - backend will automatically include recently viewed
       const config = {}
@@ -54,18 +88,21 @@ function PlayersLanding() {
       
       const response = await axios.get(apiUrl, config)
       let playersList = response.data.players || []
+      const pagination = response.data.pagination || {}
       
       // Backend automatically includes recently viewed players at the top for authenticated users
       // Non-authenticated users see players sorted by card count (default)
       
       setPlayers(playersList)
-      setFilteredPlayers(playersList)
+      setHasMore(pagination.has_more || false)
+      setCurrentPage(pagination.current_page || 1)
       setError(null)
     } catch (err) {
       console.error('Error loading players:', err)
       setError('Failed to load players data')
     } finally {
       setLoading(false)
+      setSearching(false)
     }
   }
 
@@ -241,18 +278,29 @@ function PlayersLanding() {
               onChange={(e) => setSearchTerm(e.target.value)}
               autoFocus
             />
+            {searching && (
+              <div className="search-loading">
+                <Icon name="activity" size={16} className="spinner" />
+              </div>
+            )}
           </div>
         </div>
         {/* Force new row after header */}
         <div className="grid-row-break"></div>
         {/* Player cards */}
-        {filteredPlayers.map(player => (
+        {players.map(player => (
           <PlayerCardWithTracking key={player.player_id} player={player} />
         ))}
-        {filteredPlayers.length === 0 && players.length > 0 && (
+        {players.length === 0 && !loading && !searching && searchTerm && (
           <div className="empty-state">
             <Icon name="search" size={48} />
             <p>No players found matching "{searchTerm}"</p>
+          </div>
+        )}
+        {players.length === 0 && !loading && !searching && !searchTerm && (
+          <div className="empty-state">
+            <Icon name="users" size={48} />
+            <p>No players available</p>
           </div>
         )}
       </div>

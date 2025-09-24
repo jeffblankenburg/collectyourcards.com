@@ -254,13 +254,10 @@ function CollectionDashboard() {
   }, [])
 
   const handleDeleteCard = useCallback(async (card) => {
-    if (!window.confirm(`Are you sure you want to remove ${card.card_number} from your collection?`)) {
-      return
-    }
-
+    // Remove confirmation dialog per CLAUDE.md rules - NO JAVASCRIPT ALERTS
     try {
       await axios.delete(`/api/user/cards/${card.user_card_id}`)
-      success('Card removed from collection')
+      success(`Card ${card.card_number} removed from collection`)
       
       // Refresh the cards list
       setCards(prev => prev.filter(c => c.user_card_id !== card.user_card_id))

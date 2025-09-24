@@ -181,7 +181,7 @@
 
 .admin-achievements-page .table-header {
   display: grid;
-  grid-template-columns: 80px 60px 2fr 120px 100px 80px 140px 80px 80px;
+  grid-template-columns: 80px 60px 2fr 120px 100px 80px 140px 80px 80px 100px;
   gap: 1rem;
   padding: 1rem;
   background: rgba(255, 255, 255, 0.1);
@@ -195,7 +195,7 @@
 
 .admin-achievements-page .achievement-row {
   display: grid;
-  grid-template-columns: 80px 60px 2fr 120px 100px 80px 140px 80px 80px;
+  grid-template-columns: 80px 60px 2fr 120px 100px 80px 140px 80px 80px 100px;
   gap: 1rem;
   padding: 1rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
@@ -396,10 +396,63 @@
   align-items: center;
 }
 
+.admin-achievements-page .test-btn {
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.2);
+  border-radius: 6px;
+  padding: 0.5rem;
+  color: #10b981;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+}
+
+.admin-achievements-page .test-btn:hover {
+  background: rgba(34, 197, 94, 0.2);
+  border-color: rgba(34, 197, 94, 0.3);
+  color: #059669;
+}
+
 .admin-achievements-page .edit-btn:hover {
   background: rgba(59, 130, 246, 0.2);
   border-color: rgba(59, 130, 246, 0.3);
   color: #93c5fd;
+}
+
+.admin-achievements-page .delete-btn {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 6px;
+  padding: 0.5rem;
+  color: #ef4444;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+}
+
+.admin-achievements-page .delete-btn:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+}
+
+.admin-achievements-page .col-users {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.125rem;
+}
+
+.admin-achievements-page .user-count {
+  font-weight: 600;
+  color: #3b82f6;
+}
+
+.admin-achievements-page .user-count-label {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.6);
 }
 
 /* Modal Styles */
@@ -409,59 +462,61 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.75);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 9999;
-  padding: 2rem;
+  z-index: 1000;
+  padding: 1rem;
 }
 
 .admin-achievements-page .achievement-modal {
-  background: rgba(15, 23, 42, 0.95);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
   border-radius: 16px;
-  max-width: 800px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(10px);
   width: 100%;
+  max-width: 800px;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+  position: relative;
 }
 
 .admin-achievements-page .modal-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
   padding: 1.5rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .admin-achievements-page .modal-header h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
   margin: 0;
-  font-size: 1.5rem;
-  font-weight: 600;
   color: white;
+  font-size: 1.25rem;
+  font-weight: 600;
 }
 
 .admin-achievements-page .close-btn {
-  background: transparent;
-  border: none;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  padding: 0.5rem;
   color: rgba(255, 255, 255, 0.7);
   cursor: pointer;
-  padding: 0.5rem;
-  border-radius: 4px;
   transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .admin-achievements-page .close-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.2);
   color: white;
-}
-
-.admin-achievements-page .modal-content {
-  padding: 1.5rem;
 }
 
 /* Form Styles */
@@ -469,6 +524,13 @@
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  width: 100%;
+  padding: 1.5rem;
+}
+
+.admin-achievements-page .delete-confirmation {
+  padding: 1.5rem;
+  width: 100%;
 }
 
 .admin-achievements-page .form-grid {
@@ -496,13 +558,14 @@
 .admin-achievements-page .form-input,
 .admin-achievements-page .form-select,
 .admin-achievements-page .form-textarea {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 6px;
-  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
   color: white;
-  font-size: 0.875rem;
+  font-size: 0.9rem;
   transition: all 0.2s ease;
+  width: 100%;
 }
 
 .admin-achievements-page .form-input:focus,
@@ -510,8 +573,8 @@
 .admin-achievements-page .form-textarea:focus {
   outline: none;
   border-color: rgba(59, 130, 246, 0.5);
-  background: rgba(255, 255, 255, 0.15);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25);
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .admin-achievements-page .form-input::placeholder,
@@ -579,40 +642,111 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.75rem 1.25rem;
+  padding: 0.75rem 1.5rem;
   border-radius: 8px;
-  font-size: 0.875rem;
+  font-size: 0.9rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
-  border: 1px solid;
 }
 
 .admin-achievements-page .btn-cancel {
-  background: transparent;
-  border-color: rgba(255, 255, 255, 0.3);
-  color: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.9);
 }
 
-.admin-achievements-page .btn-cancel:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
+.admin-achievements-page .btn-cancel:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.admin-achievements-page .btn-cancel:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .admin-achievements-page .btn-primary {
-  background: rgba(34, 197, 94, 0.2);
-  border-color: rgba(34, 197, 94, 0.3);
-  color: #86efac;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  color: white;
+  font-weight: 600;
+  justify-content: center;
+  min-width: 140px;
 }
 
-.admin-achievements-page .btn-primary:hover {
-  background: rgba(34, 197, 94, 0.3);
-  border-color: rgba(34, 197, 94, 0.5);
+.admin-achievements-page .btn-primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
 .admin-achievements-page .btn-primary:disabled {
-  opacity: 0.5;
+  opacity: 0.6;
   cursor: not-allowed;
+  transform: none;
+}
+
+.admin-achievements-page .btn-delete {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+}
+
+.admin-achievements-page .btn-delete:hover {
+  background: rgba(239, 68, 68, 0.3);
+  border-color: rgba(239, 68, 68, 0.5);
+}
+
+/* Delete Confirmation Modal Styles */
+.admin-achievements-page .delete-confirmation {
+  text-align: center;
+}
+
+.admin-achievements-page .delete-warning {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.admin-achievements-page .delete-warning svg {
+  color: #f59e0b;
+}
+
+.admin-achievements-page .delete-warning h4 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: white;
+}
+
+.admin-achievements-page .delete-warning p {
+  margin: 0.5rem 0;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.admin-achievements-page .delete-details {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 1rem;
+  margin: 1rem 0;
+  text-align: left;
+}
+
+.admin-achievements-page .delete-details p {
+  margin: 0.25rem 0;
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.admin-achievements-page .delete-warning-text {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 8px;
+  padding: 1rem;
+  color: #fca5a5;
+  font-size: 0.875rem;
 }
 
 /* Responsive Design */
@@ -693,11 +827,155 @@
     padding: 1rem;
   }
 
-  .admin-achievements-page .modal-content {
+  .admin-achievements-page .achievement-form,
+  .admin-achievements-page .delete-confirmation {
     padding: 1rem;
   }
 
   .admin-achievements-page .modal-actions {
     padding: 1rem;
   }
+}
+
+/* Query Test Modal Styles */
+.admin-achievements-page .query-test-modal {
+  max-width: 900px;
+}
+
+.admin-achievements-page .query-test-content {
+  padding: 1.5rem;
+}
+
+.admin-achievements-page .test-config {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.admin-achievements-page .query-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+  background: rgba(59, 130, 246, 0.1);
+  border-radius: 6px;
+  color: #93c5fd;
+  font-size: 0.875rem;
+}
+
+.admin-achievements-page .query-results {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 1.5rem;
+}
+
+.admin-achievements-page .query-results h4 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 1rem 0;
+  color: white;
+  font-size: 1.1rem;
+}
+
+.admin-achievements-page .result-summary {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  font-size: 0.875rem;
+}
+
+.admin-achievements-page .result-summary .status {
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.75rem;
+}
+
+.admin-achievements-page .result-summary .status.success {
+  background: rgba(34, 197, 94, 0.2);
+  color: #86efac;
+}
+
+.admin-achievements-page .result-summary .status.error {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+}
+
+.admin-achievements-page .result-summary .execution-time,
+.admin-achievements-page .result-summary .row-count {
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 500;
+}
+
+.admin-achievements-page .result-table {
+  overflow-x: auto;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+}
+
+.admin-achievements-page .result-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.admin-achievements-page .result-table th {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 0.75rem;
+  text-align: left;
+  font-weight: 600;
+  color: white;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.admin-achievements-page .result-table td {
+  padding: 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.9);
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+}
+
+.admin-achievements-page .result-table tr:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.admin-achievements-page .no-results,
+.admin-achievements-page .error-details {
+  text-align: center;
+  padding: 2rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.admin-achievements-page .error-details {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 8px;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  text-align: left;
+}
+
+.admin-achievements-page .error-details pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: #fca5a5;
+}
+
+.admin-achievements-page .spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }

@@ -196,16 +196,31 @@
   justify-content: center;
 }
 
-/* Players Search Container */
-.team-detail-page .players-search-container {
+/* Players Search Container - Grid Aligned */
+.team-detail-page .players-search-container-grid-aligned {
   width: 100vw;
   margin-left: calc(50% - 50vw);
   padding: 2rem 2rem 1rem 2rem;
   margin-top: 2rem;
   display: flex;
+  justify-content: center;
+}
+
+.team-detail-page .players-search-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 270px);
+  gap: 0.5rem;
+  justify-content: center;
+  width: 100%;
+}
+
+.team-detail-page .players-search-content {
+  grid-column: -1; /* Place in the last column */
+  display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 1rem;
+  align-items: flex-end;
+  gap: 0.5rem;
+  justify-self: end;
 }
 
 .team-detail-page .players-search-box {
@@ -219,6 +234,51 @@
   max-width: 500px;
   width: 100%;
   backdrop-filter: blur(10px);
+}
+
+.team-detail-page .players-search-box svg {
+  color: rgba(255, 255, 255, 0.6);
+  margin-right: 0.75rem;
+  flex-shrink: 0;
+}
+
+.team-detail-page .players-search-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: white;
+  font-size: 1rem;
+  placeholder-color: rgba(255, 255, 255, 0.5);
+}
+
+.team-detail-page .players-search-input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.team-detail-page .players-search-clear {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.team-detail-page .players-search-clear:hover {
+  color: white;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.team-detail-page .players-search-results {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.875rem;
+  margin-left: 0.75rem;
 }
 
 .team-detail-page .players-search-box svg {
@@ -312,10 +372,19 @@
     justify-content: center;
   }
 
-  .team-detail-page .players-search-container {
-    padding: 1rem 1rem 0.5rem 1rem;
+  .team-detail-page .players-search-container-grid-aligned {
+    padding: 1rem;
   }
-
+  
+  .team-detail-page .players-search-grid {
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  }
+  
+  .team-detail-page .players-search-content {
+    justify-self: center;
+    align-items: center;
+  }
+  
   .team-detail-page .players-grid-fullwidth {
     padding: 0 1rem 1rem 1rem;
   }
@@ -361,8 +430,17 @@
     font-size: 1.1rem;
   }
   
-  .team-detail-page .players-search-container {
-    padding: 1rem 1rem 0.5rem 1rem;
+  .team-detail-page .players-search-container-grid-aligned {
+    padding: 1rem;
+  }
+  
+  .team-detail-page .players-search-grid {
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  }
+  
+  .team-detail-page .players-search-content {
+    justify-self: center;
+    align-items: center;
   }
 
   .team-detail-page .players-grid-fullwidth {
