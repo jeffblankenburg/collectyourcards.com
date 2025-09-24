@@ -28,7 +28,6 @@ function AdminCards() {
   const [playerSearchTerm, setPlayerSearchTerm] = useState('')
   const [filteredPlayers, setFilteredPlayers] = useState([])
   const [selectedResultIndex, setSelectedResultIndex] = useState(-1)
-  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 })
   const { addToast } = useToast()
 
   // Function to determine text color based on background brightness
@@ -306,14 +305,6 @@ function AdminCards() {
     setSelectedResultIndex(-1)
   }
 
-  const calculateDropdownPosition = (inputElement) => {
-    const rect = inputElement.getBoundingClientRect()
-    setDropdownPosition({
-      top: rect.bottom + 4,
-      left: rect.left,
-      width: rect.width
-    })
-  }
 
   const handlePlayerSearch = async (searchTerm) => {
     setPlayerSearchTerm(searchTerm)
@@ -564,13 +555,12 @@ function AdminCards() {
               </button>
             </div>
             
-            <div className="modal-content">
-              <form className="edit-form" onSubmit={(e) => e.preventDefault()}>
+            <div className="modal-body">
                 
-                <div className="form-row">
-                  <label className="form-label">Card ID</label>
-                  <span className="form-value">{editingCard.card_id}</span>
-                </div>
+              <div className="form-row">
+                <label className="form-label">Card ID</label>
+                <span className="form-value">{editingCard.card_id}</span>
+              </div>
 
                 <div className="form-row">
                   <label className="form-label">Card Number</label>
@@ -696,20 +686,12 @@ function AdminCards() {
                           value={playerSearchTerm}
                           onChange={(e) => handlePlayerSearch(e.target.value)}
                           onKeyDown={handleSearchKeyDown}
-                          onFocus={(e) => calculateDropdownPosition(e.target)}
                           className="inline-player-search-input"
                         />
                       </div>
                       
                       {filteredPlayers.length > 0 && (
-                        <div 
-                          className="inline-player-search-results"
-                          style={{
-                            top: dropdownPosition.top,
-                            left: dropdownPosition.left,
-                            width: dropdownPosition.width
-                          }}
-                        >
+                        <div className="inline-player-search-results">
                           {filteredPlayers.slice(0, 8).map((result, index) => (
                             <button
                               key={`${result.player.player_id}-${result.team.team_id}`}
@@ -741,7 +723,6 @@ function AdminCards() {
                   </div>
                 </div>
                 
-              </form>
             </div>
             
             <div className="modal-actions">
