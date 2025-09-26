@@ -25,7 +25,19 @@ if (config.environment === 'production') {
 }
 
 // Security middleware
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+      "img-src": [
+        "'self'", 
+        "data:", 
+        "*.blob.core.windows.net",  // Allow Azure Blob Storage
+        "https://cardcheckliststorage.blob.core.windows.net"  // Specific storage account
+      ]
+    }
+  }
+}));
 app.use(cors({
   origin: config.frontendUrl,
   credentials: true
