@@ -309,22 +309,9 @@ router.put('/:id', async (req, res) => {
       return res.status(404).json({ error: 'Player not found' })
     }
 
-    // Check for name conflicts (excluding current player)
-    const conflictPlayer = await prisma.player.findFirst({
-      where: {
-        first_name: first_name.trim(),
-        last_name: last_name.trim(),
-        nick_name: nick_name?.trim() || null,
-        player_id: { not: playerId }
-      }
-    })
-
-    if (conflictPlayer) {
-      return res.status(409).json({
-        error: 'Player name conflict',
-        message: 'Another player with this name already exists'
-      })
-    }
+    // Note: We allow duplicate player names since players across different sports,
+    // teams, and eras can have the same name (e.g., Mike Johnson in baseball and football)
+    // Any true duplicates can be cleaned up manually later
 
     const updatedPlayer = await prisma.player.update({
       where: { player_id: playerId },

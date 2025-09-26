@@ -720,29 +720,6 @@ function AdminSeries() {
                     />
                   </div>
 
-                  <div className="form-field-row">
-                    <label className="field-label">Cards Entered</label>
-                    <input
-                      type="number"
-                      className="field-input"
-                      value={addForm.card_entered_count}
-                      onChange={(e) => setAddForm({...addForm, card_entered_count: e.target.value})}
-                      placeholder="Number of cards entered"
-                      min="0"
-                    />
-                  </div>
-
-                  <div className="form-field-row">
-                    <label className="field-label">Rookie Count</label>
-                    <input
-                      type="number"
-                      className="field-input"
-                      value={addForm.rookie_count}
-                      onChange={(e) => setAddForm({...addForm, rookie_count: e.target.value})}
-                      placeholder="Number of rookie cards"
-                      min="0"
-                    />
-                  </div>
 
                   <div className="form-field-row">
                     <label className="field-label">Print Run</label>
@@ -860,29 +837,6 @@ function AdminSeries() {
                     />
                   </div>
 
-                  <div className="form-field-row">
-                    <label className="field-label">Cards Entered</label>
-                    <input
-                      type="number"
-                      className="field-input"
-                      value={editForm.card_entered_count}
-                      onChange={(e) => setEditForm({...editForm, card_entered_count: e.target.value})}
-                      placeholder="Number of cards entered"
-                      min="0"
-                    />
-                  </div>
-
-                  <div className="form-field-row">
-                    <label className="field-label">Rookie Count</label>
-                    <input
-                      type="number"
-                      className="field-input"
-                      value={editForm.rookie_count}
-                      onChange={(e) => setEditForm({...editForm, rookie_count: e.target.value})}
-                      placeholder="Number of rookie cards"
-                      min="0"
-                    />
-                  </div>
 
                   <div className="form-field-row">
                     <label className="field-label">Print Run</label>

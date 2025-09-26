@@ -817,7 +817,7 @@ async function batchFindPlayers(pool, playerNames, organizationId = null) {
     let baseQuery = `
       SELECT DISTINCT 
         p.player_id as playerId,
-        p.first_name + ' ' + p.last_name as playerName,
+        LTRIM(RTRIM(COALESCE(p.first_name, '') + ' ' + COALESCE(p.last_name, ''))) as playerName,
         p.first_name as firstName,
         p.last_name as lastName,
         t.team_id as teamId,
@@ -1121,7 +1121,7 @@ async function findPlayerMatches(pool, playerName, organizationId = null) {
     const exactQuery = `
       SELECT DISTINCT 
         p.player_id as playerId,
-        p.first_name + ' ' + p.last_name as playerName,
+        LTRIM(RTRIM(COALESCE(p.first_name, '') + ' ' + COALESCE(p.last_name, ''))) as playerName,
         p.first_name as firstName,
         p.last_name as lastName,
         t.team_id as teamId,
@@ -1162,7 +1162,7 @@ async function findPlayerMatches(pool, playerName, organizationId = null) {
     const allPlayersQuery = `
       SELECT DISTINCT 
         p.player_id as playerId,
-        p.first_name + ' ' + p.last_name as playerName,
+        LTRIM(RTRIM(COALESCE(p.first_name, '') + ' ' + COALESCE(p.last_name, ''))) as playerName,
         p.first_name as firstName,
         p.last_name as lastName,
         t.team_id as teamId,
@@ -1534,7 +1534,7 @@ router.post('/create-player-team', requireAuth, requireAdmin, async (req, res) =
       .query(`
         SELECT 
           pt.player_team_id as playerTeamId,
-          p.first_name + ' ' + p.last_name as playerName,
+          LTRIM(RTRIM(COALESCE(p.first_name, '') + ' ' + COALESCE(p.last_name, ''))) as playerName,
           t.name as teamName,
           pt.player as playerId,
           pt.team as teamId
