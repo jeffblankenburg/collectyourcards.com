@@ -114,6 +114,10 @@ router.get('/', async (req, res) => {
         c.notes as card_notes,
         s.name as series_name, 
         s.series_id,
+        -- Add set information for proper URL construction
+        st.name as set_name,
+        LOWER(REPLACE(REPLACE(REPLACE(st.name, ' ', '-'), '''', ''), '/', '-')) as set_slug,
+        st.year as set_year,
         col.name as color, 
         col.hex_value as hex_color,
         ul.location as location_name,
@@ -129,6 +133,7 @@ router.get('/', async (req, res) => {
       FROM user_card uc
       JOIN card c ON uc.card = c.card_id
       JOIN series s ON c.series = s.series_id
+      JOIN [set] st ON s.[set] = st.set_id
       LEFT JOIN color col ON c.color = col.color_id
       LEFT JOIN user_location ul ON uc.user_location = ul.user_location_id
       LEFT JOIN grading_agency ga ON uc.grading_agency = ga.grading_agency_id
@@ -185,7 +190,10 @@ router.get('/', async (req, res) => {
           photo_count: Number(row.photo_count) || 0,
           series_rel: {
             series_id: typeof row.series_id === 'bigint' ? Number(row.series_id) : row.series_id,
-            name: row.series_name
+            name: row.series_name,
+            slug: row.set_slug,
+            set_name: row.set_name,
+            set_year: row.set_year
           },
           color_rel: row.color ? {
             color: row.color,
