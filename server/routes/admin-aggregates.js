@@ -134,35 +134,91 @@ router.post('/aggregates/update', async (req, res) => {
         break
 
       case 'player_card_count':
-        // Update card count for each player
-        const playerResult = await pool.request().query(`
-          UPDATE player
-          SET card_count = (
-            SELECT COUNT(DISTINCT c.card_id)
-            FROM card c
-            INNER JOIN card_player_team cpt ON c.card_id = cpt.card
-            INNER JOIN player_team pt ON cpt.player_team = pt.player_team_id
-            WHERE pt.player = player.player_id
-          )
+        // OPTIMIZED: Update card counts using a temp table for much better performance
+        console.log('🚀 Starting optimized player card count update...')
+        
+        // First, create a temp table with the counts
+        await pool.request().query(`
+          -- Create temp table with player card counts
+          IF OBJECT_ID('tempdb..#PlayerCardCounts') IS NOT NULL
+            DROP TABLE #PlayerCardCounts;
+          
+          CREATE TABLE #PlayerCardCounts (
+            player_id BIGINT PRIMARY KEY,
+            card_count INT
+          );
+          
+          -- Populate with counts (much faster as a single query)
+          INSERT INTO #PlayerCardCounts (player_id, card_count)
+          SELECT 
+            pt.player,
+            COUNT(DISTINCT c.card_id) as card_count
+          FROM player_team pt
+          INNER JOIN card_player_team cpt ON pt.player_team_id = cpt.player_team
+          INNER JOIN card c ON cpt.card = c.card_id
+          GROUP BY pt.player;
         `)
+        
+        console.log('📊 Temp table created with card counts')
+        
+        // Now update all players at once using the temp table
+        const playerResult = await pool.request().query(`
+          -- Update all players using the temp table
+          UPDATE p
+          SET p.card_count = COALESCE(pcc.card_count, 0)
+          FROM player p
+          LEFT JOIN #PlayerCardCounts pcc ON p.player_id = pcc.player_id;
+          
+          -- Clean up
+          DROP TABLE #PlayerCardCounts;
+        `)
+        
         rowsUpdated = playerResult.rowsAffected[0]
-        console.log(`Updated card counts for ${rowsUpdated} players`)
+        console.log(`✅ Updated card counts for ${rowsUpdated} players`)
         break
 
       case 'team_card_count':
-        // Update card count for each team
-        const teamResult = await pool.request().query(`
-          UPDATE team
-          SET card_count = (
-            SELECT COUNT(DISTINCT c.card_id)
-            FROM card c
-            INNER JOIN card_player_team cpt ON c.card_id = cpt.card
-            INNER JOIN player_team pt ON cpt.player_team = pt.player_team_id
-            WHERE pt.team = team.team_Id
-          )
+        // OPTIMIZED: Update team card counts using a temp table
+        console.log('🚀 Starting optimized team card count update...')
+        
+        // Create temp table with team card counts
+        await pool.request().query(`
+          -- Create temp table with team card counts
+          IF OBJECT_ID('tempdb..#TeamCardCounts') IS NOT NULL
+            DROP TABLE #TeamCardCounts;
+          
+          CREATE TABLE #TeamCardCounts (
+            team_id INT PRIMARY KEY,
+            card_count INT
+          );
+          
+          -- Populate with counts
+          INSERT INTO #TeamCardCounts (team_id, card_count)
+          SELECT 
+            pt.team,
+            COUNT(DISTINCT c.card_id) as card_count
+          FROM player_team pt
+          INNER JOIN card_player_team cpt ON pt.player_team_id = cpt.player_team
+          INNER JOIN card c ON cpt.card = c.card_id
+          GROUP BY pt.team;
         `)
+        
+        console.log('📊 Temp table created with team card counts')
+        
+        // Update all teams at once
+        const teamResult = await pool.request().query(`
+          -- Update all teams using the temp table
+          UPDATE t
+          SET t.card_count = COALESCE(tcc.card_count, 0)
+          FROM team t
+          LEFT JOIN #TeamCardCounts tcc ON t.team_Id = tcc.team_id;
+          
+          -- Clean up
+          DROP TABLE #TeamCardCounts;
+        `)
+        
         rowsUpdated = teamResult.rowsAffected[0]
-        console.log(`Updated card counts for ${rowsUpdated} teams`)
+        console.log(`✅ Updated card counts for ${rowsUpdated} teams`)
         break
 
       default:
