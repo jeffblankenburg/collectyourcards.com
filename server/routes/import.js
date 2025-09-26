@@ -616,31 +616,47 @@ router.post('/preview-sql', requireAuth, requireAdmin, async (req, res) => {
 // Create cards in database
 router.post('/create-cards', requireAuth, requireAdmin, async (req, res) => {
   try {
+    console.log('🚀 Starting card creation process...')
     const { matchedCards, seriesId } = req.body
     
+    console.log(`📊 Import request: ${matchedCards?.length || 0} cards, seriesId: ${seriesId}`)
+    
     if (!matchedCards || !Array.isArray(matchedCards)) {
+      console.error('❌ Invalid request: matchedCards is required')
       return res.status(400).json({ message: 'Matched cards array is required' })
+    }
+    
+    if (!seriesId) {
+      console.error('❌ Invalid request: seriesId is required')
+      return res.status(400).json({ message: 'Series ID is required' })
     }
 
     const pool = await connectToDatabase()
-    const transaction = new sql.Transaction(pool)
+    console.log('✅ Database connection established')
     
+    const transaction = new sql.Transaction(pool)
     await transaction.begin()
+    console.log('✅ Transaction started')
     
     let createdCount = 0
     const newPlayerIds = new Map() // Cache for newly created players
     
     try {
-      for (const card of matchedCards) {
+      console.log(`🔄 Processing ${matchedCards.length} cards...`)
+      
+      for (let i = 0; i < matchedCards.length; i++) {
+        const card = matchedCards[i]
+        console.log(`📋 Processing card ${i + 1}/${matchedCards.length}: ${card.cardNumber}`)
         // Create the card record first
+        console.log(`  🃏 Creating card record for ${card.cardNumber}`)
         const cardResult = await transaction.request()
           .input('cardNumber', sql.NVarChar, card.cardNumber)
           .input('seriesId', sql.BigInt, seriesId)
-          .input('isRookie', sql.Bit, card.isRC)
-          .input('isAutograph', sql.Bit, card.isAutograph)
-          .input('isRelic', sql.Bit, card.isRelic)
+          .input('isRookie', sql.Bit, Boolean(card.isRC))
+          .input('isAutograph', sql.Bit, Boolean(card.isAutograph))
+          .input('isRelic', sql.Bit, Boolean(card.isRelic))
           .input('notes', sql.NVarChar, card.notes || null)
-          .input('sortOrder', sql.Int, card.sortOrder)
+          .input('sortOrder', sql.Int, card.sortOrder || 0)
           .query(`
             INSERT INTO card (card_number, series, is_rookie, is_autograph, is_relic, notes, sort_order, created)
             OUTPUT INSERTED.card_id
@@ -648,19 +664,25 @@ router.post('/create-cards', requireAuth, requireAdmin, async (req, res) => {
           `)
         
         const cardId = cardResult.recordset[0].card_id
+        console.log(`  ✅ Card created with ID: ${cardId}`)
         
         // Process each player for this card
-        for (const player of card.players) {
+        console.log(`  👥 Processing ${card.players?.length || 0} players for card ${card.cardNumber}`)
+        for (let j = 0; j < (card.players?.length || 0); j++) {
+          const player = card.players[j]
+          console.log(`    🔍 Processing player ${j + 1}: ${player.name}`)
           let playerId, teamId
           
           if (player.selectedMatch) {
             // Use existing player/team combination
-            playerId = player.selectedMatch.playerId
-            teamId = player.selectedMatch.teamId
+            console.log(`    ✅ Using existing player/team: ${player.selectedMatch.playerName}`)
+            playerId = BigInt(player.selectedMatch.playerId)
+            teamId = parseInt(player.selectedMatch.teamId)
           } else {
             // Need to create new player
+            console.log(`    🆕 Creating new player: ${player.name}`)
             const playerName = player.name
-            let firstName = '', lastName = playerName
+            let firstName = playerName, lastName = ''
             
             const nameParts = playerName.split(' ')
             if (nameParts.length > 1) {
@@ -668,15 +690,19 @@ router.post('/create-cards', requireAuth, requireAdmin, async (req, res) => {
               lastName = nameParts.slice(1).join(' ')
             }
             
+            console.log(`    📝 Name parsing: "${playerName}" → first: "${firstName}", last: "${lastName}"`)
+            
             // Check if we already created this player
             const playerKey = playerName.toLowerCase()
             if (newPlayerIds.has(playerKey)) {
               playerId = newPlayerIds.get(playerKey)
+              console.log(`    ♻️ Using cached player ID: ${playerId}`)
             } else {
               // Create new player
+              console.log(`    ➕ Creating new player in database`)
               const playerResult = await transaction.request()
-                .input('firstName', sql.NVarChar, firstName)
-                .input('lastName', sql.NVarChar, lastName)
+                .input('firstName', sql.NVarChar, firstName || null)
+                .input('lastName', sql.NVarChar, lastName || null)
                 .query(`
                   INSERT INTO player (first_name, last_name)
                   OUTPUT INSERTED.player_id
@@ -685,11 +711,13 @@ router.post('/create-cards', requireAuth, requireAdmin, async (req, res) => {
               
               playerId = playerResult.recordset[0].player_id
               newPlayerIds.set(playerKey, playerId)
+              console.log(`    ✅ New player created with ID: ${playerId}`)
             }
             
             // For new players, we'll need to determine team or use a default
             // For now, let's use a default team or skip team association
             teamId = null
+            console.log(`    ⚠️ No team association for new player`)
           }
           
           // Create player_team record if we have both player and team
@@ -736,6 +764,7 @@ router.post('/create-cards', requireAuth, requireAdmin, async (req, res) => {
       }
       
       await transaction.commit()
+      console.log(`🎉 Successfully imported ${createdCount} cards`)
       
       res.json({
         success: true,
@@ -743,16 +772,28 @@ router.post('/create-cards', requireAuth, requireAdmin, async (req, res) => {
         message: `Successfully imported ${createdCount} cards`
       })
       
-    } catch (error) {
+    } catch (transactionError) {
+      console.error('❌ Transaction error:', transactionError)
+      console.error('Stack trace:', transactionError.stack)
       await transaction.rollback()
-      throw error
+      console.log('🔄 Transaction rolled back')
+      throw transactionError
     }
     
   } catch (error) {
-    console.error('Error creating cards:', error)
+    console.error('❌ Error creating cards:', error)
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      code: error.code,
+      number: error.number,
+      state: error.state,
+      procedure: error.procedure
+    })
     res.status(500).json({ 
       message: 'Failed to create cards',
-      error: error.message 
+      error: error.message,
+      details: error.code ? `SQL Error ${error.number}: ${error.message}` : error.message
     })
   }
 })
