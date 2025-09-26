@@ -24,22 +24,52 @@ const upload = multer({
   }
 })
 
+// Parse DATABASE_URL for mssql connection
+const parseConnectionString = (connectionString) => {
+  // Handle SQL Server connection string format: sqlserver://host:port;param=value;param=value
+  const parts = connectionString.split(';')
+  const serverPart = parts[0] // sqlserver://hostname:port
+  
+  // Extract server and port from first part
+  const serverMatch = serverPart.match(/sqlserver:\/\/([^:]+):?(\d+)?/)
+  const server = serverMatch ? serverMatch[1] : 'localhost'
+  const port = serverMatch && serverMatch[2] ? parseInt(serverMatch[2]) : 1433
+  
+  // Parse remaining parameters
+  const params = {}
+  parts.slice(1).forEach(part => {
+    const [key, value] = part.split('=')
+    if (key && value) {
+      params[key] = value
+    }
+  })
+  
+  const config = {
+    server: server,
+    port: port,
+    database: params.database || 'CollectYourCards',
+    user: params.user || 'sa',
+    password: params.password || '',
+    pool: {
+      max: 10,
+      min: 0,
+      idleTimeoutMillis: 30000
+    },
+    options: {
+      encrypt: params.encrypt === 'true',
+      trustServerCertificate: params.trustServerCertificate === 'true'
+    }
+  }
+  return config
+}
+
 // Database connection
 let pool
 async function connectToDatabase() {
   if (!pool) {
     try {
-      pool = await sql.connect({
-        server: process.env.DB_SERVER || 'localhost',
-        port: process.env.DB_PORT ? parseInt(process.env.DB_PORT) : 1433,
-        database: process.env.DB_NAME || 'CollectYourCards',
-        user: process.env.DB_USER || 'sa',
-        password: process.env.DB_PASSWORD || 'Password123',
-        options: {
-          encrypt: false,
-          trustServerCertificate: true
-        }
-      })
+      const config = parseConnectionString(process.env.DATABASE_URL)
+      pool = await sql.connect(config)
       console.log('✅ Database connection initialized for import routes')
     } catch (error) {
       console.error('❌ Database connection failed for import routes:', error)
@@ -160,15 +190,15 @@ router.post('/parse-xlsx', requireAuth, requireAdmin, upload.single('xlsx'), asy
 
 // Match cards with database records
 router.post('/match-cards', requireAuth, requireAdmin, async (req, res) => {
+  // Create progress tracking job (declare outside try block for error handling)
+  const jobId = `match_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+  
   try {
     const { cards, seriesId } = req.body
     
     if (!cards || !Array.isArray(cards)) {
       return res.status(400).json({ message: 'Cards array is required' })
     }
-
-    // Create progress tracking job
-    const jobId = `match_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
     matchingProgress.set(jobId, {
       total: cards.length,
       processed: 0,

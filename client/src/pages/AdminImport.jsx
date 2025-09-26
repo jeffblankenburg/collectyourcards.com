@@ -130,7 +130,7 @@ const SearchableSeriesDropdown = ({ series, onSelect, placeholder }) => {
 
 const AdminImport = () => {
   const { user } = useAuth()
-  const { showToast } = useToast()
+  const { addToast } = useToast()
   
   // Step tracking
   const [currentStep, setCurrentStep] = useState(1)
@@ -195,7 +195,7 @@ const AdminImport = () => {
       setSeries(response.data.series || [])
     } catch (error) {
       console.error('Error loading series:', error)
-      showToast('Failed to load series', 'error')
+      addToast('Failed to load series', 'error')
     } finally {
       setLoadingSeries(false)
     }
@@ -211,7 +211,7 @@ const AdminImport = () => {
     const file = event.target.files[0]
     if (file) {
       if (!file.name.toLowerCase().endsWith('.xlsx')) {
-        showToast('Please select an XLSX file', 'error')
+        addToast('Please select an XLSX file', 'error')
         return
       }
       setSelectedFile(file)
@@ -256,7 +256,7 @@ const AdminImport = () => {
     } catch (error) {
       console.error('❌ Error uploading file:', error)
       console.error('Error response:', error.response?.data)
-      showToast(error.response?.data?.message || 'Failed to upload file', 'error')
+      addToast(error.response?.data?.message || 'Failed to upload file', 'error')
     } finally {
       setUploading(false)
     }
@@ -288,7 +288,7 @@ const AdminImport = () => {
       
     } catch (error) {
       console.error('Error matching cards:', error)
-      showToast('Failed to match cards with database', 'error')
+      addToast('Failed to match cards with database', 'error')
     } finally {
       setProcessing(false)
     }
@@ -351,7 +351,7 @@ const AdminImport = () => {
       
     } catch (error) {
       console.error('Error generating SQL preview:', error)
-      showToast(error.response?.data?.message || 'Failed to generate SQL preview', 'error')
+      addToast(error.response?.data?.message || 'Failed to generate SQL preview', 'error')
     } finally {
       setGeneratingSql(false)
     }
@@ -360,13 +360,13 @@ const AdminImport = () => {
   const copySqlToClipboard = async () => {
     try {
       await navigator.clipboard.writeText(generatedSql)
-      if (showToast) {
-        showToast('SQL copied to clipboard!', 'success')
+      if (addToast) {
+        addToast('SQL copied to clipboard!', 'success')
       }
     } catch (error) {
       console.error('Failed to copy SQL:', error)
-      if (showToast) {
-        showToast('Failed to copy SQL to clipboard', 'error')
+      if (addToast) {
+        addToast('Failed to copy SQL to clipboard', 'error')
       }
     }
   }
@@ -380,7 +380,7 @@ const AdminImport = () => {
         seriesId: selectedSeries.series_id
       })
       
-      showToast(`Successfully imported ${response.data.created} cards!`, 'success')
+      addToast(`Successfully imported ${response.data.created} cards!`, 'success')
       
       // Reset to start
       setCurrentStep(1)
@@ -391,7 +391,7 @@ const AdminImport = () => {
       
     } catch (error) {
       console.error('Error importing cards:', error)
-      showToast(error.response?.data?.message || 'Failed to import cards', 'error')
+      addToast(error.response?.data?.message || 'Failed to import cards', 'error')
     } finally {
       setImporting(false)
     }
