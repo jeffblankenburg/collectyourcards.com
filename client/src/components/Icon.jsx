@@ -103,7 +103,8 @@ import {
   Folder,
   Award,
   Package,
-  Play
+  Play,
+  Code
 } from 'lucide-react'
 
 // Icon mapping for consistent usage across the app
@@ -205,6 +206,7 @@ const iconMap = {
   'map': Map,
   'upload': Upload,
   'database': Database,
+  'code': Code,
   'image': Image,
   'refresh': RefreshCw,
   'shopping': ShoppingCart,
