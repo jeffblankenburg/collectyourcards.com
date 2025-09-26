@@ -68,7 +68,28 @@ let pool
 async function connectToDatabase() {
   if (!pool) {
     try {
-      const config = parseConnectionString(process.env.DATABASE_URL)
+      let config;
+      
+      if (process.env.NODE_ENV === 'production' && process.env.DATABASE_URL) {
+        // Production: use DATABASE_URL parser
+        config = parseConnectionString(process.env.DATABASE_URL)
+        console.log('🌐 Using production DATABASE_URL connection')
+      } else {
+        // Development: use existing environment variables
+        config = {
+          server: process.env.DB_SERVER || 'localhost',
+          port: process.env.DB_PORT ? parseInt(process.env.DB_PORT) : 1433,
+          database: process.env.DB_NAME || 'CollectYourCards',
+          user: process.env.DB_USER || 'sa',
+          password: process.env.DB_PASSWORD || 'Password123',
+          options: {
+            encrypt: false,
+            trustServerCertificate: true
+          }
+        }
+        console.log('🏠 Using development connection to localhost')
+      }
+      
       pool = await sql.connect(config)
       console.log('✅ Database connection initialized for import routes')
     } catch (error) {
@@ -188,7 +209,7 @@ router.post('/parse-xlsx', requireAuth, requireAdmin, upload.single('xlsx'), asy
   }
 })
 
-// Match cards with database records
+// Match cards with database records - OPTIMIZED for large datasets
 router.post('/match-cards', requireAuth, requireAdmin, async (req, res) => {
   // Create progress tracking job (declare outside try block for error handling)
   const jobId = `match_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
@@ -199,14 +220,8 @@ router.post('/match-cards', requireAuth, requireAdmin, async (req, res) => {
     if (!cards || !Array.isArray(cards)) {
       return res.status(400).json({ message: 'Cards array is required' })
     }
-    matchingProgress.set(jobId, {
-      total: cards.length,
-      processed: 0,
-      status: 'starting',
-      currentCard: null
-    })
     
-    console.log(`🚀 Starting matching job ${jobId} for ${cards.length} cards`)
+    console.log(`🚀 Starting OPTIMIZED matching job ${jobId} for ${cards.length} cards`)
 
     const pool = await connectToDatabase()
     
@@ -226,28 +241,98 @@ router.post('/match-cards', requireAuth, requireAdmin, async (req, res) => {
     
     console.log(`🏈 Import series organization: ${organizationName} (ID: ${organizationId})`)
     
+    // OPTIMIZATION 1: Extract all unique player and team names upfront
     matchingProgress.set(jobId, {
       total: cards.length,
       processed: 0,
-      status: 'matching',
+      status: 'extracting_names',
       currentCard: null
     })
     
+    console.log('📋 Phase 1: Extracting unique names...')
+    const allPlayerNames = new Set()
+    const allTeamNames = new Set()
+    
+    cards.forEach(card => {
+      const playerNamesList = (card.playerNames || '').split(/[,;&]/).map(name => name.trim()).filter(name => name)
+      const teamNamesList = (card.teamNames || '').split(/[,;&]/).map(name => name.trim()).filter(name => name)
+      
+      playerNamesList.forEach(name => allPlayerNames.add(name))
+      teamNamesList.forEach(name => allTeamNames.add(name))
+    })
+    
+    console.log(`📊 Found ${allPlayerNames.size} unique players, ${allTeamNames.size} unique teams`)
+    
+    // OPTIMIZATION 2: Batch lookup all players and teams
+    matchingProgress.set(jobId, {
+      total: cards.length,
+      processed: 0,
+      status: 'batch_lookup',
+      currentCard: null
+    })
+    
+    console.log('🔍 Phase 2: Batch player/team lookup...')
+    const [playerLookup, teamLookup] = await Promise.all([
+      batchFindPlayers(pool, Array.from(allPlayerNames), organizationId),
+      batchFindTeams(pool, Array.from(allTeamNames), organizationId)
+    ])
+    
+    console.log(`✅ Lookup complete: ${Object.keys(playerLookup).length} players, ${Object.keys(teamLookup).length} teams`)
+    
+    // OPTIMIZATION 3: Collect actual player-team combinations from cards
+    console.log('🤝 Phase 3: Collecting actual player-team combinations...')
+    const actualCombinations = new Set()
+    
+    cards.forEach(card => {
+      const playerNamesList = (card.playerNames || '').split(/[,;&]/).map(name => name.trim()).filter(name => name)
+      const teamNamesList = (card.teamNames || '').split(/[,;&]/).map(name => name.trim()).filter(name => name)
+      
+      playerNamesList.forEach(playerName => {
+        const playerMatches = playerLookup[playerName]
+        if (playerMatches?.exact?.length > 0) {
+          teamNamesList.forEach(teamName => {
+            const teamMatches = teamLookup[teamName]
+            if (teamMatches?.exact?.length > 0) {
+              playerMatches.exact.forEach(player => {
+                teamMatches.exact.forEach(team => {
+                  actualCombinations.add(`${player.playerId}_${team.teamId}`)
+                })
+              })
+            }
+          })
+        }
+      })
+    })
+    
+    console.log(`🔍 Found ${actualCombinations.size} actual player-team combinations to check`)
+    const playerTeamLookup = await batchFindActualPlayerTeams(pool, Array.from(actualCombinations))
+    console.log(`✅ Found ${Object.keys(playerTeamLookup).length} existing player_team records`)
+    
+    // OPTIMIZATION 4: Fast matching using lookups
+    matchingProgress.set(jobId, {
+      total: cards.length,
+      processed: 0,
+      status: 'fast_matching',
+      currentCard: null
+    })
+    
+    console.log('⚡ Phase 4: Fast matching using cached lookups...')
     const matchedCards = []
     let processedCount = 0
 
     for (const card of cards) {
       processedCount++
       
-      // Update progress
-      matchingProgress.set(jobId, {
-        total: cards.length,
-        processed: processedCount,
-        status: 'matching',
-        currentCard: `Card ${card.sortOrder}: ${card.cardNumber}`
-      })
-      
-      console.log(`📊 Progress: ${processedCount}/${cards.length} - Processing card ${card.sortOrder}: ${card.cardNumber}`)
+      // Update progress every 50 cards to reduce overhead
+      if (processedCount % 50 === 0 || processedCount === cards.length) {
+        matchingProgress.set(jobId, {
+          total: cards.length,
+          processed: processedCount,
+          status: 'fast_matching',
+          currentCard: `Card ${card.sortOrder}: ${card.cardNumber}`
+        })
+        console.log(`📊 Fast matching progress: ${processedCount}/${cards.length}`)
+      }
       
       const cardPlayers = []
       
@@ -255,49 +340,101 @@ router.post('/match-cards', requireAuth, requireAdmin, async (req, res) => {
       const playerNamesList = (card.playerNames || '').split(/[,;&]/).map(name => name.trim()).filter(name => name)
       
       for (const playerName of playerNamesList) {
-        // Search for exact and fuzzy player matches (filtered by organization)
-        const playerMatches = await findPlayerMatches(pool, playerName, organizationId)
+        // Use cached lookups instead of individual queries
+        const playerMatches = playerLookup[playerName] || { exact: [], fuzzy: [] }
         
         // Parse team names for this card
         const teamNamesList = (card.teamNames || '').split(/[,;&]/).map(name => name.trim()).filter(name => name)
-        const teamMatches = await findTeamMatches(pool, teamNamesList, organizationId)
+        const teamMatches = { exact: [], fuzzy: [] }
         
-        // Find player_team combinations
-        const playerTeamMatches = await findPlayerTeamMatches(pool, playerMatches, teamMatches)
-        
-        // Check for perfect match (exact player + exact teams + existing player_team records)
-        let selectedPlayer = null
-        if (playerMatches?.exact?.length === 1 && teamMatches?.exact?.length > 0) {
-          const exactPlayer = playerMatches.exact[0]
-          
-          // Check if all teams match and player_team records exist
-          const allTeamsHavePlayerTeam = teamNamesList.every(teamName => {
-            const matchingTeam = teamMatches.exact.find(team => 
-              team.teamName.toLowerCase().includes(teamName.toLowerCase())
-            )
-            if (!matchingTeam) return false
-            
-            // Check if player_team record exists
-            return playerTeamMatches.some(pt => 
-              pt.playerId === exactPlayer.playerId && pt.teamId === matchingTeam.teamId
-            )
-          })
-          
-          if (allTeamsHavePlayerTeam) {
-            selectedPlayer = exactPlayer
-            console.log(`🎯 Perfect match found: ${exactPlayer.playerName} with all teams!`)
+        // Collect team matches from cached lookup
+        teamNamesList.forEach(teamName => {
+          const teamMatch = teamLookup[teamName]
+          if (teamMatch) {
+            teamMatches.exact.push(...teamMatch.exact)
           }
+        })
+        
+        // Get player_team combinations from cached lookup
+        const playerTeamMatches = []
+        if (playerMatches.exact.length > 0 && teamMatches.exact.length > 0) {
+          playerMatches.exact.forEach(player => {
+            teamMatches.exact.forEach(team => {
+              const ptKey = `${player.playerId}_${team.teamId}`
+              const playerTeam = playerTeamLookup[ptKey]
+              if (playerTeam) {
+                playerTeamMatches.push({
+                  ...playerTeam,
+                  playerName: player.playerName,
+                  teamName: team.teamName
+                })
+                console.log(`✅ Found existing player_team: ${player.playerName} - ${team.teamName}`)
+              } else {
+                console.log(`⚠️ Missing player_team record: ${player.playerName} - ${team.teamName}`)
+              }
+            })
+          })
         }
+        
+        // Check for auto-selection (more practical logic)
+        let selectedPlayer = null
+        let selectedTeams = []
+        let selectedPlayerTeams = []
+        
+        // AUTO-SELECT if we have exactly one player match
+        if (playerMatches?.exact?.length === 1) {
+          selectedPlayer = playerMatches.exact[0]
+          console.log(`🎯 Auto-selected player: "${selectedPlayer.playerName}" for "${playerName}"`)
+          
+          // If we also have team matches, auto-select them too
+          if (teamMatches?.exact?.length > 0) {
+            selectedTeams = teamMatches.exact
+            console.log(`🎯 Auto-selected ${selectedTeams.length} teams: ${selectedTeams.map(t => t.teamName).join(', ')}`)
+            
+            // If we have existing player_team records, include them
+            selectedPlayerTeams = playerTeamMatches
+            if (selectedPlayerTeams.length > 0) {
+              console.log(`✅ Found ${selectedPlayerTeams.length} existing player_team records`)
+            }
+          }
+        } else if (playerMatches?.exact?.length > 1) {
+          console.log(`⚠️ Multiple players found for "${playerName}": ${playerMatches.exact.map(p => p.playerName).join(', ')}`)
+        } else {
+          console.log(`❌ No players found for "${playerName}"`)
+        }
+        
+        // Optional: More strict auto-selection if you want to require teams too
+        // if (playerMatches?.exact?.length === 1 && teamMatches?.exact?.length > 0) {
+        //   const exactPlayer = playerMatches.exact[0]
+        //   
+        //   // Check if all teams match and player_team records exist
+        //   const allTeamsHavePlayerTeam = teamNamesList.every(teamName => {
+        //     const matchingTeam = teamMatches.exact.find(team => 
+        //       team.teamName.toLowerCase().includes(teamName.toLowerCase())
+        //     )
+        //     if (!matchingTeam) return false
+        //     
+        //     // Check if player_team record exists
+        //     return playerTeamMatches.some(pt => 
+        //       pt.playerId === exactPlayer.playerId && pt.teamId === matchingTeam.teamId
+        //     )
+        //   })
+        //   
+        //   if (allTeamsHavePlayerTeam) {
+        //     selectedPlayer = exactPlayer
+        //     console.log(`🎯 Perfect match with teams: "${selectedPlayer.playerName}"`)
+        //   }
+        // }
 
         cardPlayers.push({
           name: playerName,
           playerMatches: playerMatches,
-          teamNames: teamNamesList, // Individual team names for this player
+          teamNames: teamNamesList,
           teamMatches: teamMatches,
           playerTeamMatches: playerTeamMatches,
-          selectedPlayer: selectedPlayer, // Auto-select if perfect match
-          selectedTeams: [],
-          selectedPlayerTeams: []
+          selectedPlayer: selectedPlayer,
+          selectedTeams: selectedTeams,
+          selectedPlayerTeams: selectedPlayerTeams
         })
       }
 
@@ -666,7 +803,300 @@ function levenshteinDistance(str1, str2) {
   return dp[m][n]
 }
 
-// Helper function to find player matches in database
+// OPTIMIZED: Batch lookup for all players at once - SIMPLIFIED VERSION
+async function batchFindPlayers(pool, playerNames, organizationId = null) {
+  try {
+    console.log(`🔍 Batch lookup for ${playerNames.length} unique players`)
+    const playerLookup = {}
+    
+    if (playerNames.length === 0) return playerLookup
+    
+    console.log('🔍 Sample player names to search:', playerNames.slice(0, 5))
+    
+    // Get all players WITH their teams for suggestions
+    let baseQuery = `
+      SELECT DISTINCT 
+        p.player_id as playerId,
+        p.first_name + ' ' + p.last_name as playerName,
+        p.first_name as firstName,
+        p.last_name as lastName,
+        t.team_id as teamId,
+        t.name as teamName,
+        t.primary_color as primaryColor,
+        t.secondary_color as secondaryColor,
+        t.abbreviation as abbreviation
+      FROM player p
+      LEFT JOIN player_team pt ON p.player_id = pt.player
+      LEFT JOIN team t ON pt.team = t.team_id
+    `
+    
+    const request = pool.request()
+    
+    if (organizationId) {
+      request.input('organizationId', sql.Int, organizationId)
+      baseQuery += `
+        WHERE (
+          NOT EXISTS (SELECT 1 FROM player_team pt_check WHERE pt_check.player = p.player_id)
+          OR 
+          p.player_id IN (
+            SELECT DISTINCT pt2.player 
+            FROM player_team pt2 
+            JOIN team t2 ON pt2.team = t2.team_id 
+            WHERE t2.organization = @organizationId
+          )
+        )
+      `
+    }
+    
+    baseQuery += ` ORDER BY p.first_name, p.last_name`
+    
+    console.log('🔍 Running player lookup query...')
+    const allPlayersResult = await request.query(baseQuery)
+    console.log(`📊 Found ${allPlayersResult.recordset.length} total player-team records in database`)
+    
+    // Group players by ID to consolidate teams (same as original logic)
+    const groupPlayersByTeam = (recordset) => {
+      const playerMap = new Map()
+      recordset.forEach(row => {
+        const playerId = String(row.playerId)
+        if (!playerMap.has(playerId)) {
+          playerMap.set(playerId, {
+            playerId,
+            playerName: row.playerName,
+            firstName: row.firstName,
+            lastName: row.lastName,
+            teams: []
+          })
+        }
+        
+        if (row.teamId) {
+          // Check for duplicate teams before adding
+          const existingTeam = playerMap.get(playerId).teams.find(team => team.teamId === String(row.teamId))
+          if (!existingTeam) {
+            playerMap.get(playerId).teams.push({
+              teamId: String(row.teamId),
+              teamName: row.teamName,
+              primaryColor: row.primaryColor,
+              secondaryColor: row.secondaryColor,
+              abbreviation: row.abbreviation
+            })
+          }
+        }
+      })
+      
+      return Array.from(playerMap.values())
+    }
+    
+    const allPlayersGrouped = groupPlayersByTeam(allPlayersResult.recordset)
+    console.log(`📊 Grouped into ${allPlayersGrouped.length} unique players`)
+    
+    // Match in JavaScript with both exact and fuzzy matching
+    playerNames.forEach(searchName => {
+      const normalizedSearchName = normalizePlayerName(searchName)
+      console.log(`🔍 Searching for: "${searchName}" -> normalized: "${normalizedSearchName}"`)
+      
+      // Find exact matches
+      const exactMatches = allPlayersGrouped.filter(player => {
+        const normalizedPlayerName = normalizePlayerName(player.playerName || '')
+        const isMatch = normalizedPlayerName === normalizedSearchName
+        
+        if (isMatch) {
+          console.log(`✅ EXACT MATCH: "${searchName}" matches "${player.playerName}" with ${player.teams.length} teams`)
+        }
+        
+        return isMatch
+      })
+      
+      // Find fuzzy matches (only if no exact matches found)
+      let fuzzyMatches = []
+      if (exactMatches.length === 0) {
+        fuzzyMatches = allPlayersGrouped.filter(player => {
+          const dbPlayerName = normalizePlayerName(player.playerName || '')
+          if (!dbPlayerName) return false
+          
+          // Calculate similarity
+          const distance = levenshteinDistance(normalizedSearchName, dbPlayerName)
+          const maxLength = Math.max(normalizedSearchName.length, dbPlayerName.length)
+          const similarity = 1 - (distance / maxLength)
+          
+          // Check for close matches
+          const nameParts = normalizedSearchName.split(' ')
+          const dbNameParts = dbPlayerName.split(' ')
+          const lastNameMatch = nameParts.length > 1 && dbNameParts.length > 1 && 
+                               nameParts[nameParts.length - 1] === dbNameParts[dbNameParts.length - 1]
+          
+          const isFuzzyMatch = distance <= 2 || similarity > 0.85 || (lastNameMatch && similarity > 0.7)
+          
+          if (isFuzzyMatch) {
+            console.log(`🔍 FUZZY MATCH: "${searchName}" ~= "${player.playerName}" (similarity: ${similarity.toFixed(2)}, teams: ${player.teams.length})`)
+            // Add similarity score to player object
+            player.similarity = similarity
+            player.distance = distance
+          }
+          
+          return isFuzzyMatch
+        })
+        
+        // Sort fuzzy matches by similarity (best first) and take top 5
+        fuzzyMatches.sort((a, b) => b.similarity - a.similarity)
+        fuzzyMatches = fuzzyMatches.slice(0, 5)
+      }
+      
+      playerLookup[searchName] = {
+        exact: exactMatches,
+        fuzzy: fuzzyMatches
+      }
+      
+      console.log(`🎯 "${searchName}": found ${exactMatches.length} exact + ${fuzzyMatches.length} fuzzy matches`)
+    })
+    
+    console.log(`✅ Batch player lookup complete: ${Object.keys(playerLookup).length} names processed`)
+    
+    // Log summary
+    const totalMatches = Object.values(playerLookup).reduce((sum, result) => sum + result.exact.length, 0)
+    console.log(`📊 Summary: ${totalMatches} total matches found across all names`)
+    
+    return playerLookup
+    
+  } catch (error) {
+    console.error('Error in batch player lookup:', error)
+    return {}
+  }
+}
+
+// OPTIMIZED: Batch lookup for all teams at once
+async function batchFindTeams(pool, teamNames, organizationId = null) {
+  try {
+    console.log(`🏟️ Batch lookup for ${teamNames.length} unique teams`)
+    const teamLookup = {}
+    
+    if (teamNames.length === 0) return teamLookup
+    
+    // Create parameterized query for all teams
+    const nameConditions = teamNames.map((_, index) => `@team${index}`).join(', ')
+    
+    const request = pool.request()
+    teamNames.forEach((teamName, index) => {
+      request.input(`team${index}`, sql.NVarChar, teamName.trim())
+    })
+    
+    if (organizationId) {
+      request.input('organizationId', sql.Int, organizationId)
+    }
+    
+    const exactQuery = `
+      SELECT DISTINCT 
+        t.team_id as teamId,
+        t.name as teamName,
+        t.city as city,
+        t.abbreviation as abbreviation,
+        t.primary_color as primaryColor,
+        t.secondary_color as secondaryColor,
+        LOWER(t.name) as lowerName,
+        LOWER(t.abbreviation) as lowerAbbrev
+      FROM team t
+      WHERE (LOWER(t.name) IN (${nameConditions}) OR LOWER(t.abbreviation) IN (${nameConditions}))
+      ${organizationId ? 'AND t.organization = @organizationId' : ''}
+      ORDER BY t.name
+    `
+    
+    const exactResult = await request.query(exactQuery)
+    
+    // Group results by team name (check both name and abbreviation)
+    teamNames.forEach(teamName => {
+      const lowerTeamName = teamName.toLowerCase()
+      const matches = exactResult.recordset.filter(team => 
+        team.lowerName === lowerTeamName || team.lowerAbbrev === lowerTeamName
+      ).map(team => ({
+        teamId: String(team.teamId),
+        teamName: team.teamName,
+        city: team.city,
+        abbreviation: team.abbreviation,
+        primaryColor: team.primaryColor,
+        secondaryColor: team.secondaryColor
+      }))
+      
+      teamLookup[teamName] = {
+        exact: matches,
+        fuzzy: []
+      }
+    })
+    
+    console.log(`✅ Batch team lookup complete: ${Object.keys(teamLookup).length} names processed`)
+    return teamLookup
+    
+  } catch (error) {
+    console.error('Error in batch team lookup:', error)
+    return {}
+  }
+}
+
+// OPTIMIZED: Batch lookup for specific player_team combinations only
+async function batchFindActualPlayerTeams(pool, combinationKeys) {
+  try {
+    console.log(`🤝 Batch lookup for ${combinationKeys.length} specific player_team combinations`)
+    const playerTeamLookup = {}
+    
+    if (combinationKeys.length === 0) return playerTeamLookup
+    
+    // Parse the keys back to player/team IDs
+    const combinations = combinationKeys.map(key => {
+      const [playerId, teamId] = key.split('_')
+      return { playerId, teamId, key }
+    })
+    
+    // Batch query all specific combinations
+    const conditions = combinations.map((_, index) => 
+      `(pt.player = @player${index} AND pt.team = @team${index})`
+    ).join(' OR ')
+    
+    const request = pool.request()
+    combinations.forEach((combo, index) => {
+      request.input(`player${index}`, sql.BigInt, combo.playerId)
+      request.input(`team${index}`, sql.Int, combo.teamId)
+    })
+    
+    const query = `
+      SELECT 
+        pt.player_team_id as playerTeamId,
+        pt.player as playerId,
+        pt.team as teamId
+      FROM player_team pt
+      WHERE ${conditions}
+    `
+    
+    console.log(`🔍 Running player_team query with ${combinations.length} combinations`)
+    const result = await request.query(query)
+    console.log(`📊 Query returned ${result.recordset.length} existing player_team records`)
+    
+    // Index results by player_team key
+    result.recordset.forEach(row => {
+      const key = `${row.playerId}_${row.teamId}`
+      playerTeamLookup[key] = {
+        playerTeamId: String(row.playerTeamId),
+        playerId: String(row.playerId),
+        teamId: String(row.teamId)
+      }
+      console.log(`✅ Found player_team record: ${key} -> ${row.playerTeamId}`)
+    })
+    
+    console.log(`✅ Batch player_team lookup complete: ${Object.keys(playerTeamLookup).length} combinations found`)
+    return playerTeamLookup
+    
+  } catch (error) {
+    console.error('Error in batch player_team lookup:', error)
+    return {}
+  }
+}
+
+// LEGACY: Old inefficient batch lookup (kept for reference)
+async function batchFindPlayerTeams(pool, playerLookup, teamLookup) {
+  // This was creating too many unnecessary combinations
+  // Replaced with batchFindActualPlayerTeams above
+  return {}
+}
+
+// LEGACY: Individual player lookup (kept for compatibility)
 async function findPlayerMatches(pool, playerName, organizationId = null) {
   try {
     console.log(`🔍 Searching for player: "${playerName}"${organizationId ? ` (org filter: ${organizationId})` : ' (no org filter)'}`)

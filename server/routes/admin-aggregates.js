@@ -60,7 +60,26 @@ router.post('/aggregates/update', async (req, res) => {
     }
 
     let rowsUpdated = 0
-    const config = parseConnectionString(process.env.DATABASE_URL)
+    
+    let config;
+    if (process.env.NODE_ENV === 'production' && process.env.DATABASE_URL) {
+      // Production: use DATABASE_URL parser
+      config = parseConnectionString(process.env.DATABASE_URL)
+    } else {
+      // Development: use existing environment variables
+      config = {
+        server: process.env.DB_SERVER || 'localhost',
+        port: process.env.DB_PORT ? parseInt(process.env.DB_PORT) : 1433,
+        database: process.env.DB_NAME || 'CollectYourCards',
+        user: process.env.DB_USER || 'sa',
+        password: process.env.DB_PASSWORD || 'Password123',
+        options: {
+          encrypt: false,
+          trustServerCertificate: true
+        }
+      }
+    }
+    
     const pool = await sql.connect(config)
 
     switch (type) {
@@ -190,7 +209,25 @@ router.post('/aggregates/update', async (req, res) => {
 // GET /api/admin/aggregates/status - Get current aggregate status
 router.get('/aggregates/status', async (req, res) => {
   try {
-    const config = parseConnectionString(process.env.DATABASE_URL)
+    let config;
+    if (process.env.NODE_ENV === 'production' && process.env.DATABASE_URL) {
+      // Production: use DATABASE_URL parser
+      config = parseConnectionString(process.env.DATABASE_URL)
+    } else {
+      // Development: use existing environment variables
+      config = {
+        server: process.env.DB_SERVER || 'localhost',
+        port: process.env.DB_PORT ? parseInt(process.env.DB_PORT) : 1433,
+        database: process.env.DB_NAME || 'CollectYourCards',
+        user: process.env.DB_USER || 'sa',
+        password: process.env.DB_PASSWORD || 'Password123',
+        options: {
+          encrypt: false,
+          trustServerCertificate: true
+        }
+      }
+    }
+    
     const pool = await sql.connect(config)
     
     // Check for series with mismatched counts
