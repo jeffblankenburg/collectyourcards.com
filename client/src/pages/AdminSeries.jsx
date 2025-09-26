@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { useToast } from '../contexts/ToastContext'
@@ -21,7 +21,9 @@ function AdminSeries() {
   const [sortDirection, setSortDirection] = useState('asc')
   const [showAddModal, setShowAddModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false)
   const [editingSeries, setEditingSeries] = useState(null)
+  const [duplicatingSeries, setDuplicatingSeries] = useState(null)
   const [editForm, setEditForm] = useState({})
   const [addForm, setAddForm] = useState({
     name: '',
@@ -36,11 +38,23 @@ function AdminSeries() {
   })
   const [saving, setSaving] = useState(false)
   const [creating, setCreating] = useState(false)
+  const [duplicating, setDuplicating] = useState(false)
   const [availableSets, setAvailableSets] = useState([])
   const [availableSeries, setAvailableSeries] = useState([])
   const [seriesForSet, setSeriesForSet] = useState([])
+  const [availableColors, setAvailableColors] = useState([])
+  const [duplicateForm, setDuplicateForm] = useState({
+    name: '',
+    color_id: '',
+    print_run: ''
+  })
+  const [colorDropdownOpen, setColorDropdownOpen] = useState(false)
+  const [colorSearchTerm, setColorSearchTerm] = useState('')
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [deletingSeries, setDeletingSeries] = useState(null)
+  const [deleting, setDeleting] = useState(false)
   const { addToast } = useToast()
-  const searchTimeoutRef = React.useRef(null)
+  const searchTimeoutRef = useRef(null)
 
   // Load series on mount or when search changes
   useEffect(() => {
@@ -160,6 +174,16 @@ function AdminSeries() {
     }
   }
 
+  const loadColors = async () => {
+    try {
+      const response = await axios.get('/api/admin/series/colors')
+      setAvailableColors(response.data.colors || [])
+    } catch (error) {
+      console.error('Error loading colors:', error)
+      setAvailableColors([])
+    }
+  }
+
   const loadSeriesForSet = async (setId) => {
     if (!setId) {
       setSeriesForSet([])
@@ -207,6 +231,49 @@ function AdminSeries() {
     await loadSets()
     setSeriesForSet([]) // Clear series until set is selected
     setShowAddModal(true)
+  }
+
+  const handleShowDuplicateModal = async (seriesItem) => {
+    setDuplicatingSeries(seriesItem)
+    setDuplicateForm({
+      name: seriesItem.name + ' 2',
+      color_id: '',
+      print_run: ''
+    })
+    await loadColors()
+    setShowDuplicateModal(true)
+  }
+
+  const handleDuplicateSeries = async () => {
+    if (!duplicatingSeries || !duplicateForm.name.trim()) {
+      addToast('Please provide a name for the parallel series', 'error')
+      return
+    }
+
+    try {
+      setDuplicating(true)
+      
+      const response = await axios.post(`/api/admin/series/${duplicatingSeries.series_id}/duplicate`, {
+        name: duplicateForm.name,
+        color_id: duplicateForm.color_id || null,
+        print_run: duplicateForm.print_run || null
+      })
+
+      if (response.data.success) {
+        addToast(`Successfully created parallel series with ${response.data.cards_created} cards`, 'success')
+        setShowDuplicateModal(false)
+        setDuplicatingSeries(null)
+        setDuplicateForm({ name: '', color_id: '', print_run: '' })
+        loadSeries(searchTerm)
+      } else {
+        addToast(response.data.message || 'Failed to duplicate series', 'error')
+      }
+    } catch (error) {
+      console.error('Error duplicating series:', error)
+      addToast(error.response?.data?.message || 'Failed to duplicate series', 'error')
+    } finally {
+      setDuplicating(false)
+    }
   }
 
 
@@ -320,6 +387,34 @@ function AdminSeries() {
     } finally {
       setSaving(false)
     }
+  }
+
+  const handleDeleteSeries = async () => {
+    if (!deletingSeries) return
+
+    setDeleting(true)
+    try {
+      const response = await axios.delete(`/api/admin/series/${deletingSeries.series_id}`)
+      
+      if (response.data.success) {
+        addToast(`Successfully deleted series: ${deletingSeries.name}`, 'success')
+        setShowDeleteModal(false)
+        setShowEditModal(false)
+        setDeletingSeries(null)
+        loadSeries() // Refresh the list
+      }
+    } catch (error) {
+      console.error('Error deleting series:', error)
+      const message = error.response?.data?.message || 'Failed to delete series'
+      addToast(message, 'error')
+    } finally {
+      setDeleting(false)
+    }
+  }
+
+  const handleShowDeleteModal = (series) => {
+    setDeletingSeries(series)
+    setShowDeleteModal(true)
   }
 
   if (loading) {
@@ -484,6 +579,13 @@ function AdminSeries() {
                   <Icon name="edit" size={16} />
                 </button>
                 <button 
+                  className="duplicate-btn"
+                  title="Duplicate as parallel"
+                  onClick={() => handleShowDuplicateModal(seriesItem)}
+                >
+                  <Icon name="shuffle" size={16} />
+                </button>
+                <button 
                   className="view-btn"
                   title="View cards"
                   onClick={() => handleViewCards(seriesItem)}
@@ -550,9 +652,6 @@ function AdminSeries() {
               </button>
             </div>
             
-            <div className="modal-content">
-              <div className="edit-form">
-                <div className="player-details-form">
                   <div className="form-field-row">
                     <label className="field-label">Name</label>
                     <input
@@ -655,9 +754,6 @@ function AdminSeries() {
                       placeholder="e.g., 1000-2000, 500, Limited"
                     />
                   </div>
-                </div>
-              </div>
-            </div>
             
             <div className="modal-actions">
               <button className="cancel-btn" onClick={() => setShowAddModal(false)} disabled={creating}>
@@ -693,9 +789,6 @@ function AdminSeries() {
               </button>
             </div>
             
-            <div className="modal-content">
-              <div className="edit-form">
-                <div className="player-details-form">
                   <div className="form-field-row">
                     <label className="field-label">Name</label>
                     <input
@@ -801,26 +894,269 @@ function AdminSeries() {
                       placeholder="e.g., 1000-2000, 500, Limited"
                     />
                   </div>
-                </div>
-              </div>
-            </div>
             
             <div className="modal-actions">
-              <button className="cancel-btn" onClick={() => setShowEditModal(false)} disabled={saving}>
+              <button 
+                className="delete-series-btn"
+                onClick={() => handleShowDeleteModal(editingSeries)}
+                disabled={saving}
+              >
+                <Icon name="trash" size={16} />
+                Delete
+              </button>
+              
+              <div className="modal-actions-right">
+                <button className="cancel-btn" onClick={() => setShowEditModal(false)} disabled={saving}>
+                  Cancel
+                </button>
+                <button 
+                  className="save-btn"
+                  onClick={handleSaveSeries}
+                  disabled={saving || !editForm.name.trim()}
+                >
+                  {saving ? (
+                    <>
+                      <div className="card-icon-spinner small"></div>
+                      Saving...
+                    </>
+                  ) : (
+                    'Save Changes'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Duplicate Series Modal */}
+      {showDuplicateModal && duplicatingSeries && (
+        <div className="modal-overlay" onClick={() => setShowDuplicateModal(false)}>
+          <div className="edit-player-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Create Parallel of {duplicatingSeries.name}</h3>
+              <button className="close-btn" onClick={() => setShowDuplicateModal(false)}>
+                <Icon name="x" size={20} />
+              </button>
+            </div>
+
+            <div className="form-info">
+              <Icon name="info" size={16} />
+              <span>Creating parallel in set: <strong>{duplicatingSeries.set_name}</strong></span>
+            </div>
+            
+                <div className="form-field-row">
+                  <label className="field-label">Series Name</label>
+                  <input
+                    type="text"
+                    className="field-input"
+                    value={duplicateForm.name}
+                    onChange={(e) => setDuplicateForm({...duplicateForm, name: e.target.value})}
+                    onFocus={(e) => {
+                      // Set cursor to end of input
+                      setTimeout(() => {
+                        e.target.setSelectionRange(e.target.value.length, e.target.value.length)
+                      }, 0)
+                    }}
+                    placeholder="Enter parallel series name"
+                    autoFocus
+                    required
+                  />
+                </div>
+
+                <div className="form-field-row">
+                  <label className="field-label">Color</label>
+                  <div className="color-dropdown">
+                    <div className="color-input-container">
+                      {duplicateForm.color_id && (
+                        <div 
+                          className="color-dot selected-dot"
+                          style={{ 
+                            backgroundColor: availableColors.find(c => c.color_id == duplicateForm.color_id)?.hex_value || '#ec4899'
+                          }}
+                        />
+                      )}
+                      <input
+                        type="text"
+                        className="color-input-field"
+                        value={colorSearchTerm}
+                        onChange={(e) => {
+                          setColorSearchTerm(e.target.value)
+                          setColorDropdownOpen(true)
+                        }}
+                        onFocus={() => setColorDropdownOpen(true)}
+                        onBlur={(e) => {
+                          // Only close if clicking outside the dropdown menu
+                          setTimeout(() => {
+                            if (!e.relatedTarget?.closest('.color-dropdown-menu')) {
+                              setColorDropdownOpen(false)
+                            }
+                          }, 150)
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Escape') {
+                            setColorDropdownOpen(false)
+                            setColorSearchTerm('')
+                          } else if (e.key === 'Enter') {
+                            e.preventDefault()
+                            const filteredColors = availableColors.filter(color => 
+                              color.name.toLowerCase().includes(colorSearchTerm.toLowerCase())
+                            )
+                            if (filteredColors.length === 1) {
+                              setDuplicateForm({...duplicateForm, color_id: filteredColors[0].color_id})
+                              setColorSearchTerm(filteredColors[0].name)
+                              setColorDropdownOpen(false)
+                            } else if (colorSearchTerm === '' || colorSearchTerm.toLowerCase() === 'no color') {
+                              setDuplicateForm({...duplicateForm, color_id: ''})
+                              setColorSearchTerm('')
+                              setColorDropdownOpen(false)
+                            }
+                          }
+                        }}
+                        placeholder={duplicateForm.color_id ? 
+                          availableColors.find(c => c.color_id == duplicateForm.color_id)?.name || 'Type to search colors...' 
+                          : 'Type to search colors...'}
+                      />
+                      <Icon 
+                        name={colorDropdownOpen ? "chevron-up" : "chevron-down"} 
+                        size={16} 
+                        className="dropdown-arrow"
+                        onClick={() => setColorDropdownOpen(!colorDropdownOpen)}
+                      />
+                    </div>
+                    
+                    {colorDropdownOpen && (
+                      <div className="color-dropdown-menu">
+                        <div 
+                          className="color-dropdown-item"
+                          onMouseDown={() => {
+                            setDuplicateForm({...duplicateForm, color_id: ''})
+                            setColorSearchTerm('')
+                            setColorDropdownOpen(false)
+                          }}
+                        >
+                          <div className="color-dot no-color" />
+                          <span>No Color</span>
+                        </div>
+                        {availableColors
+                          .filter(color => 
+                            color.name.toLowerCase().includes(colorSearchTerm.toLowerCase())
+                          )
+                          .map(color => (
+                          <div 
+                            key={color.color_id}
+                            className="color-dropdown-item"
+                            onMouseDown={() => {
+                              setDuplicateForm({...duplicateForm, color_id: color.color_id})
+                              setColorSearchTerm(color.name)
+                              setColorDropdownOpen(false)
+                            }}
+                          >
+                            <div 
+                              className="color-dot"
+                              style={{ backgroundColor: color.hex_value || '#ec4899' }}
+                            />
+                            <span>{color.name}</span>
+                          </div>
+                        ))}
+                        {colorSearchTerm && availableColors.filter(color => 
+                          color.name.toLowerCase().includes(colorSearchTerm.toLowerCase())
+                        ).length === 0 && (
+                          <div className="color-dropdown-item no-results">
+                            <span>No colors found matching "{colorSearchTerm}"</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="form-field-row">
+                  <label className="field-label">Print Run (per card)</label>
+                  <input
+                    type="number"
+                    className="field-input"
+                    value={duplicateForm.print_run}
+                    onChange={(e) => setDuplicateForm({...duplicateForm, print_run: e.target.value})}
+                    placeholder="Enter print run (e.g., 99, 250)"
+                    min="1"
+                  />
+                </div>
+
+                <div className="form-info">
+                  <Icon name="info" size={16} />
+                  <span>This will create a new parallel series and duplicate all {duplicatingSeries.card_entered_count || 0} cards from the original series.</span>
+                </div>
+            
+            <div className="modal-actions">
+              <button className="cancel-btn" onClick={() => setShowDuplicateModal(false)} disabled={duplicating}>
                 Cancel
               </button>
               <button 
                 className="save-btn"
-                onClick={handleSaveSeries}
-                disabled={saving || !editForm.name.trim()}
+                onClick={handleDuplicateSeries}
+                disabled={duplicating || !duplicateForm.name.trim()}
               >
-                {saving ? (
+                {duplicating ? (
                   <>
                     <div className="card-icon-spinner small"></div>
-                    Saving...
+                    Creating Parallel...
                   </>
                 ) : (
-                  'Save Changes'
+                  'Create Parallel Series'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && deletingSeries && (
+        <div className="modal-overlay" onClick={() => !deleting && setShowDeleteModal(false)}>
+          <div className="edit-player-modal delete-confirmation-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Delete Series</h3>
+              <button className="close-btn" onClick={() => !deleting && setShowDeleteModal(false)}>
+                <Icon name="x" size={20} />
+              </button>
+            </div>
+
+            <div className="delete-confirmation-content">
+              <div className="warning-icon">
+                <Icon name="alert-triangle" size={48} />
+              </div>
+              
+              <h4>Are you sure you want to delete this series?</h4>
+              <p><strong>Series:</strong> {deletingSeries.name}</p>
+              <p><strong>Set:</strong> {deletingSeries.set_name}</p>
+              <p><strong>Cards to be deleted:</strong> {deletingSeries.card_entered_count || 0}</p>
+              
+              <div className="danger-warning">
+                <Icon name="alert-circle" size={16} />
+                <span>This action cannot be undone. All cards and associated data will be permanently deleted.</span>
+              </div>
+            </div>
+            
+            <div className="modal-actions">
+              <button className="cancel-btn" onClick={() => setShowDeleteModal(false)} disabled={deleting}>
+                Cancel
+              </button>
+              <button 
+                className="delete-confirm-btn"
+                onClick={handleDeleteSeries}
+                disabled={deleting}
+              >
+                {deleting ? (
+                  <>
+                    <div className="card-icon-spinner small"></div>
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <Icon name="trash" size={16} />
+                    Delete Series
+                  </>
                 )}
               </button>
             </div>

@@ -60,6 +60,12 @@ function AdminDashboard() {
   })
   const [recentComments, setRecentComments] = useState([])
   const [loading, setLoading] = useState(true)
+  
+  const [aggregateUpdates, setAggregateUpdates] = useState({
+    updating: false,
+    lastUpdated: null,
+    results: []
+  })
 
   // Check if user has admin privileges
   if (!user || !['admin', 'superadmin'].includes(user.role)) {
@@ -422,6 +428,43 @@ function AdminDashboard() {
     return `${days}d ago`
   }
 
+  const updateAggregates = async (type) => {
+    setAggregateUpdates(prev => ({ ...prev, updating: type }))
+    
+    try {
+      const response = await axios.post(`/api/admin/aggregates/update`, { type })
+      
+      if (response.data.success) {
+        addToast(`Successfully updated ${type} aggregates: ${response.data.rowsUpdated} rows updated`, 'success')
+        setAggregateUpdates(prev => ({
+          ...prev,
+          lastUpdated: new Date().toISOString(),
+          results: [
+            { type, rowsUpdated: response.data.rowsUpdated, timestamp: new Date().toISOString() },
+            ...prev.results.slice(0, 9) // Keep last 10 results
+          ]
+        }))
+        // Reload dashboard data to show updated counts
+        loadDatabaseStats()
+      } else {
+        addToast(`Failed to update ${type} aggregates`, 'error')
+      }
+    } catch (error) {
+      console.error('Error updating aggregates:', error)
+      addToast(`Error updating ${type}: ${error.response?.data?.message || error.message}`, 'error')
+    } finally {
+      setAggregateUpdates(prev => ({ ...prev, updating: false }))
+    }
+  }
+
+  const updateAllAggregates = async () => {
+    const types = ['rookie_count', 'card_entered_count', 'card_count', 'player_card_count', 'team_card_count']
+    
+    for (const type of types) {
+      await updateAggregates(type)
+    }
+  }
+
   return (
     <div className="admin-dashboard">
       <div className="dashboard-header">
@@ -555,6 +598,101 @@ function AdminDashboard() {
             </div>
             <div className="completeness-value">{databaseStats.dataCompleteness}%</div>
           </div>
+        </div>
+
+        {/* Aggregate Updates Section */}
+        <div className="dashboard-section aggregate-updates">
+          <h2>
+            <Icon name="refresh-cw" size={20} />
+            Update Aggregate Data
+          </h2>
+          
+          <div className="aggregate-info">
+            <p>Update database aggregate fields that may become out of sync. These operations recalculate counts based on actual data.</p>
+            {aggregateUpdates.lastUpdated && (
+              <div className="last-updated">
+                Last updated: {formatTimeAgo(aggregateUpdates.lastUpdated)}
+              </div>
+            )}
+          </div>
+
+          <div className="aggregate-buttons">
+            <button 
+              className="aggregate-btn"
+              onClick={() => updateAggregates('rookie_count')}
+              disabled={aggregateUpdates.updating}
+            >
+              <Icon name="user-check" size={16} />
+              Update Rookie Counts
+            </button>
+            
+            <button 
+              className="aggregate-btn"
+              onClick={() => updateAggregates('card_entered_count')}
+              disabled={aggregateUpdates.updating}
+            >
+              <Icon name="layers" size={16} />
+              Update Cards Entered
+            </button>
+            
+            <button 
+              className="aggregate-btn"
+              onClick={() => updateAggregates('card_count')}
+              disabled={aggregateUpdates.updating}
+            >
+              <Icon name="credit-card" size={16} />
+              Update Card Counts
+            </button>
+            
+            <button 
+              className="aggregate-btn"
+              onClick={() => updateAggregates('player_card_count')}
+              disabled={aggregateUpdates.updating}
+            >
+              <Icon name="users" size={16} />
+              Update Player Card Counts
+            </button>
+            
+            <button 
+              className="aggregate-btn"
+              onClick={() => updateAggregates('team_card_count')}
+              disabled={aggregateUpdates.updating}
+            >
+              <Icon name="flag" size={16} />
+              Update Team Card Counts
+            </button>
+            
+            <button 
+              className="aggregate-btn update-all"
+              onClick={updateAllAggregates}
+              disabled={aggregateUpdates.updating}
+            >
+              <Icon name="refresh-cw" size={16} />
+              Update All Aggregates
+            </button>
+          </div>
+          
+          {aggregateUpdates.updating && (
+            <div className="updating-status">
+              <div className="card-icon-spinner small"></div>
+              <span>Updating {aggregateUpdates.updating}...</span>
+            </div>
+          )}
+          
+          {aggregateUpdates.results.length > 0 && (
+            <div className="recent-updates">
+              <h4>Recent Updates</h4>
+              <ul>
+                {aggregateUpdates.results.slice(0, 5).map((result, idx) => (
+                  <li key={idx}>
+                    <span className="update-type">{result.type}</span>
+                    <span className="update-count">{result.rowsUpdated} rows</span>
+                    <span className="update-time">{formatTimeAgo(result.timestamp)}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
 
         {/* Moderation Section */}

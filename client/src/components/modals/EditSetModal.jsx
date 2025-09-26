@@ -24,17 +24,30 @@ function EditSetModal({
   const [selectedFile, setSelectedFile] = useState(null)
   const [uploadingThumbnail, setUploadingThumbnail] = useState(false)
 
-  // Reinitialize form when set changes
+  // Initialize form when modal opens
   useEffect(() => {
-    if (set && isOpen) {
-      setEditForm({
-        name: set.name || '',
-        year: set.year || '',
-        organization: set.organization_id || '',
-        manufacturer: set.manufacturer_id || '',
-        is_complete: set.is_complete || false,
-        thumbnail: set.thumbnail || ''
-      })
+    if (isOpen) {
+      if (set) {
+        // Edit mode - populate with existing set data
+        setEditForm({
+          name: set.name || '',
+          year: set.year || '',
+          organization: set.organization_id || '',
+          manufacturer: set.manufacturer_id || '',
+          is_complete: set.is_complete || false,
+          thumbnail: set.thumbnail || ''
+        })
+      } else {
+        // Add mode - reset to empty form
+        setEditForm({
+          name: '',
+          year: '',
+          organization: '',
+          manufacturer: '',
+          is_complete: false,
+          thumbnail: ''
+        })
+      }
       setSelectedFile(null)
     }
   }, [set, isOpen])
@@ -85,7 +98,11 @@ function EditSetModal({
   }
 
   const handleSave = async () => {
-    if (!set) return
+    // Validate required fields
+    if (!editForm.name.trim()) {
+      addToast('Set name is required', 'error')
+      return
+    }
 
     try {
       setSaving(true)
@@ -98,7 +115,7 @@ function EditSetModal({
         }
       }
       
-      const updateData = {
+      const setData = {
         name: editForm.name.trim(),
         year: parseInt(editForm.year) || null,
         organization: editForm.organization || null,
@@ -107,8 +124,19 @@ function EditSetModal({
         thumbnail: thumbnailUrl
       }
 
-      await axios.put(`/api/admin/sets/${set.set_id}`, updateData)
-      addToast('Set updated successfully', 'success')
+      let savedSet
+      if (set) {
+        // Edit mode - update existing set
+        const response = await axios.put(`/api/admin/sets/${set.set_id}`, setData)
+        savedSet = response.data.set
+        addToast('Set updated successfully', 'success')
+      } else {
+        // Add mode - create new set
+        const response = await axios.post('/api/admin/sets', setData)
+        savedSet = response.data.set
+        addToast('Set created successfully', 'success')
+      }
+      
       onClose()
       
       if (onSaveSuccess) {
@@ -130,55 +158,52 @@ function EditSetModal({
     onClose()
   }
 
-  if (!isOpen || !set) return null
+  if (!isOpen) return null
 
   return (
-    <div className="admin-sets-page">
-      <div className="modal-overlay" onClick={handleClose}>
-        <div className="edit-player-modal" onClick={(e) => e.stopPropagation()}>
-          <div className="modal-header">
-            <h3>Edit Set #{set.set_id}</h3>
-            <button className="close-btn" onClick={handleClose}>
-              <Icon name="x" size={20} />
-            </button>
+    <div className="modal-overlay" onClick={handleClose}>
+      <div className="edit-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3>{set ? `Edit Set #${set.set_id}` : 'Add New Set'}</h3>
+          <button className="close-btn" onClick={handleClose}>
+            <Icon name="x" size={20} />
+          </button>
+        </div>
+        
+        <div className="modal-body">
+          <div className="form-row">
+            <label className="form-label">Name</label>
+            <input
+              type="text"
+              className="form-input"
+              value={editForm.name}
+              onChange={(e) => handleFormChange('name', e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Set name"
+            />
           </div>
-          
-          <div className="modal-content">
-            <div className="edit-form">
-              <div className="player-details-form">
-                <div className="form-field-row">
-                  <label className="field-label">Name</label>
-                  <input
-                    type="text"
-                    className="field-input"
-                    value={editForm.name}
-                    onChange={(e) => handleFormChange('name', e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    placeholder="Set name"
-                  />
-                </div>
 
-                <div className="form-field-row">
-                  <label className="field-label">Year</label>
-                  <input
-                    type="number"
-                    className="field-input"
-                    value={editForm.year}
-                    onChange={(e) => handleFormChange('year', e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    min="1900"
-                    max="2100"
-                  />
-                </div>
+          <div className="form-row">
+            <label className="form-label">Year</label>
+            <input
+              type="number"
+              className="form-input"
+              value={editForm.year}
+              onChange={(e) => handleFormChange('year', e.target.value)}
+              onKeyDown={handleKeyDown}
+              min="1900"
+              max="2100"
+            />
+          </div>
 
-                <div className="form-field-row">
-                  <label className="field-label">Organization</label>
-                  <select
-                    className="field-input"
-                    value={editForm.organization}
-                    onChange={(e) => handleFormChange('organization', e.target.value)}
-                    onKeyDown={handleKeyDown}
-                  >
+          <div className="form-row">
+            <label className="form-label">Organization</label>
+            <select
+              className="form-input"
+              value={editForm.organization}
+              onChange={(e) => handleFormChange('organization', e.target.value)}
+              onKeyDown={handleKeyDown}
+            >
                     <option value="">Select organization...</option>
                     {organizations.map(org => (
                       <option key={org.organization_id} value={org.organization_id}>
@@ -188,10 +213,10 @@ function EditSetModal({
                   </select>
                 </div>
 
-                <div className="form-field-row">
-                  <label className="field-label">Manufacturer</label>
+                <div className="form-row">
+                  <label className="form-label">Manufacturer</label>
                   <select
-                    className="field-input"
+                    className="form-input"
                     value={editForm.manufacturer}
                     onChange={(e) => handleFormChange('manufacturer', e.target.value)}
                     onKeyDown={handleKeyDown}
@@ -205,8 +230,8 @@ function EditSetModal({
                   </select>
                 </div>
 
-                <div className="form-field-row">
-                  <label className="field-label">Complete</label>
+                <div className="form-row">
+                  <label className="form-label">Complete</label>
                   <button
                     type="button"
                     className={`hof-toggle ${editForm.is_complete ? 'hof-active' : ''}`}
@@ -218,8 +243,8 @@ function EditSetModal({
                   </button>
                 </div>
 
-                <div className="form-field-row">
-                  <label className="field-label">Thumbnail</label>
+                <div className="form-row">
+                  <label className="form-label">Thumbnail</label>
                   <div className="thumbnail-section">
                     {editForm.thumbnail && (
                       <div className="current-thumbnail">
@@ -251,11 +276,8 @@ function EditSetModal({
                       </span>
                       {uploadingThumbnail && <span className="upload-status">Uploading...</span>}
                     </div>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
+        </div>
           
           <div className="modal-actions">
             <button className="cancel-btn" onClick={handleClose} disabled={saving}>
@@ -274,7 +296,7 @@ function EditSetModal({
               ) : (
                 <>
                   <Icon name="check" size={16} />
-                  Save Changes
+                  {set ? 'Save Changes' : 'Create Set'}
                 </>
               )}
             </button>

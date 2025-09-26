@@ -29,6 +29,8 @@ function AdminPlayers() {
   const [reassigning, setReassigning] = useState(false)
   const [teamSearchTerm, setTeamSearchTerm] = useState('')
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 })
+  const [playerToDelete, setPlayerToDelete] = useState(null)
+  const [deleting, setDeleting] = useState(false)
   const addButtonRef = useRef(null)
   const { addToast } = useToast()
 
@@ -211,6 +213,8 @@ function AdminPlayers() {
     setReassignToTeam('')
     setReassigning(false)
     setTeamSearchTerm('')
+    setPlayerToDelete(null)
+    setDeleting(false)
   }
 
   const handleShowAddModal = async () => {
@@ -444,6 +448,30 @@ function AdminPlayers() {
     }
   }
 
+  const handleDeletePlayer = async () => {
+    if (!playerToDelete) return
+    
+    try {
+      setDeleting(true)
+      
+      await axios.delete(`/api/admin/players/${playerToDelete.player_id}`)
+      
+      addToast(`Deleted player: ${getPlayerName(playerToDelete)}`, 'success')
+      
+      // Close delete modal
+      setPlayerToDelete(null)
+      
+      // Reload players to get updated data
+      await loadPlayers(searchTerm)
+      
+    } catch (error) {
+      console.error('Error deleting player:', error)
+      addToast(error.response?.data?.message || 'Failed to delete player', 'error')
+    } finally {
+      setDeleting(false)
+    }
+  }
+
 
   const getTeamCircles = (player) => {
     if (!player.teams || player.teams.length === 0) {
@@ -633,6 +661,15 @@ function AdminPlayers() {
                     >
                       <Icon name="edit" size={16} />
                     </button>
+                    {(player.card_count === 0) && (
+                      <button 
+                        className="delete-btn"
+                        title="Delete player (only allowed for players with 0 cards)"
+                        onClick={() => setPlayerToDelete(player)}
+                      >
+                        <Icon name="trash-2" size={16} />
+                      </button>
+                    )}
                   </div>
                   <div className="col-id">{player.player_id}</div>
                   <div className="col-player">
@@ -992,6 +1029,86 @@ function AdminPlayers() {
                     <>
                       <Icon name="refresh-cw" size={16} />
                       Reassign {teamToRemove.card_count} Cards & Remove Team
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Player Confirmation Modal */}
+      {playerToDelete && (
+        <div className="modal-overlay" onClick={() => setPlayerToDelete(null)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>
+                <Icon name="trash-2" size={20} />
+                Delete Player
+              </h3>
+              <button 
+                className="modal-close-btn" 
+                onClick={() => setPlayerToDelete(null)}
+                type="button"
+              >
+                <Icon name="x" size={20} />
+              </button>
+            </div>
+
+            <div className="modal-form">
+              <div className="form-group">
+                <div className="delete-warning">
+                  <Icon name="alert-triangle" size={24} className="warning-icon" />
+                  <div className="warning-content">
+                    <p>
+                      <strong>Are you sure you want to delete this player?</strong>
+                    </p>
+                    <p>
+                      Player: <strong>{getPlayerName(playerToDelete)}</strong> (ID: {playerToDelete.player_id})
+                    </p>
+                    <p>
+                      Cards: <strong>{playerToDelete.card_count || 0}</strong>
+                    </p>
+                    {playerToDelete.card_count > 0 ? (
+                      <p className="error-text">
+                        <strong>Cannot delete:</strong> This player has {playerToDelete.card_count} cards. 
+                        Only players with 0 cards can be deleted.
+                      </p>
+                    ) : (
+                      <p className="success-text">
+                        This player has no cards and can be safely deleted. 
+                        This will also remove all player-team relationships.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="modal-actions">
+                <button 
+                  type="button" 
+                  className="btn-cancel" 
+                  onClick={() => setPlayerToDelete(null)}
+                  disabled={deleting}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="button" 
+                  className="btn-danger" 
+                  onClick={handleDeletePlayer}
+                  disabled={deleting || playerToDelete.card_count > 0}
+                >
+                  {deleting ? (
+                    <>
+                      <div className="spinner"></div>
+                      Deleting...
+                    </>
+                  ) : (
+                    <>
+                      <Icon name="trash-2" size={16} />
+                      Delete Player
                     </>
                   )}
                 </button>

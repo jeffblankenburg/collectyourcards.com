@@ -8,6 +8,7 @@ import {
   TrendingUp,
   User,
   UserPlus,
+  UserCheck,
   HelpCircle,
   LogOut,
   LogIn,
@@ -20,6 +21,7 @@ import {
   Zap,
   Sparkles,
   AlertTriangle,
+  Triangle,
   Info,
   Eye,
   EyeOff,
@@ -133,6 +135,7 @@ const iconMap = {
   
   // User & Account
   'user': User,
+  'user-check': UserCheck,
   'profile': User,
   'help': HelpCircle,
   'help-circle': HelpCircle,
@@ -165,6 +168,7 @@ const iconMap = {
   'error': XCircle,
   'x-circle': XCircle,
   'warning': AlertTriangle,
+  'alert-triangle': AlertTriangle,
   'alert-circle': AlertCircle,
   'info': Info,
   'activity': Activity,

@@ -873,6 +873,22 @@ function AdminSets() {
         document.body
       )}
 
+      {/* Add Set Modal */}
+      {showAddModal && (
+        <EditSetModal
+          isOpen={true}
+          onClose={() => setShowAddModal(false)}
+          set={null}
+          organizations={organizations}
+          manufacturers={manufacturers}
+          onSaveSuccess={(savedSet) => {
+            setShowAddModal(false)
+            loadSets(searchTerm) // Reload sets after adding
+            addToast('Set added successfully', 'success')
+          }}
+        />
+      )}
+
       {/* Edit Set Modal */}
       {showEditModal && editingItem && editType === 'set' && (
         <EditSetModal

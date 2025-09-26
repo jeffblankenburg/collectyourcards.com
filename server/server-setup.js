@@ -198,6 +198,7 @@ if (config.environment === 'test') {
     { path: '/api/admin/players', file: './routes/admin-players', name: 'Admin Players' },
     { path: '/api/admin', file: './routes/admin-sets', name: 'Admin Sets' },
     { path: '/api/admin', file: './routes/admin-series', name: 'Admin Series' },
+    { path: '/api/admin', file: './routes/admin-aggregates', name: 'Admin Aggregates' },
     { path: '/api/admin/sets-optimized', file: './routes/admin-sets-optimized', name: 'Admin Sets Optimized' },
     { path: '/api/admin/cards', file: './routes/admin-cards', name: 'Admin Cards' },
     { path: '/api/admin/analytics', file: './routes/admin-analytics', name: 'Admin Analytics' },
@@ -233,6 +234,7 @@ if (config.environment === 'test') {
     { path: '/api/achievements', file: './routes/achievements', name: 'Achievements' },
     { path: '/api/user/achievements', file: './routes/user-achievements', name: 'User Achievements' },
     { path: '/api/admin/achievements', file: './routes/admin-achievements', name: 'Admin Achievements' },
+    { path: '/api/admin/import', file: './routes/import', name: 'Admin Import' },
     { path: '/api/admin', file: './routes/admin-query-tester', name: 'Admin Query Tester' }
   ];
 

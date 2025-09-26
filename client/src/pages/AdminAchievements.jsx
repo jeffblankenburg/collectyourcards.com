@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import axios from 'axios'
 import { useToast } from '../contexts/ToastContext'
 import Icon from '../components/Icon'
@@ -51,7 +51,7 @@ function AdminAchievements() {
   })
 
   const { addToast } = useToast()
-  const searchTimeoutRef = React.useRef(null)
+  const searchTimeoutRef = useRef(null)
 
   const tiers = ['Common', 'Uncommon', 'Rare', 'Epic', 'Legendary', 'Mythic']
   const requirementTypes = [

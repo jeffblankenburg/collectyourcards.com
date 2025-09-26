@@ -7,7 +7,9 @@ const authMiddleware = async (req, res, next) => {
   try {
     // Get token from header
     const authHeader = req.header('Authorization')
+    console.log('Auth check for:', req.method, req.path, 'Header present:', !!authHeader)
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.log('No valid auth header:', authHeader)
       return res.status(401).json({
         error: 'Access denied',
         message: 'No valid token provided'

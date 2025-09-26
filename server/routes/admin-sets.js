@@ -392,6 +392,93 @@ router.get('/series/by-set/:year/:setSlug', async (req, res) => {
   }
 })
 
+// POST /api/admin/sets - Create new set
+router.post('/sets', async (req, res) => {
+  try {
+    const { 
+      name, 
+      year,
+      organization,
+      manufacturer,
+      is_complete,
+      thumbnail
+    } = req.body
+
+    // Validate required fields
+    if (!name || !name.trim()) {
+      return res.status(400).json({
+        error: 'Validation error',
+        message: 'Set name is required'
+      })
+    }
+
+    // Prepare creation data
+    const createData = {
+      name: name.trim(),
+      year: year ? parseInt(year) : null,
+      organization: organization ? parseInt(organization) : null,
+      manufacturer: manufacturer ? parseInt(manufacturer) : null,
+      is_complete: is_complete || false,
+      thumbnail: thumbnail || null,
+      card_count: 0,
+      series_count: 0,
+      created: new Date()
+    }
+
+    // Create new set
+    const newSet = await prisma.set.create({
+      data: createData,
+      select: {
+        set_id: true,
+        name: true,
+        year: true,
+        organization: true,
+        manufacturer: true,
+        card_count: true,
+        series_count: true,
+        is_complete: true,
+        thumbnail: true,
+        created: true
+      }
+    })
+
+    // Log admin action
+    try {
+      await prisma.admin_action_log.create({
+        data: {
+          user_id: BigInt(req.user.userId),
+          action_type: 'SET_CREATED',
+          entity_type: 'set',
+          entity_id: newSet.set_id.toString(),
+          old_values: null,
+          new_values: JSON.stringify(createData),
+          ip_address: req.ip,
+          user_agent: req.get('User-Agent'),
+          created: new Date()
+        }
+      })
+    } catch (logError) {
+      console.warn('Failed to log admin action:', logError.message)
+    }
+
+    res.status(201).json({
+      message: 'Set created successfully',
+      set: {
+        ...newSet,
+        set_id: Number(newSet.set_id)
+      }
+    })
+
+  } catch (error) {
+    console.error('Error creating set:', error)
+    res.status(500).json({
+      error: 'Database error',
+      message: 'Failed to create set',
+      details: error.message
+    })
+  }
+})
+
 // PUT /api/admin/sets/:id - Update set
 router.put('/sets/:id', async (req, res) => {
   try {
@@ -497,6 +584,116 @@ router.put('/sets/:id', async (req, res) => {
     res.status(500).json({
       error: 'Database error',
       message: 'Failed to update set',
+      details: error.message
+    })
+  }
+})
+
+// POST /api/admin/series - Create new series
+router.post('/series', async (req, res) => {
+  try {
+    const { 
+      name, 
+      set_id,
+      card_count,
+      card_entered_count,
+      rookie_count,
+      is_base,
+      parallel_of_series,
+      color_id,
+      min_print_run,
+      max_print_run,
+      print_run_display,
+      front_image_path,
+      back_image_path
+    } = req.body
+
+    // Validate required fields
+    if (!name || !name.trim()) {
+      return res.status(400).json({
+        error: 'Validation error',
+        message: 'Series name is required'
+      })
+    }
+
+    if (!set_id) {
+      return res.status(400).json({
+        error: 'Validation error',
+        message: 'Set ID is required'
+      })
+    }
+
+    // Prepare creation data
+    const createData = {
+      name: name.trim(),
+      set: parseInt(set_id),
+      card_count: card_count ? parseInt(card_count) : 0,
+      card_entered_count: card_entered_count ? parseInt(card_entered_count) : 0,
+      is_base: is_base || false,
+      parallel_of_series: parallel_of_series ? BigInt(parallel_of_series) : null,
+      color: color_id ? parseInt(color_id) : null,
+      min_print_run: min_print_run ? parseInt(min_print_run) : null,
+      max_print_run: max_print_run ? parseInt(max_print_run) : null,
+      print_run_display: print_run_display?.trim() || null,
+      front_image_path: front_image_path?.trim() || null,
+      back_image_path: back_image_path?.trim() || null,
+      rookie_count: rookie_count ? parseInt(rookie_count) : 0
+    }
+
+    // Create new series
+    const newSeries = await prisma.series.create({
+      data: createData,
+      select: {
+        series_id: true,
+        name: true,
+        set: true,
+        card_count: true,
+        card_entered_count: true,
+        is_base: true,
+        parallel_of_series: true,
+        color: true,
+        min_print_run: true,
+        max_print_run: true,
+        print_run_display: true,
+        front_image_path: true,
+        back_image_path: true,
+        rookie_count: true
+      }
+    })
+
+    // Log admin action
+    try {
+      await prisma.admin_action_log.create({
+        data: {
+          user_id: BigInt(req.user.userId),
+          action_type: 'SERIES_CREATED',
+          entity_type: 'series',
+          entity_id: newSeries.series_id.toString(),
+          old_values: null,
+          new_values: JSON.stringify(createData),
+          ip_address: req.ip,
+          user_agent: req.get('User-Agent'),
+          created: new Date()
+        }
+      })
+    } catch (logError) {
+      console.warn('Failed to log admin action:', logError.message)
+    }
+
+    res.status(201).json({
+      message: 'Series created successfully',
+      series: {
+        ...newSeries,
+        series_id: Number(newSeries.series_id),
+        parallel_of_series: newSeries.parallel_of_series ? Number(newSeries.parallel_of_series) : null
+      }
+    })
+
+  } catch (error) {
+    console.error('Error creating series:', error)
+    res.status(500).json({
+      error: 'Database error',
+      message: 'Failed to create series',
       details: error.message
     })
   }

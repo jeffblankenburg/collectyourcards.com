@@ -416,6 +416,145 @@
   color: rgba(255, 255, 255, 0.6);
 }
 
+/* Aggregate Updates Section */
+.admin-dashboard .aggregate-updates {
+  background: rgba(168, 85, 247, 0.05);
+  border: 1px solid rgba(168, 85, 247, 0.2);
+}
+
+.admin-dashboard .aggregate-info {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.admin-dashboard .aggregate-info p {
+  margin: 0 0 0.5rem 0;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.admin-dashboard .aggregate-info .last-updated {
+  color: #d8b4fe;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.admin-dashboard .aggregate-buttons {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.admin-dashboard .aggregate-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  color: white;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.admin-dashboard .aggregate-btn:hover:not(:disabled) {
+  background: rgba(168, 85, 247, 0.2);
+  border-color: rgba(168, 85, 247, 0.4);
+  color: #d8b4fe;
+  transform: translateY(-1px);
+}
+
+.admin-dashboard .aggregate-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.admin-dashboard .aggregate-btn.update-all {
+  grid-column: 1 / -1;
+  background: rgba(59, 130, 246, 0.1);
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.admin-dashboard .aggregate-btn.update-all:hover:not(:disabled) {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: rgba(59, 130, 246, 0.4);
+  color: #93c5fd;
+}
+
+.admin-dashboard .updating-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: rgba(168, 85, 247, 0.1);
+  border: 1px solid rgba(168, 85, 247, 0.2);
+  border-radius: 8px;
+  color: #d8b4fe;
+  font-size: 0.9rem;
+  margin: 1rem 0;
+}
+
+.admin-dashboard .recent-updates {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.admin-dashboard .recent-updates h4 {
+  margin: 0 0 0.75rem 0;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.admin-dashboard .recent-updates ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.admin-dashboard .recent-updates li {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: 0.85rem;
+}
+
+.admin-dashboard .recent-updates li:last-child {
+  border-bottom: none;
+}
+
+.admin-dashboard .recent-updates .update-type {
+  flex: 1;
+  color: #d8b4fe;
+  font-weight: 500;
+}
+
+.admin-dashboard .recent-updates .update-count {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.admin-dashboard .recent-updates .update-time {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.8rem;
+}
+
 /* Quick Actions */
 .admin-dashboard .action-buttons {
   display: grid;

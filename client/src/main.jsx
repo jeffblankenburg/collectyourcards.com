@@ -27,7 +27,7 @@ import AdminPlayers from './pages/AdminPlayers.jsx'
 import AdminSets from './pages/AdminSets.jsx'
 import AdminSeries from './pages/AdminSeries.jsx'
 import AdminCards from './pages/AdminCards.jsx'
-// import SpreadsheetIngestion from './pages/SpreadsheetIngestion.jsx' // Commented out for SeriesDetail page independence
+import AdminImport from './pages/AdminImport.jsx'
 import CollectionDashboard from './pages/CollectionDashboard.jsx'
 import CardDetail from './pages/CardDetail.jsx'
 import PublicProfile from './pages/PublicProfile.jsx'
@@ -87,7 +87,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
               {/* <Route path="/admin/sets/:year/:setSlug" element={<ProtectedRoute><AdminSets /></ProtectedRoute>} /> */}
               {/* <Route path="/admin/sets/:year/:setSlug/:seriesSlug" element={<ProtectedRoute><AdminSets /></ProtectedRoute>} /> */}
               <Route path="/admin/cards/:year/:setSlug/:seriesSlug" element={<ProtectedRoute><AdminCards /></ProtectedRoute>} />
-              {/* <Route path="/admin/ingestion" element={<ProtectedRoute><SpreadsheetIngestion /></ProtectedRoute>} /> */}
+              <Route path="/admin/import" element={<ProtectedRoute><AdminImport /></ProtectedRoute>} />
               
               {/* Design System Demo - Testing new CSS system */}
               <Route path="/design-system-demo" element={<DesignSystemDemo />} />
