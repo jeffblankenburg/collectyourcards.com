@@ -121,6 +121,7 @@ router.get('/:year/:setSlug/:seriesSlug/:cardSlug', async (req, res) => {
         c.print_run,
         s.series_id,
         s.name as series_name,
+        st.set_id,
         st.name as set_name,
         st.year as set_year,
         m.name as manufacturer_name,
@@ -142,7 +143,7 @@ router.get('/:year/:setSlug/:seriesSlug/:cardSlug', async (req, res) => {
         AND st.year = ${parseInt(year)}
         AND s.name LIKE '%${seriesSlug.replace(/-/g, '%')}%'
       GROUP BY c.card_id, c.card_number, c.is_rookie, c.is_autograph, c.is_relic, c.print_run,
-               s.series_id, s.name, st.name, st.year, m.name, s.parallel_of_series, col.name, col.hex_value
+               s.series_id, s.name, st.set_id, st.name, st.year, m.name, s.parallel_of_series, col.name, col.hex_value
     `)
     
     if (results.length === 0) {
@@ -186,6 +187,7 @@ router.get('/:year/:setSlug/:seriesSlug/:cardSlug', async (req, res) => {
       player_names: card.player_names,
       series_id: card.series_id.toString(),
       series_name: card.series_name,
+      set_id: card.set_id ? Number(card.set_id) : null,
       set_name: card.set_name,
       set_year: card.set_year ? Number(card.set_year) : null,
       manufacturer_name: card.manufacturer_name,

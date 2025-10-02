@@ -66,6 +66,20 @@ const CollectionTable = ({
   const [isResizing, setIsResizing] = useState(false)
   const [resizingColumn, setResizingColumn] = useState(null)
 
+  // Helper function to format date added
+  const formatDateAdded = (dateString) => {
+    if (!dateString) return ''
+    const date = new Date(dateString)
+    if (isNaN(date.getTime())) return ''
+    
+    // Format as MM/DD/YY
+    const month = (date.getMonth() + 1).toString().padStart(2, '0')
+    const day = date.getDate().toString().padStart(2, '0')
+    const year = date.getFullYear().toString().slice(-2)
+    
+    return `${month}/${day}/${year}`
+  }
+
   // Filter cards based on search query
   const filteredCards = useMemo(() => {
     if (!searchQuery.trim()) return cards
@@ -263,18 +277,6 @@ const CollectionTable = ({
     }).format(value)
   }
 
-  const formatDateAdded = (dateString) => {
-    if (!dateString) return ''
-    const date = new Date(dateString)
-    if (isNaN(date.getTime())) return ''
-    
-    // Format as MM/DD/YY
-    const month = (date.getMonth() + 1).toString().padStart(2, '0')
-    const day = date.getDate().toString().padStart(2, '0')
-    const year = date.getFullYear().toString().slice(-2)
-    
-    return `${month}/${day}/${year}`
-  }
 
   const handleDownload = async () => {
     try {

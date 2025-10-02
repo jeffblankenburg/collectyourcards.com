@@ -60,12 +60,12 @@ function App() {
         )}
 
         <div className="home-page-features-preview">
-          <h3>What You Can Do</h3>
+          <h3>The Cool Stuff</h3>
           <div className="home-page-feature-grid">
             <div className="home-page-feature-card">
               <Icon name="search" size={24} />
               <h4>Search Cards</h4>
-              <p>Find & add cards by number, player, team, or set</p>
+              <p>Find & add cards by number, player, team, or set using our universal search box</p>
             </div>
             <div className="home-page-feature-card">
               <Icon name="collections" size={24} />
@@ -79,8 +79,13 @@ function App() {
             </div> */}
             <div className="home-page-feature-card">
               <Icon name="chart" size={24} />
-              <h4>View Analytics</h4>
-              <p>Analyze collection value and trends</p>
+              <h4>Locate Your Cards</h4>
+              <p>Assign every card a physical location so you can find it easily</p>
+            </div>
+            <div className="home-page-feature-card">
+              <Icon name="monitor" size={24} />
+              <h4>Add eBay Purchases Automatically</h4>
+              <p>Bought a card on eBay? It is automatically added to your collection</p>
             </div>
           </div>
         </div>

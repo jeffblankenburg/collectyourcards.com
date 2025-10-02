@@ -33,7 +33,12 @@ router.get('/:seriesSlug/:cardNumber/:playerName', async (req, res) => {
     const normalizedCardNumber = cardNumber.toUpperCase()
     
     // Normalize player name for searching
+    // Handle both single players and multiple players (with or without commas in the URL)
     const normalizedPlayerName = normalizePlayerName(playerName.replace(/-/g, ' '))
+    
+    // Split the player name into individual names for flexible matching
+    // This allows matching cards with multiple players even if only one name is provided
+    const playerNameParts = normalizedPlayerName.split(/\s+/).filter(part => part.length > 2) // Filter out short words like "jr"
     
     // Generate potential series name patterns from the slug
     // Convert slug back to a searchable pattern by replacing dashes with spaces and wildcards
@@ -54,6 +59,7 @@ router.get('/:seriesSlug/:cardNumber/:playerName', async (req, res) => {
         c.print_run,
         s.series_id,
         s.name as series_name,
+        st.set_id,
         st.name as set_name,
         st.year as set_year,
         m.name as manufacturer_name,
@@ -74,8 +80,12 @@ router.get('/:seriesSlug/:cardNumber/:playerName', async (req, res) => {
       WHERE c.card_number = '${normalizedCardNumber}'
         AND LOWER(s.name) LIKE '%${seriesSearchPattern.replace(/'/g, "''")}%'
       GROUP BY c.card_id, c.card_number, c.is_rookie, c.is_autograph, c.is_relic, c.print_run,
-               s.series_id, s.name, st.name, st.year, m.name, s.parallel_of_series, col.name, col.hex_value
-      HAVING STRING_AGG(LOWER(CONCAT(p.first_name, ' ', p.last_name)), ', ') LIKE '%${normalizedPlayerName.replace(/'/g, "''")}%'
+               s.series_id, s.name, st.set_id, st.name, st.year, m.name, s.parallel_of_series, col.name, col.hex_value
+      HAVING ${playerNameParts.length > 0 ? 
+        playerNameParts.map(part => 
+          `STRING_AGG(LOWER(CONCAT(p.first_name, ' ', p.last_name)), ', ') LIKE '%${part.replace(/'/g, "''")}%'`
+        ).join(' AND ') 
+        : '1=1'}
     `)
     
     if (results.length === 0) {
@@ -90,6 +100,7 @@ router.get('/:seriesSlug/:cardNumber/:playerName', async (req, res) => {
           c.print_run,
           s.series_id,
           s.name as series_name,
+          st.set_id,
           st.name as set_name,
           st.year as set_year,
           m.name as manufacturer_name,
@@ -110,8 +121,12 @@ router.get('/:seriesSlug/:cardNumber/:playerName', async (req, res) => {
         WHERE (c.card_number LIKE '%${normalizedCardNumber}%' OR '${normalizedCardNumber}' LIKE '%' + c.card_number + '%')
           AND LOWER(s.name) LIKE '%${seriesSearchPattern.replace(/'/g, "''")}%'
         GROUP BY c.card_id, c.card_number, c.is_rookie, c.is_autograph, c.is_relic, c.print_run,
-                 s.series_id, s.name, st.name, st.year, m.name, s.parallel_of_series, col.name, col.hex_value
-        HAVING STRING_AGG(LOWER(CONCAT(p.first_name, ' ', p.last_name)), ', ') LIKE '%${normalizedPlayerName.replace(/'/g, "''")}%'
+                 s.series_id, s.name, st.set_id, st.name, st.year, m.name, s.parallel_of_series, col.name, col.hex_value
+        HAVING ${playerNameParts.length > 0 ? 
+        playerNameParts.map(part => 
+          `STRING_AGG(LOWER(CONCAT(p.first_name, ' ', p.last_name)), ', ') LIKE '%${part.replace(/'/g, "''")}%'`
+        ).join(' AND ') 
+        : '1=1'}
         ORDER BY 
           CASE 
             WHEN c.card_number = '${normalizedCardNumber}' THEN 1
@@ -176,6 +191,7 @@ router.get('/:seriesSlug/:cardNumber/:playerName', async (req, res) => {
       player_names: card.player_names,
       series_id: card.series_id.toString(),
       series_name: card.series_name,
+      set_id: card.set_id ? Number(card.set_id) : null,
       set_name: card.set_name,
       set_year: card.set_year ? Number(card.set_year) : null,
       manufacturer_name: card.manufacturer_name,

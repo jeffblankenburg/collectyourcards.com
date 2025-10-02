@@ -208,6 +208,7 @@ const iconMap = {
   'database': Database,
   'code': Code,
   'image': Image,
+  'monitor': Monitor,
   'refresh': RefreshCw,
   'shopping': ShoppingCart,
   'color': Palette,

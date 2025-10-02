@@ -24,6 +24,7 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
       team_id, 
       series_name,
       series_id,
+      card_number,
       limit = 100, 
       page = 1 
     } = req.query
@@ -69,6 +70,10 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
 
     if (series_id) {
       whereConditions.push(`s.series_id = ${parseInt(series_id)}`)
+    }
+
+    if (card_number) {
+      whereConditions.push(`c.card_number = '${card_number.replace(/'/g, "''")}'`)
     }
 
     const whereClause = whereConditions.length > 0 
@@ -215,6 +220,88 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
     res.status(500).json({
       error: 'Database error',
       message: 'Failed to fetch cards',
+      details: error.message
+    })
+  }
+})
+
+// GET /api/parallel-series - Get parallel series for a specific card number in a set
+router.get('/parallel-series', async (req, res) => {
+  try {
+    const { set_id, card_number } = req.query
+    
+    if (!set_id || !card_number) {
+      return res.status(400).json({
+        error: 'Missing required parameters',
+        message: 'set_id and card_number are required'
+      })
+    }
+
+    const setIdNum = parseInt(set_id)
+    if (isNaN(setIdNum)) {
+      return res.status(400).json({
+        error: 'Invalid set_id',
+        message: 'set_id must be a valid number'
+      })
+    }
+
+    // Helper function to generate URL slug from name
+    function generateSlug(name) {
+      if (!name) return 'unknown'
+      return name
+        .toLowerCase()
+        .replace(/'/g, '') // Remove apostrophes completely
+        .replace(/[^a-z0-9]+/g, '-') // Replace other special chars with hyphens
+        .replace(/^-|-$/g, '') // Remove leading/trailing hyphens
+    }
+
+    // Get all series in the set that have a card with the specified card number
+    const query = `
+      SELECT DISTINCT 
+        s.series_id,
+        s.name,
+        s.is_base,
+        s.min_print_run,
+        s.max_print_run,
+        s.print_run_display,
+        col.name as color_name,
+        col.hex_value as color_hex,
+        CASE WHEN s.is_base = 1 THEN 0 ELSE 1 END as sort_order
+      FROM series s
+      JOIN card c ON s.series_id = c.series
+      LEFT JOIN color col ON s.color = col.color_id
+      WHERE s.[set] = ${setIdNum}
+        AND c.card_number = '${card_number.replace(/'/g, "''")}'
+      ORDER BY 
+        sort_order,
+        s.name
+    `
+
+    const result = await prisma.$queryRawUnsafe(query)
+    
+    // Convert BigInt fields to numbers for JSON serialization
+    const series = result.map(row => ({
+      series_id: Number(row.series_id),
+      name: row.name,
+      is_base: Boolean(row.is_base),
+      series_slug: generateSlug(row.name),
+      min_print_run: row.min_print_run ? Number(row.min_print_run) : null,
+      max_print_run: row.max_print_run ? Number(row.max_print_run) : null,
+      print_run_display: row.print_run_display,
+      color_name: row.color_name,
+      color_hex: row.color_hex
+    }))
+
+    res.json({
+      success: true,
+      series
+    })
+
+  } catch (error) {
+    console.error('Error fetching parallel series:', error)
+    res.status(500).json({
+      error: 'Database error',
+      message: 'Failed to fetch parallel series',
       details: error.message
     })
   }

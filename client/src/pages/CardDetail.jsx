@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import axios from 'axios'
 import { useAuth } from '../contexts/AuthContext'
@@ -48,6 +48,9 @@ function CardDetail() {
   const [locations, setLocations] = useState([])
   const [gradingAgencies, setGradingAgencies] = useState([])
   const [showAddCardModal, setShowAddCardModal] = useState(false)
+  const [parallelSeries, setParallelSeries] = useState([])
+  const [showParallels, setShowParallels] = useState(false)
+  const parallelsRef = useRef(null)
   
   // Determine which URL format we're using
   const isSimpleUrl = !!(cardNumber && playerName)
@@ -55,6 +58,20 @@ function CardDetail() {
   // Check if user is admin
   const isAdmin = user && ['admin', 'superadmin', 'data_admin'].includes(user.role)
   
+  // Close parallels dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (parallelsRef.current && !parallelsRef.current.contains(event.target)) {
+        setShowParallels(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [])
+
   useEffect(() => {
     fetchCardDetails()
   }, [year, setSlug, seriesSlug, cardSlug, cardNumber, playerName])
@@ -119,11 +136,43 @@ function CardDetail() {
         
         // Fetch all cards in the series for navigation
         await fetchSeriesCards(response.data.card)
+        
+        // Fetch parallel series for dropdown
+        if (response.data.card.set_id) {
+          await fetchParallelSeries(response.data.card)
+        }
       } else {
         setError('Card not found')
       }
     } catch (err) {
       console.error('Error fetching card details:', err)
+      
+      // If card not found and we're using simple URL format, try to redirect to first card in series
+      if (err.response?.status === 404 && isSimpleUrl) {
+        try {
+          // Get first card in the series
+          const seriesResponse = await axios.get(`/api/cards?series_name=${seriesSlug.replace(/-/g, ' ')}&limit=1`)
+          const firstCard = seriesResponse.data.cards?.[0]
+          
+          if (firstCard) {
+            const firstCardPlayerNames = getPlayerNamesFromCard(firstCard) || 'unknown'
+            const firstCardPlayerSlug = firstCardPlayerNames
+              .toLowerCase()
+              .replace(/,/g, '-') // Handle multiple players
+              .replace(/[^a-z0-9\s-]/g, '')
+              .replace(/\s+/g, '-')
+              .replace(/-+/g, '-')
+              .trim()
+            
+            // Redirect to first card in series
+            navigate(`/card/${seriesSlug}/${firstCard.card_number}/${firstCardPlayerSlug}`, { replace: true })
+            return
+          }
+        } catch (fallbackErr) {
+          console.error('Error fetching first card in series:', fallbackErr)
+        }
+      }
+      
       setError(err.response?.data?.message || 'Failed to load card details')
     } finally {
       setLoading(false)
@@ -173,6 +222,29 @@ function CardDetail() {
     }
   }
 
+  const fetchParallelSeries = async (cardData) => {
+    try {
+      // Get all series in the same set that have a card with the same number
+      const response = await axios.get(`/api/cards/parallel-series?set_id=${cardData.set_id}&card_number=${encodeURIComponent(cardData.card_number)}`)
+      const parallels = response.data.series || []
+      
+      // Sort by series name, but put base series first
+      const sortedParallels = parallels.sort((a, b) => {
+        // Base series first
+        if (a.is_base && !b.is_base) return -1
+        if (!a.is_base && b.is_base) return 1
+        
+        // Then alphabetical
+        return (a.name || '').localeCompare(b.name || '')
+      })
+      
+      setParallelSeries(sortedParallels)
+    } catch (err) {
+      console.error('Error fetching parallel series:', err)
+      setParallelSeries([])
+    }
+  }
+
   const handleBackToSeries = () => {
     if (isSimpleUrl && card) {
       // For simple URLs, construct the series URL from card data
@@ -181,6 +253,29 @@ function CardDetail() {
       // For complex URLs, use the existing params
       navigate(`/sets/${year}/${setSlug}/${seriesSlug}`)
     }
+  }
+
+  const handleParallelSeriesChange = (selectedSeriesId) => {
+    if (!selectedSeriesId || !card) return
+    
+    // Find the selected series to get its slug
+    const selectedSeries = parallelSeries.find(s => s.series_id === parseInt(selectedSeriesId))
+    if (!selectedSeries) return
+    
+    // Use current card's actual player names to construct new URL
+    const playerNames = card.player_names || 'unknown'
+    const playerSlug = playerNames
+      .toLowerCase()
+      .replace(/,/g, '-') // Replace commas with dashes first
+      .replace(/[^a-z0-9\s-]/g, '') // Remove special chars except spaces and dashes
+      .replace(/\s+/g, '-') // Replace spaces with dashes
+      .replace(/-+/g, '-') // Collapse multiple dashes
+      .trim()
+    
+    
+    // Simply navigate to the same card number in the new series
+    // If the card doesn't exist, the page will handle the error and can redirect to first card
+    navigate(`/card/${selectedSeries.series_slug}/${card.card_number}/${playerSlug}`)
   }
 
   const navigateToCard = (targetCard) => {
@@ -357,19 +452,29 @@ function CardDetail() {
         {/* Card Header */}
         <div className="card-header">
           {/* Color Strip for Parallels */}
-          {(card.color_hex || card.color_name) && (
+          {(card.color_hex || card.color_name || card.print_run) && (
             <div 
               className="card-header-color-strip"
               style={{
-                '--color': card.color_hex || '#ec4899',
+                '--color': card.color_hex || (card.print_run ? '#6b7280' : '#ec4899'),
                 '--text-color': isLightColor(card.color_hex) ? '#000000' : '#ffffff'
               }}
             >
               <span className="card-header-color-text">
-                {card.color_name || 'Parallel'}{card.print_run && (
+                {card.color_name ? (
                   <>
-                    &nbsp;&nbsp;/{card.print_run.toLocaleString()}
+                    {card.color_name}{card.print_run && (
+                      <>
+                        &nbsp;&nbsp;/{card.print_run.toLocaleString()}
+                      </>
+                    )}
                   </>
+                ) : card.print_run ? (
+                  <>
+                    /{card.print_run.toLocaleString()}
+                  </>
+                ) : (
+                  'Parallel'
                 )}
               </span>
             </div>
@@ -429,48 +534,46 @@ function CardDetail() {
                           )}
                         </h2>
                       </div>
-                      
-                      {/* Auto/Relic tags and action buttons below each player name */}
-                      {index === 0 && (
-                        <div className="player-actions-row">
-                          {(card.is_autograph || card.is_relic) && (
-                            <div className="player-card-tags">
-                              {card.is_autograph && (
-                                <span className="player-tag player-tag-auto">
-                                  AUTOGRAPH
-                                </span>
-                              )}
-                              {card.is_relic && (
-                                <span className="player-tag player-tag-relic">
-                                  RELIC
-                                </span>
-                              )}
-                            </div>
-                          )}
-                          
-                          {/* Action buttons */}
-                          <div className="player-action-buttons">
-                            {isAuthenticated && (
-                              <button 
-                                className="squircle-button add-button"
-                                onClick={handleAddToCollection}
-                                title="Add to Collection"
-                              >
-                                <Icon name="plus" size={16} />
-                              </button>
-                            )}
-                            <SocialShareButton 
-                              card={card}
-                              iconOnly={true}
-                              size={16}
-                              className="squircle-button share-button"
-                            />
-                          </div>
-                        </div>
-                      )}
                     </div>
                   )
                 })}
+              </div>
+              
+              {/* Card Tags (Auto/Relic) and Action Buttons - Separate Row */}
+              <div className="card-subtitle-bottom">
+                {(card.is_autograph || card.is_relic) && (
+                  <div className="player-card-tags">
+                    {card.is_autograph && (
+                      <span className="player-tag player-tag-auto">
+                        AUTOGRAPH
+                      </span>
+                    )}
+                    {card.is_relic && (
+                      <span className="player-tag player-tag-relic">
+                        RELIC
+                      </span>
+                    )}
+                  </div>
+                )}
+                
+                {/* Action buttons */}
+                <div className="player-action-buttons">
+                  {isAuthenticated && (
+                    <button 
+                      className="squircle-button add-button"
+                      onClick={handleAddToCollection}
+                      title="Add to Collection"
+                    >
+                      <Icon name="plus" size={16} />
+                    </button>
+                  )}
+                  <SocialShareButton 
+                    card={card}
+                    iconOnly={true}
+                    size={16}
+                    className="squircle-button share-button"
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -555,8 +658,55 @@ function CardDetail() {
               </button>
             )}
             
-            <div className="nav-series-name clickable-link" onClick={handleBackToSeries}>
-              {card.series_name}
+            <div className="nav-series-section">
+              <div className="nav-series-name clickable-link" onClick={handleBackToSeries}>
+                {card.series_name}
+              </div>
+              
+              {/* Parallels Dropdown */}
+              {parallelSeries.length > 1 && (
+                <div className="nav-parallels-dropdown" ref={parallelsRef}>
+                  <button 
+                    className="nav-parallels-toggle"
+                    onClick={() => setShowParallels(!showParallels)}
+                    title={`${parallelSeries.length} parallel series available`}
+                  >
+                    <Icon name="shuffle" size={12} />
+                    <Icon name={showParallels ? "chevron-up" : "chevron-down"} size={10} />
+                  </button>
+                  
+                  {showParallels && (
+                    <div className="nav-parallels-dropdown-menu">
+                      {parallelSeries.map(series => (
+                        <div 
+                          key={series.series_id}
+                          className={`nav-parallel-item ${series.series_id === card.series_id ? 'current' : ''}`}
+                          onClick={() => {
+                            if (series.series_id !== card.series_id) {
+                              handleParallelSeriesChange(series.series_id)
+                            }
+                            setShowParallels(false)
+                          }}
+                        >
+                          <div className="nav-parallel-content">
+                            <span className="nav-parallel-name">{series.name}</span>
+                            {series.print_run_display && (
+                              <span className="nav-parallel-print-run">{series.print_run_display}</span>
+                            )}
+                          </div>
+                          {series.color_hex && (
+                            <div 
+                              className="nav-parallel-color-stripe"
+                              style={{ backgroundColor: series.color_hex }}
+                              title={series.color_name || 'Parallel color'}
+                            />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
             
             {currentCardIndex < seriesCards.length - 1 && currentCardIndex >= 0 && (
