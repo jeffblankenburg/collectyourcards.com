@@ -308,12 +308,12 @@ async function searchCardsByNumberAndPlayer(cardNumber, playerName, limit) {
       WHERE c.card_number LIKE '${cardPattern}'
         AND (
           -- Name combinations (most likely matches)
-          CONCAT(p.first_name, ' ', p.last_name) LIKE '${playerPattern}'
-          OR CONCAT(p.nick_name, ' ', p.last_name) LIKE '${playerPattern}' 
-          OR CONCAT(p.first_name, ' ', p.nick_name, ' ', p.last_name) LIKE '${playerPattern}'
-          OR p.nick_name LIKE '${playerPattern}'
+          CONCAT(p.first_name, ' ', p.last_name) LIKE '${playerPattern}' COLLATE Latin1_General_CI_AI
+          OR CONCAT(p.nick_name, ' ', p.last_name) LIKE '${playerPattern}' COLLATE Latin1_General_CI_AI
+          OR CONCAT(p.first_name, ' ', p.nick_name, ' ', p.last_name) LIKE '${playerPattern}' COLLATE Latin1_General_CI_AI
+          OR p.nick_name LIKE '${playerPattern}' COLLATE Latin1_General_CI_AI
           -- Individual name components (for partial matches)
-          OR (p.first_name LIKE '%${firstName}%' AND p.last_name LIKE '%${lastName}%')
+          OR (p.first_name LIKE '%${firstName}%' COLLATE Latin1_General_CI_AI AND p.last_name LIKE '%${lastName}%' COLLATE Latin1_General_CI_AI)
         )
       GROUP BY c.card_id, c.card_number, c.is_rookie, c.is_autograph, c.is_relic, c.print_run,
                s.name, st.name, st.year, m.name, s.parallel_of_series, col.name, col.hex_value
@@ -499,7 +499,7 @@ async function searchCardsByType(cardTypes, playerName, limit) {
     const typeConditionsSql = typeConditions.length > 0 ? typeConditions.join(' OR ') : '1=0'
     
     const playerCondition = playerName ? 
-      `AND (p.first_name LIKE '%${playerName}%' OR p.last_name LIKE '%${playerName}%' OR p.nick_name LIKE '%${playerName}%')` : 
+      `AND (p.first_name LIKE '%${playerName}%' COLLATE Latin1_General_CI_AI OR p.last_name LIKE '%${playerName}%' COLLATE Latin1_General_CI_AI OR p.nick_name LIKE '%${playerName}%' COLLATE Latin1_General_CI_AI)` : 
       ''
 
     const results = await prisma.$queryRawUnsafe(`
@@ -569,26 +569,26 @@ async function searchPlayers(query, limit) {
       
       whereClause = `
         -- Name combinations (most likely matches first)
-        (CONCAT(first_name, ' ', last_name) LIKE '${searchPattern}')
-        OR (CONCAT(nick_name, ' ', last_name) LIKE '${searchPattern}')
-        OR (CONCAT(first_name, ' ', nick_name, ' ', last_name) LIKE '${searchPattern}')
-        OR nick_name LIKE '${searchPattern}'
+        (CONCAT(first_name, ' ', last_name) LIKE '${searchPattern}' COLLATE Latin1_General_CI_AI)
+        OR (CONCAT(nick_name, ' ', last_name) LIKE '${searchPattern}' COLLATE Latin1_General_CI_AI)
+        OR (CONCAT(first_name, ' ', nick_name, ' ', last_name) LIKE '${searchPattern}' COLLATE Latin1_General_CI_AI)
+        OR nick_name LIKE '${searchPattern}' COLLATE Latin1_General_CI_AI
         -- Individual name components
-        OR (first_name LIKE '%${firstName}%' AND last_name LIKE '%${lastName}%')
-        OR (nick_name LIKE '%${firstName}%' AND last_name LIKE '%${lastName}%')
-        OR first_name LIKE '${searchPattern}'
-        OR last_name LIKE '${searchPattern}'
+        OR (first_name LIKE '%${firstName}%' COLLATE Latin1_General_CI_AI AND last_name LIKE '%${lastName}%' COLLATE Latin1_General_CI_AI)
+        OR (nick_name LIKE '%${firstName}%' COLLATE Latin1_General_CI_AI AND last_name LIKE '%${lastName}%' COLLATE Latin1_General_CI_AI)
+        OR first_name LIKE '${searchPattern}' COLLATE Latin1_General_CI_AI
+        OR last_name LIKE '${searchPattern}' COLLATE Latin1_General_CI_AI
       `
     } else {
       // Single word search
       whereClause = `
         -- Individual fields and name combinations
-        first_name LIKE '${searchPattern}'
-        OR last_name LIKE '${searchPattern}'
-        OR nick_name LIKE '${searchPattern}'
-        OR CONCAT(first_name, ' ', last_name) LIKE '${searchPattern}'
-        OR CONCAT(nick_name, ' ', last_name) LIKE '${searchPattern}'
-        OR CONCAT(first_name, ' ', nick_name, ' ', last_name) LIKE '${searchPattern}'
+        first_name LIKE '${searchPattern}' COLLATE Latin1_General_CI_AI
+        OR last_name LIKE '${searchPattern}' COLLATE Latin1_General_CI_AI
+        OR nick_name LIKE '${searchPattern}' COLLATE Latin1_General_CI_AI
+        OR CONCAT(first_name, ' ', last_name) LIKE '${searchPattern}' COLLATE Latin1_General_CI_AI
+        OR CONCAT(nick_name, ' ', last_name) LIKE '${searchPattern}' COLLATE Latin1_General_CI_AI
+        OR CONCAT(first_name, ' ', nick_name, ' ', last_name) LIKE '${searchPattern}' COLLATE Latin1_General_CI_AI
       `
     }
     
@@ -729,9 +729,9 @@ async function searchSeries(query, limit) {
       LEFT JOIN manufacturer m ON st.manufacturer = m.manufacturer_id
       LEFT JOIN series parent_s ON s.parallel_of_series = parent_s.series_id
       LEFT JOIN color col ON s.color = col.color_id
-      WHERE s.name LIKE '${searchPattern}' COLLATE SQL_Latin1_General_CP1_CI_AS
-         OR st.name LIKE '${searchPattern}' COLLATE SQL_Latin1_General_CP1_CI_AS
-         OR m.name LIKE '${searchPattern}' COLLATE SQL_Latin1_General_CP1_CI_AS
+      WHERE s.name LIKE '${searchPattern}' COLLATE Latin1_General_CI_AI
+         OR st.name LIKE '${searchPattern}' COLLATE Latin1_General_CI_AI
+         OR m.name LIKE '${searchPattern}' COLLATE Latin1_General_CI_AI
     `)
     
     console.log(`Found ${results.length} series for "${query}"`)

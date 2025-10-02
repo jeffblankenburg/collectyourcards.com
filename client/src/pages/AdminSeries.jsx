@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { useToast } from '../contexts/ToastContext'
@@ -56,19 +56,122 @@ function AdminSeries() {
   const { addToast } = useToast()
   const searchTimeoutRef = useRef(null)
 
+  // Memoized color tag component to prevent forced reflow
+  const ColorTag = useCallback(({ colorName, colorHex }) => {
+    if (!colorName) return null
+    
+    // Pre-calculate text color to avoid multiple DOM reflows
+    const backgroundColor = colorHex || '#ec4899'
+    const textColor = useMemo(() => {
+      if (!colorHex) return '#ffffff'
+      
+      const r = parseInt(colorHex.slice(1, 3), 16)
+      const g = parseInt(colorHex.slice(3, 5), 16) 
+      const b = parseInt(colorHex.slice(5, 7), 16)
+      const brightness = (r * 0.299 + g * 0.587 + b * 0.114)
+      
+      return brightness > 128 ? '#000000' : '#ffffff'
+    }, [colorHex])
+    
+    return (
+      <span 
+        className="color-tag"
+        style={{
+          backgroundColor,
+          color: textColor
+        }}
+      >
+        {colorName}
+      </span>
+    )
+  }, [])
+
+  // Memoized series row component to prevent unnecessary re-renders
+  const SeriesRow = React.memo(({ seriesItem, onEdit, onDuplicate, onViewCards, onUpload }) => {
+    return (
+      <div 
+        className="series-row"
+        onDoubleClick={() => onEdit(seriesItem)}
+        title="Double-click to edit series"
+      >
+        <div className="col-actions">
+          <button 
+            className="edit-btn"
+            title="Edit series"
+            onClick={() => onEdit(seriesItem)}
+          >
+            <Icon name="edit" size={16} />
+          </button>
+          <button 
+            className="duplicate-btn"
+            title="Duplicate as parallel"
+            onClick={() => onDuplicate(seriesItem)}
+          >
+            <Icon name="shuffle" size={16} />
+          </button>
+          <button 
+            className="upload-btn"
+            title="Upload cards to this series"
+            onClick={() => onUpload(seriesItem)}
+          >
+            <Icon name="upload" size={16} />
+          </button>
+          <button 
+            className="view-btn"
+            title="View cards"
+            onClick={() => onViewCards(seriesItem)}
+          >
+            <Icon name="grid" size={16} />
+          </button>
+        </div>
+        <div className="col-id">{seriesItem.series_id}</div>
+        <div className="col-name">
+          {seriesItem.name}
+          {seriesItem.parallel_of_name && seriesItem.parallel_of_name.trim() && (
+            <span className="parallel-badge" style={{ marginLeft: '0.5rem' }}>{seriesItem.parallel_of_name}</span>
+          )}
+        </div>
+        <div className="col-base center">
+          {seriesItem.is_base && <Icon name="check" size={16} className="base-icon" />}
+        </div>
+        <div className="col-color center">
+          <ColorTag 
+            colorName={seriesItem.color_name}
+            colorHex={seriesItem.color_hex}
+          />
+        </div>
+        <div className="col-cards center">
+          {(seriesItem.card_count || 0).toLocaleString()}
+        </div>
+        <div className="col-entered center">
+          {(seriesItem.card_entered_count || 0).toLocaleString()}
+        </div>
+        <div className="col-rookies center">
+          {(seriesItem.rookie_count || 0).toLocaleString()}
+        </div>
+        <div className="col-print-run center">
+          {seriesItem.print_run_display || 
+           (seriesItem.min_print_run && seriesItem.max_print_run 
+             ? `${seriesItem.min_print_run}-${seriesItem.max_print_run}`
+             : seriesItem.max_print_run || '-')}
+        </div>
+      </div>
+    )
+  })
+
   // Load series on mount or when search changes
   useEffect(() => {
     // Load with initial search if provided in URL
     loadSeries(searchParams.get('search') || '')
   }, [setId])
 
-  const loadSeries = async (search = '') => {
+  const loadSeries = useCallback(async (search = '') => {
+    const loadStartTime = performance.now()
+    
     try {
       setSearching(true)
       
-      const params = {
-        limit: 100
-      }
+      const params = {}
       
       if (search) {
         params.search = search
@@ -98,7 +201,16 @@ function AdminSeries() {
         } catch (error) {
           console.error('Failed to get total series count:', error)
         }
+      } else {
+        // Clear total count when searching or filtering
+        setTotalSeries(0)
       }
+      
+      const loadTime = performance.now() - loadStartTime
+      if (loadTime > 500) {
+        console.log(`AdminSeries: Loading series took ${loadTime.toFixed(2)}ms`)
+      }
+      
     } catch (error) {
       console.error('Error loading series:', error)
       addToast('Failed to load series', 'error')
@@ -107,9 +219,10 @@ function AdminSeries() {
       setSearching(false)
       setLoading(false)
     }
-  }
+  }, [setId, addToast])
 
-  const handleSearchChange = (e) => {
+  // Memoized search change handler to prevent recreation
+  const handleSearchChange = useCallback((e) => {
     const value = e.target.value
     setSearchTerm(value)
     
@@ -122,18 +235,22 @@ function AdminSeries() {
     searchTimeoutRef.current = setTimeout(() => {
       loadSeries(value)
     }, 300)
-  }
+  }, [])
 
-  const handleSort = (field) => {
+  // Memoized sort handler to prevent recreation
+  const handleSort = useCallback((field) => {
     if (sortField === field) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
     } else {
       setSortField(field)
       setSortDirection('asc')
     }
-  }
+  }, [sortField, sortDirection])
 
-  const getSortedSeries = () => {
+  // Memoized sorting to prevent recalculation on every render
+  const sortedSeries = useMemo(() => {
+    const startTime = performance.now()
+    
     const sorted = [...series].sort((a, b) => {
       let aVal = a[sortField]
       let bVal = b[sortField]
@@ -159,10 +276,15 @@ function AdminSeries() {
       return 0
     })
     
+    const sortTime = performance.now() - startTime
+    if (sortTime > 50) {
+      console.log(`AdminSeries: Sorting ${series.length} series took ${sortTime.toFixed(2)}ms`)
+    }
+    
     return sorted
-  }
+  }, [series, sortField, sortDirection])
 
-  const loadSets = async () => {
+  const loadSets = useCallback(async () => {
     try {
       // Request ALL sets for the dropdown
       const response = await axios.get('/api/admin/sets', { params: { all: 'true' } })
@@ -172,9 +294,9 @@ function AdminSeries() {
       console.error('Error loading sets:', error)
       addToast('Failed to load sets', 'error')
     }
-  }
+  }, [addToast])
 
-  const loadColors = async () => {
+  const loadColors = useCallback(async () => {
     try {
       const response = await axios.get('/api/admin/series/colors')
       setAvailableColors(response.data.colors || [])
@@ -182,25 +304,26 @@ function AdminSeries() {
       console.error('Error loading colors:', error)
       setAvailableColors([])
     }
-  }
+  }, [])
 
-  const loadSeriesForSet = async (setId) => {
+  const loadSeriesForSet = useCallback(async (setId) => {
     if (!setId) {
       setSeriesForSet([])
       return
     }
     
     try {
-      const response = await axios.get('/api/admin/series', { params: { set: setId, limit: 1000 } })
+      const response = await axios.get('/api/admin/series', { params: { set: setId } })
       setSeriesForSet(response.data.series || [])
     } catch (error) {
       console.error('Error loading series for set:', error)
       addToast('Failed to load series for set', 'error')
       setSeriesForSet([])
     }
-  }
+  }, [addToast])
 
-  const handleEditSeries = async (seriesItem) => {
+  // Memoized edit handler
+  const handleEditSeries = useCallback(async (seriesItem) => {
     setEditingSeries(seriesItem)
     const setId = seriesItem.set_id ? Number(seriesItem.set_id) : ''
     
@@ -224,16 +347,18 @@ function AdminSeries() {
     }
     
     setShowEditModal(true)
-  }
+  }, [loadSets, loadSeriesForSet])
 
-  const handleShowAddModal = async () => {
+  // Memoized add modal handler
+  const handleShowAddModal = useCallback(async () => {
     // Load sets for dropdown
     await loadSets()
     setSeriesForSet([]) // Clear series until set is selected
     setShowAddModal(true)
-  }
+  }, [loadSets])
 
-  const handleShowDuplicateModal = async (seriesItem) => {
+  // Memoized duplicate modal handler
+  const handleShowDuplicateModal = useCallback(async (seriesItem) => {
     setDuplicatingSeries(seriesItem)
     setDuplicateForm({
       name: seriesItem.name + ' 2',
@@ -242,7 +367,7 @@ function AdminSeries() {
     })
     await loadColors()
     setShowDuplicateModal(true)
-  }
+  }, [loadColors])
 
   const handleDuplicateSeries = async () => {
     if (!duplicatingSeries || !duplicateForm.name.trim()) {
@@ -277,10 +402,17 @@ function AdminSeries() {
   }
 
 
-  const handleViewCards = (seriesItem) => {
+  // Memoized navigation handler
+  const handleViewCards = useCallback((seriesItem) => {
     // Navigate to cards list for this series
     navigate(`/admin/cards?series=${seriesItem.series_id}`)
-  }
+  }, [navigate])
+
+  // Memoized upload handler
+  const handleUpload = useCallback((seriesItem) => {
+    // Navigate to import page with series pre-selected
+    navigate(`/admin/import?series=${seriesItem.series_id}`)
+  }, [navigate])
 
   const handleCreateSeries = async () => {
     try {
@@ -412,10 +544,11 @@ function AdminSeries() {
     }
   }
 
-  const handleShowDeleteModal = (series) => {
+  // Memoized delete modal handler
+  const handleShowDeleteModal = useCallback((series) => {
     setDeletingSeries(series)
     setShowDeleteModal(true)
-  }
+  }, [])
 
   if (loading) {
     return (
@@ -423,7 +556,15 @@ function AdminSeries() {
         <div className="admin-header">
           <div className="admin-title">
             <Icon name="layers" size={32} />
-            <h1>{totalSeries > 0 && !setInfo ? `${totalSeries.toLocaleString()} Series` : 'Series Management'}</h1>
+            <h1>
+            {totalSeries > 0 && !setInfo && !isSearchMode 
+              ? `${totalSeries.toLocaleString()} Series` 
+              : isSearchMode 
+                ? `Series Search Results (${series.length})`
+                : setInfo 
+                  ? 'Series Management'
+                  : 'Recent Series (100)'}
+          </h1>
           </div>
         </div>
         <div className="loading-state">
@@ -439,7 +580,15 @@ function AdminSeries() {
       <div className="admin-header">
         <div className="admin-title">
           <Icon name="layers" size={32} />
-          <h1>{totalSeries > 0 && !setInfo ? `${totalSeries.toLocaleString()} Series` : 'Series Management'}</h1>
+          <h1>
+            {totalSeries > 0 && !setInfo && !isSearchMode 
+              ? `${totalSeries.toLocaleString()} Series` 
+              : isSearchMode 
+                ? `Series Search Results (${series.length})`
+                : setInfo 
+                  ? 'Series Management'
+                  : 'Recent Series (100)'}
+          </h1>
         </div>
         
         <div className="admin-controls">
@@ -474,6 +623,13 @@ function AdminSeries() {
             <Icon name="arrow-left" size={16} />
             Back to Sets
           </button>
+        </div>
+      )}
+
+      {!setInfo && !isSearchMode && (
+        <div className="info-banner">
+          <Icon name="info" size={16} />
+          <span>Showing 100 most recently created series. Use search to find specific series from all {totalSeries > 0 ? totalSeries.toLocaleString() : ''} series.</span>
         </div>
       )}
 
@@ -563,80 +719,15 @@ function AdminSeries() {
             <div className="col-header center">Print Run</div>
           </div>
           
-          {getSortedSeries().map(seriesItem => (
-            <div 
-              key={seriesItem.series_id} 
-              className="series-row"
-              onDoubleClick={() => handleEditSeries(seriesItem)}
-              title="Double-click to edit series"
-            >
-              <div className="col-actions">
-                <button 
-                  className="edit-btn"
-                  title="Edit series"
-                  onClick={() => handleEditSeries(seriesItem)}
-                >
-                  <Icon name="edit" size={16} />
-                </button>
-                <button 
-                  className="duplicate-btn"
-                  title="Duplicate as parallel"
-                  onClick={() => handleShowDuplicateModal(seriesItem)}
-                >
-                  <Icon name="shuffle" size={16} />
-                </button>
-                <button 
-                  className="view-btn"
-                  title="View cards"
-                  onClick={() => handleViewCards(seriesItem)}
-                >
-                  <Icon name="grid" size={16} />
-                </button>
-              </div>
-              <div className="col-id">{seriesItem.series_id}</div>
-              <div className="col-name">
-                {seriesItem.name}
-                {seriesItem.parallel_of_name && seriesItem.parallel_of_name.trim() && (
-                  <span className="parallel-badge" style={{ marginLeft: '0.5rem' }}>{seriesItem.parallel_of_name}</span>
-                )}
-              </div>
-              <div className="col-base center">
-                {seriesItem.is_base && <Icon name="check" size={16} className="base-icon" />}
-              </div>
-              <div className="col-color center">
-                {seriesItem.color_name && (
-                  <span 
-                    className="color-tag"
-                    style={{
-                      backgroundColor: seriesItem.color_hex || '#ec4899',
-                      color: seriesItem.color_hex ? (
-                        parseInt(seriesItem.color_hex.slice(1, 3), 16) * 0.299 +
-                        parseInt(seriesItem.color_hex.slice(3, 5), 16) * 0.587 +
-                        parseInt(seriesItem.color_hex.slice(5, 7), 16) * 0.114 > 128
-                        ? '#000000' : '#ffffff'
-                      ) : '#ffffff'
-                    }}
-                  >
-                    {seriesItem.color_name}
-                  </span>
-                )}
-              </div>
-              <div className="col-cards center">
-                {(seriesItem.card_count || 0).toLocaleString()}
-              </div>
-              <div className="col-entered center">
-                {(seriesItem.card_entered_count || 0).toLocaleString()}
-              </div>
-              <div className="col-rookies center">
-                {(seriesItem.rookie_count || 0).toLocaleString()}
-              </div>
-              <div className="col-print-run center">
-                {seriesItem.print_run_display || 
-                 (seriesItem.min_print_run && seriesItem.max_print_run 
-                   ? `${seriesItem.min_print_run}-${seriesItem.max_print_run}`
-                   : seriesItem.max_print_run || '-')}
-              </div>
-            </div>
+          {sortedSeries.map(seriesItem => (
+            <SeriesRow
+              key={seriesItem.series_id}
+              seriesItem={seriesItem}
+              onEdit={handleEditSeries}
+              onDuplicate={handleShowDuplicateModal}
+              onUpload={handleUpload}
+              onViewCards={handleViewCards}
+            />
           ))}
         </div>
       )}

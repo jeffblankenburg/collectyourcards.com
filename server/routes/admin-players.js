@@ -19,7 +19,7 @@ router.get('/', async (req, res) => {
     let players
     
     if (search && search.trim()) {
-      // Search mode: search by player name - get players with their teams
+      // Search mode: search by player name - get players with team data optimized
       const searchTerm = search.trim()
       players = await prisma.$queryRawUnsafe(`
         SELECT 
@@ -31,15 +31,15 @@ router.get('/', async (req, res) => {
           p.is_hof,
           p.card_count,
           NULL as last_viewed,
-          STRING_AGG(CONVERT(varchar(max), CONCAT(t.team_Id, '|', t.name, '|', t.city, '|', t.abbreviation, '|', ISNULL(t.primary_color, ''), '|', ISNULL(t.secondary_color, ''))), '~') as teams_data
+          STRING_AGG(CAST(t.team_Id as varchar(10)) + '|' + ISNULL(t.abbreviation, '?') + '|' + ISNULL(t.primary_color, '#666') + '|' + ISNULL(t.secondary_color, '#999') + '|' + ISNULL(t.name, 'Unknown'), '~') as teams_data
         FROM player p
         LEFT JOIN player_team pt ON p.player_id = pt.player
         LEFT JOIN team t ON pt.team = t.team_Id
         WHERE (
-          p.first_name LIKE '%${searchTerm}%' COLLATE SQL_Latin1_General_CP1_CI_AS
-          OR p.last_name LIKE '%${searchTerm}%' COLLATE SQL_Latin1_General_CP1_CI_AS
-          OR p.nick_name LIKE '%${searchTerm}%' COLLATE SQL_Latin1_General_CP1_CI_AS
-          OR CONCAT(p.first_name, ' ', p.last_name) LIKE '%${searchTerm}%' COLLATE SQL_Latin1_General_CP1_CI_AS
+          p.first_name LIKE '%${searchTerm}%' COLLATE Latin1_General_CI_AI
+          OR p.last_name LIKE '%${searchTerm}%' COLLATE Latin1_General_CI_AI
+          OR p.nick_name LIKE '%${searchTerm}%' COLLATE Latin1_General_CI_AI
+          OR CONCAT(p.first_name, ' ', p.last_name) LIKE '%${searchTerm}%' COLLATE Latin1_General_CI_AI
         )
         GROUP BY p.player_id, p.first_name, p.last_name, p.nick_name, p.birthdate, p.is_hof, p.card_count
         ORDER BY p.last_name, p.first_name
@@ -47,7 +47,7 @@ router.get('/', async (req, res) => {
         FETCH NEXT ${limitNum} ROWS ONLY
       `)
     } else {
-      // Default mode: most recently viewed players with their teams
+      // Default mode: most recently viewed players with team data optimized
       players = await prisma.$queryRawUnsafe(`
         SELECT 
           p.player_id,
@@ -58,7 +58,7 @@ router.get('/', async (req, res) => {
           p.is_hof,
           p.card_count,
           MAX(up.created) as last_viewed,
-          STRING_AGG(CONVERT(varchar(max), CONCAT(t.team_Id, '|', t.name, '|', t.city, '|', t.abbreviation, '|', ISNULL(t.primary_color, ''), '|', ISNULL(t.secondary_color, ''))), '~') as teams_data
+          STRING_AGG(CAST(t.team_Id as varchar(10)) + '|' + ISNULL(t.abbreviation, '?') + '|' + ISNULL(t.primary_color, '#666') + '|' + ISNULL(t.secondary_color, '#999') + '|' + ISNULL(t.name, 'Unknown'), '~') as teams_data
         FROM user_player up 
         LEFT JOIN player p ON p.player_id = up.player
         LEFT JOIN player_team pt ON p.player_id = pt.player
@@ -79,10 +79,10 @@ router.get('/', async (req, res) => {
         SELECT COUNT(*) as total
         FROM player p
         WHERE (
-          p.first_name LIKE '%${searchTerm}%' COLLATE SQL_Latin1_General_CP1_CI_AS
-          OR p.last_name LIKE '%${searchTerm}%' COLLATE SQL_Latin1_General_CP1_CI_AS
-          OR p.nick_name LIKE '%${searchTerm}%' COLLATE SQL_Latin1_General_CP1_CI_AS
-          OR CONCAT(p.first_name, ' ', p.last_name) LIKE '%${searchTerm}%' COLLATE SQL_Latin1_General_CP1_CI_AS
+          p.first_name LIKE '%${searchTerm}%' COLLATE Latin1_General_CI_AI
+          OR p.last_name LIKE '%${searchTerm}%' COLLATE Latin1_General_CI_AI
+          OR p.nick_name LIKE '%${searchTerm}%' COLLATE Latin1_General_CI_AI
+          OR CONCAT(p.first_name, ' ', p.last_name) LIKE '%${searchTerm}%' COLLATE Latin1_General_CI_AI
         )
       `)
       totalCount = Number(totalCountResult[0].total)
@@ -91,21 +91,20 @@ router.get('/', async (req, res) => {
       totalCount = Math.min(players.length, 100)
     }
 
-    // Serialize BigInt values and parse team data
+    // Serialize BigInt values and parse optimized team data
     const serializedPlayers = players.map(player => {
-      // Parse teams data from STRING_AGG result
+      // Parse teams data from simplified STRING_AGG result
       let teams = []
       if (player.teams_data) {
         const teamStrings = player.teams_data.split('~')
         teams = teamStrings.map(teamStr => {
-          const [team_id, name, city, abbreviation, primary_color, secondary_color] = teamStr.split('|')
+          const [team_id, abbreviation, primary_color, secondary_color, name] = teamStr.split('|')
           return {
             team_id: Number(team_id),
-            name: name || null,
-            city: city || null, 
-            abbreviation: abbreviation || null,
-            primary_color: primary_color || null,
-            secondary_color: secondary_color || null
+            abbreviation: abbreviation || '?',
+            primary_color: primary_color || '#666',
+            secondary_color: secondary_color || '#999',
+            name: name || 'Unknown Team'
           }
         }).filter(team => team.team_id) // Filter out any malformed entries
       }

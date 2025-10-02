@@ -277,7 +277,7 @@ function AdminCards() {
 
     const newPlayerTeam = {
       player: {
-        name: `${player.first_name} ${player.last_name}`.trim(),
+        name: `${player.first_name || ''} ${player.last_name || ''}`.trim(),
         first_name: player.first_name,
         last_name: player.last_name,
         player_id: player.player_id
@@ -710,7 +710,7 @@ function AdminCards() {
                                 {result.team.abbreviation}
                               </div>
                               <span className="inline-player-result-name">
-                                {result.player.first_name} {result.player.last_name}
+                                {(result.player.first_name || '')} {(result.player.last_name || '')}
                               </span>
                               <span className="inline-team-result-name">
                                 {result.team.name}

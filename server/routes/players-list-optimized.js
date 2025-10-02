@@ -42,10 +42,10 @@ router.get('/', async (req, res) => {
       const searchTerm = search.trim().replace(/'/g, "''")
       searchCondition = `
         WHERE (
-          p.first_name LIKE '%${searchTerm}%' 
-          OR p.last_name LIKE '%${searchTerm}%'
-          OR p.nick_name LIKE '%${searchTerm}%'
-          OR CONCAT(p.first_name, ' ', p.last_name) LIKE '%${searchTerm}%'
+          p.first_name LIKE '%${searchTerm}%' COLLATE Latin1_General_CI_AI
+          OR p.last_name LIKE '%${searchTerm}%' COLLATE Latin1_General_CI_AI
+          OR p.nick_name LIKE '%${searchTerm}%' COLLATE Latin1_General_CI_AI
+          OR CONCAT(p.first_name, ' ', p.last_name) LIKE '%${searchTerm}%' COLLATE Latin1_General_CI_AI
         )
       `
     }

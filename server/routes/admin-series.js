@@ -11,10 +11,23 @@ router.use(requireAdmin)
 router.get('/series', async (req, res) => {
   try {
     const { search, set, series_id, limit } = req.query
-    const limitInt = limit ? Math.min(parseInt(limit), 10000) : null // No default limit, but cap at 10000 if specified
-
+    
     let whereClause = {}
     let orderBy = [{ name: 'asc' }]
+    let takeLimit = null
+    
+    // Default behavior: if no search and no set filter, show 100 most recent series
+    const isDefaultLoad = !search && !set && !series_id
+    if (isDefaultLoad) {
+      takeLimit = 100
+      orderBy = [{ created: 'desc' }] // Most recently created first
+    } else if (search) {
+      // For search: no limit, show all matching results
+      takeLimit = null
+    } else {
+      // For set filtering: respect limit parameter or show all
+      takeLimit = limit ? Math.min(parseInt(limit), 10000) : null
+    }
     
     // Filter by specific series ID if provided
     if (series_id && series_id.trim()) {
@@ -67,12 +80,13 @@ router.get('/series', async (req, res) => {
       }
     }
 
-    // Only add take limit if specified
-    if (limitInt) {
-      queryOptions.take = limitInt
+    // Add take limit based on our logic
+    if (takeLimit) {
+      queryOptions.take = takeLimit
     }
 
     const series = await prisma.series.findMany(queryOptions)
+
 
     // Get parallel series names if needed
     const seriesWithParallels = await Promise.all(

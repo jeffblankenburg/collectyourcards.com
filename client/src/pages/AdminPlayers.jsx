@@ -1,10 +1,80 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useMemo, memo, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { useSearchParams } from 'react-router-dom'
 import axios from 'axios'
 import { useToast } from '../contexts/ToastContext'
 import Icon from '../components/Icon'
 import './AdminPlayersScoped.css'
+
+// Memoized component for player name display
+const PlayerName = memo(({ player }) => {
+  const firstName = player.first_name || ''
+  const lastName = player.last_name || ''
+  const nickname = player.nick_name || ''
+  
+  // If we have both first and last name, and a nickname, return JSX with styling
+  if (firstName && lastName && nickname) {
+    return (
+      <span>
+        {firstName} <span className="player-nickname-inline">"{nickname}"</span> {lastName}
+      </span>
+    )
+  }
+  
+  // If we have first and last name but no nickname, format as "First Last"
+  if (firstName && lastName) {
+    return `${firstName} ${lastName}`
+  }
+  
+  // If we only have nickname, use that
+  if (nickname) {
+    return nickname
+  }
+  
+  // Fallback to any available name or unknown
+  return `${firstName} ${lastName}`.trim() || 'Unknown Player'
+})
+
+// Memoized component for team circles (optimized)
+const TeamCircles = memo(({ player }) => {
+  if (!player.teams || player.teams.length === 0) {
+    return (
+      <div 
+        className="team-circle-base team-circle-sm no-teams" 
+        title="No teams assigned"
+      >
+        —
+      </div>
+    )
+  }
+  
+  // Remove duplicates based on team_id using Map for better performance
+  const uniqueTeamsMap = new Map()
+  player.teams.forEach(team => {
+    if (!uniqueTeamsMap.has(team.team_id)) {
+      uniqueTeamsMap.set(team.team_id, team)
+    }
+  })
+  const uniqueTeams = Array.from(uniqueTeamsMap.values())
+  
+  return (
+    <div className="player-teams">
+      {uniqueTeams.map(team => (
+        <div
+          key={team.team_id}
+          className="team-circle-base team-circle-sm"
+          style={{
+            '--primary-color': team.primary_color || '#666',
+            '--secondary-color': team.secondary_color || '#999'
+          }}
+          title={team.name || 'Unknown Team'}
+        >
+          {team.abbreviation || '?'}
+        </div>
+      ))}
+    </div>
+  )
+})
 
 function AdminPlayers() {
   const [searchParams] = useSearchParams()
@@ -41,7 +111,13 @@ function AdminPlayers() {
   }, [])
 
   const loadPlayers = async (searchQuery = '') => {
+    const startTime = performance.now()
+    const requestId = Math.random().toString(36).substr(2, 9)
+    
     try {
+      console.log(`AdminPlayers[${requestId}]: Starting load request`)
+      const apiStartTime = performance.now()
+      
       setLoading(!searchQuery) // Only show main loading for initial load
       setSearching(!!searchQuery) // Show search loading for searches
       
@@ -52,15 +128,32 @@ function AdminPlayers() {
       }
 
       const response = await axios.get(`/api/admin/players?${params.toString()}`)
-      const playersData = response.data.players || []
+      const apiEndTime = performance.now()
+      console.log(`AdminPlayers[${requestId}]: API request took ${(apiEndTime - apiStartTime).toFixed(2)}ms`)
       
-      // Check for duplicates in the API response
-      const playerIds = playersData.map(p => p.player_id)
-      const duplicateIds = playerIds.filter((id, index) => playerIds.indexOf(id) !== index)
+      const processingStartTime = performance.now()
+      const playersData = response.data.players || []
+      console.log(`AdminPlayers[${requestId}]: Received ${playersData.length} players from API`)
+      
+      // More efficient duplicate checking
+      const playerIdSet = new Set()
+      const duplicateIds = []
+      playersData.forEach(p => {
+        if (playerIdSet.has(p.player_id)) {
+          duplicateIds.push(p.player_id)
+        } else {
+          playerIdSet.add(p.player_id)
+        }
+      })
+      
       if (duplicateIds.length > 0) {
         console.warn('AdminPlayers: Duplicate player IDs detected from API:', [...new Set(duplicateIds)])
       }
       
+      const processingEndTime = performance.now()
+      console.log(`AdminPlayers[${requestId}]: Data processing took ${(processingEndTime - processingStartTime).toFixed(2)}ms`)
+      
+      const stateUpdateStartTime = performance.now()
       setPlayers(playersData)
       setLastUpdated(new Date())
       setIsSearchMode(!!searchQuery.trim())
@@ -76,6 +169,11 @@ function AdminPlayers() {
           console.error('Failed to get total player count:', error)
         }
       }
+      
+      const stateUpdateEndTime = performance.now()
+      const totalTime = stateUpdateEndTime - startTime
+      console.log(`AdminPlayers[${requestId}]: State update took ${(stateUpdateEndTime - stateUpdateStartTime).toFixed(2)}ms`)
+      console.log(`AdminPlayers[${requestId}]: Total load time: ${totalTime.toFixed(2)}ms`)
       
     } catch (error) {
       console.error('Error loading players:', error)
@@ -114,17 +212,22 @@ function AdminPlayers() {
     setSortDirection(direction)
   }
 
-  const getSortedPlayers = () => {
-    // Deduplicate players by player_id to prevent React key warnings
-    const uniquePlayers = players.reduce((acc, player) => {
-      const existingPlayer = acc.find(p => p.player_id === player.player_id)
-      if (!existingPlayer) {
-        acc.push(player)
-      }
-      return acc
-    }, [])
+  const sortedPlayers = useMemo(() => {
+    console.time('AdminPlayers: Sorting and deduplication')
+    console.log(`AdminPlayers: Processing ${players.length} players for sorting`)
     
-    return [...uniquePlayers].sort((a, b) => {
+    // Deduplicate players by player_id using Map for O(n) performance
+    const uniquePlayersMap = new Map()
+    players.forEach(player => {
+      if (!uniquePlayersMap.has(player.player_id)) {
+        uniquePlayersMap.set(player.player_id, player)
+      }
+    })
+    const uniquePlayers = Array.from(uniquePlayersMap.values())
+    console.log(`AdminPlayers: After deduplication: ${uniquePlayers.length} unique players`)
+    
+    // Sort the deduplicated players
+    const sorted = uniquePlayers.sort((a, b) => {
       let aValue, bValue
       
       switch (sortField) {
@@ -160,7 +263,10 @@ function AdminPlayers() {
       }
       return 0
     })
-  }
+    
+    console.timeEnd('AdminPlayers: Sorting and deduplication')
+    return sorted
+  }, [players, sortField, sortDirection])
 
   const loadTeams = async () => {
     try {
@@ -456,7 +562,7 @@ function AdminPlayers() {
       
       await axios.delete(`/api/admin/players/${playerToDelete.player_id}`)
       
-      addToast(`Deleted player: ${getPlayerName(playerToDelete)}`, 'success')
+      addToast(`Deleted player: ${getPlayerNameString(playerToDelete)}`, 'success')
       
       // Close delete modal
       setPlayerToDelete(null)
@@ -473,60 +579,18 @@ function AdminPlayers() {
   }
 
 
-  const getTeamCircles = (player) => {
-    if (!player.teams || player.teams.length === 0) {
-      return (
-        <div 
-          className="team-circle-base team-circle-sm no-teams" 
-          title="No teams assigned"
-        >
-          —
-        </div>
-      )
-    }
-    
-    // Remove duplicates based on team_id
-    const uniqueTeams = player.teams.reduce((acc, team) => {
-      if (!acc.some(t => t.team_id === team.team_id)) {
-        acc.push(team)
-      }
-      return acc
-    }, [])
-    
-    return (
-      <div className="player-teams">
-        {uniqueTeams.map(team => (
-          <div
-            key={team.team_id}
-            className="team-circle-base team-circle-sm"
-            style={{
-              '--primary-color': team.primary_color || '#666',
-              '--secondary-color': team.secondary_color || '#999'
-            }}
-            title={team.name || 'Unknown Team'}
-          >
-            {team.abbreviation || '?'}
-          </div>
-        ))}
-      </div>
-    )
-  }
-
-  const getPlayerName = (player) => {
+  // Utility function for getting player name as string (for toasts, etc.)
+  const getPlayerNameString = useCallback((player) => {
     const firstName = player.first_name || ''
     const lastName = player.last_name || ''
     const nickname = player.nick_name || ''
     
-    // If we have both first and last name, and a nickname, return JSX with styling
+    // If we have both first and last name, and a nickname
     if (firstName && lastName && nickname) {
-      return (
-        <span>
-          {firstName} <span className="player-nickname-inline">"{nickname}"</span> {lastName}
-        </span>
-      )
+      return `${firstName} "${nickname}" ${lastName}`
     }
     
-    // If we have first and last name but no nickname, format as "First Last"
+    // If we have first and last name but no nickname
     if (firstName && lastName) {
       return `${firstName} ${lastName}`
     }
@@ -538,7 +602,7 @@ function AdminPlayers() {
     
     // Fallback to any available name or unknown
     return `${firstName} ${lastName}`.trim() || 'Unknown Player'
-  }
+  }, [])
 
   return (
     <div className="admin-players-page">
@@ -646,7 +710,7 @@ function AdminPlayers() {
                 </div>
               </div>
               
-              {getSortedPlayers().map(player => (
+              {sortedPlayers.map(player => (
                 <div 
                   key={player.player_id} 
                   className="player-row"
@@ -674,8 +738,8 @@ function AdminPlayers() {
                   <div className="col-id">{player.player_id}</div>
                   <div className="col-player">
                     <div className="player-info">
-                      <div className="player-name">{getPlayerName(player)}</div>
-                      {getTeamCircles(player)}
+                      <div className="player-name"><PlayerName player={player} /></div>
+                      <TeamCircles player={player} />
                     </div>
                   </div>
                   <div className="col-cards">{(player.card_count || 0).toLocaleString()}</div>
@@ -1065,7 +1129,7 @@ function AdminPlayers() {
                       <strong>Are you sure you want to delete this player?</strong>
                     </p>
                     <p>
-                      Player: <strong>{getPlayerName(playerToDelete)}</strong> (ID: {playerToDelete.player_id})
+                      Player: <strong>{getPlayerNameString(playerToDelete)}</strong> (ID: {playerToDelete.player_id})
                     </p>
                     <p>
                       Cards: <strong>{playerToDelete.card_count || 0}</strong>

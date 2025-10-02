@@ -154,7 +154,7 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
         cardPlayerTeamMap[cardId].push({
           player: {
             player_id: Number(row.player_id),
-            name: `${row.first_name} ${row.last_name}`,
+            name: `${row.first_name || ''} ${row.last_name || ''}`.trim(),
             first_name: row.first_name,
             last_name: row.last_name
           },

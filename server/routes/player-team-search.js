@@ -53,11 +53,11 @@ router.get('/', async (req, res) => {
       JOIN player_team pt ON p.player_id = pt.player
       JOIN team t ON pt.team = t.team_id
       WHERE (
-        p.first_name LIKE '%${searchTerm}%' COLLATE SQL_Latin1_General_CP1_CI_AS
-        OR p.last_name LIKE '%${searchTerm}%' COLLATE SQL_Latin1_General_CP1_CI_AS
-        OR p.nick_name LIKE '%${searchTerm}%' COLLATE SQL_Latin1_General_CP1_CI_AS
-        OR CONCAT(p.first_name, ' ', p.last_name) LIKE '%${searchTerm}%' COLLATE SQL_Latin1_General_CP1_CI_AS
-        OR CONCAT(p.first_name, ' ', p.nick_name, ' ', p.last_name) LIKE '%${searchTerm}%' COLLATE SQL_Latin1_General_CP1_CI_AS
+        p.first_name LIKE '%${searchTerm}%' COLLATE Latin1_General_CI_AI
+        OR p.last_name LIKE '%${searchTerm}%' COLLATE Latin1_General_CI_AI
+        OR p.nick_name LIKE '%${searchTerm}%' COLLATE Latin1_General_CI_AI
+        OR CONCAT(p.first_name, ' ', p.last_name) LIKE '%${searchTerm}%' COLLATE Latin1_General_CI_AI
+        OR CONCAT(p.first_name, ' ', p.nick_name, ' ', p.last_name) LIKE '%${searchTerm}%' COLLATE Latin1_General_CI_AI
       )
       ORDER BY p.last_name, p.first_name, t.name
     `)

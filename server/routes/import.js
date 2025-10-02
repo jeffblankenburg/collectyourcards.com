@@ -659,8 +659,8 @@ router.post('/create-cards', requireAuth, requireAdmin, async (req, res) => {
           .input('sortOrder', sql.Int, card.sortOrder || 0)
           .query(`
             INSERT INTO card (card_number, series, is_rookie, is_autograph, is_relic, notes, sort_order, created)
-            OUTPUT INSERTED.card_id
-            VALUES (@cardNumber, @seriesId, @isRookie, @isAutograph, @isRelic, @notes, @sortOrder, GETDATE())
+            VALUES (@cardNumber, @seriesId, @isRookie, @isAutograph, @isRelic, @notes, @sortOrder, GETDATE());
+            SELECT SCOPE_IDENTITY() AS card_id;
           `)
         
         const cardId = cardResult.recordset[0].card_id
@@ -671,6 +671,16 @@ router.post('/create-cards', requireAuth, requireAdmin, async (req, res) => {
         for (let j = 0; j < (card.players?.length || 0); j++) {
           const player = card.players[j]
           console.log(`    🔍 Processing player ${j + 1}: ${player.name}`)
+          console.log(`    📊 Player data:`, {
+            name: player.name,
+            hasSelectedMatch: !!player.selectedMatch,
+            selectedMatch: player.selectedMatch ? {
+              playerName: player.selectedMatch.playerName,
+              playerId: player.selectedMatch.playerId,
+              teamId: player.selectedMatch.teamId,
+              teamName: player.selectedMatch.teamName
+            } : null
+          })
           let playerId, teamId
           
           if (player.selectedMatch) {
@@ -705,8 +715,8 @@ router.post('/create-cards', requireAuth, requireAdmin, async (req, res) => {
                 .input('lastName', sql.NVarChar, lastName || null)
                 .query(`
                   INSERT INTO player (first_name, last_name)
-                  OUTPUT INSERTED.player_id
-                  VALUES (@firstName, @lastName)
+                  VALUES (@firstName, @lastName);
+                  SELECT SCOPE_IDENTITY() AS player_id;
                 `)
               
               playerId = playerResult.recordset[0].player_id
@@ -740,8 +750,8 @@ router.post('/create-cards', requireAuth, requireAdmin, async (req, res) => {
                 .input('teamId', sql.Int, teamId)
                 .query(`
                   INSERT INTO player_team (player, team)
-                  OUTPUT INSERTED.player_team_id
-                  VALUES (@playerId, @teamId)
+                  VALUES (@playerId, @teamId);
+                  SELECT SCOPE_IDENTITY() AS player_team_id;
                 `)
               
               playerTeamId = playerTeamResult.recordset[0].player_team_id
@@ -750,6 +760,7 @@ router.post('/create-cards', requireAuth, requireAdmin, async (req, res) => {
           
           // Create card_player_team record
           if (playerTeamId) {
+            console.log(`    🔗 Creating card_player_team: cardId=${cardId}, playerTeamId=${playerTeamId}`)
             await transaction.request()
               .input('cardId', sql.BigInt, cardId)
               .input('playerTeamId', sql.BigInt, playerTeamId)
@@ -757,6 +768,10 @@ router.post('/create-cards', requireAuth, requireAdmin, async (req, res) => {
                 INSERT INTO card_player_team (card, player_team)
                 VALUES (@cardId, @playerTeamId)
               `)
+            console.log(`    ✅ Card-player-team relationship created`)
+          } else {
+            console.log(`    ⚠️ No playerTeamId available - skipping card_player_team creation`)
+            console.log(`    📋 Debug: playerId=${playerId}, teamId=${teamId}`)
           }
         }
         
@@ -1459,8 +1474,8 @@ router.post('/create-player', requireAuth, requireAdmin, async (req, res) => {
       .input('lastName', sql.NVarChar, lastName.trim())
       .query(`
         INSERT INTO player (first_name, last_name)
-        OUTPUT INSERTED.player_id, INSERTED.first_name, INSERTED.last_name
-        VALUES (@firstName, @lastName)
+        VALUES (@firstName, @lastName);
+        SELECT SCOPE_IDENTITY() AS player_id, @firstName AS first_name, @lastName AS last_name;
       `)
     
     const newPlayer = result.recordset[0]
@@ -1506,8 +1521,9 @@ router.post('/create-team', requireAuth, requireAdmin, async (req, res) => {
       .input('organizationId', sql.Int, organizationId)
       .query(`
         INSERT INTO team (name, city, abbreviation, organization)
-        OUTPUT INSERTED.team_id, INSERTED.name, INSERTED.city, INSERTED.abbreviation, INSERTED.primary_color, INSERTED.secondary_color
-        VALUES (@teamName, @city, @abbreviation, @organizationId)
+        VALUES (@teamName, @city, @abbreviation, @organizationId);
+        SELECT SCOPE_IDENTITY() AS team_id, @teamName AS name, @city AS city, @abbreviation AS abbreviation, 
+               NULL AS primary_color, NULL AS secondary_color;
       `)
     
     const newTeam = result.recordset[0]
@@ -1565,8 +1581,8 @@ router.post('/create-player-team', requireAuth, requireAdmin, async (req, res) =
       .input('teamId', sql.Int, teamId)
       .query(`
         INSERT INTO player_team (player, team)
-        OUTPUT INSERTED.player_team_id
-        VALUES (@playerId, @teamId)
+        VALUES (@playerId, @teamId);
+        SELECT SCOPE_IDENTITY() AS player_team_id;
       `)
     
     // Get the full details for response

@@ -325,7 +325,7 @@ function buildCardsByNumberAndPlayerQuery(cardNumber, playerName, limit) {
         OR CONCAT(p.first_name, ' ', p.nick_name, ' ', p.last_name) LIKE '${playerPattern}'
         OR p.nick_name LIKE '${playerPattern}'
         -- Individual name components (for partial matches)
-        OR (p.first_name LIKE '%${firstName}%' AND p.last_name LIKE '%${lastName}%')
+        OR (p.first_name LIKE '%${firstName}%' COLLATE Latin1_General_CI_AI AND p.last_name LIKE '%${lastName}%' COLLATE Latin1_General_CI_AI)
       )
     GROUP BY c.card_id, c.card_number, c.is_rookie, c.is_autograph, c.is_relic, c.print_run,
              s.name, s.series_id, col.name, col.hex_value
@@ -373,7 +373,7 @@ function buildCardsByTypeQuery(cardTypes, playerName, limit) {
   const typeConditionsSql = typeConditions.length > 0 ? typeConditions.join(' OR ') : '1=0'
   
   const playerCondition = playerName ? 
-    `AND (p.first_name LIKE '%${playerName}%' OR p.last_name LIKE '%${playerName}%' OR p.nick_name LIKE '%${playerName}%')` : 
+    `AND (p.first_name LIKE '%${playerName}%' COLLATE Latin1_General_CI_AI OR p.last_name LIKE '%${playerName}%' COLLATE Latin1_General_CI_AI OR p.nick_name LIKE '%${playerName}%' COLLATE Latin1_General_CI_AI)` : 
     ''
 
   return `

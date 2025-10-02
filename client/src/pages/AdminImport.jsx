@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import axios from 'axios'
 import Icon from '../components/Icon'
 import ImportTable from '../components/tables/ImportTable'
 import './AdminImportScoped.css'
 
-const SearchableSeriesDropdown = ({ series, onSelect, placeholder }) => {
+const SearchableSeriesDropdown = ({ series, onSelect, placeholder, selectedSeries }) => {
   const [searchTerm, setSearchTerm] = useState('')
   const [isOpen, setIsOpen] = useState(false)
   const [selectedIndex, setSelectedIndex] = useState(-1)
@@ -59,6 +60,13 @@ const SearchableSeriesDropdown = ({ series, onSelect, placeholder }) => {
     setSearchTerm('')
     setSelectedIndex(-1)
   }
+
+  const handleClear = () => {
+    onSelect(null)
+    setSearchTerm('')
+    setIsOpen(false)
+    setSelectedIndex(-1)
+  }
   
   useEffect(() => {
     if (isOpen && searchInputRef.current) {
@@ -85,12 +93,26 @@ const SearchableSeriesDropdown = ({ series, onSelect, placeholder }) => {
           ref={searchInputRef}
           type="text"
           className="dropdown-search-input"
-          value={searchTerm}
+          value={selectedSeries && !isOpen ? `${selectedSeries.name} (${selectedSeries.set_name})` : searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          onFocus={() => setIsOpen(true)}
+          onFocus={() => {
+            setIsOpen(true)
+            if (selectedSeries && !searchTerm) {
+              setSearchTerm('')
+            }
+          }}
           onKeyDown={handleKeyDown}
-          placeholder={placeholder}
+          placeholder={selectedSeries ? `${selectedSeries.name} (${selectedSeries.set_name})` : placeholder}
         />
+        {selectedSeries && !isOpen && (
+          <Icon 
+            name="x" 
+            size={16} 
+            className="dropdown-clear-icon"
+            onClick={handleClear}
+            title="Clear selection"
+          />
+        )}
         <Icon 
           name={isOpen ? "chevron-up" : "chevron-down"} 
           size={20} 
@@ -131,6 +153,8 @@ const SearchableSeriesDropdown = ({ series, onSelect, placeholder }) => {
 const AdminImport = () => {
   const { user } = useAuth()
   const { addToast } = useToast()
+  const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   
   // Step tracking
   const [currentStep, setCurrentStep] = useState(1)
@@ -181,6 +205,20 @@ const AdminImport = () => {
   useEffect(() => {
     loadSeries()
   }, [])
+
+  // Auto-select series from URL parameter and advance to Step 2
+  useEffect(() => {
+    const seriesIdParam = searchParams.get('series')
+    if (seriesIdParam && series.length > 0 && !selectedSeries) {
+      const seriesId = parseInt(seriesIdParam)
+      const foundSeries = series.find(s => s.series_id === seriesId)
+      if (foundSeries) {
+        setSelectedSeries(foundSeries)
+        setCurrentStep(2) // Skip to file upload step
+        console.log('Auto-selected series from URL and advanced to Step 2:', foundSeries.name)
+      }
+    }
+  }, [searchParams, series, selectedSeries])
 
   // Auto-generate SQL when we reach step 4
   useEffect(() => {
@@ -382,6 +420,11 @@ const AdminImport = () => {
       
       addToast(`Successfully imported ${response.data.created} cards!`, 'success')
       
+      // Navigate to admin cards page to show the imported cards
+      setTimeout(() => {
+        navigate(`/admin/cards?series=${selectedSeries.series_id}`)
+      }, 1500) // Small delay to let the success toast be visible
+      
       // Reset to start
       setCurrentStep(1)
       setSelectedSeries(null)
@@ -433,6 +476,7 @@ const AdminImport = () => {
           series={series}
           onSelect={handleSeriesSelect}
           placeholder="Search for a series..."
+          selectedSeries={selectedSeries}
         />
       )}
     </div>
