@@ -511,3 +511,99 @@
 .verification-status .auth-button {
   min-width: 150px;
 }
+
+/* Check Email Page Styles */
+.email-highlight {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #fbbf24;
+  background: rgba(251, 191, 36, 0.1);
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  margin: 1rem 0;
+}
+
+.email-tips {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin: 2rem 0;
+  text-align: left;
+}
+
+.email-tips h3 {
+  color: #fbbf24;
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+}
+
+.email-tips ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.email-tips li {
+  padding: 0.5rem 0;
+  padding-left: 1.5rem;
+  position: relative;
+}
+
+.email-tips li:before {
+  content: "•";
+  color: #fbbf24;
+  position: absolute;
+  left: 0;
+}
+
+/* Resend Verification Styles */
+.resend-form {
+  width: 100%;
+  max-width: 300px;
+  margin: 1.5rem auto;
+}
+
+.resend-form .form-group {
+  margin-bottom: 1.5rem;
+}
+
+.resend-form .form-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  font-size: 1rem;
+  transition: border-color 0.3s ease;
+}
+
+.resend-form .form-input:focus {
+  outline: none;
+  border-color: #fbbf24;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.resend-form .form-input::placeholder {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.resend-message {
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.resend-message.success {
+  background: rgba(74, 222, 128, 0.2);
+  color: #4ade80;
+  border: 1px solid rgba(74, 222, 128, 0.3);
+}
+
+.resend-message.error {
+  background: rgba(248, 113, 113, 0.2);
+  color: #f87171;
+  border: 1px solid rgba(248, 113, 113, 0.3);
+}

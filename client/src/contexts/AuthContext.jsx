@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react'
+import { createContext, useContext, useState, useEffect } from 'react'
 import axios from 'axios'
 
 const AuthContext = createContext()
@@ -166,6 +166,18 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
+  const setAuth = (authData) => {
+    if (authData && authData.token && authData.user) {
+      // Set default authorization header
+      axios.defaults.headers.common['Authorization'] = `Bearer ${authData.token}`
+      
+      // Update state
+      setUser(authData.user)
+      setIsAuthenticated(true)
+      setLoading(false)
+    }
+  }
+
   const value = {
     user,
     isAuthenticated,
@@ -178,7 +190,8 @@ export const AuthProvider = ({ children }) => {
     verifyEmail,
     resendVerification,
     checkAuthStatus,
-    updateUserAvatar
+    updateUserAvatar,
+    setAuth
   }
 
   return (

@@ -1,14 +1,18 @@
 import React, { useState, useEffect } from 'react'
 import { useSearchParams, useNavigate, Link } from 'react-router-dom'
 import axios from 'axios'
+import { useAuth } from '../contexts/AuthContext'
 import Icon from '../components/Icon'
 import './Auth.css' // Reuse Auth page styles
 
 function VerifyEmail() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
-  const [status, setStatus] = useState('verifying') // 'verifying', 'success', 'error'
+  const { setAuth } = useAuth()
+  const [status, setStatus] = useState('verifying') // 'verifying', 'success', 'error', 'resend'
   const [errorMessage, setErrorMessage] = useState('')
+  const [isResending, setIsResending] = useState(false)
+  const [resendMessage, setResendMessage] = useState('')
   
   useEffect(() => {
     // Set page title
@@ -35,18 +39,43 @@ function VerifyEmail() {
       
       if (response.data.success) {
         setStatus('success')
-        // Redirect to login after 3 seconds
-        setTimeout(() => {
-          navigate('/auth/login')
-        }, 3000)
+        
+        // Auto-login the user with the returned token
+        if (response.data.token && response.data.user) {
+          // Store the auth data
+          localStorage.setItem('token', response.data.token)
+          localStorage.setItem('user', JSON.stringify(response.data.user))
+          
+          // Update the auth context
+          setAuth({
+            token: response.data.token,
+            user: response.data.user
+          })
+          
+          // Redirect to collection dashboard after 2 seconds
+          setTimeout(() => {
+            navigate('/collection')
+          }, 2000)
+        } else {
+          // Fallback if no token returned (shouldn't happen with updated backend)
+          setTimeout(() => {
+            navigate('/auth/login')
+          }, 3000)
+        }
       } else {
         setStatus('error')
         setErrorMessage(response.data.message || 'Verification failed. Please try again.')
       }
     } catch (error) {
+      console.error('Verification error:', error.response?.data)
       setStatus('error')
       if (error.response?.status === 400) {
-        setErrorMessage('Invalid or expired verification token. Please request a new verification email.')
+        // Log the actual error from backend
+        const backendMessage = error.response?.data?.message || error.response?.data?.error || 'Invalid or expired verification token'
+        const details = error.response?.data?.details
+        console.log('Backend error message:', backendMessage)
+        if (details) console.log('Backend error details:', details)
+        setErrorMessage(`${backendMessage}. Please request a new verification email.`)
       } else if (error.response?.status === 409) {
         // Already verified
         setStatus('success')
@@ -57,6 +86,42 @@ function VerifyEmail() {
       } else {
         setErrorMessage(error.response?.data?.message || 'An error occurred during verification. Please try again.')
       }
+    }
+  }
+
+  const handleResendVerification = () => {
+    setStatus('resend')
+    setResendMessage('')
+  }
+
+  const resendVerificationEmail = async (email) => {
+    setIsResending(true)
+    setResendMessage('')
+    
+    try {
+      const response = await axios.post('/api/auth/resend-verification', { email })
+      
+      if (response.data.success || response.status === 200) {
+        setResendMessage('Verification email sent! Please check your inbox.')
+        setTimeout(() => {
+          navigate('/check-email', { state: { email } })
+        }, 2000)
+      } else {
+        setResendMessage(response.data.message || 'Failed to send verification email. Please try again.')
+      }
+    } catch (error) {
+      console.error('Resend verification error:', error)
+      setResendMessage(error.response?.data?.message || 'Failed to send verification email. Please try again.')
+    } finally {
+      setIsResending(false)
+    }
+  }
+
+  const handleResendSubmit = (e) => {
+    e.preventDefault()
+    const email = e.target.email.value.trim()
+    if (email) {
+      resendVerificationEmail(email)
     }
   }
   
@@ -81,10 +146,11 @@ function VerifyEmail() {
             {status === 'success' && (
               <div className="verification-status success">
                 <Icon name="check-circle" size={48} className="success-icon" />
-                <h2>Email Verified Successfully!</h2>
-                <p>Your email has been verified. You will be redirected to the login page shortly.</p>
-                <Link to="/auth/login" className="auth-button primary">
-                  Go to Login
+                <h2>Welcome to Collect Your Cards!</h2>
+                <p>Your email has been verified and you have been logged in automatically.</p>
+                <p>Taking you to your collection dashboard...</p>
+                <Link to="/collection" className="auth-button primary">
+                  Go to Collection
                 </Link>
               </div>
             )}
@@ -95,13 +161,67 @@ function VerifyEmail() {
                 <h2>Verification Failed</h2>
                 <p className="error-message">{errorMessage}</p>
                 <div className="verification-actions">
-                  <Link to="/auth/signup" className="auth-button secondary">
-                    Sign Up Again
-                  </Link>
+                  <button 
+                    className="auth-button secondary"
+                    onClick={handleResendVerification}
+                  >
+                    Resend Verification Email
+                  </button>
                   <Link to="/auth/login" className="auth-button primary">
                     Go to Login
                   </Link>
                 </div>
+              </div>
+            )}
+
+            {status === 'resend' && (
+              <div className="verification-status">
+                <Icon name="mail" size={48} className="success-icon" />
+                <h2>Resend Verification Email</h2>
+                <p>Enter your email address to receive a new verification link.</p>
+                
+                <form onSubmit={handleResendSubmit} className="resend-form">
+                  <div className="form-group">
+                    <input
+                      type="email"
+                      name="email"
+                      placeholder="Enter your email address"
+                      required
+                      className="form-input"
+                      autoComplete="email"
+                    />
+                  </div>
+                  
+                  <div className="verification-actions">
+                    <button 
+                      type="button"
+                      className="auth-button secondary"
+                      onClick={() => setStatus('error')}
+                    >
+                      Back
+                    </button>
+                    <button 
+                      type="submit"
+                      className="auth-button primary"
+                      disabled={isResending}
+                    >
+                      {isResending ? (
+                        <>
+                          <Icon name="refresh" size={16} className="spinner" />
+                          Sending...
+                        </>
+                      ) : (
+                        'Send Verification Email'
+                      )}
+                    </button>
+                  </div>
+                </form>
+                
+                {resendMessage && (
+                  <div className={`resend-message ${resendMessage.includes('sent') ? 'success' : 'error'}`}>
+                    {resendMessage}
+                  </div>
+                )}
               </div>
             )}
           </div>

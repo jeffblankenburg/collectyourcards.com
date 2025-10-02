@@ -254,10 +254,10 @@ function Auth() {
           confirmPassword: formData.confirmPassword
         })
         if (result.success) {
-          navigate('/auth/login', { 
+          // Navigate to check email page with the user's email
+          navigate('/check-email', { 
             state: { 
-              email: formData.email,
-              message: 'Account created! Check your email for verification instructions.'
+              email: formData.email
             }
           })
         } else {
@@ -356,7 +356,7 @@ function Auth() {
                     autoComplete="username"
                     minLength={3}
                     maxLength={30}
-                    pattern="[a-zA-Z0-9._-]{3,30}"
+                    pattern="[a-zA-Z0-9.\-_]{3,30}"
                   />
                   {usernameStatus && (
                     <div className={`username-status ${usernameStatus}`}>

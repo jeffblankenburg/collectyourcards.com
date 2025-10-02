@@ -466,13 +466,52 @@ router.post('/verify-email',
 
       await logAuthEvent(user.email, 'email_verified', true, null, user.user_id, req)
 
+      // Generate JWT token for auto-login
+      const loginToken = jwt.sign(
+        { 
+          userId: user.user_id.toString(), 
+          email: user.email,
+          role: user.role || 'user'
+        },
+        process.env.JWT_SECRET,
+        { expiresIn: '7d' }
+      )
+
+      // Create session record using raw SQL to handle schema mismatch
+      const tokenHash = crypto.createHash('sha256').update(loginToken).digest('hex')
+      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days (matches JWT expiry)
+      const ipAddress = req.ip || req.connection?.remoteAddress || 'unknown'
+      const userAgent = req.get('User-Agent')?.substring(0, 500) || 'unknown'
+      
+      await prisma.$executeRaw`
+        INSERT INTO user_session (user_id, session_token, token_hash, expires_at, ip_address, user_agent, last_accessed, created)
+        VALUES (${user.user_id}, ${loginToken}, ${tokenHash}, ${expiresAt}, ${ipAddress}, ${userAgent}, ${new Date()}, ${new Date()})
+      `
+
       res.json({
+        success: true,
         message: 'Email verification successful',
-        details: 'Your email has been verified. You can now log in to your account.'
+        details: 'Your email has been verified and you have been logged in.',
+        token: loginToken,
+        user: {
+          userId: user.user_id.toString(),
+          email: user.email,
+          firstName: user.first_name,
+          lastName: user.last_name,
+          username: user.username,
+          role: user.role || 'user'
+        }
       })
 
     } catch (error) {
       console.error('Email verification error:', error)
+      console.error('Error stack:', error.stack)
+      console.error('Error details:', {
+        name: error.name,
+        message: error.message,
+        code: error.code
+      })
+      
       res.status(500).json({
         error: 'Verification failed',
         message: 'An internal error occurred. Please try again later.'
@@ -525,16 +564,27 @@ router.post('/resend-verification',
 
       // Send verification email
       try {
-        await emailService.sendVerificationEmail(email, user.name, verificationToken)
+        const emailResult = await emailService.sendVerificationEmail(email, user.name, verificationToken)
         await logAuthEvent(email, 'verification_email_sent', true, null, user.user_id, req)
+        
+        // Check if email service is not configured (returns mockSent: true)
+        if (emailResult && emailResult.mockSent) {
+          console.log('Email service not configured - email was mocked')
+        }
+        
+        res.json({
+          success: true,
+          message: 'Verification email has been sent. Please check your inbox.'
+        })
       } catch (emailError) {
         console.error('Failed to send verification email:', emailError)
         await logAuthEvent(email, 'verification_email_failed', false, emailError.message, user.user_id, req)
+        
+        return res.status(500).json({
+          error: 'Email sending failed',
+          message: 'Failed to send verification email. Please try again later.'
+        })
       }
-
-      res.json({
-        message: 'If an account with this email exists and is not yet verified, a verification email has been sent.'
-      })
 
     } catch (error) {
       console.error('Resend verification error:', error)

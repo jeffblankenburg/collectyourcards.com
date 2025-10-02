@@ -431,7 +431,7 @@ function ProfileManagement() {
                     onChange={handleUsernameChange}
                     minLength={3}
                     maxLength={30}
-                    pattern="[a-zA-Z0-9._-]{3,30}"
+                    pattern="[a-zA-Z0-9.\-_]{3,30}"
                     className="form-input"
                     placeholder="Choose your unique username"
                   />

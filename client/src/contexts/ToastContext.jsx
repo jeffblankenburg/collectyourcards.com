@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react'
+import { createContext, useContext, useState, useEffect } from 'react'
 import Icon from '../components/Icon'
 
 const ToastContext = createContext()
@@ -15,7 +15,7 @@ export const ToastProvider = ({ children }) => {
   const [toasts, setToasts] = useState([])
 
   // Cleanup expired toasts periodically
-  React.useEffect(() => {
+  useEffect(() => {
     const cleanup = setInterval(() => {
       const now = Date.now()
       setToasts(prev => prev.filter(toast => 

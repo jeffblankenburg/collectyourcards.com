@@ -1,5 +1,5 @@
-import React from 'react'
-import ReactDOM from 'react-dom/client'
+import { StrictMode } from 'react'
+import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext.jsx'
 import { ToastProvider } from './contexts/ToastContext.jsx'
@@ -38,11 +38,12 @@ import Notifications from './pages/Notifications.jsx'
 import AdminAchievements from './pages/AdminAchievements.jsx'
 import AdminQueryTester from './pages/AdminQueryTester.jsx'
 import VerifyEmail from './pages/VerifyEmail.jsx'
+import CheckEmail from './pages/CheckEmail.jsx'
 import './index.css'
 // import './styles/global-design-system.css' // Temporarily removed to prevent conflicts
 
-ReactDOM.createRoot(document.getElementById('root')).render(
-  <React.StrictMode>
+createRoot(document.getElementById('root')).render(
+  <StrictMode>
     <BrowserRouter>
       <ToastProvider>
         <AuthProvider>
@@ -57,6 +58,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
               <Route path="/login" element={<Auth />} />
               <Route path="/register" element={<Auth />} />
               <Route path="/verify-email" element={<VerifyEmail />} />
+              <Route path="/check-email" element={<CheckEmail />} />
               {/* <Route path="/attributions" element={<Attributions />} /> */}
               {/* <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} /> */}
               <Route path="/profile" element={<ProtectedRoute><ProfileManagement /></ProtectedRoute>} />
@@ -107,5 +109,5 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         </AuthProvider>
       </ToastProvider>
     </BrowserRouter>
-  </React.StrictMode>,
+  </StrictMode>,
 )
