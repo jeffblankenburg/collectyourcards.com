@@ -439,3 +439,75 @@
     align-items: flex-start;
   }
 }
+
+/* Email Verification Styles */
+.verification-status {
+  text-align: center;
+  padding: 2rem;
+  color: white;
+}
+
+.verification-status .loading-spinner {
+  margin-bottom: 1rem;
+}
+
+.verification-status .spinner {
+  animation: spin 1s linear infinite;
+  color: #fbbf24;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.verification-status.success {
+  color: white;
+}
+
+.verification-status .success-icon {
+  color: #4ade80;
+  margin-bottom: 1rem;
+}
+
+.verification-status.error {
+  color: white;
+}
+
+.verification-status .error-icon {
+  color: #f87171;
+  margin-bottom: 1rem;
+}
+
+.verification-status h2 {
+  font-size: 1.75rem;
+  margin-bottom: 1rem;
+  background: linear-gradient(45deg, #fbbf24, #f59e0b);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.verification-status p {
+  font-size: 1.1rem;
+  margin-bottom: 1.5rem;
+  opacity: 0.9;
+}
+
+.verification-status .error-message {
+  color: #fca5a5;
+}
+
+.verification-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.verification-status .auth-button {
+  min-width: 150px;
+}

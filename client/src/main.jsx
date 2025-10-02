@@ -37,6 +37,7 @@ import Achievements from './pages/Achievements.jsx'
 import Notifications from './pages/Notifications.jsx'
 import AdminAchievements from './pages/AdminAchievements.jsx'
 import AdminQueryTester from './pages/AdminQueryTester.jsx'
+import VerifyEmail from './pages/VerifyEmail.jsx'
 import './index.css'
 // import './styles/global-design-system.css' // Temporarily removed to prevent conflicts
 
@@ -55,6 +56,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
               <Route path="/auth/:mode" element={<Auth />} />
               <Route path="/login" element={<Auth />} />
               <Route path="/register" element={<Auth />} />
+              <Route path="/verify-email" element={<VerifyEmail />} />
               {/* <Route path="/attributions" element={<Attributions />} /> */}
               {/* <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} /> */}
               <Route path="/profile" element={<ProtectedRoute><ProfileManagement /></ProtectedRoute>} />
