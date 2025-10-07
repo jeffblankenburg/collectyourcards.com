@@ -534,7 +534,7 @@ router.post('/match-cards', requireAuth, requireAdmin, async (req, res) => {
           if (playerTeamCheckTeams?.exact?.length > 0) {
             selectedTeams = playerTeamCheckTeams.exact
             console.log(`🎯 Auto-selected ${selectedTeams.length} teams: ${selectedTeams.map(t => t.teamName).join(', ')}`)
-            
+
             // If we have existing player_team records, include them
             selectedPlayerTeams = playerTeamMatches
             if (selectedPlayerTeams.length > 0) {
@@ -543,6 +543,39 @@ router.post('/match-cards', requireAuth, requireAdmin, async (req, res) => {
           }
         } else if (playerMatches?.exact?.length > 1) {
           console.log(`⚠️ Multiple players found for "${playerName}": ${playerMatches.exact.map(p => p.playerName).join(', ')}`)
+
+          // SMART DISAMBIGUATION: If multiple players with same name, but only one matches the card's team(s)
+          if (playerTeamCheckTeams?.exact?.length > 0) {
+            const playersWithTeamMatch = []
+
+            // Check each player to see if they have player_team records with any of the card's teams
+            for (const player of playerMatches.exact) {
+              const hasTeamMatch = playerTeamCheckTeams.exact.some(team => {
+                const ptKey = `${player.playerId}_${team.teamId}`
+                return playerTeamLookup[ptKey] !== undefined
+              })
+
+              if (hasTeamMatch) {
+                playersWithTeamMatch.push(player)
+              }
+            }
+
+            // If exactly ONE player matches the team, auto-select them
+            if (playersWithTeamMatch.length === 1) {
+              selectedPlayer = playersWithTeamMatch[0]
+              selectedTeams = playerTeamCheckTeams.exact
+
+              // Get the player_team records for this specific player
+              selectedPlayerTeams = playerTeamMatches.filter(pt =>
+                pt.playerId === selectedPlayer.playerId
+              )
+
+              console.log(`🎯 Auto-selected disambiguated player: "${selectedPlayer.playerName}" (player_id: ${selectedPlayer.playerId}) - matched by team`)
+              console.log(`✅ Found ${selectedPlayerTeams.length} player_team records for disambiguated player`)
+            } else {
+              console.log(`⚠️ Could not disambiguate: ${playersWithTeamMatch.length} players match the card's teams`)
+            }
+          }
         } else {
           console.log(`❌ No players found for "${playerName}"`)
         }
