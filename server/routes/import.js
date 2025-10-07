@@ -292,9 +292,172 @@ router.post('/parse-xlsx', requireAuth, requireAdmin, upload.single('xlsx'), asy
 
   } catch (error) {
     console.error('Error parsing XLSX:', error)
-    res.status(500).json({ 
+    res.status(500).json({
       message: 'Failed to parse XLSX file',
-      error: error.message 
+      error: error.message
+    })
+  }
+})
+
+// Parse pasted data (tab-separated)
+router.post('/parse-pasted', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    console.log('📋 Pasted data parse request received')
+
+    const { data, seriesId } = req.body
+
+    if (!data || !data.trim()) {
+      return res.status(400).json({ message: 'No data provided' })
+    }
+
+    if (!seriesId) {
+      return res.status(400).json({ message: 'Series ID is required' })
+    }
+
+    console.log('Series ID:', seriesId)
+    console.log('Data length:', data.length, 'characters')
+
+    // Split into rows and parse as tab-separated values
+    const rows = data.trim().split('\n').map(row => row.split('\t'))
+
+    console.log('Total rows found:', rows.length)
+    console.log('First 3 rows:', rows.slice(0, 3))
+
+    if (rows.length === 0) {
+      return res.status(400).json({ message: 'No data rows found' })
+    }
+
+    // Skip first row if it looks like headers
+    const firstRow = rows[0]
+    const hasHeaders = firstRow.some(cell =>
+      cell && (
+        cell.toLowerCase().includes('card') ||
+        cell.toLowerCase().includes('player') ||
+        cell.toLowerCase().includes('team')
+      )
+    )
+
+    const dataRows = hasHeaders ? rows.slice(1) : rows
+    console.log('Processing rows:', dataRows.length, '(skipped header:', hasHeaders, ')')
+
+    // Process the data - same format as XLSX: Card Number, Player Name(s), Team Name(s), RC Indicator, Notes
+    const cards = dataRows.map((row, index) => {
+      // Skip empty rows
+      if (!row || row.length === 0 || !row[0] || !row[0].trim()) {
+        return null
+      }
+
+      const cardNumber = row[0] ? String(row[0]).trim() : ''
+      const playerNames = row[1] ? String(row[1]).trim() : ''
+      const teamNames = row[2] ? String(row[2]).trim() : ''
+      const rcIndicator = row[3] ? String(row[3]).trim() : ''
+      const rawNotes = row[4] ? String(row[4]).trim() : ''
+
+      // Remove parentheses from notes
+      const notes = rawNotes.replace(/[()]/g, '')
+
+      // Debug first few rows
+      if (index < 5) {
+        console.log(`Row ${index + 1} mapping:`)
+        console.log('  cardNumber:', cardNumber)
+        console.log('  playerNames:', playerNames)
+        console.log('  teamNames:', teamNames)
+        console.log('  rcIndicator:', rcIndicator)
+        console.log('  notes:', notes)
+      }
+
+      // Determine if this is a rookie card
+      const isRookieCard = rcIndicator ? (
+        rcIndicator.toLowerCase().includes('rc') ||
+        rcIndicator.toLowerCase().includes('rookie') ||
+        rcIndicator.toLowerCase() === 'yes' ||
+        rcIndicator.toLowerCase() === 'true' ||
+        rcIndicator === '1'
+      ) : false
+
+      return {
+        sortOrder: index + 1,
+        cardNumber,
+        playerNames,
+        teamNames,
+        isRC: isRookieCard,
+        rcIndicator: rcIndicator,
+        isAutograph: false,
+        isRelic: false,
+        notes: notes || ''
+      }
+    }).filter(card => card && card.cardNumber)
+
+    console.log(`Parsed ${cards.length} cards from pasted data`)
+
+    // PREPROCESSING: Handle duplicate card numbers and multi-player rows (same logic as XLSX)
+    console.log('📊 Starting card preprocessing for multi-player detection...')
+    const processedCards = []
+    const cardNumberMap = new Map()
+
+    for (const card of cards) {
+      // Check if this card number already exists (Pattern 2: consecutive duplicates)
+      if (cardNumberMap.has(card.cardNumber)) {
+        console.log(`🔗 Found duplicate card number: ${card.cardNumber}`)
+        const existingCard = cardNumberMap.get(card.cardNumber)
+
+        // Merge the players and teams
+        existingCard.playerNames = `${existingCard.playerNames}; ${card.playerNames}`
+        existingCard.teamNames = `${existingCard.teamNames}; ${card.teamNames}`
+
+        console.log(`  Merged into existing card - Players: "${existingCard.playerNames}"`)
+        console.log(`  Merged into existing card - Teams: "${existingCard.teamNames}"`)
+
+        continue // Skip adding duplicate
+      }
+
+      // Check for Pattern 1: Multiple players on same line (/, comma, etc.)
+      const hasMultiplePlayers = /[\/,]/.test(card.playerNames)
+      if (hasMultiplePlayers) {
+        console.log(`👥 Found multiple players on line: ${card.cardNumber} - ${card.playerNames}`)
+
+        // Detect delimiter: prefer / over comma
+        const playerDelimiter = card.playerNames.includes('/') ? '/' : ','
+        const teamDelimiter = card.teamNames.includes('/') ? '/' : ','
+
+        // Split players and teams
+        const players = card.playerNames.split(playerDelimiter).map(p => p.trim())
+        const teams = card.teamNames.split(teamDelimiter).map(t => t.trim())
+
+        console.log(`  Players (${players.length}): ${players.join(' | ')}`)
+        console.log(`  Teams (${teams.length}): ${teams.join(' | ')}`)
+
+        // Rebuild playerNames and teamNames with semicolons for consistent parsing later
+        card.playerNames = players.join('; ')
+        card.teamNames = teams.join('; ')
+
+        console.log(`  After rebuild - Players: "${card.playerNames}"`)
+        console.log(`  After rebuild - Teams: "${card.teamNames}"`)
+      }
+
+      // Add to map and result
+      cardNumberMap.set(card.cardNumber, card)
+      processedCards.push(card)
+    }
+
+    // Reassign sort orders after merging duplicates
+    processedCards.forEach((card, index) => {
+      card.sortOrder = index + 1
+    })
+
+    console.log(`✅ Preprocessing complete: ${cards.length} rows → ${processedCards.length} unique cards`)
+
+    res.json({
+      success: true,
+      cards: processedCards,
+      message: `Successfully parsed ${processedCards.length} cards`
+    })
+
+  } catch (error) {
+    console.error('Error parsing pasted data:', error)
+    res.status(500).json({
+      message: 'Failed to parse pasted data',
+      error: error.message
     })
   }
 })
@@ -853,37 +1016,92 @@ router.post('/create-cards', requireAuth, requireAdmin, async (req, res) => {
           console.log(`    🔍 Processing player ${j + 1}: ${player.name}`)
           console.log(`    📊 Player data:`, {
             name: player.name,
-            hasSelectedMatch: !!player.selectedMatch,
-            selectedMatch: player.selectedMatch ? {
-              playerName: player.selectedMatch.playerName,
-              playerId: player.selectedMatch.playerId,
-              teamId: player.selectedMatch.teamId,
-              teamName: player.selectedMatch.teamName
-            } : null
+            hasSelectedPlayer: !!player.selectedPlayer,
+            selectedPlayerTeams: player.selectedPlayerTeams?.length || 0
           })
-          let playerId, teamId
-          
-          if (player.selectedMatch) {
-            // Use existing player/team combination
-            console.log(`    ✅ Using existing player/team: ${player.selectedMatch.playerName}`)
-            playerId = BigInt(player.selectedMatch.playerId)
-            teamId = parseInt(player.selectedMatch.teamId)
+
+          // Check if we have selected player and player_team records
+          if (player.selectedPlayer && player.selectedPlayerTeams && player.selectedPlayerTeams.length > 0) {
+            console.log(`    ✅ Using existing player with ${player.selectedPlayerTeams.length} player_team records`)
+            const playerId = BigInt(player.selectedPlayer.playerId)
+
+            // Create card_player_team records for each player_team relationship
+            for (const playerTeam of player.selectedPlayerTeams) {
+              const playerTeamId = BigInt(playerTeam.playerTeamId)
+              console.log(`    🔗 Creating card_player_team: cardId=${cardId}, playerTeamId=${playerTeamId} (${playerTeam.playerName} - ${playerTeam.teamName})`)
+
+              await transaction.request()
+                .input('cardId', sql.BigInt, cardId)
+                .input('playerTeamId', sql.BigInt, playerTeamId)
+                .query(`
+                  INSERT INTO card_player_team (card, player_team)
+                  VALUES (@cardId, @playerTeamId)
+                `)
+              console.log(`    ✅ Card-player-team relationship created`)
+            }
+          } else if (player.selectedPlayer && player.selectedTeams && player.selectedTeams.length > 0) {
+            // Player selected but no player_team records exist yet - need to create them
+            console.log(`    🆕 Creating player_team records for existing player: ${player.selectedPlayer.playerName}`)
+            const playerId = BigInt(player.selectedPlayer.playerId)
+
+            for (const team of player.selectedTeams) {
+              const teamId = parseInt(team.teamId)
+              console.log(`    🔗 Creating player_team: playerId=${playerId}, teamId=${teamId} (${team.teamName})`)
+
+              // Check if player_team already exists
+              const existingPlayerTeam = await transaction.request()
+                .input('playerId', sql.BigInt, playerId)
+                .input('teamId', sql.Int, teamId)
+                .query(`
+                  SELECT player_team_id FROM player_team
+                  WHERE player = @playerId AND team = @teamId
+                `)
+
+              let playerTeamId
+              if (existingPlayerTeam.recordset.length > 0) {
+                playerTeamId = existingPlayerTeam.recordset[0].player_team_id
+                console.log(`    ♻️ Using existing player_team: ${playerTeamId}`)
+              } else {
+                const playerTeamResult = await transaction.request()
+                  .input('playerId', sql.BigInt, playerId)
+                  .input('teamId', sql.Int, teamId)
+                  .query(`
+                    INSERT INTO player_team (player, team)
+                    VALUES (@playerId, @teamId);
+                    SELECT SCOPE_IDENTITY() AS player_team_id;
+                  `)
+                playerTeamId = playerTeamResult.recordset[0].player_team_id
+                console.log(`    ✅ Created player_team: ${playerTeamId}`)
+              }
+
+              // Create card_player_team record
+              console.log(`    🔗 Creating card_player_team: cardId=${cardId}, playerTeamId=${playerTeamId}`)
+              await transaction.request()
+                .input('cardId', sql.BigInt, cardId)
+                .input('playerTeamId', sql.BigInt, playerTeamId)
+                .query(`
+                  INSERT INTO card_player_team (card, player_team)
+                  VALUES (@cardId, @playerTeamId)
+                `)
+              console.log(`    ✅ Card-player-team relationship created`)
+            }
           } else {
             // Need to create new player
             console.log(`    🆕 Creating new player: ${player.name}`)
             const playerName = player.name
             let firstName = playerName, lastName = ''
-            
+
             const nameParts = playerName.split(' ')
             if (nameParts.length > 1) {
               firstName = nameParts[0]
               lastName = nameParts.slice(1).join(' ')
             }
-            
+
             console.log(`    📝 Name parsing: "${playerName}" → first: "${firstName}", last: "${lastName}"`)
-            
+
             // Check if we already created this player
             const playerKey = playerName.toLowerCase()
+            let playerId
             if (newPlayerIds.has(playerKey)) {
               playerId = newPlayerIds.get(playerKey)
               console.log(`    ♻️ Using cached player ID: ${playerId}`)
@@ -898,60 +1116,13 @@ router.post('/create-cards', requireAuth, requireAdmin, async (req, res) => {
                   VALUES (@firstName, @lastName);
                   SELECT SCOPE_IDENTITY() AS player_id;
                 `)
-              
+
               playerId = playerResult.recordset[0].player_id
               newPlayerIds.set(playerKey, playerId)
               console.log(`    ✅ New player created with ID: ${playerId}`)
             }
-            
-            // For new players, we'll need to determine team or use a default
-            // For now, let's use a default team or skip team association
-            teamId = null
-            console.log(`    ⚠️ No team association for new player`)
-          }
-          
-          // Create player_team record if we have both player and team
-          let playerTeamId = null
-          if (playerId && teamId) {
-            // Check if player_team combination already exists
-            const existingPlayerTeam = await transaction.request()
-              .input('playerId', sql.BigInt, playerId)
-              .input('teamId', sql.Int, teamId)
-              .query(`
-                SELECT player_team_id FROM player_team 
-                WHERE player = @playerId AND team = @teamId
-              `)
-            
-            if (existingPlayerTeam.recordset.length > 0) {
-              playerTeamId = existingPlayerTeam.recordset[0].player_team_id
-            } else {
-              const playerTeamResult = await transaction.request()
-                .input('playerId', sql.BigInt, playerId)
-                .input('teamId', sql.Int, teamId)
-                .query(`
-                  INSERT INTO player_team (player, team)
-                  VALUES (@playerId, @teamId);
-                  SELECT SCOPE_IDENTITY() AS player_team_id;
-                `)
-              
-              playerTeamId = playerTeamResult.recordset[0].player_team_id
-            }
-          }
-          
-          // Create card_player_team record
-          if (playerTeamId) {
-            console.log(`    🔗 Creating card_player_team: cardId=${cardId}, playerTeamId=${playerTeamId}`)
-            await transaction.request()
-              .input('cardId', sql.BigInt, cardId)
-              .input('playerTeamId', sql.BigInt, playerTeamId)
-              .query(`
-                INSERT INTO card_player_team (card, player_team)
-                VALUES (@cardId, @playerTeamId)
-              `)
-            console.log(`    ✅ Card-player-team relationship created`)
-          } else {
-            console.log(`    ⚠️ No playerTeamId available - skipping card_player_team creation`)
-            console.log(`    📋 Debug: playerId=${playerId}, teamId=${teamId}`)
+
+            console.log(`    ⚠️ New player created but no team associations - card will have no player_team relationships`)
           }
         }
         

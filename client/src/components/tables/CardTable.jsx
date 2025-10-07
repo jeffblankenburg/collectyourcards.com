@@ -53,11 +53,14 @@ const CardTable = ({
     print_run: 120,    // Width for "PRINT RUN" header text
     auto: 80,          // Width for "AUTO" column (split from attributes)
     relic: 80,         // Width for "RELIC" column (split from attributes)
+    find: 80,          // Width for "FIND" marketplace dropdown column
     notes: 'auto'
   })
   const [isResizing, setIsResizing] = useState(false)
   const [resizingColumn, setResizingColumn] = useState(null)
+  const [openMarketplaceDropdown, setOpenMarketplaceDropdown] = useState(null)
   const searchInputRef = useRef(null)
+  const marketplaceDropdownRef = useRef(null)
 
   // Auto-focus search input when component loads
   useEffect(() => {
@@ -68,6 +71,23 @@ const CardTable = ({
       }, 100)
     }
   }, [autoFocusSearch, showSearch])
+
+  // Close marketplace dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (marketplaceDropdownRef.current && !marketplaceDropdownRef.current.contains(event.target)) {
+        setOpenMarketplaceDropdown(null)
+      }
+    }
+
+    if (openMarketplaceDropdown) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [openMarketplaceDropdown])
 
   // Filter cards based on search query
   const filteredCards = useMemo(() => {
@@ -434,8 +454,8 @@ const CardTable = ({
                   <ResizeHandle columnKey="auto" />
                 </div>
               </th>
-              <th 
-                className="sortable relic-header" 
+              <th
+                className="sortable relic-header"
                 style={{ width: columnWidths.relic }}
               >
                 <div className="card-table-header-with-resize">
@@ -448,6 +468,11 @@ const CardTable = ({
               <th className="notes-header" style={{ width: columnWidths.notes }}>
                 <div className="card-table-header-with-resize">
                   NOTES
+                </div>
+              </th>
+              <th className="find-header" style={{ width: columnWidths.find }}>
+                <div className="card-table-header-content">
+                  SHOP
                 </div>
               </th>
             </tr>
@@ -583,6 +608,69 @@ const CardTable = ({
                   </td>
                   <td className="notes-cell">
                     {card.notes}
+                  </td>
+                  <td className="find-cell">
+                    <div
+                      className="marketplace-dropdown"
+                      ref={openMarketplaceDropdown === card.card_id ? marketplaceDropdownRef : null}
+                    >
+                      <button
+                        className="marketplace-dropdown-button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setOpenMarketplaceDropdown(
+                            openMarketplaceDropdown === card.card_id ? null : card.card_id
+                          )
+                        }}
+                        title="Find this card on marketplaces"
+                      >
+                        <Icon name="shopping" size={16} />
+                      </button>
+                      {openMarketplaceDropdown === card.card_id && (
+                        <div className="marketplace-dropdown-menu">
+                          <button
+                            className="marketplace-dropdown-item"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              const playerNames = card.card_player_teams?.map(cpt =>
+                                `${cpt.player?.first_name || ''} ${cpt.player?.last_name || ''}`.trim()
+                              ).join(', ') || ''
+                              const searchQuery = `${card.series_rel?.set_name || ''} ${playerNames} #${card.card_number}`
+                              const ebayUrl = `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(searchQuery)}&_sacat=0&_from=R40&_trksid=p4624852.m570.l1313&mkcid=1&mkrid=711-53200-19255-0&siteid=0&campid=5339123359&customid=&toolid=10001&mkevt=1`
+                              window.open(ebayUrl, '_blank')
+                              setOpenMarketplaceDropdown(null)
+                            }}
+                          >
+                            <img
+                              src="https://cardcheckliststorage.blob.core.windows.net/logo/ebay.svg"
+                              alt="eBay"
+                              className="marketplace-logo"
+                            />
+                            <span>eBay</span>
+                          </button>
+                          <button
+                            className="marketplace-dropdown-item"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              const playerNames = card.card_player_teams?.map(cpt =>
+                                `${cpt.player?.first_name || ''} ${cpt.player?.last_name || ''}`.trim()
+                              ).join(', ') || ''
+                              const searchQuery = `${card.card_number}+${card.series_rel?.set_name || ''}+${playerNames.replace(/,/g, '+').replace(/\s+/g, '+')}`
+                              const comcUrl = `https://www.comc.com/Cards,sh,=${searchQuery}`
+                              window.open(comcUrl, '_blank')
+                              setOpenMarketplaceDropdown(null)
+                            }}
+                          >
+                            <img
+                              src="https://cardcheckliststorage.blob.core.windows.net/logo/comc.webp"
+                              alt="COMC"
+                              className="marketplace-logo"
+                            />
+                            <span>COMC</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </td>
                 </tr>
               )

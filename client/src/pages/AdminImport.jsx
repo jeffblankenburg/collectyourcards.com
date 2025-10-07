@@ -165,9 +165,11 @@ const AdminImport = () => {
   const [loadingSeries, setLoadingSeries] = useState(true)
   const [organizationId, setOrganizationId] = useState(null)
   
-  // Step 2: File upload
+  // Step 2: File upload or paste
   const [selectedFile, setSelectedFile] = useState(null)
   const [uploading, setUploading] = useState(false)
+  const [pastedData, setPastedData] = useState('')
+  const [inputMethod, setInputMethod] = useState('file') // 'file' or 'paste'
   
   // Step 3: Review parsed data
   const [parsedCards, setParsedCards] = useState([])
@@ -256,33 +258,26 @@ const AdminImport = () => {
     }
   }
 
-  const handleFileUpload = async () => {
-    if (!selectedFile || !selectedSeries) return
+  const handlePastedDataProcess = async () => {
+    if (!pastedData.trim() || !selectedSeries) return
 
     try {
       setUploading(true)
-      
-      console.log('📤 Starting file upload...')
-      console.log('File:', selectedFile.name, selectedFile.size, 'bytes')
+
+      console.log('📋 Processing pasted data...')
       console.log('Series:', selectedSeries.name, 'ID:', selectedSeries.series_id)
-      
-      const formData = new FormData()
-      formData.append('xlsx', selectedFile)
-      formData.append('seriesId', selectedSeries.series_id)
-      
-      console.log('📡 Sending API request...')
-      const response = await axios.post('/api/admin/import/parse-xlsx', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
+
+      const response = await axios.post('/api/admin/import/parse-pasted', {
+        data: pastedData,
+        seriesId: selectedSeries.series_id
       })
-      
+
       console.log('📥 API Response:', response.data)
       console.log('Cards found:', response.data.cards?.length || 0)
-      
+
       setParsedCards(response.data.cards)
       setCurrentStep(3)
-      
+
       // Start matching process
       if (response.data.cards && response.data.cards.length > 0) {
         console.log('🔍 Starting card matching...')
@@ -290,7 +285,51 @@ const AdminImport = () => {
       } else {
         console.log('⚠️ No cards to match')
       }
-      
+
+    } catch (error) {
+      console.error('❌ Error processing pasted data:', error)
+      console.error('Error response:', error.response?.data)
+      addToast(error.response?.data?.message || 'Failed to process pasted data', 'error')
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const handleFileUpload = async () => {
+    if (!selectedFile || !selectedSeries) return
+
+    try {
+      setUploading(true)
+
+      console.log('📤 Starting file upload...')
+      console.log('File:', selectedFile.name, selectedFile.size, 'bytes')
+      console.log('Series:', selectedSeries.name, 'ID:', selectedSeries.series_id)
+
+      const formData = new FormData()
+      formData.append('xlsx', selectedFile)
+      formData.append('seriesId', selectedSeries.series_id)
+
+      console.log('📡 Sending API request...')
+      const response = await axios.post('/api/admin/import/parse-xlsx', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      })
+
+      console.log('📥 API Response:', response.data)
+      console.log('Cards found:', response.data.cards?.length || 0)
+
+      setParsedCards(response.data.cards)
+      setCurrentStep(3)
+
+      // Start matching process
+      if (response.data.cards && response.data.cards.length > 0) {
+        console.log('🔍 Starting card matching...')
+        await matchCards(response.data.cards)
+      } else {
+        console.log('⚠️ No cards to match')
+      }
+
     } catch (error) {
       console.error('❌ Error uploading file:', error)
       console.error('Error response:', error.response?.data)
@@ -484,56 +523,118 @@ const AdminImport = () => {
 
   const renderFileUpload = () => (
     <div className="step-content">
-      <h2>Step 2: Upload XLSX File</h2>
+      <h2>Step 2: Import Card Data</h2>
       <p>Selected Series: <strong>{selectedSeries?.name}</strong> ({selectedSeries?.set_name} {selectedSeries?.year})</p>
-      
+
+      {/* Input Method Toggle */}
+      <div className="input-method-toggle">
+        <button
+          className={`method-btn ${inputMethod === 'file' ? 'active' : ''}`}
+          onClick={() => setInputMethod('file')}
+        >
+          <Icon name="upload" size={16} />
+          Upload File
+        </button>
+        <button
+          className={`method-btn ${inputMethod === 'paste' ? 'active' : ''}`}
+          onClick={() => setInputMethod('paste')}
+        >
+          <Icon name="clipboard" size={16} />
+          Paste Data
+        </button>
+      </div>
+
       <div className="upload-section">
         <div className="file-requirements">
-          <h3>File Requirements:</h3>
+          <h3>Data Requirements:</h3>
           <ul>
-            <li>XLSX format only</li>
-            <li>5 columns: Card Number, Player Name(s), Team Name(s), RC Indicator, Notes</li>
-            <li>First row should contain headers</li>
+            {inputMethod === 'file' ? (
+              <>
+                <li>XLSX format only</li>
+                <li>5 columns: Card Number, Player Name(s), Team Name(s), RC Indicator, Notes</li>
+                <li>First row should contain headers</li>
+              </>
+            ) : (
+              <>
+                <li>Tab-separated data (from Excel, Google Sheets, etc.)</li>
+                <li>5 columns: Card Number, Player Name(s), Team Name(s), RC Indicator, Notes</li>
+                <li>First row should contain headers (will be ignored)</li>
+              </>
+            )}
           </ul>
         </div>
-        
-        <div className="file-input-section">
-          <input
-            type="file"
-            id="xlsx-upload"
-            accept=".xlsx"
-            onChange={handleFileSelect}
-            style={{ display: 'none' }}
-          />
-          <label htmlFor="xlsx-upload" className="file-upload-label">
-            <Icon name="upload" size={24} />
-            {selectedFile ? selectedFile.name : 'Choose XLSX File'}
-          </label>
-          
-          {selectedFile && (
-            <div className="file-actions">
-              <button 
-                className="upload-btn"
-                onClick={handleFileUpload}
-                disabled={uploading}
-              >
-                {uploading ? (
-                  <>
-                    <Icon name="loader" size={16} className="spinner" />
-                    Uploading...
-                  </>
-                ) : (
-                  <>
-                    <Icon name="check" size={16} />
-                    Process File
-                  </>
-                )}
-              </button>
-            </div>
-          )}
-        </div>
+
+        {inputMethod === 'file' ? (
+          <div className="file-input-section">
+            <input
+              type="file"
+              id="xlsx-upload"
+              accept=".xlsx"
+              onChange={handleFileSelect}
+              style={{ display: 'none' }}
+            />
+            <label htmlFor="xlsx-upload" className="file-upload-label">
+              <Icon name="upload" size={24} />
+              {selectedFile ? selectedFile.name : 'Choose XLSX File'}
+            </label>
+
+            {selectedFile && (
+              <div className="file-actions">
+                <button
+                  className="upload-btn"
+                  onClick={handleFileUpload}
+                  disabled={uploading}
+                >
+                  {uploading ? (
+                    <>
+                      <Icon name="loader" size={16} className="spinner" />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <Icon name="check" size={16} />
+                      Process File
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="paste-input-section">
+            <textarea
+              className="paste-textarea"
+              placeholder="Paste your card checklist data here (tab-separated)&#10;&#10;Example:&#10;BR-1    Shohei Ohtani    Los Angeles Dodgers&#10;BR-2    Ronald Acuña Jr.    Atlanta Braves&#10;BR-3    Juan Soto    New York Mets"
+              value={pastedData}
+              onChange={(e) => setPastedData(e.target.value)}
+              rows={15}
+            />
+
+            {pastedData.trim() && (
+              <div className="file-actions">
+                <button
+                  className="upload-btn"
+                  onClick={handlePastedDataProcess}
+                  disabled={uploading}
+                >
+                  {uploading ? (
+                    <>
+                      <Icon name="loader" size={16} className="spinner" />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <Icon name="check" size={16} />
+                      Process Data ({pastedData.trim().split('\n').length} rows)
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
-      
+
       <div className="step-actions">
         <button className="back-btn" onClick={() => setCurrentStep(1)}>
           <Icon name="arrow-left" size={16} />
