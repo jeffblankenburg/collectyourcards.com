@@ -1215,9 +1215,17 @@ async function batchFindTeams(pool, teamNames, organizationId = null) {
     // Group results by team name (check both name and abbreviation)
     teamNames.forEach(teamName => {
       const lowerTeamName = teamName.toLowerCase()
-      const matches = exactResult.recordset.filter(team =>
-        team.lowerName === lowerTeamName || team.lowerAbbrev === lowerTeamName
-      ).map(team => ({
+
+      // Debug: show what we're searching for
+      console.log(`🔍 Searching for team: "${teamName}" (lowercase: "${lowerTeamName}")`)
+      console.log(`📊 Available teams in result set:`, exactResult.recordset.map(t => `"${t.teamName}" (lower: "${t.lowerName}")`))
+
+      const matches = exactResult.recordset.filter(team => {
+        // Try both the pre-lowercased columns and JavaScript toLowerCase for safety
+        const nameMatch = team.lowerName === lowerTeamName || team.teamName.toLowerCase() === lowerTeamName
+        const abbrevMatch = team.lowerAbbrev === lowerTeamName || (team.abbreviation && team.abbreviation.toLowerCase() === lowerTeamName)
+        return nameMatch || abbrevMatch
+      }).map(team => ({
         teamId: String(team.teamId),
         teamName: team.teamName,
         city: team.city,
@@ -1225,6 +1233,14 @@ async function batchFindTeams(pool, teamNames, organizationId = null) {
         primaryColor: team.primaryColor,
         secondaryColor: team.secondaryColor
       }))
+
+      console.log(`✅ Found ${matches.length} matches for "${teamName}":`, matches.map(m => m.teamName))
+
+      // If we have multiple matches and organizationId is specified, log a warning
+      // This shouldn't happen since we filter by organization in the query
+      if (matches.length > 1 && organizationId) {
+        console.warn(`⚠️ Multiple matches found for "${teamName}" within organization ${organizationId}:`, matches.map(m => m.teamName))
+      }
 
       teamLookup[teamName] = {
         exact: matches,
