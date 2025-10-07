@@ -210,20 +210,19 @@ router.post('/parse-xlsx', requireAuth, requireAdmin, upload.single('xlsx'), asy
     // PREPROCESSING: Handle duplicate card numbers and multi-player rows
     console.log('📊 Starting card preprocessing for multi-player detection...')
     const processedCards = []
-    const cardNumberMap = new Map() // Track cards by card number
+    let previousCard = null // Track only the immediately previous card for consecutive duplicate detection
 
     for (const card of cards) {
-      // Check if this card number already exists (Pattern 2: consecutive duplicates)
-      if (cardNumberMap.has(card.cardNumber)) {
-        console.log(`🔗 Found duplicate card number: ${card.cardNumber}`)
-        const existingCard = cardNumberMap.get(card.cardNumber)
+      // Check if this card number matches the PREVIOUS card (Pattern 2: consecutive duplicates ONLY)
+      if (previousCard && previousCard.cardNumber === card.cardNumber) {
+        console.log(`🔗 Found CONSECUTIVE duplicate card number: ${card.cardNumber}`)
 
         // Merge players - always add
-        existingCard.playerNames += '; ' + card.playerNames
+        previousCard.playerNames += '; ' + card.playerNames
 
         // Merge teams - but deduplicate if they're the same
         // This handles cases like: José Ramírez (Cleveland Guardians) + Steven Kwan (Cleveland Guardians)
-        const existingTeams = existingCard.teamNames.split(/[;]/).map(t => t.trim()).filter(t => t)
+        const existingTeams = previousCard.teamNames.split(/[;]/).map(t => t.trim()).filter(t => t)
         const newTeams = card.teamNames.split(/[;]/).map(t => t.trim()).filter(t => t)
 
         // Only add teams that aren't already in the list
@@ -233,18 +232,19 @@ router.post('/parse-xlsx', requireAuth, requireAdmin, upload.single('xlsx'), asy
           }
         })
 
-        existingCard.teamNames = existingTeams.join('; ')
+        previousCard.teamNames = existingTeams.join('; ')
 
         // Merge RC status (if any row has RC, mark as RC)
-        existingCard.isRC = existingCard.isRC || card.isRC
+        previousCard.isRC = previousCard.isRC || card.isRC
 
         // Merge notes - but deduplicate if they're the same
-        if (card.notes && card.notes !== existingCard.notes) {
-          existingCard.notes += (existingCard.notes ? '; ' : '') + card.notes
+        if (card.notes && card.notes !== previousCard.notes) {
+          previousCard.notes += (previousCard.notes ? '; ' : '') + card.notes
         }
 
         console.log(`  Merged: ${card.playerNames} (${card.teamNames})`)
-        console.log(`  Result: ${existingCard.playerNames} (${existingCard.teamNames})`)
+        console.log(`  Result: ${previousCard.playerNames} (${previousCard.teamNames})`)
+        // Keep previousCard the same so we can merge into it again if needed
         continue // Skip adding as separate card
       }
 
@@ -272,9 +272,9 @@ router.post('/parse-xlsx', requireAuth, requireAdmin, upload.single('xlsx'), asy
         console.log(`  After rebuild - Teams: "${card.teamNames}"`)
       }
 
-      // Add to map and result
-      cardNumberMap.set(card.cardNumber, card)
+      // Add to result and set as previous card for next iteration
       processedCards.push(card)
+      previousCard = card
     }
 
     // Reassign sort orders after merging duplicates
@@ -393,22 +393,41 @@ router.post('/parse-pasted', requireAuth, requireAdmin, async (req, res) => {
     // PREPROCESSING: Handle duplicate card numbers and multi-player rows (same logic as XLSX)
     console.log('📊 Starting card preprocessing for multi-player detection...')
     const processedCards = []
-    const cardNumberMap = new Map()
+    let previousCard = null // Track only the immediately previous card for consecutive duplicate detection
 
     for (const card of cards) {
-      // Check if this card number already exists (Pattern 2: consecutive duplicates)
-      if (cardNumberMap.has(card.cardNumber)) {
-        console.log(`🔗 Found duplicate card number: ${card.cardNumber}`)
-        const existingCard = cardNumberMap.get(card.cardNumber)
+      // Check if this card number matches the PREVIOUS card (Pattern 2: consecutive duplicates ONLY)
+      if (previousCard && previousCard.cardNumber === card.cardNumber) {
+        console.log(`🔗 Found CONSECUTIVE duplicate card number: ${card.cardNumber}`)
 
-        // Merge the players and teams
-        existingCard.playerNames = `${existingCard.playerNames}; ${card.playerNames}`
-        existingCard.teamNames = `${existingCard.teamNames}; ${card.teamNames}`
+        // Merge players - always add
+        previousCard.playerNames += '; ' + card.playerNames
 
-        console.log(`  Merged into existing card - Players: "${existingCard.playerNames}"`)
-        console.log(`  Merged into existing card - Teams: "${existingCard.teamNames}"`)
+        // Merge teams - but deduplicate if they're the same
+        const existingTeams = previousCard.teamNames.split(/[;]/).map(t => t.trim()).filter(t => t)
+        const newTeams = card.teamNames.split(/[;]/).map(t => t.trim()).filter(t => t)
 
-        continue // Skip adding duplicate
+        // Only add teams that aren't already in the list
+        newTeams.forEach(newTeam => {
+          if (!existingTeams.some(existingTeam => existingTeam.toLowerCase() === newTeam.toLowerCase())) {
+            existingTeams.push(newTeam)
+          }
+        })
+
+        previousCard.teamNames = existingTeams.join('; ')
+
+        // Merge RC status (if any row has RC, mark as RC)
+        previousCard.isRC = previousCard.isRC || card.isRC
+
+        // Merge notes - but deduplicate if they're the same
+        if (card.notes && card.notes !== previousCard.notes) {
+          previousCard.notes += (previousCard.notes ? '; ' : '') + card.notes
+        }
+
+        console.log(`  Merged: ${card.playerNames} (${card.teamNames})`)
+        console.log(`  Result: ${previousCard.playerNames} (${previousCard.teamNames})`)
+        // Keep previousCard the same so we can merge into it again if needed
+        continue // Skip adding as separate card
       }
 
       // Check for Pattern 1: Multiple players on same line (/, comma, etc.)
@@ -435,9 +454,9 @@ router.post('/parse-pasted', requireAuth, requireAdmin, async (req, res) => {
         console.log(`  After rebuild - Teams: "${card.teamNames}"`)
       }
 
-      // Add to map and result
-      cardNumberMap.set(card.cardNumber, card)
+      // Add to result and set as previous card for next iteration
       processedCards.push(card)
+      previousCard = card
     }
 
     // Reassign sort orders after merging duplicates
@@ -1388,9 +1407,9 @@ async function batchFindTeams(pool, teamNames, organizationId = null) {
     const nameConditions = teamNames.map((teamName, index) => {
       const normalizedName = normalizeAccents(teamName.trim().toLowerCase())
       request.input(`team${index}`, sql.NVarChar, normalizedName)
-      console.log(`  Parameter @team${index} = "${normalizedName}" (from "${teamName}")`)
-      // Compare normalized versions using COLLATE Latin1_General_CI_AI (case and accent insensitive)
-      return `(LOWER(t.name) COLLATE Latin1_General_CI_AI = @team${index} COLLATE Latin1_General_CI_AI OR LOWER(t.abbreviation) COLLATE Latin1_General_CI_AI = @team${index} COLLATE Latin1_General_CI_AI)`
+      console.log(`  🔧 Parameter @team${index} = "${normalizedName}" (original: "${teamName}")`)
+      // Use = for exact comparison after normalization
+      return `(LOWER(t.name) = @team${index} OR LOWER(t.abbreviation) = @team${index})`
     }).join(' OR ')
 
     if (organizationId) {
@@ -1404,9 +1423,7 @@ async function batchFindTeams(pool, teamNames, organizationId = null) {
         t.city as city,
         t.abbreviation as abbreviation,
         t.primary_color as primaryColor,
-        t.secondary_color as secondaryColor,
-        LOWER(t.name) as lowerName,
-        LOWER(t.abbreviation) as lowerAbbrev
+        t.secondary_color as secondaryColor
       FROM team t
       WHERE (${nameConditions})
       ${organizationId ? 'AND t.organization = @organizationId' : ''}
@@ -1422,8 +1439,9 @@ async function batchFindTeams(pool, teamNames, organizationId = null) {
       const normalizedTeamName = normalizeAccents(teamName.trim().toLowerCase())
 
       // Debug: show what we're searching for
-      console.log(`🔍 Searching for team: "${teamName}" (normalized: "${normalizedTeamName}")`)
-      console.log(`📊 Available teams in result set:`, exactResult.recordset.map(t => `"${t.teamName}"`))
+      console.log(`🔍 Searching for team: "${teamName}"`)
+      console.log(`  📝 Normalized input: "${normalizedTeamName}"`)
+      console.log(`  📊 Comparing against ${exactResult.recordset.length} teams from database`)
 
       const matches = exactResult.recordset.filter(team => {
         // Normalize both sides for accent-insensitive comparison
@@ -1433,8 +1451,16 @@ async function batchFindTeams(pool, teamNames, organizationId = null) {
         const nameMatch = normalizedTeamNameFromDB === normalizedTeamName
         const abbrevMatch = normalizedAbbrevFromDB === normalizedTeamName
 
+        // Detailed logging for debugging
+        if (team.teamName.toLowerCase().includes('expos') || team.teamName.toLowerCase().includes('montreal')) {
+          console.log(`  🔍 Checking "${team.teamName}":`)
+          console.log(`     DB normalized: "${normalizedTeamNameFromDB}"`)
+          console.log(`     Input normalized: "${normalizedTeamName}"`)
+          console.log(`     Match: ${nameMatch}`)
+        }
+
         if (nameMatch || abbrevMatch) {
-          console.log(`✅ Match found: "${teamName}" matches "${team.teamName}"`)
+          console.log(`  ✅ MATCH: "${teamName}" matches "${team.teamName}"`)
         }
 
         return nameMatch || abbrevMatch

@@ -958,14 +958,22 @@ const ImportTable = ({
                     <td className="team-cell">
                       <div className="import-team-validation">
                         {card.teamNames?.map((teamName, teamIdx) => {
-                          // Find exact match for this team name
-                          const exactMatch = card.teamMatches?.exact?.find(match =>
-                            match.teamName.toLowerCase().includes(teamName.toLowerCase())
-                          )
+                          // Helper function to normalize accents for matching
+                          const normalizeAccents = (str) => {
+                            return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                          }
 
-                          const hasFuzzyMatch = card.teamMatches?.fuzzy?.some(match =>
-                            match.teamName.toLowerCase().includes(teamName.toLowerCase())
-                          )
+                          // Find exact match for this team name (with accent normalization)
+                          const normalizedSearchTerm = normalizeAccents(teamName.toLowerCase())
+                          const exactMatch = card.teamMatches?.exact?.find(match => {
+                            const normalizedTeamName = normalizeAccents(match.teamName.toLowerCase())
+                            return normalizedTeamName.includes(normalizedSearchTerm)
+                          })
+
+                          const hasFuzzyMatch = card.teamMatches?.fuzzy?.some(match => {
+                            const normalizedTeamName = normalizeAccents(match.teamName.toLowerCase())
+                            return normalizedTeamName.includes(normalizedSearchTerm)
+                          })
 
                           // Show team name with exact match
                           if (exactMatch) {
@@ -978,9 +986,10 @@ const ImportTable = ({
 
                           // Show team name with fuzzy matches as clickable options
                           if (hasFuzzyMatch) {
-                            const fuzzyMatches = card.teamMatches.fuzzy.filter(match =>
-                              match.teamName.toLowerCase().includes(teamName.toLowerCase())
-                            )
+                            const fuzzyMatches = card.teamMatches.fuzzy.filter(match => {
+                              const normalizedTeamName = normalizeAccents(match.teamName.toLowerCase())
+                              return normalizedTeamName.includes(normalizedSearchTerm)
+                            })
 
                             return (
                               <div key={teamIdx} className="team-match-container">
