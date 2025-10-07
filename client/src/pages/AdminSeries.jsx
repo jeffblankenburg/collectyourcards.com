@@ -354,8 +354,35 @@ function AdminSeries() {
     // Load sets for dropdown
     await loadSets()
     setSeriesForSet([]) // Clear series until set is selected
+
+    // Prepopulate name field with set name + trailing space if we're on a set page
+    if (setInfo && setInfo.name) {
+      setAddForm(prev => ({
+        ...prev,
+        name: setInfo.name + ' ',
+        set_id: setId ? Number(setId) : '' // Also preselect the set
+      }))
+      // Load series for the preselected set
+      if (setId) {
+        await loadSeriesForSet(setId)
+      }
+    } else {
+      // Reset form if no set context
+      setAddForm({
+        name: '',
+        is_base: false,
+        color: '',
+        card_count: '',
+        card_entered_count: '',
+        rookie_count: '',
+        print_run_display: '',
+        set_id: '',
+        parallel_of_series: ''
+      })
+    }
+
     setShowAddModal(true)
-  }, [loadSets])
+  }, [loadSets, setInfo, setId, loadSeriesForSet])
 
   // Memoized duplicate modal handler
   const handleShowDuplicateModal = useCallback(async (seriesItem) => {
