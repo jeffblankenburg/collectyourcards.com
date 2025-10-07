@@ -1384,12 +1384,13 @@ async function batchFindTeams(pool, teamNames, organizationId = null) {
     // Create parameterized query for all teams using OR conditions
     const request = pool.request()
 
-    // Build OR conditions for name matching
+    // Build OR conditions for name matching (with accent normalization)
     const nameConditions = teamNames.map((teamName, index) => {
-      const lowerName = teamName.trim().toLowerCase()
-      request.input(`team${index}`, sql.NVarChar, lowerName)
-      console.log(`  Parameter @team${index} = "${lowerName}"`)
-      return `(LOWER(t.name) = @team${index} OR LOWER(t.abbreviation) = @team${index})`
+      const normalizedName = normalizeAccents(teamName.trim().toLowerCase())
+      request.input(`team${index}`, sql.NVarChar, normalizedName)
+      console.log(`  Parameter @team${index} = "${normalizedName}" (from "${teamName}")`)
+      // Compare normalized versions using COLLATE Latin1_General_CI_AI (case and accent insensitive)
+      return `(LOWER(t.name) COLLATE Latin1_General_CI_AI = @team${index} COLLATE Latin1_General_CI_AI OR LOWER(t.abbreviation) COLLATE Latin1_General_CI_AI = @team${index} COLLATE Latin1_General_CI_AI)`
     }).join(' OR ')
 
     if (organizationId) {
@@ -1416,18 +1417,26 @@ async function batchFindTeams(pool, teamNames, organizationId = null) {
     const exactResult = await request.query(exactQuery)
     console.log(`📊 Exact match query returned ${exactResult.recordset.length} results`)
 
-    // Group results by team name (check both name and abbreviation)
+    // Group results by team name (check both name and abbreviation with accent normalization)
     teamNames.forEach(teamName => {
-      const lowerTeamName = teamName.toLowerCase()
+      const normalizedTeamName = normalizeAccents(teamName.trim().toLowerCase())
 
       // Debug: show what we're searching for
-      console.log(`🔍 Searching for team: "${teamName}" (lowercase: "${lowerTeamName}")`)
-      console.log(`📊 Available teams in result set:`, exactResult.recordset.map(t => `"${t.teamName}" (lower: "${t.lowerName}")`))
+      console.log(`🔍 Searching for team: "${teamName}" (normalized: "${normalizedTeamName}")`)
+      console.log(`📊 Available teams in result set:`, exactResult.recordset.map(t => `"${t.teamName}"`))
 
       const matches = exactResult.recordset.filter(team => {
-        // Try both the pre-lowercased columns and JavaScript toLowerCase for safety
-        const nameMatch = team.lowerName === lowerTeamName || team.teamName.toLowerCase() === lowerTeamName
-        const abbrevMatch = team.lowerAbbrev === lowerTeamName || (team.abbreviation && team.abbreviation.toLowerCase() === lowerTeamName)
+        // Normalize both sides for accent-insensitive comparison
+        const normalizedTeamNameFromDB = normalizeAccents(team.teamName.toLowerCase())
+        const normalizedAbbrevFromDB = team.abbreviation ? normalizeAccents(team.abbreviation.toLowerCase()) : ''
+
+        const nameMatch = normalizedTeamNameFromDB === normalizedTeamName
+        const abbrevMatch = normalizedAbbrevFromDB === normalizedTeamName
+
+        if (nameMatch || abbrevMatch) {
+          console.log(`✅ Match found: "${teamName}" matches "${team.teamName}"`)
+        }
+
         return nameMatch || abbrevMatch
       }).map(team => ({
         teamId: String(team.teamId),
