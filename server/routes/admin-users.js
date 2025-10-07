@@ -26,32 +26,28 @@ router.get('/users', async (req, res) => {
   try {
     // Get users with their card collection counts using raw SQL for better performance
     const usersWithCounts = await prisma.$queryRawUnsafe(`
-      SELECT 
+      SELECT
         u.user_id,
         u.username,
         u.first_name,
         u.last_name,
-        u.name,
         u.email,
         u.role,
         u.is_active,
         u.is_verified,
-        u.created,
-        u.last_login,
-        u.login_attempts,
+        u.created_at,
         ISNULL(COUNT(uc.user_card_id), 0) as card_count
       FROM [user] u
       LEFT JOIN user_card uc ON u.user_id = uc.[user]
-      GROUP BY u.user_id, u.username, u.first_name, u.last_name, u.name, u.email, 
-               u.role, u.is_active, u.is_verified, u.created, u.last_login, u.login_attempts
-      ORDER BY u.created DESC
+      GROUP BY u.user_id, u.username, u.first_name, u.last_name, u.email,
+               u.role, u.is_active, u.is_verified, u.created_at
+      ORDER BY u.created_at DESC
     `)
 
     // Convert BigInt to Number for JSON serialization
     const serializedUsers = usersWithCounts.map(user => ({
       ...user,
       user_id: Number(user.user_id),
-      login_attempts: user.login_attempts ? Number(user.login_attempts) : 0,
       card_count: Number(user.card_count) || 0
     }))
 

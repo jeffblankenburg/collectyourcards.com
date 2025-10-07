@@ -166,7 +166,10 @@ router.post('/parse-xlsx', requireAuth, requireAdmin, upload.single('xlsx'), asy
       const playerNames = row[1] ? String(row[1]).trim() : ''
       const teamNames = row[2] ? String(row[2]).trim() : ''
       const rcIndicator = row[3] ? String(row[3]).trim() : '' // RC is in column 4 (index 3)
-      const notes = row[4] ? String(row[4]).trim() : '' // Notes are in column 5 (index 4) if present
+      const rawNotes = row[4] ? String(row[4]).trim() : '' // Notes are in column 5 (index 4) if present
+
+      // Remove parentheses from notes (Requirement #1)
+      const notes = rawNotes.replace(/[()]/g, '')
 
       // Debug first few rows
       if (index < 5) {
@@ -179,12 +182,22 @@ router.post('/parse-xlsx', requireAuth, requireAdmin, upload.single('xlsx'), asy
         console.log('  raw row:', row)
       }
 
+      // Determine if this is a rookie card (Requirement #2)
+      // Check for RC, Rookie, or variations in the RC indicator column
+      const isRookieCard = rcIndicator ? (
+        rcIndicator.toLowerCase().includes('rc') ||
+        rcIndicator.toLowerCase().includes('rookie') ||
+        rcIndicator.toLowerCase() === 'yes' ||
+        rcIndicator.toLowerCase() === 'true' ||
+        rcIndicator === '1'
+      ) : false
+
       return {
         sortOrder: index + 1,  // Sequential sort order starting at 1
         cardNumber,
         playerNames,
         teamNames,
-        isRC: rcIndicator ? (rcIndicator.toLowerCase() === 'rc' || rcIndicator.toLowerCase() === 'rookie' || rcIndicator.toLowerCase() === 'yes' || rcIndicator.toLowerCase() === 'true' || rcIndicator === '1') : false,
+        isRC: isRookieCard,
         rcIndicator: rcIndicator,  // Keep original value for display
         isAutograph: false, // Default to false - can be toggled in UI
         isRelic: false, // Default to false - can be toggled in UI
@@ -193,11 +206,88 @@ router.post('/parse-xlsx', requireAuth, requireAdmin, upload.single('xlsx'), asy
     }).filter(card => card && card.cardNumber) // Only include valid rows with card numbers
 
     console.log(`Parsed ${cards.length} cards from XLSX file`)
-    
-    res.json({ 
+
+    // PREPROCESSING: Handle duplicate card numbers and multi-player rows
+    console.log('📊 Starting card preprocessing for multi-player detection...')
+    const processedCards = []
+    const cardNumberMap = new Map() // Track cards by card number
+
+    for (const card of cards) {
+      // Check if this card number already exists (Pattern 2: consecutive duplicates)
+      if (cardNumberMap.has(card.cardNumber)) {
+        console.log(`🔗 Found duplicate card number: ${card.cardNumber}`)
+        const existingCard = cardNumberMap.get(card.cardNumber)
+
+        // Merge players - always add
+        existingCard.playerNames += '; ' + card.playerNames
+
+        // Merge teams - but deduplicate if they're the same
+        // This handles cases like: José Ramírez (Cleveland Guardians) + Steven Kwan (Cleveland Guardians)
+        const existingTeams = existingCard.teamNames.split(/[;]/).map(t => t.trim()).filter(t => t)
+        const newTeams = card.teamNames.split(/[;]/).map(t => t.trim()).filter(t => t)
+
+        // Only add teams that aren't already in the list
+        newTeams.forEach(newTeam => {
+          if (!existingTeams.some(existingTeam => existingTeam.toLowerCase() === newTeam.toLowerCase())) {
+            existingTeams.push(newTeam)
+          }
+        })
+
+        existingCard.teamNames = existingTeams.join('; ')
+
+        // Merge RC status (if any row has RC, mark as RC)
+        existingCard.isRC = existingCard.isRC || card.isRC
+
+        // Merge notes - but deduplicate if they're the same
+        if (card.notes && card.notes !== existingCard.notes) {
+          existingCard.notes += (existingCard.notes ? '; ' : '') + card.notes
+        }
+
+        console.log(`  Merged: ${card.playerNames} (${card.teamNames})`)
+        console.log(`  Result: ${existingCard.playerNames} (${existingCard.teamNames})`)
+        continue // Skip adding as separate card
+      }
+
+      // Check for Pattern 1: Multiple players on same line (/, comma, etc.)
+      const hasMultiplePlayers = /[\/,]/.test(card.playerNames)
+      if (hasMultiplePlayers) {
+        console.log(`👥 Found multiple players on line: ${card.cardNumber} - ${card.playerNames}`)
+
+        // Detect delimiter: prefer / over comma
+        const playerDelimiter = card.playerNames.includes('/') ? '/' : ','
+        const teamDelimiter = card.teamNames.includes('/') ? '/' : ','
+
+        // Split players and teams
+        const players = card.playerNames.split(playerDelimiter).map(p => p.trim())
+        const teams = card.teamNames.split(teamDelimiter).map(t => t.trim())
+
+        console.log(`  Players (${players.length}): ${players.join(' | ')}`)
+        console.log(`  Teams (${teams.length}): ${teams.join(' | ')}`)
+
+        // Rebuild playerNames and teamNames with semicolons for consistent parsing later
+        card.playerNames = players.join('; ')
+        card.teamNames = teams.join('; ')
+
+        console.log(`  After rebuild - Players: "${card.playerNames}"`)
+        console.log(`  After rebuild - Teams: "${card.teamNames}"`)
+      }
+
+      // Add to map and result
+      cardNumberMap.set(card.cardNumber, card)
+      processedCards.push(card)
+    }
+
+    // Reassign sort orders after merging duplicates
+    processedCards.forEach((card, index) => {
+      card.sortOrder = index + 1
+    })
+
+    console.log(`✅ Preprocessing complete: ${cards.length} rows → ${processedCards.length} unique cards`)
+
+    res.json({
       success: true,
-      cards,
-      message: `Successfully parsed ${cards.length} cards`
+      cards: processedCards,
+      message: `Successfully parsed ${processedCards.length} cards`
     })
 
   } catch (error) {
@@ -335,31 +425,83 @@ router.post('/match-cards', requireAuth, requireAdmin, async (req, res) => {
       }
       
       const cardPlayers = []
-      
+
       // Parse player names (could be comma-separated)
       const playerNamesList = (card.playerNames || '').split(/[,;&]/).map(name => name.trim()).filter(name => name)
-      
-      for (const playerName of playerNamesList) {
+      const teamNamesList = (card.teamNames || '').split(/[,;&]/).map(name => name.trim()).filter(name => name)
+
+      // Process ALL teams on the card first (for Team(s) column display)
+      const allCardTeams = { exact: [], fuzzy: [] }
+      teamNamesList.forEach(teamName => {
+        const teamMatch = teamLookup[teamName]
+        if (teamMatch) {
+          allCardTeams.exact.push(...teamMatch.exact)
+          allCardTeams.fuzzy.push(...teamMatch.fuzzy)
+        }
+      })
+
+      for (let playerIdx = 0; playerIdx < playerNamesList.length; playerIdx++) {
+        const playerName = playerNamesList[playerIdx]
         // Use cached lookups instead of individual queries
         const playerMatches = playerLookup[playerName] || { exact: [], fuzzy: [] }
-        
-        // Parse team names for this card
-        const teamNamesList = (card.teamNames || '').split(/[,;&]/).map(name => name.trim()).filter(name => name)
-        const teamMatches = { exact: [], fuzzy: [] }
-        
-        // Collect team matches from cached lookup
-        teamNamesList.forEach(teamName => {
+
+        // SMART TEAM MATCHING FOR PLAYER_TEAM RECORDS: Match player to team by position
+        // This is ONLY used to determine which player_team records to check/create
+        // The Team(s) column will show ALL teams from the spreadsheet
+        let playerTeamGuess = []
+        let isAmbiguous = false
+
+        if (teamNamesList.length === playerNamesList.length) {
+          // Perfect match: each player gets their corresponding team
+          playerTeamGuess = [teamNamesList[playerIdx]]
+          console.log(`✅ Position match: Player "${playerName}" → Team "${teamNamesList[playerIdx]}"`)
+        } else if (teamNamesList.length === 1) {
+          // All players on same team
+          playerTeamGuess = teamNamesList
+          console.log(`✅ Single team: Player "${playerName}" → Team "${teamNamesList[0]}"`)
+        } else if (playerIdx === 0) {
+          // First player always gets first team
+          playerTeamGuess = [teamNamesList[0]]
+          console.log(`✅ First player: Player "${playerName}" → First team "${teamNamesList[0]}"`)
+        } else if (playerIdx === playerNamesList.length - 1 && playerIdx >= teamNamesList.length) {
+          // Last player when index exceeds team count: assign to last team
+          playerTeamGuess = [teamNamesList[teamNamesList.length - 1]]
+          console.log(`✅ Last player overflow: Player "${playerName}" (index ${playerIdx}) → Last team "${teamNamesList[teamNamesList.length - 1]}"`)
+        } else if (playerIdx < teamNamesList.length) {
+          // Middle players: ambiguous if we have more players than teams
+          if (playerNamesList.length > teamNamesList.length) {
+            // Ambiguous - could be any team
+            playerTeamGuess = teamNamesList // Show all teams as options
+            isAmbiguous = true
+            console.log(`⚠️ Ambiguous position: Player "${playerName}" (index ${playerIdx}) could be on any team - showing all options`)
+          } else {
+            // Clear position match
+            playerTeamGuess = [teamNamesList[playerIdx]]
+            console.log(`✅ Position match: Player "${playerName}" (index ${playerIdx}) → Team "${teamNamesList[playerIdx]}"`)
+          }
+        } else {
+          // Shouldn't reach here, but fallback to ambiguous
+          playerTeamGuess = teamNamesList
+          isAmbiguous = true
+          console.log(`⚠️ Fallback ambiguous: Player "${playerName}" (index ${playerIdx}) - showing all teams`)
+        }
+
+        // Collect teams for player_team checking (based on position guess)
+        const playerTeamCheckTeams = { exact: [], fuzzy: [] }
+        playerTeamGuess.forEach(teamName => {
           const teamMatch = teamLookup[teamName]
           if (teamMatch) {
-            teamMatches.exact.push(...teamMatch.exact)
+            playerTeamCheckTeams.exact.push(...teamMatch.exact)
+            playerTeamCheckTeams.fuzzy.push(...teamMatch.fuzzy)
           }
         })
-        
-        // Get player_team combinations from cached lookup
+
+        // Get player_team combinations from cached lookup (only for guessed teams)
         const playerTeamMatches = []
-        if (playerMatches.exact.length > 0 && teamMatches.exact.length > 0) {
+
+        if (playerMatches.exact.length > 0 && playerTeamCheckTeams.exact.length > 0) {
           playerMatches.exact.forEach(player => {
-            teamMatches.exact.forEach(team => {
+            playerTeamCheckTeams.exact.forEach(team => {
               const ptKey = `${player.playerId}_${team.teamId}`
               const playerTeam = playerTeamLookup[ptKey]
               if (playerTeam) {
@@ -375,20 +517,22 @@ router.post('/match-cards', requireAuth, requireAdmin, async (req, res) => {
             })
           })
         }
-        
+
+        console.log(`🔍 Player "${playerName}": ${playerTeamCheckTeams.exact.length} teams in position guess, ${playerTeamMatches.length} player_team records exist`)
+
         // Check for auto-selection (more practical logic)
         let selectedPlayer = null
         let selectedTeams = []
         let selectedPlayerTeams = []
-        
+
         // AUTO-SELECT if we have exactly one player match
         if (playerMatches?.exact?.length === 1) {
           selectedPlayer = playerMatches.exact[0]
           console.log(`🎯 Auto-selected player: "${selectedPlayer.playerName}" for "${playerName}"`)
-          
-          // If we also have team matches, auto-select them too
-          if (teamMatches?.exact?.length > 0) {
-            selectedTeams = teamMatches.exact
+
+          // If we also have team matches in the position guess, auto-select them
+          if (playerTeamCheckTeams?.exact?.length > 0) {
+            selectedTeams = playerTeamCheckTeams.exact
             console.log(`🎯 Auto-selected ${selectedTeams.length} teams: ${selectedTeams.map(t => t.teamName).join(', ')}`)
             
             // If we have existing player_team records, include them
@@ -404,22 +548,22 @@ router.post('/match-cards', requireAuth, requireAdmin, async (req, res) => {
         }
         
         // Optional: More strict auto-selection if you want to require teams too
-        // if (playerMatches?.exact?.length === 1 && teamMatches?.exact?.length > 0) {
+        // if (playerMatches?.exact?.length === 1 && playerTeamCheckTeams?.exact?.length > 0) {
         //   const exactPlayer = playerMatches.exact[0]
-        //   
+        //
         //   // Check if all teams match and player_team records exist
         //   const allTeamsHavePlayerTeam = teamNamesList.every(teamName => {
-        //     const matchingTeam = teamMatches.exact.find(team => 
+        //     const matchingTeam = playerTeamCheckTeams.exact.find(team =>
         //       team.teamName.toLowerCase().includes(teamName.toLowerCase())
         //     )
         //     if (!matchingTeam) return false
-        //     
+        //
         //     // Check if player_team record exists
-        //     return playerTeamMatches.some(pt => 
+        //     return playerTeamMatches.some(pt =>
         //       pt.playerId === exactPlayer.playerId && pt.teamId === matchingTeam.teamId
         //     )
         //   })
-        //   
+        //
         //   if (allTeamsHavePlayerTeam) {
         //     selectedPlayer = exactPlayer
         //     console.log(`🎯 Perfect match with teams: "${selectedPlayer.playerName}"`)
@@ -429,9 +573,10 @@ router.post('/match-cards', requireAuth, requireAdmin, async (req, res) => {
         cardPlayers.push({
           name: playerName,
           playerMatches: playerMatches,
-          teamNames: teamNamesList,
-          teamMatches: teamMatches,
-          playerTeamMatches: playerTeamMatches,
+          teamNames: teamNamesList, // ALL team names from spreadsheet (not filtered by player)
+          teamMatches: allCardTeams, // ALL teams from card (not filtered by player)
+          playerTeamCheckTeams: playerTeamCheckTeams, // Position-matched teams for THIS player (for player_team checking)
+          playerTeamMatches: playerTeamMatches, // Only player_team records for this player with position-matched teams
           selectedPlayer: selectedPlayer,
           selectedTeams: selectedTeams,
           selectedPlayerTeams: selectedPlayerTeams
@@ -440,6 +585,8 @@ router.post('/match-cards', requireAuth, requireAdmin, async (req, res) => {
 
       matchedCards.push({
         ...card,
+        teamNames: teamNamesList,       // ALL team names from spreadsheet
+        teamMatches: allCardTeams,      // ALL matched teams from database
         players: cardPlayers
       })
     }
@@ -1024,24 +1171,29 @@ async function batchFindPlayers(pool, playerNames, organizationId = null) {
 async function batchFindTeams(pool, teamNames, organizationId = null) {
   try {
     console.log(`🏟️ Batch lookup for ${teamNames.length} unique teams`)
+    console.log(`🏟️ Team names to lookup:`, teamNames)
+    console.log(`🏟️ Organization ID:`, organizationId)
     const teamLookup = {}
-    
+
     if (teamNames.length === 0) return teamLookup
-    
-    // Create parameterized query for all teams
-    const nameConditions = teamNames.map((_, index) => `@team${index}`).join(', ')
-    
+
+    // Create parameterized query for all teams using OR conditions
     const request = pool.request()
-    teamNames.forEach((teamName, index) => {
-      request.input(`team${index}`, sql.NVarChar, teamName.trim())
-    })
-    
+
+    // Build OR conditions for name matching
+    const nameConditions = teamNames.map((teamName, index) => {
+      const lowerName = teamName.trim().toLowerCase()
+      request.input(`team${index}`, sql.NVarChar, lowerName)
+      console.log(`  Parameter @team${index} = "${lowerName}"`)
+      return `(LOWER(t.name) = @team${index} OR LOWER(t.abbreviation) = @team${index})`
+    }).join(' OR ')
+
     if (organizationId) {
       request.input('organizationId', sql.Int, organizationId)
     }
-    
+
     const exactQuery = `
-      SELECT DISTINCT 
+      SELECT DISTINCT
         t.team_id as teamId,
         t.name as teamName,
         t.city as city,
@@ -1051,17 +1203,19 @@ async function batchFindTeams(pool, teamNames, organizationId = null) {
         LOWER(t.name) as lowerName,
         LOWER(t.abbreviation) as lowerAbbrev
       FROM team t
-      WHERE (LOWER(t.name) IN (${nameConditions}) OR LOWER(t.abbreviation) IN (${nameConditions}))
+      WHERE (${nameConditions})
       ${organizationId ? 'AND t.organization = @organizationId' : ''}
       ORDER BY t.name
     `
-    
+
+    console.log(`🔍 Executing exact match query:`, exactQuery.substring(0, 500))
     const exactResult = await request.query(exactQuery)
-    
+    console.log(`📊 Exact match query returned ${exactResult.recordset.length} results`)
+
     // Group results by team name (check both name and abbreviation)
     teamNames.forEach(teamName => {
       const lowerTeamName = teamName.toLowerCase()
-      const matches = exactResult.recordset.filter(team => 
+      const matches = exactResult.recordset.filter(team =>
         team.lowerName === lowerTeamName || team.lowerAbbrev === lowerTeamName
       ).map(team => ({
         teamId: String(team.teamId),
@@ -1071,16 +1225,72 @@ async function batchFindTeams(pool, teamNames, organizationId = null) {
         primaryColor: team.primaryColor,
         secondaryColor: team.secondaryColor
       }))
-      
+
       teamLookup[teamName] = {
         exact: matches,
         fuzzy: []
       }
     })
-    
-    console.log(`✅ Batch team lookup complete: ${Object.keys(teamLookup).length} names processed`)
+
+    // For teams with no exact matches, try fuzzy matching (Requirement #3)
+    const teamsWithoutMatches = teamNames.filter(teamName =>
+      teamLookup[teamName].exact.length === 0
+    )
+
+    console.log(`📊 Team match status:`)
+    teamNames.forEach(teamName => {
+      console.log(`  "${teamName}": ${teamLookup[teamName].exact.length} exact matches`)
+    })
+
+    if (teamsWithoutMatches.length > 0) {
+      console.log(`🔍 Attempting fuzzy matching for ${teamsWithoutMatches.length} teams without exact matches`)
+      console.log(`🔍 Teams needing fuzzy match:`, teamsWithoutMatches)
+
+      for (const teamName of teamsWithoutMatches) {
+        const fuzzyRequest = pool.request()
+        fuzzyRequest.input('teamName', sql.NVarChar, `%${teamName.trim()}%`)
+        if (organizationId) {
+          fuzzyRequest.input('organizationId', sql.Int, organizationId)
+        }
+
+        const fuzzyQuery = `
+          SELECT
+            t.team_id as teamId,
+            t.name as teamName,
+            t.city as city,
+            t.abbreviation as abbreviation,
+            t.primary_color as primaryColor,
+            t.secondary_color as secondaryColor,
+            CASE WHEN LOWER(t.name) LIKE LOWER(@teamName) + '%' THEN 0 ELSE 1 END as matchPriority
+          FROM team t
+          WHERE (LOWER(t.name) LIKE LOWER(@teamName) OR LOWER(t.abbreviation) LIKE LOWER(@teamName))
+          ${organizationId ? 'AND t.organization = @organizationId' : ''}
+          ORDER BY matchPriority, t.name
+        `
+
+        const fuzzyResult = await fuzzyRequest.query(fuzzyQuery)
+
+        if (fuzzyResult.recordset.length > 0) {
+          teamLookup[teamName].fuzzy = fuzzyResult.recordset.map(team => ({
+            teamId: String(team.teamId),
+            teamName: team.teamName,
+            city: team.city,
+            abbreviation: team.abbreviation,
+            primaryColor: team.primaryColor,
+            secondaryColor: team.secondaryColor,
+            matchType: 'fuzzy' // Mark as fuzzy match for UI
+          }))
+          console.log(`✨ Found ${fuzzyResult.recordset.length} fuzzy matches for "${teamName}":`,
+            fuzzyResult.recordset.map(r => r.teamName).join(', '))
+        }
+      }
+    }
+
+    const exactCount = Object.values(teamLookup).filter(t => t.exact.length > 0).length
+    const fuzzyCount = Object.values(teamLookup).filter(t => t.fuzzy.length > 0).length
+    console.log(`✅ Batch team lookup complete: ${exactCount} exact matches, ${fuzzyCount} fuzzy matches`)
     return teamLookup
-    
+
   } catch (error) {
     console.error('Error in batch team lookup:', error)
     return {}
@@ -1350,23 +1560,23 @@ async function findTeamMatches(pool, teamNames, organizationId = null) {
   try {
     console.log(`🏟️ Searching for teams: "${teamNames.join(', ')}"`)
     const matches = { exact: [], fuzzy: [] }
-    
+
     if (!teamNames || teamNames.length === 0) {
       return matches
     }
-    
+
     for (const teamName of teamNames) {
       const cleanTeamName = teamName.trim()
-      
-      // Exact match only - no fuzzy matching for teams (filtered by organization)
+
+      // First try exact match (filtered by organization)
       const exactRequest = pool.request()
       exactRequest.input('teamName', sql.NVarChar, cleanTeamName)
       if (organizationId) {
         exactRequest.input('organizationId', sql.Int, organizationId)
       }
-      
+
       const exactQuery = `
-        SELECT DISTINCT 
+        SELECT DISTINCT
           t.team_id as teamId,
           t.name as teamName,
           t.city as city,
@@ -1378,10 +1588,10 @@ async function findTeamMatches(pool, teamNames, organizationId = null) {
         ${organizationId ? 'AND t.organization = @organizationId' : ''}
         ORDER BY t.name
       `
-      
+
       const exactResult = await exactRequest.query(exactQuery)
-      
-      // Add matches, but avoid duplicates based on team_id
+
+      // Add exact matches, avoiding duplicates based on team_id
       exactResult.recordset.forEach(row => {
         const existingMatch = matches.exact.find(m => m.teamId === String(row.teamId))
         if (!existingMatch) {
@@ -1395,11 +1605,62 @@ async function findTeamMatches(pool, teamNames, organizationId = null) {
           })
         }
       })
+
+      // If no exact match found, try fuzzy matching (Requirement #3)
+      // This helps match "Angels" to "Los Angeles Angels" or "Anaheim Angels"
+      if (exactResult.recordset.length === 0) {
+        console.log(`🔍 No exact match for "${cleanTeamName}", trying fuzzy match...`)
+
+        const fuzzyRequest = pool.request()
+        fuzzyRequest.input('teamName', sql.NVarChar, `%${cleanTeamName}%`)
+        if (organizationId) {
+          fuzzyRequest.input('organizationId', sql.Int, organizationId)
+        }
+
+        const fuzzyQuery = `
+          SELECT
+            t.team_id as teamId,
+            t.name as teamName,
+            t.city as city,
+            t.abbreviation as abbreviation,
+            t.primary_color as primaryColor,
+            t.secondary_color as secondaryColor,
+            CASE WHEN LOWER(t.name) LIKE LOWER(@teamName) + '%' THEN 0 ELSE 1 END as matchPriority
+          FROM team t
+          WHERE (LOWER(t.name) LIKE LOWER(@teamName) OR LOWER(t.abbreviation) LIKE LOWER(@teamName))
+          ${organizationId ? 'AND t.organization = @organizationId' : ''}
+          ORDER BY matchPriority, t.name
+        `
+
+        const fuzzyResult = await fuzzyRequest.query(fuzzyQuery)
+
+        // Add fuzzy matches, avoiding duplicates
+        fuzzyResult.recordset.forEach(row => {
+          const existingExact = matches.exact.find(m => m.teamId === String(row.teamId))
+          const existingFuzzy = matches.fuzzy.find(m => m.teamId === String(row.teamId))
+          if (!existingExact && !existingFuzzy) {
+            matches.fuzzy.push({
+              teamId: String(row.teamId),
+              teamName: row.teamName,
+              city: row.city,
+              abbreviation: row.abbreviation,
+              primaryColor: row.primaryColor,
+              secondaryColor: row.secondaryColor,
+              matchType: 'fuzzy' // Mark as fuzzy match for UI
+            })
+          }
+        })
+
+        if (fuzzyResult.recordset.length > 0) {
+          console.log(`✨ Found ${fuzzyResult.recordset.length} fuzzy matches for "${cleanTeamName}":`,
+            fuzzyResult.recordset.map(r => r.teamName).join(', '))
+        }
+      }
     }
-    
-    console.log(`✅ Found ${matches.exact.length} team matches`)
+
+    console.log(`✅ Found ${matches.exact.length} exact team matches, ${matches.fuzzy.length} fuzzy matches`)
     return matches
-    
+
   } catch (error) {
     console.error('Error finding team matches:', error)
     return { exact: [], fuzzy: [] }

@@ -312,14 +312,68 @@ const ImportTable = ({
     if (onCardUpdate) {
       const updatedCards = [...cards]
       const player = updatedCards[cardIndex].players[playerIndex]
-      const selectedTeam = player.teamMatches.exact.find(t => t.teamId === teamId)
-      
-      if (!updatedCards[cardIndex].players[playerIndex].selectedTeams) {
-        updatedCards[cardIndex].players[playerIndex].selectedTeams = []
+
+      // Look for team in both exact and fuzzy matches
+      const selectedTeam = player.teamMatches.exact?.find(t => t.teamId === teamId) ||
+                          player.teamMatches.fuzzy?.find(t => t.teamId === teamId)
+
+      if (selectedTeam) {
+        // If team was in fuzzy matches, move it to exact matches
+        const wasInFuzzy = player.teamMatches.fuzzy?.some(t => t.teamId === teamId)
+        if (wasInFuzzy) {
+          // Remove from fuzzy
+          player.teamMatches.fuzzy = player.teamMatches.fuzzy.filter(t => t.teamId !== teamId)
+          // Add to exact if not already there
+          if (!player.teamMatches.exact.some(t => t.teamId === teamId)) {
+            player.teamMatches.exact.push(selectedTeam)
+          }
+        }
+
+        if (!updatedCards[cardIndex].players[playerIndex].selectedTeams) {
+          updatedCards[cardIndex].players[playerIndex].selectedTeams = []
+        }
+
+        updatedCards[cardIndex].players[playerIndex].selectedTeams[teamIndex] = selectedTeam
+
+        // If player is already selected, try to auto-create player_team record
+        if (player.selectedPlayer) {
+          const playerId = player.selectedPlayer.playerId
+          const teamId = selectedTeam.teamId
+
+          // Check if player_team combination already exists
+          const playerTeamExists = player.playerTeamMatches?.some(pt =>
+            pt.playerId === playerId && pt.teamId === teamId
+          )
+
+          if (!playerTeamExists) {
+            console.log(`🔗 Creating player_team for selected fuzzy match: ${player.selectedPlayer.playerName} + ${selectedTeam.teamName}`)
+
+            axios.post('/api/admin/import/create-player-team', {
+              playerId: playerId,
+              teamId: teamId
+            }).then(ptResponse => {
+              if (ptResponse.data.success) {
+                if (!player.playerTeamMatches) {
+                  player.playerTeamMatches = []
+                }
+                player.playerTeamMatches.push(ptResponse.data.playerTeam)
+                console.log(`✅ Created player_team: ${ptResponse.data.playerTeam.playerName} - ${ptResponse.data.playerTeam.teamName}`)
+
+                if (showToast) {
+                  showToast(`Created player-team: ${ptResponse.data.playerTeam.playerName} - ${ptResponse.data.playerTeam.teamName}`, 'success')
+                }
+
+                // Force re-render after player_team creation
+                onCardUpdate([...updatedCards])
+              }
+            }).catch(ptError => {
+              console.error('Error creating player_team:', ptError)
+            })
+          }
+        }
+
+        onCardUpdate(updatedCards)
       }
-      
-      updatedCards[cardIndex].players[playerIndex].selectedTeams[teamIndex] = selectedTeam
-      onCardUpdate(updatedCards)
     }
   }
 
@@ -360,48 +414,26 @@ const ImportTable = ({
         // Get current player data before modifying
         const currentPlayer = cards[cardIndex].players[playerIndex]
         console.log('🔍 Current player before update:', currentPlayer)
-        const recognizedTeams = currentPlayer.teamMatches?.exact || []
-        console.log(`🏈 Found ${recognizedTeams.length} recognized teams for new player`)
-        
-        // Create player_team records for each recognized team
-        for (const team of recognizedTeams) {
-          try {
-            const ptResponse = await axios.post('/api/admin/import/create-player-team', {
-              playerId: newPlayerId,
-              teamId: team.teamId
-            })
-            
-            if (ptResponse.data.success) {
-              createdPlayerTeams.push(ptResponse.data.playerTeam)
-              console.log(`✅ Created player_team: ${response.data.player.playerName} - ${team.teamName}`)
-            }
-          } catch (ptError) {
-            console.warn(`⚠️ Failed to create player_team for ${team.teamName}:`, ptError.response?.data?.message)
-          }
-        }
-        
+
+        // Get card-level teams (all teams from spreadsheet)
+        const cardTeams = cards[cardIndex].teamMatches?.exact || []
+
+        // Don't auto-create player_team records - let user select from options in Player Team column
+
         // Show success toast first, before state updates
-        const successMessage = createdPlayerTeams.length > 0 
-          ? `Created player ${response.data.player.playerName} with ${createdPlayerTeams.length} team(s)`
-          : `Created player: ${response.data.player.playerName}`
-        
+        const successMessage = `Created player: ${response.data.player.playerName}`
+
         if (showToast) {
           showToast(successMessage, 'success')
         }
-        
-        // Create new player object with team associations
+
+        // Create new player object (no teams yet)
         const newPlayer = {
           playerId: response.data.player.playerId,
           playerName: response.data.player.playerName,
           firstName: response.data.player.firstName,
           lastName: response.data.player.lastName,
-          teams: recognizedTeams.map(team => ({
-            teamId: team.teamId,
-            teamName: team.teamName,
-            primaryColor: team.primaryColor,
-            secondaryColor: team.secondaryColor,
-            abbreviation: team.abbreviation
-          }))
+          teams: [] // No teams auto-assigned
         }
 
         // Use functional update to ensure we get the latest state
@@ -410,23 +442,27 @@ const ImportTable = ({
           const updatedCards = [...prevCards]
           const cardToUpdate = { ...updatedCards[cardIndex] }
           const playersToUpdate = [...cardToUpdate.players]
-          
+
           // Update the specific player with new data
           playersToUpdate[playerIndex] = {
             ...playersToUpdate[playerIndex],
-            playerMatches: { exact: [], fuzzy: [] }, // Clear existing matches
+            playerMatches: {
+              exact: [newPlayer], // Set newly created player as exact match
+              fuzzy: []
+            },
             selectedPlayer: newPlayer, // Set as selected player
-            playerTeamMatches: createdPlayerTeams, // Update player_team matches
+            playerTeamMatches: [], // Empty - no player_team records yet
             _renderKey: Date.now() // Force React re-render
           }
-          
+
           cardToUpdate.players = playersToUpdate
           updatedCards[cardIndex] = cardToUpdate
-          
+
           console.log('🎯 Functional update triggered with new cards array')
           console.log('🔍 New selected player:', updatedCards[cardIndex].players[playerIndex].selectedPlayer)
+          console.log('🔍 Player team column will show options from playerTeamCheckTeams')
           console.log('🔍 Updated player object:', updatedCards[cardIndex].players[playerIndex])
-          
+
           return updatedCards
         })
       }
@@ -918,40 +954,86 @@ const ImportTable = ({
                     </td>
                     <td className="team-cell">
                       <div className="import-team-validation">
-                        {card.players?.map((player, playerIdx) => {
-                          const isPerfect = isPerfectMatch(player)
-                          
-                          return (
-                            <div key={playerIdx} className="player-teams">
-                              {player.teamNames?.map((teamName, teamIdx) => {
-                                const hasMatch = player.teamMatches?.exact?.some(match => 
-                                  match.teamName.toLowerCase().includes(teamName.toLowerCase())
-                                )
-                                
-                                // Show green checkmark box for perfect matches
-                                if (isPerfect && hasMatch) {
-                                  return (
-                                    <div key={teamIdx} className="team-status found">
-                                      <Icon name="check" size={12} />
-                                      {teamName}
+                        {card.teamNames?.map((teamName, teamIdx) => {
+                          // Find exact match for this team name
+                          const exactMatch = card.teamMatches?.exact?.find(match =>
+                            match.teamName.toLowerCase().includes(teamName.toLowerCase())
+                          )
+
+                          const hasFuzzyMatch = card.teamMatches?.fuzzy?.some(match =>
+                            match.teamName.toLowerCase().includes(teamName.toLowerCase())
+                          )
+
+                          // Show team name with exact match
+                          if (exactMatch) {
+                            return (
+                              <div key={teamIdx} className="team-status found">
+                                ✓ {exactMatch.teamName}
+                              </div>
+                            )
+                          }
+
+                          // Show team name with fuzzy matches as clickable options
+                          if (hasFuzzyMatch) {
+                            const fuzzyMatches = card.teamMatches.fuzzy.filter(match =>
+                              match.teamName.toLowerCase().includes(teamName.toLowerCase())
+                            )
+
+                            return (
+                              <div key={teamIdx} className="team-match-container">
+                                <div className="team-status not-found">
+                                  ✗ {teamName}
+                                  <button
+                                    className="inline-create-team-button"
+                                    onClick={() => createNewTeam(cardIndex, null, teamIdx, teamName)}
+                                  >
+                                    + Create
+                                  </button>
+                                </div>
+                                <div className="fuzzy-team-suggestions">
+                                  {fuzzyMatches.slice(0, 3).map(match => (
+                                    <div
+                                      key={match.teamId}
+                                      className="fuzzy-team-option"
+                                      onClick={() => {
+                                        // Update team name at card level
+                                        const updatedCards = [...cards]
+                                        updatedCards[cardIndex].teamNames[teamIdx] = match.teamName
+
+                                        // Move from fuzzy to exact
+                                        updatedCards[cardIndex].teamMatches.exact.push(match)
+                                        updatedCards[cardIndex].teamMatches.fuzzy =
+                                          updatedCards[cardIndex].teamMatches.fuzzy.filter(m => m.teamId !== match.teamId)
+
+                                        onCardUpdate(updatedCards)
+                                      }}
+                                      title={`Select ${match.teamName}`}
+                                      style={{
+                                        '--primary-color': match.primaryColor || '#666',
+                                        '--secondary-color': match.secondaryColor || '#999'
+                                      }}
+                                    >
+                                      <div className="mini-team-circle">
+                                        {match.abbreviation || match.teamName?.substring(0, 3)?.toUpperCase()}
+                                      </div>
+                                      <span className="team-name-text">{match.teamName}</span>
                                     </div>
-                                  )
-                                }
-                                
-                                return (
-                                  <div key={teamIdx} className={`team-status ${hasMatch ? 'found' : 'not-found'}`}>
-                                    {hasMatch ? '✓' : '✗'} {teamName}
-                                    {!hasMatch && (
-                                      <button 
-                                        className="inline-create-team-button"
-                                        onClick={() => createNewTeam(cardIndex, playerIdx, teamIdx, teamName)}
-                                      >
-                                        + Create
-                                      </button>
-                                    )}
-                                  </div>
-                                )
-                              })}
+                                  ))}
+                                </div>
+                              </div>
+                            )
+                          }
+
+                          // No matches at all - show create button
+                          return (
+                            <div key={teamIdx} className="team-status not-found">
+                              ✗ {teamName}
+                              <button
+                                className="inline-create-team-button"
+                                onClick={() => createNewTeam(cardIndex, null, teamIdx, teamName)}
+                              >
+                                + Create
+                              </button>
                             </div>
                           )
                         })}
@@ -984,19 +1066,40 @@ const ImportTable = ({
                     <td className="player-team-combo-cell">
                       <div className="player-team-combos">
                         {(card.players || []).map((player, playerIdx) => {
-                          // Must have both selected player and team matches
-                          if (!player.selectedPlayer || !player.teamMatches?.exact?.length) {
+                          // Debug logging for first card
+                          if (cardIndex === 0) {
+                            console.log(`🔍 Player ${playerIdx} (${player.name}):`, {
+                              selectedPlayer: player.selectedPlayer,
+                              playerTeamCheckTeams: player.playerTeamCheckTeams,
+                              playerTeamMatches: player.playerTeamMatches,
+                              cardTeams: card.teamMatches?.exact
+                            })
+                          }
+
+                          // Must have selected player
+                          if (!player.selectedPlayer) {
                             return <div key={playerIdx} className="incomplete-combo">-</div>
                           }
-                          
+
+                          // Determine which teams to show:
+                          // - If player has position-matched teams (playerTeamCheckTeams), show only those
+                          // - If no position match (ambiguous), show ALL card teams as options
+                          const teamsToShow = (player.playerTeamCheckTeams?.exact?.length > 0)
+                            ? player.playerTeamCheckTeams.exact
+                            : card.teamMatches?.exact || []
+
+                          if (teamsToShow.length === 0) {
+                            return <div key={playerIdx} className="incomplete-combo">-</div>
+                          }
+
                           // Check each team to see if player_team exists
-                          const teamResults = player.teamMatches.exact.map(team => {
-                            const hasPlayerTeam = player.playerTeamMatches?.some(pt => 
+                          const teamResults = teamsToShow.map(team => {
+                            const hasPlayerTeam = player.playerTeamMatches?.some(pt =>
                               pt.playerId === player.selectedPlayer.playerId && pt.teamId === team.teamId
                             )
-                            
+
                             if (hasPlayerTeam) {
-                              // Show green player name + team circle
+                              // Show green confirmed player_team
                               return (
                                 <div key={`${playerIdx}-${team.teamId}`} className="player-team-exists">
                                   <span className="pt-player-name">{player.selectedPlayer.playerName}</span>
@@ -1013,20 +1116,68 @@ const ImportTable = ({
                                 </div>
                               )
                             } else {
-                              // Show + button to create player_team
+                              // Show blue recommendation button with + player name + team circle
                               return (
                                 <button
                                   key={`${playerIdx}-${team.teamId}`}
-                                  className="create-player-team-btn"
-                                  onClick={() => createPlayerTeam(cardIndex, playerIdx, player.selectedPlayer.playerId, team.teamId)}
-                                  title={`Create player-team record for ${player.selectedPlayer.playerName} - ${team.teamName}`}
+                                  className="player-team-recommendation"
+                                  onClick={async () => {
+                                    try {
+                                      const response = await axios.post('/api/admin/import/create-player-team', {
+                                        playerId: player.selectedPlayer.playerId,
+                                        teamId: team.teamId
+                                      })
+
+                                      if (response.data.success) {
+                                        if (showToast) {
+                                          showToast(`Created player-team: ${player.selectedPlayer.playerName} - ${team.teamName}`, 'success')
+                                        }
+
+                                        // Update state: add the new player_team and update playerTeamCheckTeams to only show this team
+                                        const updatedCards = [...cards]
+                                        const playerData = updatedCards[cardIndex].players[playerIdx]
+
+                                        // Add to player_team matches
+                                        if (!playerData.playerTeamMatches) {
+                                          playerData.playerTeamMatches = []
+                                        }
+                                        playerData.playerTeamMatches.push(response.data.playerTeam)
+
+                                        // Update playerTeamCheckTeams to only show the selected team
+                                        // This switches the display from "all teams" to "only this team"
+                                        playerData.playerTeamCheckTeams = {
+                                          exact: [team],
+                                          fuzzy: []
+                                        }
+
+                                        onCardUpdate(updatedCards)
+                                      }
+                                    } catch (error) {
+                                      console.error('Error creating player_team:', error)
+                                      if (showToast) {
+                                        showToast(error.response?.data?.message || 'Failed to create player-team', 'error')
+                                      }
+                                    }
+                                  }}
+                                  title={`Create player-team: ${player.selectedPlayer.playerName} - ${team.teamName}`}
                                 >
-                                  +
+                                  <span className="pt-plus">+</span>
+                                  <span className="pt-player-name">{player.selectedPlayer.playerName}</span>
+                                  <div
+                                    className="mini-team-circle"
+                                    style={{
+                                      '--primary-color': team.primaryColor || '#666',
+                                      '--secondary-color': team.secondaryColor || '#999'
+                                    }}
+                                    title={team.teamName}
+                                  >
+                                    {team.abbreviation || team.teamName?.substring(0, 3)?.toUpperCase()}
+                                  </div>
                                 </button>
                               )
                             }
                           })
-                          
+
                           return (
                             <div key={playerIdx} className="player-team-results">
                               {teamResults}
@@ -1140,19 +1291,32 @@ const ImportTable = ({
                                 {player.teamNames?.map((teamName, teamIndex) => (
                                   <div key={teamIndex} className="import-team-matching">
                                     <h5>Team: {teamName}</h5>
-                                    
-                                    {player.teamMatches?.exact?.length > 0 ? (
-                                      <select 
+
+                                    {(player.teamMatches?.exact?.length > 0 || player.teamMatches?.fuzzy?.length > 0) ? (
+                                      <select
                                         value={player.selectedTeams?.[teamIndex]?.teamId || ''}
                                         onChange={(e) => handleTeamSelection(cardIndex, playerIndex, teamIndex, e.target.value)}
                                         className="import-match-select"
                                       >
                                         <option value="">Choose team...</option>
-                                        {player.teamMatches.exact.map(team => (
-                                          <option key={team.teamId} value={team.teamId}>
-                                            {team.teamName}
-                                          </option>
-                                        ))}
+                                        {player.teamMatches.exact?.length > 0 && (
+                                          <optgroup label="Exact Matches">
+                                            {player.teamMatches.exact.map(team => (
+                                              <option key={team.teamId} value={team.teamId}>
+                                                {team.teamName}
+                                              </option>
+                                            ))}
+                                          </optgroup>
+                                        )}
+                                        {player.teamMatches.fuzzy?.length > 0 && (
+                                          <optgroup label="Suggestions">
+                                            {player.teamMatches.fuzzy.map(team => (
+                                              <option key={team.teamId} value={team.teamId}>
+                                                {team.teamName}
+                                              </option>
+                                            ))}
+                                          </optgroup>
+                                        )}
                                       </select>
                                     ) : (
                                       <div className="import-create-section">
@@ -1241,20 +1405,44 @@ const ImportTable = ({
             sortedCards.forEach(card => {
               // Check if card is ready (all validations pass)
               let isReady = true
-              card.players?.forEach((player) => {
-                if (!player.selectedPlayer) isReady = false
-                player.teamNames?.forEach((teamName) => {
-                  const hasTeamMatch = player.teamMatches?.exact?.some(match => 
+
+              // 1. Check all players have matches
+              if (!card.players?.every(player => player.selectedPlayer)) {
+                isReady = false
+              }
+
+              // 2. Check all card-level teams have matches
+              if (card.teamNames?.length > 0) {
+                const allTeamsMatched = card.teamNames.every(teamName =>
+                  card.teamMatches?.exact?.some(match =>
                     match.teamName.toLowerCase().includes(teamName.toLowerCase())
                   )
-                  if (!hasTeamMatch) isReady = false
+                )
+                if (!allTeamsMatched) isReady = false
+              }
+
+              // 3. Check all players have player_team records
+              if (isReady) {
+                card.players?.forEach(player => {
+                  if (!player.selectedPlayer) return
+
+                  // Get the teams this player should have based on playerTeamCheckTeams
+                  const requiredTeams = player.playerTeamCheckTeams?.exact || []
+
+                  // Check if player has player_team records for all required teams
+                  requiredTeams.forEach(team => {
+                    const hasPlayerTeam = player.playerTeamMatches?.some(pt =>
+                      pt.playerId === player.selectedPlayer.playerId && pt.teamId === team.teamId
+                    )
+                    if (!hasPlayerTeam) isReady = false
+                  })
                 })
-              })
-              
+              }
+
               if (isReady) ready++
               else needsWork++
             })
-            
+
             return (
               <>
                 <span className="import-stat-ready">{ready} Ready</span>

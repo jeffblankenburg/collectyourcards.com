@@ -48,16 +48,41 @@ app.get('/health', (req, res) => {
 try {
   // Status routes (always available)
   app.use('/api', require('../server/routes/status'))
-  
+
   // Auth routes
   app.use('/api/auth', require('../server/routes/auth'))
-  
-  console.log('Real routes loaded for testing')
+
+  // User routes
+  app.use('/api/user/cards', require('../server/routes/user-cards'))
+  app.use('/api/user/locations', require('../server/routes/user-locations'))
+  app.use('/api/user/collection', require('../server/routes/user-collection-cards'))
+
+  // Profile routes
+  app.use('/api/profile', require('../server/routes/user-profile'))
+
+  // Comment routes
+  app.use('/api/comments', require('../server/routes/comments'))
+
+  // Notification routes
+  app.use('/api/notifications', require('../server/routes/notifications'))
+
+  // Search routes
+  app.use('/api/search', require('../server/routes/search'))
+
+  // Card routes
+  app.use('/api/cards', require('../server/routes/cards'))
+  app.use('/api/card-detail', require('../server/routes/card-detail'))
+
+  // Admin routes
+  app.use('/api/admin', require('../server/routes/admin-users'))
+
+  console.log('✅ Real routes loaded for testing')
 } catch (error) {
-  console.error('Failed to load routes for testing:', error.message)
-  
+  console.error('❌ Failed to load routes for testing:', error.message)
+  console.error('Stack:', error.stack)
+
   // Fallback mock route for testing
-  app.use('/api/auth/*', (req, res) => {
+  app.use('/api/*', (req, res) => {
     res.status(500).json({
       error: 'Test route loading failed',
       message: error.message

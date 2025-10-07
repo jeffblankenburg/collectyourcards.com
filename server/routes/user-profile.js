@@ -92,7 +92,7 @@ router.get('/', authMiddleware, async (req, res) => {
 router.get('/user/:username', optionalAuthMiddleware, async (req, res) => {
   try {
     const { username } = req.params
-    const requestingUserId = req.user?.userId
+    const requestingUserId = req.user?.id || req.user?.userId  // Support both id and userId
     
     console.log(`🔍 Profile: Looking for username: ${username}`)
     
@@ -411,9 +411,9 @@ router.get('/user/:username', optionalAuthMiddleware, async (req, res) => {
 
     res.json({
       profile: serializedProfile,
-      favorite_cards: favoriteCards,
+      favoriteCards: favoriteCards,  // Use camelCase for consistency
       stats: stats,
-      recent_activity: recentActivity,
+      recentActivity: recentActivity,  // Use camelCase for consistency
       achievements: achievementData
     })
 
@@ -423,15 +423,71 @@ router.get('/user/:username', optionalAuthMiddleware, async (req, res) => {
   }
 })
 
-// PUT /api/profile/update - Update own profile (authentication required)
+// PUT /api/profile - Update own profile (authentication required)
+router.put('/', authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.userId
+    const {
+      bio,
+      website,
+      location,
+      is_public_profile
+    } = req.body
+
+    // Validate inputs
+    if (bio && bio.length > 500) {
+      return res.status(400).json({ error: 'Bio too long (max 500 characters)' })
+    }
+
+    if (website && website.length > 255) {
+      return res.status(400).json({ error: 'Website URL too long (max 255 characters)' })
+    }
+
+    if (location && location.length > 100) {
+      return res.status(400).json({ error: 'Location too long (max 100 characters)' })
+    }
+
+    // URL validation for website
+    if (website && website.trim()) {
+      try {
+        new URL(website.startsWith('http') ? website : `https://${website}`)
+      } catch {
+        return res.status(400).json({ error: 'Invalid website URL' })
+      }
+    }
+
+    // Sanitize bio input to prevent XSS
+    const sanitizedBio = bio ? bio.replace(/<script[^>]*>.*?<\/script>/gi, '').replace(/<[^>]+>/g, '') : null
+
+    // Update profile
+    await prisma.$executeRaw`
+      UPDATE [user]
+      SET bio = ${sanitizedBio},
+          website = ${website || null},
+          user_location = ${location || null},
+          is_public_profile = ${is_public_profile !== undefined ? is_public_profile : true},
+          profile_completed = 1,
+          updated_at = GETDATE()
+      WHERE user_id = ${Number(userId)}
+    `
+
+    res.json({ message: 'Profile updated successfully' })
+
+  } catch (error) {
+    console.error('Error updating profile:', error)
+    res.status(500).json({ error: 'Failed to update profile' })
+  }
+})
+
+// PUT /api/profile/update - Alias for backwards compatibility
 router.put('/update', authMiddleware, async (req, res) => {
   try {
     const userId = req.user.userId
-    const { 
-      bio, 
-      website, 
-      location, 
-      is_public_profile 
+    const {
+      bio,
+      website,
+      location,
+      is_public_profile
     } = req.body
 
     // Validate inputs
@@ -476,15 +532,14 @@ router.put('/update', authMiddleware, async (req, res) => {
   }
 })
 
-// GET /api/profile/check-username/:username - Check username availability
-router.get('/check-username/:username', authMiddleware, async (req, res) => {
+// GET /api/profile/check-username/:username - Check username availability (no auth required)
+router.get('/check-username/:username', async (req, res) => {
   try {
     const { username } = req.params
-    const userId = req.user.userId
 
     // Validate username format
     if (!/^[a-zA-Z0-9._-]{3,30}$/.test(username)) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         available: false,
         error: 'Username must be 3-30 characters and contain only letters, numbers, dots, underscores, or dashes'
       })
@@ -492,24 +547,24 @@ router.get('/check-username/:username', authMiddleware, async (req, res) => {
 
     // Check if username is reserved
     if (isReserved(username)) {
-      return res.status(400).json({
+      return res.json({
         available: false,
-        error: 'This username is reserved',
+        reserved: true,
         suggestions: suggestAlternatives(username)
       })
     }
 
-    // Check if username exists (excluding current user)
+    // Check if username exists
     const existing = await prisma.$queryRaw`
-      SELECT user_id 
-      FROM [user] 
+      SELECT user_id
+      FROM [user]
       WHERE username = ${username.toLowerCase()}
-        AND user_id != ${Number(userId)}
     `
 
     res.json({
       available: existing.length === 0,
-      username: username.toLowerCase()
+      username: username.toLowerCase(),
+      suggestions: existing.length > 0 ? suggestAlternatives(username) : undefined
     })
 
   } catch (error) {
@@ -518,7 +573,79 @@ router.get('/check-username/:username', authMiddleware, async (req, res) => {
   }
 })
 
-// PUT /api/profile/update-username - Update username (authentication required)
+// PUT /api/profile/username - Update username (authentication required)
+router.put('/username', authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.userId
+    const { username } = req.body
+
+    // Validate username
+    if (!username || !username.trim()) {
+      return res.status(400).json({ error: 'Username is required' })
+    }
+
+    const cleanUsername = username.trim().toLowerCase()
+
+    // Validate username format
+    if (!/^[a-zA-Z0-9._-]{3,30}$/.test(cleanUsername)) {
+      return res.status(400).json({
+        error: 'Username must be 3-30 characters and contain only letters, numbers, dots, underscores, or dashes'
+      })
+    }
+
+    // Check if username is reserved
+    if (isReserved(cleanUsername)) {
+      return res.status(409).json({
+        error: 'This username is reserved and cannot be used',
+        suggestions: suggestAlternatives(cleanUsername)
+      })
+    }
+
+    // Check if username is already taken by another user
+    const existingUser = await prisma.$queryRaw`
+      SELECT user_id
+      FROM [user]
+      WHERE username = ${cleanUsername}
+        AND user_id != ${Number(userId)}
+        AND is_active = 1
+    `
+
+    if (existingUser.length > 0) {
+      return res.status(409).json({
+        error: 'This username is already taken'
+      })
+    }
+
+    // Get current username for logging
+    const currentUser = await prisma.$queryRaw`
+      SELECT username FROM [user] WHERE user_id = ${Number(userId)}
+    `
+
+    const oldUsername = currentUser.length > 0 ? currentUser[0].username : null
+
+    // Update username
+    await prisma.$executeRaw`
+      UPDATE [user]
+      SET username = ${cleanUsername},
+          updated_at = GETDATE()
+      WHERE user_id = ${Number(userId)}
+    `
+
+    // Log the username change for audit trail
+    console.log(`🔄 Username changed: User ${userId} changed from "${oldUsername}" to "${cleanUsername}"`)
+
+    res.json({
+      message: 'Username updated successfully',
+      username: cleanUsername
+    })
+
+  } catch (error) {
+    console.error('Error updating username:', error)
+    res.status(500).json({ error: 'Failed to update username' })
+  }
+})
+
+// PUT /api/profile/update-username - Update username (authentication required) - Alias for backwards compatibility
 router.put('/update-username', authMiddleware, async (req, res) => {
   try {
     const userId = req.user.userId
@@ -944,6 +1071,57 @@ router.get('/collection-cards', authMiddleware, async (req, res) => {
   } catch (error) {
     console.error('Error fetching collection cards:', error)
     res.status(500).json({ error: 'Failed to fetch collection cards' })
+  }
+})
+
+// POST /api/profile/favorite-cards - Set favorite cards (bulk update)
+router.post('/favorite-cards', authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.userId
+    const { favorite_card_ids } = req.body
+
+    if (!Array.isArray(favorite_card_ids)) {
+      return res.status(400).json({ error: 'favorite_card_ids must be an array' })
+    }
+
+    if (favorite_card_ids.length > 5) {
+      return res.status(400).json({ error: 'You can only have 5 favorite cards maximum' })
+    }
+
+    // First, unmark all current favorites
+    await prisma.$executeRaw`
+      UPDATE user_card
+      SET is_special = 0
+      WHERE [user] = ${Number(userId)}
+    `
+
+    // Then mark the new favorites
+    if (favorite_card_ids.length > 0) {
+      for (const userCardId of favorite_card_ids) {
+        // Verify user owns this card
+        const userCard = await prisma.$queryRaw`
+          SELECT user_card_id
+          FROM user_card
+          WHERE user_card_id = ${Number(userCardId)} AND [user] = ${Number(userId)}
+        `
+
+        if (userCard.length > 0) {
+          await prisma.$executeRaw`
+            UPDATE user_card
+            SET is_special = 1
+            WHERE user_card_id = ${Number(userCardId)} AND [user] = ${Number(userId)}
+          `
+        }
+      }
+    }
+
+    res.json({
+      message: 'Favorite cards updated successfully'
+    })
+
+  } catch (error) {
+    console.error('Error setting favorite cards:', error)
+    res.status(500).json({ error: 'Failed to set favorite cards' })
   }
 })
 

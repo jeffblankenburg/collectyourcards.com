@@ -59,8 +59,10 @@ describe('Authentication Endpoints', () => {
 
   describe('POST /api/auth/register', () => {
     it('should register a new user successfully', async () => {
+      const timestamp = Date.now()
       const userData = {
-        email: 'newuser@test.com',
+        email: `newuser-${timestamp}@test.com`,
+        username: `newusertestuser${timestamp}`,
         password: 'StrongPass123!',
         confirmPassword: 'StrongPass123!',
         name: 'New User'
@@ -86,6 +88,7 @@ describe('Authentication Endpoints', () => {
     it('should reject registration with weak password', async () => {
       const userData = {
         email: 'weakpass@test.com',
+        username: 'weakpassuser',
         password: 'weak',
         confirmPassword: 'weak',
         name: 'Weak Password User'
@@ -109,6 +112,7 @@ describe('Authentication Endpoints', () => {
     it('should reject registration with mismatched passwords', async () => {
       const userData = {
         email: 'mismatch@test.com',
+        username: 'mismatchuser',
         password: 'StrongPass123!',
         confirmPassword: 'DifferentPass123!',
         name: 'Mismatch User'
@@ -132,6 +136,7 @@ describe('Authentication Endpoints', () => {
     it('should reject registration with invalid email', async () => {
       const userData = {
         email: 'invalid-email',
+        username: 'invalidemail',
         password: 'StrongPass123!',
         confirmPassword: 'StrongPass123!',
         name: 'Invalid Email User'
@@ -146,8 +151,10 @@ describe('Authentication Endpoints', () => {
     })
 
     it('should reject duplicate email registration', async () => {
+      const timestamp = Date.now()
       const userData = {
-        email: 'duplicate@test.com',
+        email: `duplicate-${timestamp}@test.com`,
+        username: `duplicateuser${timestamp}`,
         password: 'StrongPass123!',
         confirmPassword: 'StrongPass123!',
         name: 'First User'
@@ -162,7 +169,7 @@ describe('Authentication Endpoints', () => {
       // Second registration with same email should fail
       const response = await request(app)
         .post('/api/auth/register')
-        .send({ ...userData, name: 'Second User' })
+        .send({ ...userData, name: 'Second User', username: `seconduser${timestamp}` })
         .expect(409)
 
       expect(response.body.error).toBe('Registration failed')
@@ -178,6 +185,7 @@ describe('Authentication Endpoints', () => {
         const user = await prisma.user.create({
           data: {
             email: testUser.email,
+            username: 'verifieduser' + Date.now(),
             password_hash: hashedPassword,
             name: testUser.name,
             role: 'user',
@@ -255,6 +263,7 @@ describe('Authentication Endpoints', () => {
         await prisma.user.create({
           data: {
             email: 'unverified@test.com',
+            username: 'unverifiedtest' + Date.now(),
             password_hash: hashedPassword,
             name: 'Unverified User',
             role: 'user',
@@ -302,6 +311,7 @@ describe('Authentication Endpoints', () => {
         await prisma.user.create({
           data: {
             email: 'toverify@test.com',
+            username: 'toverifyuser' + Date.now(),
             password_hash: hashedPassword,
             name: 'To Verify User',
             role: 'user',
@@ -393,6 +403,7 @@ describe('Authentication Endpoints', () => {
         await prisma.user.create({
           data: {
             email: 'reset@test.com',
+            username: 'resetuser' + Date.now(),
             password_hash: hashedPassword,
             name: 'Reset User',
             role: 'user',
@@ -471,12 +482,15 @@ describe('Authentication Endpoints', () => {
 
     it('should return user profile with valid token', async () => {
       // Create a verified user for this test
+      const timestamp = Date.now()
       const hashedPassword = await bcrypt.hash(testUser.password, 12)
       const user = await prisma.user.create({
         data: {
-          email: 'profile-test@test.com',
+          email: `profile-test-${timestamp}@test.com`,
+          username: `profiletest${timestamp}`,
           password_hash: hashedPassword,
-          name: testUser.name,
+          first_name: 'Profile',
+          last_name: 'Test',
           role: 'user',
           is_verified: true,
           is_active: true
@@ -487,7 +501,7 @@ describe('Authentication Endpoints', () => {
       const loginResponse = await request(app)
         .post('/api/auth/login')
         .send({
-          email: 'profile-test@test.com',
+          email: `profile-test-${timestamp}@test.com`,
           password: testUser.password
         })
         .expect(200)
@@ -501,10 +515,11 @@ describe('Authentication Endpoints', () => {
 
       expect(response.body.user).toMatchObject({
         email: expect.any(String),
-        name: expect.any(String),
         role: expect.any(String),
         is_verified: expect.any(Boolean)
       })
+      // name field is optional - may be null if only first_name/last_name are set
+      expect(response.body.user).toHaveProperty('name')
     })
 
     it('should reject invalid token', async () => {
@@ -528,12 +543,15 @@ describe('Authentication Endpoints', () => {
 
     it('should logout successfully with valid token', async () => {
       // Create a verified user for this test
+      const timestamp = Date.now()
       const hashedPassword = await bcrypt.hash(testUser.password, 12)
       const user = await prisma.user.create({
         data: {
-          email: 'logout-test@test.com',
+          email: `logout-test-${timestamp}@test.com`,
+          username: `logouttest${timestamp}`,
           password_hash: hashedPassword,
-          name: testUser.name,
+          first_name: 'Logout',
+          last_name: 'Test',
           role: 'user',
           is_verified: true,
           is_active: true
@@ -544,7 +562,7 @@ describe('Authentication Endpoints', () => {
       const loginResponse = await request(app)
         .post('/api/auth/login')
         .send({
-          email: 'logout-test@test.com',
+          email: `logout-test-${timestamp}@test.com`,
           password: testUser.password
         })
         .expect(200)
@@ -571,12 +589,15 @@ describe('Authentication Endpoints', () => {
 
     it('should logout all sessions with valid token', async () => {
       // Create a verified user for this test
+      const timestamp = Date.now()
       const hashedPassword = await bcrypt.hash(testUser.password, 12)
       const user = await prisma.user.create({
         data: {
-          email: 'logout-all-test@test.com',
+          email: `logout-all-test-${timestamp}@test.com`,
+          username: `logoutalltest${timestamp}`,
           password_hash: hashedPassword,
-          name: testUser.name,
+          first_name: 'LogoutAll',
+          last_name: 'Test',
           role: 'user',
           is_verified: true,
           is_active: true
@@ -587,7 +608,7 @@ describe('Authentication Endpoints', () => {
       const loginResponse = await request(app)
         .post('/api/auth/login')
         .send({
-          email: 'logout-all-test@test.com',
+          email: `logout-all-test-${timestamp}@test.com`,
           password: testUser.password
         })
         .expect(200)

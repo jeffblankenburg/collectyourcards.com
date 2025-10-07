@@ -156,6 +156,30 @@ router.put('/mark-all-read', authenticateToken, async (req, res) => {
   }
 })
 
+// Delete all read notifications (MUST come before /:id to avoid route collision)
+router.delete('/clear-read', authenticateToken, async (req, res) => {
+  try {
+    const userId = BigInt(req.user.userId)
+
+    const result = await prisma.$queryRaw`
+      DELETE FROM user_notifications
+      WHERE user_id = ${userId} AND is_read = 1
+    `
+
+    res.json({
+      success: true,
+      message: 'Read notifications cleared'
+    })
+  } catch (error) {
+    console.error('Error clearing read notifications:', error)
+    res.status(500).json({
+      success: false,
+      message: 'Failed to clear read notifications',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    })
+  }
+})
+
 // Delete a notification
 router.delete('/:id', authenticateToken, async (req, res) => {
   try {
@@ -174,33 +198,9 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     })
   } catch (error) {
     console.error('Error deleting notification:', error)
-    res.status(500).json({ 
-      success: false, 
+    res.status(500).json({
+      success: false,
       message: 'Failed to delete notification',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
-    })
-  }
-})
-
-// Delete all read notifications
-router.delete('/clear-read', authenticateToken, async (req, res) => {
-  try {
-    const userId = BigInt(req.user.userId)
-
-    const result = await prisma.$queryRaw`
-      DELETE FROM user_notifications
-      WHERE user_id = ${userId} AND is_read = 1
-    `
-
-    res.json({
-      success: true,
-      message: 'Read notifications cleared'
-    })
-  } catch (error) {
-    console.error('Error clearing read notifications:', error)
-    res.status(500).json({ 
-      success: false, 
-      message: 'Failed to clear read notifications',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     })
   }
