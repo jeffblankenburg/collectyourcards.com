@@ -440,28 +440,31 @@ const ImportTable = ({
         onCardUpdate((prevCards) => {
           // Create new array with updated player
           const updatedCards = [...prevCards]
-          const cardToUpdate = { ...updatedCards[cardIndex] }
-          const playersToUpdate = [...cardToUpdate.players]
 
-          // Update the specific player with new data
-          playersToUpdate[playerIndex] = {
-            ...playersToUpdate[playerIndex],
-            playerMatches: {
-              exact: [newPlayer], // Set newly created player as exact match
-              fuzzy: []
-            },
-            selectedPlayer: newPlayer, // Set as selected player
-            playerTeamMatches: [], // Empty - no player_team records yet
-            _renderKey: Date.now() // Force React re-render
-          }
+          // Update ALL cards that have this same player name
+          let updatedCount = 0
+          updatedCards.forEach((card, cIdx) => {
+            card.players?.forEach((player, pIdx) => {
+              // Check if this player has the same name as the one we just created
+              if (player.name?.toLowerCase() === playerName.toLowerCase() && !player.selectedPlayer) {
+                console.log(`🔄 Updating player "${player.name}" on card ${card.sortOrder}`)
 
-          cardToUpdate.players = playersToUpdate
-          updatedCards[cardIndex] = cardToUpdate
+                updatedCards[cIdx].players[pIdx] = {
+                  ...updatedCards[cIdx].players[pIdx],
+                  playerMatches: {
+                    exact: [newPlayer], // Set newly created player as exact match
+                    fuzzy: []
+                  },
+                  selectedPlayer: newPlayer, // Set as selected player
+                  playerTeamMatches: [], // Empty - no player_team records yet
+                  _renderKey: Date.now() // Force React re-render
+                }
+                updatedCount++
+              }
+            })
+          })
 
-          console.log('🎯 Functional update triggered with new cards array')
-          console.log('🔍 New selected player:', updatedCards[cardIndex].players[playerIndex].selectedPlayer)
-          console.log('🔍 Player team column will show options from playerTeamCheckTeams')
-          console.log('🔍 Updated player object:', updatedCards[cardIndex].players[playerIndex])
+          console.log(`🎯 Updated ${updatedCount} instances of player "${playerName}" across all cards`)
 
           return updatedCards
         })
