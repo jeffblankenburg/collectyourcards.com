@@ -1132,26 +1132,53 @@ const ImportTable = ({
                                       })
 
                                       if (response.data.success) {
+                                        const createdPlayerTeam = response.data.playerTeam
+
                                         if (showToast) {
                                           showToast(`Created player-team: ${player.selectedPlayer.playerName} - ${team.teamName}`, 'success')
                                         }
 
-                                        // Update state: add the new player_team and update playerTeamCheckTeams to only show this team
+                                        // Update ALL cards that have this same player-team combination
                                         const updatedCards = [...cards]
-                                        const playerData = updatedCards[cardIndex].players[playerIdx]
+                                        let updatedCount = 0
 
-                                        // Add to player_team matches
-                                        if (!playerData.playerTeamMatches) {
-                                          playerData.playerTeamMatches = []
-                                        }
-                                        playerData.playerTeamMatches.push(response.data.playerTeam)
+                                        updatedCards.forEach((card, cIdx) => {
+                                          card.players?.forEach((p, pIdx) => {
+                                            // Check if this player matches and has this team in their team list
+                                            if (p.selectedPlayer?.playerId === player.selectedPlayer.playerId) {
+                                              const hasThisTeam = p.playerTeamCheckTeams?.exact?.some(t => t.teamId === team.teamId)
 
-                                        // Update playerTeamCheckTeams to only show the selected team
-                                        // This switches the display from "all teams" to "only this team"
-                                        playerData.playerTeamCheckTeams = {
-                                          exact: [team],
-                                          fuzzy: []
-                                        }
+                                              // Check if player_team doesn't already exist
+                                              const alreadyHasPlayerTeam = p.playerTeamMatches?.some(pt =>
+                                                pt.playerId === player.selectedPlayer.playerId && pt.teamId === team.teamId
+                                              )
+
+                                              if (hasThisTeam && !alreadyHasPlayerTeam) {
+                                                console.log(`🔄 Adding player_team for "${p.selectedPlayer.playerName}" - "${team.teamName}" on card ${card.sortOrder}`)
+
+                                                // Add to player_team matches
+                                                if (!updatedCards[cIdx].players[pIdx].playerTeamMatches) {
+                                                  updatedCards[cIdx].players[pIdx].playerTeamMatches = []
+                                                }
+                                                updatedCards[cIdx].players[pIdx].playerTeamMatches.push(createdPlayerTeam)
+
+                                                // Update playerTeamCheckTeams to only show matched teams
+                                                // This removes other team options after selection
+                                                const currentTeams = updatedCards[cIdx].players[pIdx].playerTeamCheckTeams?.exact || []
+                                                updatedCards[cIdx].players[pIdx].playerTeamCheckTeams = {
+                                                  exact: currentTeams.filter(t =>
+                                                    updatedCards[cIdx].players[pIdx].playerTeamMatches.some(pt => pt.teamId === t.teamId)
+                                                  ),
+                                                  fuzzy: []
+                                                }
+
+                                                updatedCount++
+                                              }
+                                            }
+                                          })
+                                        })
+
+                                        console.log(`🎯 Updated ${updatedCount} instances of player-team "${player.selectedPlayer.playerName}" - "${team.teamName}" across all cards`)
 
                                         onCardUpdate(updatedCards)
                                       }
