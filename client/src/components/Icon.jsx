@@ -104,7 +104,9 @@ import {
   Award,
   Package,
   Play,
-  Code
+  Code,
+  Filter,
+  Copy
 } from 'lucide-react'
 
 // Icon mapping for consistent usage across the app
@@ -212,6 +214,8 @@ const iconMap = {
   'refresh': RefreshCw,
   'shopping': ShoppingCart,
   'color': Palette,
+  'filter': Filter,
+  'copy': Copy,
   'factory': Factory,
   'building': Building,
   'link': Link2,

@@ -24,6 +24,7 @@ const CardTable = ({
   onAddCard = null,
   onCardClick = null,
   onSeriesClick = null,
+  onPlayerClick = null,
   showSearch = true,
   showBulkActions = true,
   bulkSelectionMode = false,
@@ -556,9 +557,22 @@ const CardTable = ({
                             {cpt.team.abbreviation || cpt.team.name?.slice(0, 3).toUpperCase()}
                           </div>
                         )}
-                        <span className="card-table-player-name">
-                          {cpt.player?.first_name} {cpt.player?.last_name}
-                        </span>
+                        {onPlayerClick ? (
+                          <button
+                            className="card-table-player-link"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              onPlayerClick(cpt.player)
+                            }}
+                            title={`View ${cpt.player?.first_name} ${cpt.player?.last_name} profile`}
+                          >
+                            {cpt.player?.first_name} {cpt.player?.last_name}
+                          </button>
+                        ) : (
+                          <span className="card-table-player-name">
+                            {cpt.player?.first_name} {cpt.player?.last_name}
+                          </span>
+                        )}
                         {card.is_rookie && <span className="cardcard-tag cardcard-rc cardcard-rc-inline"> RC</span>}
                       </div>
                     ))}

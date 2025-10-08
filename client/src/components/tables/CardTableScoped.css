@@ -492,18 +492,36 @@
 .card-table-container .card-table-series-cell .card-table-series-link {
   background: none;
   border: none;
-  color: #60a5fa;
+  color: #ffffff;
   font-size: 0.8rem;
   font-weight: 500;
   white-space: nowrap;
   cursor: pointer;
   padding: 0;
   text-decoration: none;
-  transition: color 0.2s ease;
+  transition: text-decoration 0.2s ease;
 }
 
 .card-table-container .card-table-series-cell .card-table-series-link:hover {
-  color: #93c5fd;
+  color: #ffffff;
+  text-decoration: underline;
+}
+
+/* Player link styling */
+.card-table-container .card-table-player-link {
+  background: none;
+  border: none;
+  color: #ffffff;
+  font-size: inherit;
+  font-weight: inherit;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: none;
+  transition: text-decoration 0.2s ease;
+}
+
+.card-table-container .card-table-player-link:hover {
+  color: #ffffff;
   text-decoration: underline;
 }
 

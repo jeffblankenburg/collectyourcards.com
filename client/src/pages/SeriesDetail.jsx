@@ -1,16 +1,21 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, Link } from 'react-router-dom'
+import { createPortal } from 'react-dom'
 import axios from 'axios'
 import { useAuth } from '../contexts/AuthContext'
-import SeriesDetailTable from '../components/SeriesDetailTable'
 import Icon from '../components/Icon'
+import CardTable from '../components/tables/CardTable'
+import AddCardModal from '../components/modals/AddCardModal'
+import BulkCardModal from '../components/modals/BulkCardModal'
+import CommentsSection from '../components/CommentsSection'
+import ActivityFeed from '../components/ActivityFeed'
 import './SeriesDetail.css'
 
 
 function SeriesDetail() {
   const { seriesSlug, year, setSlug } = useParams()
   const navigate = useNavigate()
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, user } = useAuth()
   const [series, setSeries] = useState(null)
   const [stats, setStats] = useState({})
   const [parallels, setParallels] = useState([])
@@ -19,10 +24,35 @@ function SeriesDetail() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const parallelsRef = useRef(null)
+  
+  // Table-specific state
+  const [cards, setCards] = useState([])
+  const [tableLoading, setTableLoading] = useState(false)
+  
+  // Modal state
+  const [showAddCardModal, setShowAddCardModal] = useState(false)
+  const [selectedCard, setSelectedCard] = useState(null)
+  
+  // Bulk selection state
+  const [bulkSelectionMode, setBulkSelectionMode] = useState(false)
+  const [selectedCards, setSelectedCards] = useState(new Set())
+  const [showBulkActionsModal, setShowBulkActionsModal] = useState(false)
+
+  // Check if user is admin
+  const isAdmin = user && ['admin', 'superadmin', 'data_admin'].includes(user.role)
 
   useEffect(() => {
     fetchSeriesData()
   }, [seriesSlug, year, setSlug])
+
+  // Set page title when series loads
+  useEffect(() => {
+    if (series?.name) {
+      document.title = `${series.name} - Collect Your Cards`
+    } else if (loading) {
+      document.title = 'Loading Series... - Collect Your Cards'
+    }
+  }, [series?.name, loading])
 
   // Close parallels dropdown when clicking outside
   useEffect(() => {
@@ -116,7 +146,9 @@ function SeriesDetail() {
       // Calculate stats from the actual card data
       const seriesStats = {
         total_cards: cards.length,
-        rookie_cards: cards.filter(card => card.is_rookie).length,
+        rookie_cards: cards.filter(card => 
+          card.card_player_teams?.some(cpt => cpt.is_rookie) || card.is_rookie
+        ).length,
         autograph_cards: cards.filter(card => card.is_autograph).length,
         relic_cards: cards.filter(card => card.is_relic).length,
         numbered_cards: cards.filter(card => card.print_run && card.print_run > 0).length,
@@ -199,12 +231,43 @@ function SeriesDetail() {
     }
   }
 
+  // Table data loading function
+  const loadTableData = async () => {
+    if (!series) return
+    
+    try {
+      setTableLoading(true)
+      const url = `/api/cards?series_id=${series.series_id}&limit=10000`
+      
+      const response = await axios.get(url)
+      const { cards: newCards } = response.data
+      
+      setCards(newCards || [])
+    } catch (error) {
+      console.error('Error loading cards:', error)
+    } finally {
+      setTableLoading(false)
+    }
+  }
 
-  // Memoize the API endpoint for cards
-  const apiEndpoint = useMemo(() => {
-    if (!series) return null
-    return `/api/cards?series_id=${series.series_id}`
+  // Load table data when series changes
+  useEffect(() => {
+    if (series) {
+      loadTableData()
+    }
   }, [series?.series_id])
+
+
+  const handleAddCard = (card) => {
+    setSelectedCard(card)
+    setShowAddCardModal(true)
+  }
+
+  const handleCardAdded = () => {
+    // Reload data to get updated counts
+    loadTableData()
+    setShowAddCardModal(false)
+  }
 
   const handleCardClick = (card) => {
     // Generate the player names for URL
@@ -284,30 +347,50 @@ function SeriesDetail() {
         
         {/* Series Header - Redesigned */}
         <header className="series-header-combined">
-          {/* Color Strip for Parallels */}
-          {(series.color_hex_value || series.color_name) && (
-            <div 
-              className="color-strip"
+          {/* Color Strip - Right Side */}
+          <div 
+            className="color-strip-right"
+            style={{
+              backgroundColor: series.color_hex_value || '#3b82f6'
+            }}
+          >
+            <span 
+              className="color-strip-text"
               style={{
-                backgroundColor: series.color_hex_value || '#ec4899',
-                color: getTextColor(series.color_hex_value || '#ec4899')
+                color: getTextColor(series.color_hex_value || '#3b82f6')
               }}
             >
-              <span className="color-text">
-                {series.color_name || 'Parallel'}{series.print_run_display && (
-                  <>
-                    &nbsp;&nbsp;{series.print_run_display}
-                  </>
-                )}
-              </span>
-            </div>
-          )}
-
+              {series.color_name && series.print_run_display ? 
+                `${series.color_name.toUpperCase()} ${series.print_run_display}` :
+                series.color_name ? series.color_name.toUpperCase() :
+                series.print_run_display ? series.print_run_display :
+                'BASE'
+              }
+            </span>
+          </div>
+          
           <div className="series-header-content">
             {/* Two Column Layout */}
             <div className="series-header-top">
               <div className="series-title-section">
                 <div className="series-title-line">
+                  {year && setSlug ? (
+                    <Link 
+                      to={`/sets/${year}/${setSlug}`}
+                      className="back-button"
+                      title="Back to series list"
+                    >
+                      <Icon name="arrow-left" size={24} />
+                    </Link>
+                  ) : (
+                    <Link 
+                      to="/sets"
+                      className="back-button"
+                      title="Back to sets"
+                    >
+                      <Icon name="arrow-left" size={24} />
+                    </Link>
+                  )}
                   <h1 className="series-name">{series.name}</h1>
                 </div>
                 
@@ -423,15 +506,89 @@ function SeriesDetail() {
         </header>
 
         {/* Cards Table */}
-        {apiEndpoint && (
-          <SeriesDetailTable
-            apiEndpoint={apiEndpoint}
+        {series && (
+          <CardTable
+            cards={cards}
+            loading={tableLoading}
+            onAddCard={handleAddCard}
             onCardClick={handleCardClick}
-            downloadFilename={`${series.name.replace(/[^a-z0-9]/gi, '_')}_${series.year}_cards`}
+            onPlayerClick={(player) => {
+              const playerSlug = `${player.first_name}-${player.last_name}`
+                .toLowerCase()
+                .replace(/[^a-z0-9-]/g, '')
+                .replace(/-+/g, '-')
+              navigate(`/player/${playerSlug}`)
+            }}
+            bulkSelectionMode={bulkSelectionMode}
+            selectedCards={selectedCards}
+            onBulkSelectionToggle={(mode) => {
+              setBulkSelectionMode(mode)
+              setSelectedCards(new Set()) // Clear selections when switching modes
+            }}
+            onCardSelection={(cardIds) => setSelectedCards(cardIds)}
+            onBulkAction={() => setShowBulkActionsModal(true)}
+            defaultSort="sort_order"
+            downloadFilename={`${series.name?.replace(/[^a-zA-Z0-9]/g, '_') || 'series'}_cards`}
+            maxHeight="800px"
+            autoFocusSearch={false}
           />
         )}
 
       </div>
+
+      {/* Add Card Modal */}
+      {showAddCardModal && createPortal(
+        <AddCardModal
+          isOpen={showAddCardModal}
+          onClose={() => setShowAddCardModal(false)}
+          card={selectedCard}
+          onCardAdded={handleCardAdded}
+        />,
+        document.body
+      )}
+
+      {/* Bulk Actions Modal */}
+      {showBulkActionsModal && createPortal(
+        <BulkCardModal
+          isOpen={showBulkActionsModal}
+          onClose={() => {
+            setShowBulkActionsModal(false)
+            setSelectedCards(new Set()) // Clear selections after bulk action
+          }}
+          series={series}
+          selectedCardIds={Array.from(selectedCards)}
+          selectedCards={cards.filter(card => selectedCards.has(card.card_id))}
+          onComplete={() => {
+            loadTableData() // Reload data to get updated counts
+            setShowBulkActionsModal(false)
+            setSelectedCards(new Set())
+          }}
+        />,
+        document.body
+      )}
+
+      {/* Social Section - Discussion and Activity Feed side-by-side */}
+      {series && (
+        <div className="social-section">
+          <CommentsSection
+            itemType="series"
+            itemId={series.series_id}
+            title={`Discussion about ${series.name}`}
+          />
+          <ActivityFeed seriesId={series.series_id} title="Recent Activity" />
+        </div>
+      )}
+
+      {/* Admin Edit Button */}
+      {isAdmin && series && (
+        <button 
+          className="admin-edit-button"
+          onClick={() => navigate(`/admin/series?search=${encodeURIComponent(series.name)}`)}
+          title="Edit series (Admin)"
+        >
+          <Icon name="edit" size={20} />
+        </button>
+      )}
     </div>
   )
 }
