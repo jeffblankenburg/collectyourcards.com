@@ -8,7 +8,7 @@ import CardTable from '../components/tables/CardTable'
 import './ListDetail.css'
 
 function ListDetail() {
-  const { slug } = useParams()
+  const { slug, username, listSlug } = useParams()
   const navigate = useNavigate()
   const { addToast } = useToast()
   const { user } = useAuth()
@@ -23,27 +23,60 @@ function ListDetail() {
   const [bulkSelectionMode, setBulkSelectionMode] = useState(false)
   const [selectedCards, setSelectedCards] = useState(new Set())
   const [searchQuery, setSearchQuery] = useState('')
+  const [togglingPublic, setTogglingPublic] = useState(false)
+  const [isPublicView, setIsPublicView] = useState(false)
+  const [copyingList, setCopyingList] = useState(false)
+  const [listOwner, setListOwner] = useState(null)
+
+  // Determine if we're viewing via /lists/:slug or /:username/:listSlug
+  const viewingSlug = listSlug || slug
+  const viewingUsername = username
 
   useEffect(() => {
-    if (!user) {
-      navigate('/login')
-      return
+    // If viewing via /:username/:listSlug, we're in public view mode
+    if (viewingUsername) {
+      setIsPublicView(true)
+      loadListDetails()
+    } else {
+      // Private view - require authentication
+      if (!user) {
+        navigate('/login')
+        return
+      }
+      setIsPublicView(false)
+      loadListDetails()
     }
-    loadListDetails()
-  }, [user, slug, navigate])
+  }, [user, viewingSlug, viewingUsername, navigate])
 
   const loadListDetails = async () => {
     try {
       setLoading(true)
-      const response = await axios.get(`/api/user/lists/${slug}`)
+      let response
+
+      if (viewingUsername) {
+        // Public view: fetch by username and list slug
+        response = await axios.get(`/api/public-lists/${viewingUsername}/${viewingSlug}`)
+      } else {
+        // Private view: fetch by slug only (user's own list)
+        response = await axios.get(`/api/user/lists/${viewingSlug}`)
+      }
+
       setList(response.data.list)
       setCards(response.data.cards || [])
       setNewName(response.data.list.name)
+
+      // For public view, set the list owner info
+      if (viewingUsername && response.data.owner) {
+        setListOwner(response.data.owner)
+      }
     } catch (error) {
       console.error('Error loading list details:', error)
       if (error.response?.status === 404) {
         addToast('List not found or access denied', 'error')
-        navigate('/lists')
+        navigate(viewingUsername ? `/${viewingUsername}` : '/lists')
+      } else if (error.response?.status === 403) {
+        addToast('This list is private', 'error')
+        navigate(viewingUsername ? `/${viewingUsername}` : '/lists')
       } else {
         addToast('Failed to load list details', 'error')
       }
@@ -95,6 +128,22 @@ function ListDetail() {
     }
   }
 
+  const handleTogglePublic = async () => {
+    try {
+      setTogglingPublic(true)
+      const response = await axios.patch(`/api/user/lists/${slug}/visibility`, {
+        is_public: !list.is_public
+      })
+
+      setList(response.data.list)
+    } catch (error) {
+      console.error('Error toggling list visibility:', error)
+      addToast(error.response?.data?.message || 'Failed to update list visibility', 'error')
+    } finally {
+      setTogglingPublic(false)
+    }
+  }
+
   const handleDeleteList = async () => {
     try {
       await axios.delete(`/api/user/lists/${slug}`)
@@ -128,6 +177,54 @@ function ListDetail() {
     setSelectedCards(new Set())
   }
 
+  const handleCopyList = async () => {
+    try {
+      setCopyingList(true)
+      const response = await axios.post('/api/user/lists/copy', {
+        source_username: viewingUsername,
+        source_list_slug: viewingSlug
+      })
+
+      addToast(`"${list.name}" copied to your lists`, 'success')
+      navigate(`/lists/${response.data.list.slug}`)
+    } catch (error) {
+      console.error('Error copying list:', error)
+      addToast(error.response?.data?.message || 'Failed to copy list', 'error')
+    } finally {
+      setCopyingList(false)
+    }
+  }
+
+  const handleCardClick = (card) => {
+    const setSlug = card.series_rel?.set_slug || 'unknown-set'
+    const setYear = card.series_rel?.set_year || '0000'
+    const seriesSlug = card.series_rel?.slug || 'unknown-series'
+    const cardNumber = card.card_number || '0'
+
+    // Get first player name for URL
+    const playerName = card.card_player_teams?.[0]?.player
+      ? `${card.card_player_teams[0].player.first_name}-${card.card_player_teams[0].player.last_name}`.toLowerCase().replace(/\s+/g, '-')
+      : 'unknown-player'
+
+    navigate(`/card/${seriesSlug}/${cardNumber}/${playerName}`)
+  }
+
+  const handlePlayerClick = (player) => {
+    if (!player?.player_id) return
+
+    const playerSlug = `${player.first_name}-${player.last_name}`
+      .toLowerCase()
+      .replace(/\s+/g, '-')
+      .replace(/[^a-z0-9-]/g, '')
+
+    navigate(`/players/${playerSlug}`)
+  }
+
+  const handleSeriesClick = (series) => {
+    if (!series?.slug) return
+    navigate(`/series/${series.slug}`)
+  }
+
   const formatDate = (dateString) => {
     const date = new Date(dateString)
     return date.toLocaleDateString('en-US', {
@@ -157,14 +254,16 @@ function ListDetail() {
   return (
     <div className="list-detail-page">
       <div className="list-detail-container">
-        <button className="back-button" onClick={() => navigate('/lists')}>
-          <Icon name="arrow-left" size={20} />
-          Back to Lists
-        </button>
+        {!isPublicView && (
+          <button className="back-button" onClick={() => navigate('/lists')}>
+            <Icon name="arrow-left" size={20} />
+            Back to Lists
+          </button>
+        )}
 
         <div className="list-detail-header">
           <div className="list-detail-header-content">
-            {editingName ? (
+            {editingName && !isPublicView ? (
               <div className="edit-name-form">
                 <input
                   type="text"
@@ -189,26 +288,61 @@ function ListDetail() {
             ) : (
               <div className="list-name-display">
                 <h1>{list.name}</h1>
-                <button
-                  className="edit-name-trigger"
-                  onClick={() => setEditingName(true)}
-                  title="Rename list"
-                >
-                  <Icon name="edit" size={20} />
-                </button>
+                {!isPublicView && (
+                  <button
+                    className="edit-name-trigger"
+                    onClick={() => setEditingName(true)}
+                    title="Rename list"
+                  >
+                    <Icon name="edit" size={20} />
+                  </button>
+                )}
               </div>
             )}
             <div className="list-meta">
               <span className="list-card-count">
                 {list.card_count} {list.card_count === 1 ? 'card' : 'cards'}
               </span>
+              {isPublicView && listOwner && (
+                <span className="list-owner">
+                  Created by{' '}
+                  <a href={`/${viewingUsername}`} className="owner-link">
+                    {listOwner.first_name} {listOwner.last_name} @{viewingUsername}
+                  </a>
+                </span>
+              )}
             </div>
           </div>
 
-          <button className="delete-list-button" onClick={handleDeleteClick}>
-            <Icon name="trash" size={20} />
-            Delete List
-          </button>
+          {isPublicView && user && listOwner && user.username !== viewingUsername && (
+            <div className="list-actions">
+              <button
+                className="copy-list-button"
+                onClick={handleCopyList}
+                disabled={copyingList}
+                title="Copy this list to your collection"
+              >
+                <Icon name="copy" size={16} />
+                {copyingList ? 'Copying...' : 'Copy List'}
+              </button>
+            </div>
+          )}
+
+          {!isPublicView && (
+            <div className="list-actions">
+              <button
+                className="toggle-public-button"
+                onClick={handleTogglePublic}
+                disabled={togglingPublic}
+                title={list.is_public ? 'Public - Click to make private' : 'Private - Click to make public'}
+              >
+                <Icon name={list.is_public ? 'eye' : 'eye-off'} size={16} />
+              </button>
+              <button className="delete-list-button" onClick={handleDeleteClick} title="Delete list">
+                <Icon name="trash" size={16} />
+              </button>
+            </div>
+          )}
         </div>
 
         {showDeleteConfirm && (
@@ -244,7 +378,7 @@ function ListDetail() {
         ) : (
           <CardTable
             cards={cards}
-            showRemoveFromList={true}
+            showRemoveFromList={!isPublicView}
             onRemoveFromList={handleRemoveFromList}
             removingCardId={removingCardId}
             bulkSelectionMode={bulkSelectionMode}
@@ -253,10 +387,13 @@ function ListDetail() {
             onCardSelection={setSelectedCards}
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
-            showBulkActions={true}
+            showBulkActions={!isPublicView}
             showSearch={true}
             maxHeight="none"
             defaultSort="card_number"
+            onCardClick={handleCardClick}
+            onPlayerClick={handlePlayerClick}
+            onSeriesClick={handleSeriesClick}
           />
         )}
       </div>

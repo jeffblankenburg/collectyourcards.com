@@ -349,7 +349,7 @@ router.get('/user/:username', optionalAuthMiddleware, async (req, res) => {
       try {
         // Get achievement stats
         const achievementStats = await prisma.$queryRaw`
-          SELECT 
+          SELECT
             total_points,
             total_achievements,
             common_achievements,
@@ -409,12 +409,44 @@ router.get('/user/:username', optionalAuthMiddleware, async (req, res) => {
       }
     }
 
+    // Get user's public lists
+    let publicLists = []
+    if (user.is_public_profile || isOwnProfile) {
+      try {
+        const lists = await prisma.$queryRaw`
+          SELECT
+            ul.user_list_id,
+            ul.name,
+            ul.card_count,
+            ul.created
+          FROM user_list ul
+          WHERE ul.[user] = ${BigInt(user.user_id)}
+            AND ul.is_public = 1
+          ORDER BY ul.created DESC
+        `
+
+        publicLists = lists.map(list => ({
+          user_list_id: Number(list.user_list_id),
+          name: list.name,
+          slug: list.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''),
+          card_count: list.card_count || 0,
+          cards_owned: list.card_count || 0,  // Temporary - just use card_count
+          completion_percentage: 100,  // Temporary - assume 100%
+          created: list.created
+        }))
+      } catch (listsError) {
+        console.error('❌ Error fetching public lists for profile:', listsError)
+        publicLists = []
+      }
+    }
+
     res.json({
       profile: serializedProfile,
       favoriteCards: favoriteCards,  // Use camelCase for consistency
       stats: stats,
       recentActivity: recentActivity,  // Use camelCase for consistency
-      achievements: achievementData
+      achievements: achievementData,
+      public_lists: publicLists
     })
 
   } catch (error) {

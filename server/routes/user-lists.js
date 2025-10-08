@@ -16,7 +16,7 @@ function createListSlug(name) {
 // Helper function to find list by slug and user
 async function findListBySlug(slug, userId) {
   const result = await prisma.$queryRaw`
-    SELECT user_list_id, name, card_count, created
+    SELECT user_list_id, name, card_count, created, is_public
     FROM user_list
     WHERE [user] = ${BigInt(userId)}
   `
@@ -32,7 +32,8 @@ async function findListBySlug(slug, userId) {
     user_list_id: Number(list.user_list_id),
     name: list.name,
     card_count: list.card_count || 0,
-    created: list.created
+    created: list.created,
+    is_public: Boolean(list.is_public)
   }
 }
 
@@ -40,6 +41,114 @@ async function findListBySlug(slug, userId) {
 router.use(authMiddleware)
 router.use(sanitizeInput)
 router.use(sanitizeParams)
+
+// POST /api/user/lists/copy - Copy a public list from another user
+router.post('/copy', async (req, res) => {
+  try {
+    const userId = req.user?.userId
+    const { source_username, source_list_slug } = req.body
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' })
+    }
+
+    if (!source_username || !source_list_slug) {
+      return res.status(400).json({ error: 'Missing required fields: source_username, source_list_slug' })
+    }
+
+    // Find the source user
+    const sourceUserResult = await prisma.$queryRaw`
+      SELECT user_id
+      FROM [user]
+      WHERE username = ${source_username.toLowerCase()}
+        AND is_active = 1
+    `
+
+    if (sourceUserResult.length === 0) {
+      return res.status(404).json({ error: 'Source user not found' })
+    }
+
+    const sourceUserId = Number(sourceUserResult[0].user_id)
+
+    // Get the source user's public lists
+    const sourceListsResult = await prisma.$queryRaw`
+      SELECT user_list_id, name, card_count, is_public
+      FROM user_list
+      WHERE [user] = ${BigInt(sourceUserId)}
+        AND is_public = 1
+    `
+
+    // Find the list that matches the slug
+    const sourceList = sourceListsResult.find(row => createListSlug(row.name) === source_list_slug)
+
+    if (!sourceList) {
+      return res.status(404).json({ error: 'Source list not found or is private' })
+    }
+
+    const sourceListId = Number(sourceList.user_list_id)
+
+    // Create new list for current user (append " (Copy)" if needed to avoid conflicts)
+    let newListName = sourceList.name
+    const existingLists = await prisma.$queryRaw`
+      SELECT name FROM user_list WHERE [user] = ${BigInt(userId)}
+    `
+    const existingNames = existingLists.map(l => l.name.toLowerCase())
+
+    if (existingNames.includes(newListName.toLowerCase())) {
+      newListName = `${sourceList.name} (Copy)`
+      let counter = 2
+      while (existingNames.includes(newListName.toLowerCase())) {
+        newListName = `${sourceList.name} (Copy ${counter})`
+        counter++
+      }
+    }
+
+    // Create the new list
+    const createResult = await prisma.$queryRaw`
+      INSERT INTO user_list ([user], name, is_public, created)
+      OUTPUT INSERTED.user_list_id
+      VALUES (${BigInt(userId)}, ${newListName}, 0, GETDATE())
+    `
+
+    const newListId = Number(createResult[0].user_list_id)
+
+    // Get all cards from source list
+    const sourceCards = await prisma.$queryRaw`
+      SELECT card
+      FROM user_list_card
+      WHERE user_list = ${BigInt(sourceListId)}
+    `
+
+    // Copy cards to new list
+    for (const cardRow of sourceCards) {
+      await prisma.$executeRaw`
+        INSERT INTO user_list_card (user_list, card)
+        VALUES (${BigInt(newListId)}, ${cardRow.card})
+      `
+    }
+
+    // Update card count
+    await prisma.$executeRaw`
+      UPDATE user_list
+      SET card_count = ${sourceCards.length}
+      WHERE user_list_id = ${BigInt(newListId)}
+    `
+
+    res.json({
+      message: 'List copied successfully',
+      list: {
+        user_list_id: newListId,
+        name: newListName,
+        slug: createListSlug(newListName),
+        card_count: sourceCards.length,
+        is_public: false
+      }
+    })
+  } catch (error) {
+    console.error('Error copying list:', error)
+    res.status(500).json({ error: 'Failed to copy list', message: error.message })
+  }
+})
 
 // GET /api/user/lists - Get all lists for authenticated user
 router.get('/', async (req, res) => {
@@ -268,7 +377,8 @@ router.get('/:slug', async (req, res) => {
         slug: createListSlug(listInfo.name),
         name: listInfo.name,
         card_count: listInfo.card_count,
-        created: listInfo.created
+        created: listInfo.created,
+        is_public: listInfo.is_public
       },
       cards
     })
@@ -353,6 +463,74 @@ router.put('/:slug', async (req, res) => {
     res.status(500).json({
       error: 'Database error',
       message: 'Failed to update list'
+    })
+  }
+})
+
+// PATCH /api/user/lists/:slug/visibility - Toggle list visibility (public/private)
+router.patch('/:slug/visibility', async (req, res) => {
+  try {
+    const userId = req.user?.userId
+    const { slug } = req.params
+    const { is_public } = req.body
+
+    if (!userId) {
+      return res.status(401).json({
+        error: 'Authentication error',
+        message: 'User ID not found in authentication token'
+      })
+    }
+
+    if (typeof is_public !== 'boolean') {
+      return res.status(400).json({
+        error: 'Validation error',
+        message: 'is_public must be a boolean value'
+      })
+    }
+
+    // Find list by slug
+    const existingList = await findListBySlug(slug, userId)
+
+    if (!existingList) {
+      return res.status(404).json({
+        error: 'Not found',
+        message: 'List not found or access denied'
+      })
+    }
+
+    const listId = existingList.user_list_id
+
+    // Update visibility
+    const result = await prisma.$queryRaw`
+      UPDATE user_list
+      SET is_public = ${is_public ? 1 : 0}
+      OUTPUT INSERTED.user_list_id, INSERTED.name, INSERTED.card_count, INSERTED.created, INSERTED.is_public
+      WHERE user_list_id = ${BigInt(listId)} AND [user] = ${BigInt(userId)}
+    `
+
+    if (result.length === 0) {
+      return res.status(404).json({
+        error: 'Not found',
+        message: 'List not found or access denied'
+      })
+    }
+
+    const updatedList = result[0]
+    res.json({
+      list: {
+        user_list_id: Number(updatedList.user_list_id),
+        slug: createListSlug(updatedList.name),
+        name: updatedList.name,
+        card_count: updatedList.card_count || 0,
+        created: updatedList.created,
+        is_public: Boolean(updatedList.is_public)
+      }
+    })
+  } catch (error) {
+    console.error('Error updating list visibility:', error)
+    res.status(500).json({
+      error: 'Database error',
+      message: 'Failed to update list visibility'
     })
   }
 })

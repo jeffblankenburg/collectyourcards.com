@@ -144,8 +144,9 @@
 
 .list-meta {
   display: flex;
-  gap: 1.5rem;
-  align-items: center;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: flex-start;
 }
 
 .list-card-count {
@@ -160,24 +161,97 @@
   color: #3b82f6;
 }
 
+.list-owner {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.9rem;
+}
+
+.owner-link {
+  color: white;
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.owner-link:hover {
+  text-decoration: underline;
+}
+
 .list-created {
   color: rgba(255, 255, 255, 0.5);
   font-size: 0.875rem;
 }
 
-.delete-list-button {
+.list-actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.copy-list-button {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   padding: 0.875rem 1.25rem;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 8px;
+  color: white;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
+}
+
+.copy-list-button:hover:not(:disabled) {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  border-color: rgba(59, 130, 246, 0.5);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.copy-list-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.toggle-public-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.875rem;
+  background: rgba(59, 130, 246, 0.2);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 8px;
+  color: #3b82f6;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 44px;
+}
+
+.toggle-public-button:hover:not(:disabled) {
+  background: rgba(59, 130, 246, 0.3);
+  border-color: rgba(59, 130, 246, 0.5);
+}
+
+.toggle-public-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.delete-list-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.875rem;
   background: rgba(239, 68, 68, 0.2);
   border: 1px solid rgba(239, 68, 68, 0.3);
   border-radius: 8px;
   color: #ef4444;
   cursor: pointer;
   transition: all 0.2s ease;
-  font-weight: 500;
-  white-space: nowrap;
+  min-width: 44px;
 }
 
 .delete-list-button:hover {

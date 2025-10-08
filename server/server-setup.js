@@ -234,6 +234,7 @@ if (config.environment === 'test') {
     { path: '/api/user/cards', file: './routes/user-card-photos', name: 'User Card Photos' },
     { path: '/api/user/locations', file: './routes/user-locations', name: 'User Locations' },
     { path: '/api/user/lists', file: './routes/user-lists', name: 'User Lists' },
+    { path: '/api/public-lists', file: './routes/public-lists', name: 'Public Lists' },
     { path: '/api/user/collection/stats', file: './routes/user-collection-stats', name: 'User Collection Stats' },
     { path: '/api/user/collection/cards', file: './routes/user-collection-cards', name: 'User Collection Cards' },
     { path: '/api/grading-agencies', file: './routes/grading-agencies', name: 'Grading Agencies' },

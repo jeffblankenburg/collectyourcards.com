@@ -52,8 +52,8 @@ const CardTable = ({
   const [columnWidths, setColumnWidths] = useState({
     checkbox: 56,      // 32px button + 24px padding (12px each side)
     owned: 60,         // Compact width for "OWN" text with centering
-    card_number: 'auto',
-    player: 'auto',
+    card_number: 120,  // 2x the owned column width
+    player: 'auto',    // Gets extra space from card_number
     series: 'auto',    // Series column between player and color
     color: 'auto',
     print_run: 120,    // Width for "PRINT RUN" header text

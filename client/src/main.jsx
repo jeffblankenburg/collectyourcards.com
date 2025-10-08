@@ -110,6 +110,9 @@ createRoot(document.getElementById('root')).render(
 
               {/* Public profile route - MUST BE LAST to avoid conflicts with other routes */}
               <Route path="/:username" element={<PublicProfile />} />
+
+              {/* Public list route - username-scoped lists */}
+              <Route path="/:username/:listSlug" element={<ListDetail />} />
             </Routes>
           </Layout>
         </AuthProvider>

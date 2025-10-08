@@ -14,6 +14,7 @@ function PublicProfile() {
   const [recentActivity, setRecentActivity] = useState([])
   const [favoriteCards, setFavoriteCards] = useState([])
   const [achievements, setAchievements] = useState(null)
+  const [publicLists, setPublicLists] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
@@ -43,9 +44,10 @@ function PublicProfile() {
       const response = await axios.get(`/api/profile/user/${username}`, config)
       setProfile(response.data.profile)
       setStats(response.data.stats)
-      setRecentActivity(response.data.recent_activity || [])
-      setFavoriteCards(response.data.favorite_cards || [])
+      setRecentActivity(response.data.recentActivity || [])
+      setFavoriteCards(response.data.favoriteCards || [])
       setAchievements(response.data.achievements || null)
+      setPublicLists(response.data.public_lists || [])
     } catch (err) {
       console.error('Error fetching profile:', err)
       if (err.response?.status === 404) {
@@ -424,6 +426,45 @@ function PublicProfile() {
           </div>
           )}
         </div>
+
+        {/* Public Lists - Full Width Below */}
+        {publicLists.length > 0 && (
+          <div className="public-lists">
+            <h3>
+              <Icon name="list" size={20} />
+              Public Lists ({publicLists.length})
+            </h3>
+            <div className="lists-grid">
+              {publicLists.map((list) => (
+                <Link
+                  key={list.user_list_id}
+                  to={`/${profile.username}/${list.slug}`}
+                  className="list-card"
+                >
+                  <div className="list-card-header">
+                    <h4>{list.name}</h4>
+                    <Icon name="arrow-right" size={16} />
+                  </div>
+                  <div className="list-card-meta">
+                    <div className="list-card-stats">
+                      <span className="list-stat">
+                        <Icon name="layers" size={14} />
+                        {list.card_count} {list.card_count === 1 ? 'card' : 'cards'} in list
+                      </span>
+                      <span className="list-stat">
+                        <Icon name="check-circle" size={14} />
+                        {list.cards_owned} owned ({list.completion_percentage}%)
+                      </span>
+                    </div>
+                    <span className="list-card-date">
+                      Created {formatJoinDate(list.created)}
+                    </span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Recent Activity - Full Width Below */}
         {recentActivity.length > 0 && (
