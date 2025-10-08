@@ -210,19 +210,27 @@ const ImportTable = ({
           
           if (playerAlreadyHasTeam) {
             console.log(`⚠️ Player ${selectedPlayer.playerName} already has team ${team.teamName} - skipping creation`)
-            
-            // Still add it to playerTeamMatches for UI purposes if not already there
+
+            // Find the existing player_team record from the player's teams
+            const existingTeam = selectedPlayer.teams?.find(t => t.teamId === team.teamId)
+            const existingPlayerTeam = {
+              playerTeamId: existingTeam?.playerTeamId || `existing_${selectedPlayer.playerId}_${team.teamId}`,
+              playerId: selectedPlayer.playerId,
+              teamId: team.teamId,
+              playerName: selectedPlayer.playerName,
+              teamName: team.teamName
+            }
+
+            // Add to BOTH arrays for UI and backend import
             if (!playerTeamExists) {
               if (!player.playerTeamMatches) {
                 player.playerTeamMatches = []
               }
-              player.playerTeamMatches.push({
-                playerTeamId: `existing_${selectedPlayer.playerId}_${team.teamId}`,
-                playerId: selectedPlayer.playerId,
-                teamId: team.teamId,
-                playerName: selectedPlayer.playerName,
-                teamName: team.teamName
-              })
+              if (!player.selectedPlayerTeams) {
+                player.selectedPlayerTeams = []
+              }
+              player.playerTeamMatches.push(existingPlayerTeam)
+              player.selectedPlayerTeams.push(existingPlayerTeam)
             }
             continue
           }
@@ -240,9 +248,14 @@ const ImportTable = ({
                 if (!player.playerTeamMatches) {
                   player.playerTeamMatches = []
                 }
-                
-                // Add the new player-team combination
+                // Ensure selectedPlayerTeams structure exists (for backend import)
+                if (!player.selectedPlayerTeams) {
+                  player.selectedPlayerTeams = []
+                }
+
+                // Add the new player-team combination to BOTH arrays
                 player.playerTeamMatches.push(ptResponse.data.playerTeam)
+                player.selectedPlayerTeams.push(ptResponse.data.playerTeam)
                 
                 console.log(`✅ Created player_team: ${ptResponse.data.playerTeam.playerName} - ${ptResponse.data.playerTeam.teamName}`)
                 return ptResponse.data.playerTeam
@@ -356,7 +369,11 @@ const ImportTable = ({
                 if (!player.playerTeamMatches) {
                   player.playerTeamMatches = []
                 }
+                if (!player.selectedPlayerTeams) {
+                  player.selectedPlayerTeams = []
+                }
                 player.playerTeamMatches.push(ptResponse.data.playerTeam)
+                player.selectedPlayerTeams.push(ptResponse.data.playerTeam)
                 console.log(`✅ Created player_team: ${ptResponse.data.playerTeam.playerName} - ${ptResponse.data.playerTeam.teamName}`)
 
                 if (showToast) {
@@ -596,8 +613,41 @@ const ImportTable = ({
         const updatedCards = [...cards]
         let updatedCount = 0
         let playerTeamPromises = []
-        
+
         updatedCards.forEach((card, cardIdx) => {
+          // Check if this CARD has the team name (for card-level display)
+          const cardHasThisTeam = card.teamNames?.some(name =>
+            name.toLowerCase() === teamName.toLowerCase()
+          )
+
+          if (cardHasThisTeam) {
+            // Ensure card teamMatches structure exists
+            if (!card.teamMatches) {
+              card.teamMatches = { exact: [], fuzzy: [] }
+            }
+            if (!card.teamMatches.exact) {
+              card.teamMatches.exact = []
+            }
+
+            // Check if team is already in card's exact matches (avoid duplicates)
+            const teamExistsInCard = card.teamMatches.exact.some(team =>
+              team.teamId === newTeam.teamId
+            )
+
+            if (!teamExistsInCard) {
+              // Add the new team to card's exact matches
+              card.teamMatches.exact.push(newTeam)
+              console.log(`✅ Added team ${newTeam.teamName} to card ${cardIdx} exact matches`)
+            }
+
+            // Remove from fuzzy matches if present
+            if (card.teamMatches.fuzzy) {
+              card.teamMatches.fuzzy = card.teamMatches.fuzzy.filter(team =>
+                team.teamId !== newTeam.teamId
+              )
+            }
+          }
+
           card.players.forEach((player, playerIdx) => {
             // Check if this player has the team name we just created
             const hasThisTeam = player.teamNames?.some(name => 
@@ -655,9 +705,14 @@ const ImportTable = ({
                       if (!player.playerTeamMatches) {
                         player.playerTeamMatches = []
                       }
-                      
-                      // Add the new player-team combination
+                      // Ensure selectedPlayerTeams structure exists (for backend import)
+                      if (!player.selectedPlayerTeams) {
+                        player.selectedPlayerTeams = []
+                      }
+
+                      // Add the new player-team combination to BOTH arrays
                       player.playerTeamMatches.push(ptResponse.data.playerTeam)
+                      player.selectedPlayerTeams.push(ptResponse.data.playerTeam)
                       
                       console.log(`✅ Created player_team: ${ptResponse.data.playerTeam.playerName} - ${ptResponse.data.playerTeam.teamName}`)
                       return { cardIdx, playerIdx, playerTeam: ptResponse.data.playerTeam }
@@ -1170,6 +1225,12 @@ const ImportTable = ({
                                                   updatedCards[cIdx].players[pIdx].playerTeamMatches = []
                                                 }
                                                 updatedCards[cIdx].players[pIdx].playerTeamMatches.push(createdPlayerTeam)
+
+                                                // ALSO add to selectedPlayerTeams for backend import
+                                                if (!updatedCards[cIdx].players[pIdx].selectedPlayerTeams) {
+                                                  updatedCards[cIdx].players[pIdx].selectedPlayerTeams = []
+                                                }
+                                                updatedCards[cIdx].players[pIdx].selectedPlayerTeams.push(createdPlayerTeam)
 
                                                 // Update playerTeamCheckTeams to only show matched teams
                                                 // This removes other team options after selection

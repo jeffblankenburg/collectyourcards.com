@@ -6,6 +6,7 @@ import Icon from '../components/Icon'
 import CollectionTable from '../components/tables/CollectionTable'
 import QuickEditModal from '../components/modals/QuickEditModal'
 import AddCardModal from '../components/modals/AddCardModal'
+import AddToListDropdown from '../components/AddToListDropdown'
 import CommentsSection from '../components/CommentsSection'
 import { useToast } from '../contexts/ToastContext'
 import SocialShareButton from '../components/SocialShareButton'
@@ -559,15 +560,13 @@ function CardDetail() {
                 {/* Action buttons */}
                 <div className="player-action-buttons">
                   {isAuthenticated && (
-                    <button 
+                    <AddToListDropdown
+                      card={card}
+                      onAddToCollection={handleAddToCollection}
                       className="squircle-button add-button"
-                      onClick={handleAddToCollection}
-                      title="Add to Collection"
-                    >
-                      <Icon name="plus" size={16} />
-                    </button>
+                    />
                   )}
-                  <SocialShareButton 
+                  <SocialShareButton
                     card={card}
                     iconOnly={true}
                     size={16}

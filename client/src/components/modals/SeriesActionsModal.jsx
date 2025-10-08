@@ -23,10 +23,18 @@ function SeriesActionsModal({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [cardsInSeries, setCardsInSeries] = useState([])
   const [loadingCards, setLoadingCards] = useState(false)
+
+  // Lists functionality
+  const [targetType, setTargetType] = useState('collection') // 'collection' or 'list'
+  const [lists, setLists] = useState([])
+  const [selectedList, setSelectedList] = useState('')
+  const [newListName, setNewListName] = useState('')
+  const [showNewListInput, setShowNewListInput] = useState(false)
   
   useEffect(() => {
     if (isOpen && user) {
       loadUserLocations()
+      loadUserLists()
       if (series) {
         loadSeriesCards()
       }
@@ -38,7 +46,7 @@ function SeriesActionsModal({
       const response = await axios.get('/api/user/locations')
       const userLocations = response.data.locations || []
       setLocations(userLocations)
-      
+
       // Set first location as default
       if (userLocations.length > 0) {
         setSelectedLocation(userLocations[0].user_location_id.toString())
@@ -46,6 +54,22 @@ function SeriesActionsModal({
     } catch (error) {
       console.error('Error loading locations:', error)
       addToast('Failed to load locations', 'error')
+    }
+  }
+
+  const loadUserLists = async () => {
+    try {
+      const response = await axios.get('/api/user/lists')
+      const userLists = response.data.lists || []
+      setLists(userLists)
+
+      // Set first list slug as default
+      if (userLists.length > 0) {
+        setSelectedList(userLists[0].slug)
+      }
+    } catch (error) {
+      console.error('Error loading lists:', error)
+      addToast('Failed to load lists', 'error')
     }
   }
 
@@ -73,7 +97,7 @@ function SeriesActionsModal({
       const response = await axios.post('/api/user/locations', {
         location: newLocationName.trim()
       })
-      
+
       const newLocation = response.data.location
       setLocations([...locations, newLocation])
       setSelectedLocation(newLocation.user_location_id.toString())
@@ -86,6 +110,29 @@ function SeriesActionsModal({
     }
   }
 
+  const handleCreateList = async () => {
+    if (!newListName.trim()) {
+      addToast('Please enter a list name', 'error')
+      return
+    }
+
+    try {
+      const response = await axios.post('/api/user/lists', {
+        name: newListName.trim()
+      })
+
+      const newList = response.data.list
+      setLists([...lists, newList])
+      setSelectedList(newList.slug)
+      setNewListName('')
+      setShowNewListInput(false)
+      addToast('List created successfully', 'success')
+    } catch (error) {
+      console.error('Error creating list:', error)
+      addToast(error.response?.data?.message || 'Failed to create list', 'error')
+    }
+  }
+
   const handleAddSeriesToCollection = async () => {
     if (!selectedLocation && action === 'add') {
       addToast('Please select a location', 'error')
@@ -94,9 +141,9 @@ function SeriesActionsModal({
 
     try {
       setIsSubmitting(true)
-      
+
       // Add one copy of each card to collection
-      const promises = cardsInSeries.map(card => 
+      const promises = cardsInSeries.map(card =>
         axios.post('/api/user/cards', {
           card_id: card.card_id,
           user_location: selectedLocation ? parseInt(selectedLocation) : null,
@@ -105,13 +152,49 @@ function SeriesActionsModal({
       )
 
       await Promise.all(promises)
-      
+
       addToast(`Successfully added ${cardsInSeries.length} cards from ${series.name} to your collection`, 'success')
       onSuccess?.()
       onClose()
     } catch (error) {
       console.error('Error adding series to collection:', error)
       addToast(error.response?.data?.message || 'Failed to add series to collection', 'error')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleAddSeriesToList = async () => {
+    if (!selectedList) {
+      addToast('Please select a list', 'error')
+      return
+    }
+
+    try {
+      setIsSubmitting(true)
+
+      // Get card IDs from series
+      const cardIds = cardsInSeries.map(card => card.card_id)
+
+      // Add all cards to the selected list
+      const response = await axios.post(`/api/user/lists/${selectedList}/cards`, {
+        cardIds
+      })
+
+      const addedCount = response.data.added || 0
+      const duplicateCount = response.data.duplicates || 0
+
+      let message = `Successfully added ${addedCount} cards from ${series.name} to list`
+      if (duplicateCount > 0) {
+        message += ` (${duplicateCount} already in list)`
+      }
+
+      addToast(message, 'success')
+      onSuccess?.()
+      onClose()
+    } catch (error) {
+      console.error('Error adding series to list:', error)
+      addToast(error.response?.data?.message || 'Failed to add series to list', 'error')
     } finally {
       setIsSubmitting(false)
     }
@@ -173,7 +256,11 @@ function SeriesActionsModal({
 
   const handleSubmit = () => {
     if (action === 'add') {
-      handleAddSeriesToCollection()
+      if (targetType === 'collection') {
+        handleAddSeriesToCollection()
+      } else if (targetType === 'list') {
+        handleAddSeriesToList()
+      }
     } else if (action === 'remove') {
       handleRemoveSeriesFromCollection()
     }
@@ -186,7 +273,7 @@ function SeriesActionsModal({
       <div className="modal-content series-actions-modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h3>
-            {action === 'add' ? 'Add Series to Collection' : 'Remove Series from Collection'}
+            {action === 'add' ? 'Add Series' : 'Remove Series from Collection'}
           </h3>
           <button className="modal-close-btn" onClick={onClose}>
             <Icon name="x" size={20} />
@@ -214,6 +301,30 @@ function SeriesActionsModal({
           </div>
 
           {action === 'add' && (
+            <>
+              {/* Toggle between Collection and List */}
+              <div className="target-type-toggle">
+                <button
+                  type="button"
+                  className={`toggle-btn ${targetType === 'collection' ? 'active' : ''}`}
+                  onClick={() => setTargetType('collection')}
+                >
+                  <Icon name="database" size={16} />
+                  Collection
+                </button>
+                <button
+                  type="button"
+                  className={`toggle-btn ${targetType === 'list' ? 'active' : ''}`}
+                  onClick={() => setTargetType('list')}
+                >
+                  <Icon name="list" size={16} />
+                  List
+                </button>
+              </div>
+            </>
+          )}
+
+          {action === 'add' && targetType === 'collection' && (
             <div className="location-section">
               <label htmlFor="location-select">Assign all cards to location:</label>
               
@@ -276,6 +387,69 @@ function SeriesActionsModal({
             </div>
           )}
 
+          {action === 'add' && targetType === 'list' && (
+            <div className="list-section">
+              <label htmlFor="list-select">Add all cards to list:</label>
+
+              <div className="list-controls">
+                {!showNewListInput ? (
+                  <div className="list-select-row">
+                    <select
+                      id="list-select"
+                      value={selectedList}
+                      onChange={(e) => setSelectedList(e.target.value)}
+                      className="form-select"
+                    >
+                      {lists.length === 0 && <option value="">No lists available</option>}
+                      {lists.map(list => (
+                        <option key={list.user_list_id} value={list.slug}>
+                          {list.name} ({list.card_count} cards)
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      className="new-list-btn"
+                      onClick={() => setShowNewListInput(true)}
+                      title="Create new list"
+                    >
+                      <Icon name="plus" size={16} />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="new-list-input">
+                    <input
+                      type="text"
+                      placeholder="Enter list name"
+                      value={newListName}
+                      onChange={(e) => setNewListName(e.target.value)}
+                      className="form-input"
+                      onKeyPress={(e) => e.key === 'Enter' && handleCreateList()}
+                      autoFocus
+                    />
+                    <button
+                      type="button"
+                      className="create-list-btn"
+                      onClick={handleCreateList}
+                    >
+                      <Icon name="check" size={16} />
+                    </button>
+                    <button
+                      type="button"
+                      className="cancel-list-btn"
+                      onClick={() => {
+                        setShowNewListInput(false)
+                        setNewListName('')
+                      }}
+                    >
+                      <Icon name="x" size={16} />
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {action === 'remove' && (
             <div className="remove-info">
               <p className="warning-text">
@@ -296,8 +470,8 @@ function SeriesActionsModal({
           >
             Cancel
           </button>
-          <button 
-            type="button" 
+          <button
+            type="button"
             className={`button-primary ${action === 'remove' ? 'button-danger' : ''}`}
             onClick={handleSubmit}
             disabled={isSubmitting || loadingCards}
@@ -308,7 +482,9 @@ function SeriesActionsModal({
                 {action === 'add' ? 'Adding...' : 'Removing...'}
               </>
             ) : (
-              action === 'add' ? 'Add to Collection' : 'Remove from Collection'
+              action === 'add'
+                ? (targetType === 'collection' ? 'Add to Collection' : 'Add to List')
+                : 'Remove from Collection'
             )}
           </button>
         </div>

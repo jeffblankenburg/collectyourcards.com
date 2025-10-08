@@ -202,9 +202,44 @@
   text-align: center;
 }
 
+/* Remove from list button */
+.card-table-container .remove-from-list-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 4px;
+  color: #ef4444;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 32px;
+  height: 32px;
+  margin: 0 auto;
+}
+
+.card-table-container .remove-from-list-button:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.5);
+}
+
+.card-table-container .remove-from-list-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .card-table-container .card-table thead .owned-header,
 .card-table-container .owned-cell {
   text-align: center !important;
+}
+
+.card-table-container .remove-header,
+.card-table-container .remove-cell {
+  text-align: center !important;
+  width: 56px;
+  min-width: 56px;
+  max-width: 56px;
 }
 
 .card-table-container .card-number-header,

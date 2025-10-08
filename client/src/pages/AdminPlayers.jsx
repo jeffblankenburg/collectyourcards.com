@@ -101,6 +101,8 @@ function AdminPlayers() {
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 })
   const [playerToDelete, setPlayerToDelete] = useState(null)
   const [deleting, setDeleting] = useState(false)
+  const [showZeroCardsOnly, setShowZeroCardsOnly] = useState(false)
+  const [showDuplicatesOnly, setShowDuplicatesOnly] = useState(false)
   const addButtonRef = useRef(null)
   const { addToast } = useToast()
 
@@ -110,21 +112,27 @@ function AdminPlayers() {
     loadPlayers(searchParams.get('search') || '')
   }, [])
 
-  const loadPlayers = async (searchQuery = '') => {
+  const loadPlayers = async (searchQuery = '', zeroCardsFilter = false, duplicatesFilter = false) => {
     const startTime = performance.now()
     const requestId = Math.random().toString(36).substr(2, 9)
-    
+
     try {
       console.log(`AdminPlayers[${requestId}]: Starting load request`)
       const apiStartTime = performance.now()
-      
-      setLoading(!searchQuery) // Only show main loading for initial load
-      setSearching(!!searchQuery) // Show search loading for searches
-      
+
+      setLoading(!searchQuery && !zeroCardsFilter && !duplicatesFilter) // Only show main loading for initial load
+      setSearching(!!searchQuery || zeroCardsFilter || duplicatesFilter) // Show search loading for searches
+
       const params = new URLSearchParams()
-      params.append('limit', '100')
+      params.append('limit', '500') // Increase limit for duplicate detection
       if (searchQuery.trim()) {
         params.append('search', searchQuery.trim())
+      }
+      if (zeroCardsFilter) {
+        params.append('zeroCards', 'true')
+      }
+      if (duplicatesFilter) {
+        params.append('duplicates', 'true')
       }
 
       const response = await axios.get(`/api/admin/players?${params.toString()}`)
@@ -197,10 +205,30 @@ function AdminPlayers() {
 
   const handleRefresh = () => {
     if (isSearchMode) {
-      loadPlayers(searchTerm)
+      loadPlayers(searchTerm, showZeroCardsOnly, showDuplicatesOnly)
     } else {
-      loadPlayers()
+      loadPlayers('', showZeroCardsOnly, showDuplicatesOnly)
     }
+  }
+
+  const handleZeroCardsToggle = () => {
+    const newValue = !showZeroCardsOnly
+    setShowZeroCardsOnly(newValue)
+    // Turn off duplicates filter when enabling zero cards
+    if (newValue) {
+      setShowDuplicatesOnly(false)
+    }
+    loadPlayers(searchTerm, newValue, false)
+  }
+
+  const handleDuplicatesToggle = () => {
+    const newValue = !showDuplicatesOnly
+    setShowDuplicatesOnly(newValue)
+    // Turn off zero cards filter when enabling duplicates
+    if (newValue) {
+      setShowZeroCardsOnly(false)
+    }
+    loadPlayers(searchTerm, false, newValue)
   }
 
   const handleSort = (field) => {
@@ -566,9 +594,9 @@ function AdminPlayers() {
       
       // Close delete modal
       setPlayerToDelete(null)
-      
-      // Reload players to get updated data
-      await loadPlayers(searchTerm)
+
+      // Reload players to get updated data - preserve current filter state
+      await loadPlayers(searchTerm, showZeroCardsOnly, showDuplicatesOnly)
       
     } catch (error) {
       console.error('Error deleting player:', error)
@@ -619,6 +647,22 @@ function AdminPlayers() {
             title="Add new player"
           >
             <Icon name="plus" size={22} />
+          </button>
+          <button
+            className={`filter-button ${showZeroCardsOnly ? 'active' : ''}`}
+            onClick={handleZeroCardsToggle}
+            title={showZeroCardsOnly ? "Show all players" : "Show only players with 0 cards"}
+          >
+            <Icon name="filter" size={18} />
+            {showZeroCardsOnly ? 'Showing 0 Cards' : '0 Cards'}
+          </button>
+          <button
+            className={`filter-button ${showDuplicatesOnly ? 'active' : ''}`}
+            onClick={handleDuplicatesToggle}
+            title={showDuplicatesOnly ? "Show all players" : "Show potential duplicate players"}
+          >
+            <Icon name="copy" size={18} />
+            {showDuplicatesOnly ? 'Showing Duplicates' : 'Duplicates'}
           </button>
           <div className="search-box">
             <Icon name="search" size={20} />
@@ -738,7 +782,21 @@ function AdminPlayers() {
                   <div className="col-id">{player.player_id}</div>
                   <div className="col-player">
                     <div className="player-info">
-                      <div className="player-name"><PlayerName player={player} /></div>
+                      <div className="player-name">
+                        <PlayerName player={player} />
+                        {player.duplicate_matches && player.duplicate_matches.length > 0 && (
+                          <div className="duplicate-matches">
+                            <Icon name="alert-triangle" size={14} className="duplicate-icon" />
+                            <span className="duplicate-label">Possible duplicates:</span>
+                            {player.duplicate_matches.map((match, idx) => (
+                              <span key={match.player_id} className="duplicate-match">
+                                {match.first_name} {match.nick_name && `"${match.nick_name}"`} {match.last_name}
+                                {idx < player.duplicate_matches.length - 1 && ', '}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                       <TeamCircles player={player} />
                     </div>
                   </div>

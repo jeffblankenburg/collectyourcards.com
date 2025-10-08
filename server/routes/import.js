@@ -1046,7 +1046,31 @@ router.post('/create-cards', requireAuth, requireAdmin, async (req, res) => {
 
             // Create card_player_team records for each player_team relationship
             for (const playerTeam of player.selectedPlayerTeams) {
-              const playerTeamId = BigInt(playerTeam.playerTeamId)
+              // Check if this is a placeholder ID from frontend (existing_playerId_teamId)
+              let actualPlayerTeamId = playerTeam.playerTeamId
+
+              if (String(playerTeam.playerTeamId).startsWith('existing_')) {
+                console.log(`    🔍 Detected placeholder ID: ${playerTeam.playerTeamId}, looking up actual player_team_id`)
+                // This was created on frontend, need to look up actual ID
+                const ptResult = await transaction.request()
+                  .input('playerId', sql.BigInt, playerId)
+                  .input('teamId', sql.Int, playerTeam.teamId)
+                  .query(`
+                    SELECT player_team_id
+                    FROM player_team
+                    WHERE player = @playerId AND team = @teamId
+                  `)
+
+                if (ptResult.recordset.length > 0) {
+                  actualPlayerTeamId = ptResult.recordset[0].player_team_id
+                  console.log(`    ✅ Found actual player_team_id: ${actualPlayerTeamId}`)
+                } else {
+                  console.error(`    ❌ Could not find player_team record for player ${playerId} and team ${playerTeam.teamId}`)
+                  continue // Skip this player_team
+                }
+              }
+
+              const playerTeamId = BigInt(actualPlayerTeamId)
               console.log(`    🔗 Creating card_player_team: cardId=${cardId}, playerTeamId=${playerTeamId} (${playerTeam.playerName} - ${playerTeam.teamName})`)
 
               await transaction.request()
@@ -1336,33 +1360,50 @@ async function batchFindPlayers(pool, playerNames, organizationId = null) {
       // Find fuzzy matches (only if no exact matches found)
       let fuzzyMatches = []
       if (exactMatches.length === 0) {
+        // Check if this is a single-name search (like "Ichiro")
+        const isSingleName = !normalizedSearchName.includes(' ')
+
         fuzzyMatches = allPlayersGrouped.filter(player => {
           const dbPlayerName = normalizePlayerName(player.playerName || '')
           if (!dbPlayerName) return false
-          
+
+          // Special handling for single-name players (e.g., "Ichiro")
+          if (isSingleName) {
+            const dbFirstName = normalizePlayerName(player.firstName || '')
+            const dbLastName = normalizePlayerName(player.lastName || '')
+
+            // Check if the search matches the first name OR last name exactly
+            if (dbFirstName === normalizedSearchName || dbLastName === normalizedSearchName) {
+              console.log(`👤 SINGLE NAME MATCH: "${searchName}" matches "${player.playerName}" (first: "${player.firstName}", last: "${player.lastName}")`)
+              player.similarity = 0.95 // High similarity for single-name matches
+              player.distance = 0
+              return true
+            }
+          }
+
           // Calculate similarity
           const distance = levenshteinDistance(normalizedSearchName, dbPlayerName)
           const maxLength = Math.max(normalizedSearchName.length, dbPlayerName.length)
           const similarity = 1 - (distance / maxLength)
-          
+
           // Check for close matches
           const nameParts = normalizedSearchName.split(' ')
           const dbNameParts = dbPlayerName.split(' ')
-          const lastNameMatch = nameParts.length > 1 && dbNameParts.length > 1 && 
+          const lastNameMatch = nameParts.length > 1 && dbNameParts.length > 1 &&
                                nameParts[nameParts.length - 1] === dbNameParts[dbNameParts.length - 1]
-          
+
           const isFuzzyMatch = distance <= 2 || similarity > 0.85 || (lastNameMatch && similarity > 0.7)
-          
+
           if (isFuzzyMatch) {
             console.log(`🔍 FUZZY MATCH: "${searchName}" ~= "${player.playerName}" (similarity: ${similarity.toFixed(2)}, teams: ${player.teams.length})`)
             // Add similarity score to player object
             player.similarity = similarity
             player.distance = distance
           }
-          
+
           return isFuzzyMatch
         })
-        
+
         // Sort fuzzy matches by similarity (best first) and take top 5
         fuzzyMatches.sort((a, b) => b.similarity - a.similarity)
         fuzzyMatches = fuzzyMatches.slice(0, 5)

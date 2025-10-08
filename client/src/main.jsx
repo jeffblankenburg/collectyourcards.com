@@ -39,6 +39,8 @@ import AdminAchievements from './pages/AdminAchievements.jsx'
 import AdminQueryTester from './pages/AdminQueryTester.jsx'
 import VerifyEmail from './pages/VerifyEmail.jsx'
 import CheckEmail from './pages/CheckEmail.jsx'
+import Lists from './pages/Lists.jsx'
+import ListDetail from './pages/ListDetail.jsx'
 import './index.css'
 // import './styles/global-design-system.css' // Temporarily removed to prevent conflicts
 
@@ -101,7 +103,11 @@ createRoot(document.getElementById('root')).render(
               <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
               <Route path="/admin/achievements" element={<ProtectedRoute><AdminAchievements /></ProtectedRoute>} />
               <Route path="/admin/query-tester" element={<ProtectedRoute><AdminQueryTester /></ProtectedRoute>} />
-              
+
+              {/* Lists routes - MUST BE BEFORE username route */}
+              <Route path="/lists" element={<ProtectedRoute><Lists /></ProtectedRoute>} />
+              <Route path="/lists/:slug" element={<ProtectedRoute><ListDetail /></ProtectedRoute>} />
+
               {/* Public profile route - MUST BE LAST to avoid conflicts with other routes */}
               <Route path="/:username" element={<PublicProfile />} />
             </Routes>

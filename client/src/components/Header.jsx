@@ -431,16 +431,24 @@ function Header() {
                   </div>
                   
                   <div className="dropdown-divider"></div>
-                  <Link 
-                    to="/collection" 
+                  <Link
+                    to="/collection"
                     className="dropdown-item"
                     onClick={() => setShowUserMenu(false)}
                   >
                     <Icon name="collections" size={16} className="dropdown-icon" />
                     My Collection
                   </Link>
-                  <Link 
-                    to="/profile" 
+                  <Link
+                    to="/lists"
+                    className="dropdown-item"
+                    onClick={() => setShowUserMenu(false)}
+                  >
+                    <Icon name="list" size={16} className="dropdown-icon" />
+                    My Lists
+                  </Link>
+                  <Link
+                    to="/profile"
                     className="dropdown-item"
                     onClick={() => setShowUserMenu(false)}
                   >

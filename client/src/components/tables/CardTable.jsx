@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import Icon from '../Icon'
+import AddToListDropdown from '../AddToListDropdown'
 import './CardTableScoped.css'
 
 /**
@@ -36,7 +37,10 @@ const CardTable = ({
   showDownload = true,
   downloadFilename = 'cards',
   defaultSort = 'series_name',
-  autoFocusSearch = false
+  autoFocusSearch = false,
+  showRemoveFromList = false,
+  onRemoveFromList = null,
+  removingCardId = null
 }) => {
   const { isAuthenticated } = useAuth()
   const [sortField, setSortField] = useState(defaultSort)
@@ -54,7 +58,8 @@ const CardTable = ({
     auto: 80,          // Width for "AUTO" column (split from attributes)
     relic: 80,         // Width for "RELIC" column (split from attributes)
     find: 80,          // Width for "FIND" marketplace dropdown column
-    notes: 'auto'
+    notes: 'auto',
+    remove: 56         // Width for remove button column
   })
   const [isResizing, setIsResizing] = useState(false)
   const [resizingColumn, setResizingColumn] = useState(null)
@@ -475,6 +480,13 @@ const CardTable = ({
                   SHOP
                 </div>
               </th>
+              {showRemoveFromList && (
+                <th className="remove-header" style={{ width: columnWidths.remove }}>
+                  <div className="card-table-header-content">
+                    {/* Empty header */}
+                  </div>
+                </th>
+              )}
             </tr>
           </thead>
           <tbody>
@@ -509,16 +521,10 @@ const CardTable = ({
                         </td>
                       ) : (
                         <td className="action-cell">
-                          <button
-                            className="add-card-btn"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              onAddCard?.(card)
-                            }}
-                            title="Add to Collection"
-                          >
-                            <Icon name="plus" size={16} />
-                          </button>
+                          <AddToListDropdown
+                            card={card}
+                            onAddToCollection={() => onAddCard?.(card)}
+                          />
                         </td>
                       )}
                       <td className="owned-cell">
@@ -672,6 +678,25 @@ const CardTable = ({
                       )}
                     </div>
                   </td>
+                  {showRemoveFromList && (
+                    <td className="remove-cell">
+                      <button
+                        className="remove-from-list-button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onRemoveFromList?.(card)
+                        }}
+                        disabled={removingCardId === card.card_id}
+                        title="Remove from list"
+                      >
+                        {removingCardId === card.card_id ? (
+                          <div className="card-icon-spinner tiny"></div>
+                        ) : (
+                          <Icon name="x" size={16} />
+                        )}
+                      </button>
+                    </td>
+                  )}
                 </tr>
               )
             })}

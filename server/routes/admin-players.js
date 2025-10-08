@@ -10,15 +10,133 @@ router.use(requireDataAdmin)
 // GET /api/admin/players - Get players list with stats
 router.get('/', async (req, res) => {
   try {
-    const { limit = 100, offset = 0, search } = req.query
+    const { limit = 100, offset = 0, search, zeroCards, duplicates } = req.query
     const limitNum = Math.min(parseInt(limit) || 100, 500)
     const offsetNum = parseInt(offset) || 0
+    const showZeroCardsOnly = zeroCards === 'true'
+    const showDuplicatesOnly = duplicates === 'true'
 
-    console.log('Admin: Getting players list', { limit: limitNum, offset: offsetNum, search })
+    console.log('Admin: Getting players list', { limit: limitNum, offset: offsetNum, search, zeroCards: showZeroCardsOnly, duplicates: showDuplicatesOnly })
 
     let players
-    
-    if (search && search.trim()) {
+
+    if (showDuplicatesOnly) {
+      // Duplicates mode: find players with similar names and show their matches
+      players = await prisma.$queryRawUnsafe(`
+        WITH PlayerNames AS (
+          SELECT
+            p.player_id,
+            p.first_name,
+            p.last_name,
+            p.nick_name,
+            p.birthdate,
+            p.is_hof,
+            p.card_count,
+            SOUNDEX(p.last_name) as last_soundex,
+            SOUNDEX(p.first_name) as first_soundex,
+            SOUNDEX(p.nick_name) as nick_soundex
+          FROM player p
+        ),
+        DuplicatePairs AS (
+          SELECT
+            p1.player_id as player1_id,
+            p2.player_id as player2_id,
+            p1.last_name as last_name,
+            MIN(p1.player_id) OVER (PARTITION BY
+              CASE WHEN p1.player_id < p2.player_id THEN p1.player_id ELSE p2.player_id END,
+              CASE WHEN p1.player_id < p2.player_id THEN p2.player_id ELSE p1.player_id END
+            ) as group_id
+          FROM PlayerNames p1
+          INNER JOIN PlayerNames p2 ON p1.player_id <> p2.player_id
+          WHERE (
+            p1.last_soundex = p2.last_soundex
+            AND (
+              p1.first_soundex = p2.first_soundex
+              OR p1.first_name = p2.nick_name
+              OR p1.nick_name = p2.first_name
+              OR (
+                LEN(p1.first_name) > 3
+                AND LEN(p2.first_name) > 3
+                AND ABS(LEN(p1.first_name) - LEN(p2.first_name)) <= 2
+                AND (
+                  LEFT(p1.first_name, 3) = LEFT(p2.first_name, 3)
+                  OR p1.first_soundex = p2.first_soundex
+                )
+              )
+            )
+          )
+        ),
+        AllDuplicatePlayers AS (
+          SELECT DISTINCT
+            player1_id as player_id,
+            last_name
+          FROM DuplicatePairs
+          UNION
+          SELECT DISTINCT
+            player2_id as player_id,
+            last_name
+          FROM DuplicatePairs
+        )
+        SELECT
+          p.player_id,
+          p.first_name,
+          p.last_name,
+          p.nick_name,
+          p.birthdate,
+          p.is_hof,
+          p.card_count,
+          NULL as last_viewed,
+          STRING_AGG(CAST(t.team_Id as varchar(10)) + '|' + ISNULL(t.abbreviation, '?') + '|' + ISNULL(t.primary_color, '#666') + '|' + ISNULL(t.secondary_color, '#999') + '|' + ISNULL(t.name, 'Unknown'), '~') as teams_data,
+          (
+            SELECT STRING_AGG(CAST(p2.player_id as varchar(20)) + ':' + ISNULL(p2.first_name, '') + ':' + ISNULL(p2.last_name, '') + ':' + ISNULL(p2.nick_name, ''), '|')
+            FROM DuplicatePairs dp
+            JOIN player p2 ON (dp.player2_id = p2.player_id AND dp.player1_id = p.player_id)
+            WHERE dp.player1_id = p.player_id
+          ) as duplicate_matches
+        FROM AllDuplicatePlayers adp
+        JOIN player p ON adp.player_id = p.player_id
+        LEFT JOIN player_team pt ON p.player_id = pt.player
+        LEFT JOIN team t ON pt.team = t.team_Id
+        ${search && search.trim() ? `WHERE (
+          p.first_name LIKE '%${search.trim()}%' COLLATE Latin1_General_CI_AI
+          OR p.last_name LIKE '%${search.trim()}%' COLLATE Latin1_General_CI_AI
+          OR p.nick_name LIKE '%${search.trim()}%' COLLATE Latin1_General_CI_AI
+          OR CONCAT(p.first_name, ' ', p.last_name) LIKE '%${search.trim()}%' COLLATE Latin1_General_CI_AI
+        )` : ''}
+        GROUP BY p.player_id, p.first_name, p.last_name, p.nick_name, p.birthdate, p.is_hof, p.card_count
+        ORDER BY p.last_name, p.first_name
+        OFFSET ${offsetNum} ROWS
+        FETCH NEXT ${limitNum} ROWS ONLY
+      `)
+    } else if (showZeroCardsOnly) {
+      // Zero cards mode: show only players with 0 cards
+      players = await prisma.$queryRawUnsafe(`
+        SELECT
+          p.player_id,
+          p.first_name,
+          p.last_name,
+          p.nick_name,
+          p.birthdate,
+          p.is_hof,
+          p.card_count,
+          NULL as last_viewed,
+          STRING_AGG(CAST(t.team_Id as varchar(10)) + '|' + ISNULL(t.abbreviation, '?') + '|' + ISNULL(t.primary_color, '#666') + '|' + ISNULL(t.secondary_color, '#999') + '|' + ISNULL(t.name, 'Unknown'), '~') as teams_data
+        FROM player p
+        LEFT JOIN player_team pt ON p.player_id = pt.player
+        LEFT JOIN team t ON pt.team = t.team_Id
+        WHERE (p.card_count = 0 OR p.card_count IS NULL)
+        ${search && search.trim() ? `AND (
+          p.first_name LIKE '%${search.trim()}%' COLLATE Latin1_General_CI_AI
+          OR p.last_name LIKE '%${search.trim()}%' COLLATE Latin1_General_CI_AI
+          OR p.nick_name LIKE '%${search.trim()}%' COLLATE Latin1_General_CI_AI
+          OR CONCAT(p.first_name, ' ', p.last_name) LIKE '%${search.trim()}%' COLLATE Latin1_General_CI_AI
+        )` : ''}
+        GROUP BY p.player_id, p.first_name, p.last_name, p.nick_name, p.birthdate, p.is_hof, p.card_count
+        ORDER BY p.last_name, p.first_name
+        OFFSET ${offsetNum} ROWS
+        FETCH NEXT ${limitNum} ROWS ONLY
+      `)
+    } else if (search && search.trim()) {
       // Search mode: search by player name - get players with team data optimized
       const searchTerm = search.trim()
       players = await prisma.$queryRawUnsafe(`
@@ -73,7 +191,61 @@ router.get('/', async (req, res) => {
 
     // Get total count for pagination
     let totalCount = 0
-    if (search && search.trim()) {
+    if (showDuplicatesOnly) {
+      const totalCountResult = await prisma.$queryRawUnsafe(`
+        WITH PlayerNames AS (
+          SELECT
+            p.player_id,
+            p.first_name,
+            p.last_name,
+            p.nick_name,
+            SOUNDEX(p.last_name) as last_soundex,
+            SOUNDEX(p.first_name) as first_soundex,
+            SOUNDEX(p.nick_name) as nick_soundex
+          FROM player p
+        )
+        SELECT COUNT(DISTINCT p1.player_id) as total
+        FROM PlayerNames p1
+        INNER JOIN PlayerNames p2 ON p1.player_id < p2.player_id
+        WHERE (
+          p1.last_soundex = p2.last_soundex
+          AND (
+            p1.first_soundex = p2.first_soundex
+            OR p1.first_name = p2.nick_name
+            OR p1.nick_name = p2.first_name
+            OR (
+              LEN(p1.first_name) > 3
+              AND LEN(p2.first_name) > 3
+              AND ABS(LEN(p1.first_name) - LEN(p2.first_name)) <= 2
+              AND (
+                LEFT(p1.first_name, 3) = LEFT(p2.first_name, 3)
+                OR p1.first_soundex = p2.first_soundex
+              )
+            )
+          )
+        )
+        ${search && search.trim() ? `AND (
+          p1.first_name LIKE '%${search.trim()}%' COLLATE Latin1_General_CI_AI
+          OR p1.last_name LIKE '%${search.trim()}%' COLLATE Latin1_General_CI_AI
+          OR p1.nick_name LIKE '%${search.trim()}%' COLLATE Latin1_General_CI_AI
+          OR CONCAT(p1.first_name, ' ', p1.last_name) LIKE '%${search.trim()}%' COLLATE Latin1_General_CI_AI
+        )` : ''}
+      `)
+      totalCount = Number(totalCountResult[0].total)
+    } else if (showZeroCardsOnly) {
+      const totalCountResult = await prisma.$queryRawUnsafe(`
+        SELECT COUNT(*) as total
+        FROM player p
+        WHERE (p.card_count = 0 OR p.card_count IS NULL)
+        ${search && search.trim() ? `AND (
+          p.first_name LIKE '%${search.trim()}%' COLLATE Latin1_General_CI_AI
+          OR p.last_name LIKE '%${search.trim()}%' COLLATE Latin1_General_CI_AI
+          OR p.nick_name LIKE '%${search.trim()}%' COLLATE Latin1_General_CI_AI
+          OR CONCAT(p.first_name, ' ', p.last_name) LIKE '%${search.trim()}%' COLLATE Latin1_General_CI_AI
+        )` : ''}
+      `)
+      totalCount = Number(totalCountResult[0].total)
+    } else if (search && search.trim()) {
       const searchTerm = search.trim()
       const totalCountResult = await prisma.$queryRawUnsafe(`
         SELECT COUNT(*) as total
@@ -109,6 +281,21 @@ router.get('/', async (req, res) => {
         }).filter(team => team.team_id) // Filter out any malformed entries
       }
 
+      // Parse duplicate matches if present
+      let duplicateMatches = []
+      if (player.duplicate_matches) {
+        const matchStrings = player.duplicate_matches.split('|')
+        duplicateMatches = matchStrings.map(matchStr => {
+          const [player_id, first_name, last_name, nick_name] = matchStr.split(':')
+          return {
+            player_id: Number(player_id),
+            first_name: first_name || '',
+            last_name: last_name || '',
+            nick_name: nick_name || ''
+          }
+        }).filter(match => match.player_id)
+      }
+
       return {
         player_id: Number(player.player_id),
         first_name: player.first_name,
@@ -119,7 +306,8 @@ router.get('/', async (req, res) => {
         card_count: Number(player.card_count || 0),
         teams: teams,
         team_count: teams.length,
-        last_viewed: player.last_viewed
+        last_viewed: player.last_viewed,
+        duplicate_matches: duplicateMatches.length > 0 ? duplicateMatches : undefined
       }
     })
 
