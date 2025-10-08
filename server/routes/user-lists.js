@@ -16,7 +16,7 @@ function createListSlug(name) {
 // Helper function to find list by slug and user
 async function findListBySlug(slug, userId) {
   const result = await prisma.$queryRaw`
-    SELECT user_list_id, name, card_count, created, is_public
+    SELECT user_list_id, name, summary, card_count, created, is_public
     FROM user_list
     WHERE [user] = ${BigInt(userId)}
   `
@@ -31,6 +31,7 @@ async function findListBySlug(slug, userId) {
   return {
     user_list_id: Number(list.user_list_id),
     name: list.name,
+    summary: list.summary || '',
     card_count: list.card_count || 0,
     created: list.created,
     is_public: Boolean(list.is_public)
@@ -376,6 +377,7 @@ router.get('/:slug', async (req, res) => {
         user_list_id: listInfo.user_list_id,
         slug: createListSlug(listInfo.name),
         name: listInfo.name,
+        summary: listInfo.summary || '',
         card_count: listInfo.card_count,
         created: listInfo.created,
         is_public: listInfo.is_public
@@ -396,7 +398,7 @@ router.put('/:slug', async (req, res) => {
   try {
     const userId = req.user?.userId
     const { slug } = req.params
-    const { name } = req.body
+    const { name, summary } = req.body
 
     if (!userId) {
       return res.status(401).json({
@@ -417,27 +419,60 @@ router.put('/:slug', async (req, res) => {
 
     const listId = existingList.user_list_id
 
-    if (!name || name.trim().length === 0) {
+    // Validate name if provided
+    if (name !== undefined) {
+      if (!name || name.trim().length === 0) {
+        return res.status(400).json({
+          error: 'Validation error',
+          message: 'List name is required'
+        })
+      }
+
+      if (name.length > 100) {
+        return res.status(400).json({
+          error: 'Validation error',
+          message: 'List name must be 100 characters or less'
+        })
+      }
+    }
+
+    // Validate summary if provided
+    if (summary !== undefined && summary.length > 1000) {
       return res.status(400).json({
         error: 'Validation error',
-        message: 'List name is required'
+        message: 'Summary must be 1000 characters or less'
       })
     }
 
-    if (name.length > 100) {
+    // Build update query based on what fields are provided
+    let result
+    if (name !== undefined && summary !== undefined) {
+      result = await prisma.$queryRaw`
+        UPDATE user_list
+        SET name = ${name.trim()}, summary = ${summary.trim()}
+        OUTPUT INSERTED.user_list_id, INSERTED.name, INSERTED.summary, INSERTED.card_count, INSERTED.created, INSERTED.is_public
+        WHERE user_list_id = ${BigInt(listId)} AND [user] = ${BigInt(userId)}
+      `
+    } else if (name !== undefined) {
+      result = await prisma.$queryRaw`
+        UPDATE user_list
+        SET name = ${name.trim()}
+        OUTPUT INSERTED.user_list_id, INSERTED.name, INSERTED.summary, INSERTED.card_count, INSERTED.created, INSERTED.is_public
+        WHERE user_list_id = ${BigInt(listId)} AND [user] = ${BigInt(userId)}
+      `
+    } else if (summary !== undefined) {
+      result = await prisma.$queryRaw`
+        UPDATE user_list
+        SET summary = ${summary.trim()}
+        OUTPUT INSERTED.user_list_id, INSERTED.name, INSERTED.summary, INSERTED.card_count, INSERTED.created, INSERTED.is_public
+        WHERE user_list_id = ${BigInt(listId)} AND [user] = ${BigInt(userId)}
+      `
+    } else {
       return res.status(400).json({
         error: 'Validation error',
-        message: 'List name must be 100 characters or less'
+        message: 'No fields to update'
       })
     }
-
-    // Update only if list belongs to user
-    const result = await prisma.$queryRaw`
-      UPDATE user_list
-      SET name = ${name.trim()}
-      OUTPUT INSERTED.user_list_id, INSERTED.name, INSERTED.card_count, INSERTED.created
-      WHERE user_list_id = ${BigInt(listId)} AND [user] = ${BigInt(userId)}
-    `
 
     if (result.length === 0) {
       return res.status(404).json({
@@ -454,8 +489,10 @@ router.put('/:slug', async (req, res) => {
         user_list_id: updatedListId,
         slug: createListSlug(updatedList.name),
         name: updatedList.name,
+        summary: updatedList.summary || '',
         card_count: updatedList.card_count || 0,
-        created: updatedList.created
+        created: updatedList.created,
+        is_public: Boolean(updatedList.is_public)
       }
     })
   } catch (error) {

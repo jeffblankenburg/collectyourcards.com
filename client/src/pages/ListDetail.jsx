@@ -18,6 +18,8 @@ function ListDetail() {
   const [loading, setLoading] = useState(true)
   const [editingName, setEditingName] = useState(false)
   const [newName, setNewName] = useState('')
+  const [editingSummary, setEditingSummary] = useState(false)
+  const [newSummary, setNewSummary] = useState('')
   const [removingCardId, setRemovingCardId] = useState(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [bulkSelectionMode, setBulkSelectionMode] = useState(false)
@@ -64,6 +66,7 @@ function ListDetail() {
       setList(response.data.list)
       setCards(response.data.cards || [])
       setNewName(response.data.list.name)
+      setNewSummary(response.data.list.summary || '')
 
       // For public view, set the list owner info
       if (viewingUsername && response.data.owner) {
@@ -106,6 +109,21 @@ function ListDetail() {
     } catch (error) {
       console.error('Error updating list name:', error)
       addToast(error.response?.data?.message || 'Failed to update list name', 'error')
+    }
+  }
+
+  const handleSaveSummary = async () => {
+    try {
+      const response = await axios.put(`/api/user/lists/${slug}`, {
+        summary: newSummary.trim()
+      })
+
+      setList(response.data.list)
+      setEditingSummary(false)
+      addToast('List summary updated', 'success')
+    } catch (error) {
+      console.error('Error updating list summary:', error)
+      addToast(error.response?.data?.message || 'Failed to update list summary', 'error')
     }
   }
 
@@ -289,29 +307,122 @@ function ListDetail() {
               <div className="list-name-display">
                 <h1>{list.name}</h1>
                 {!isPublicView && (
-                  <button
-                    className="edit-name-trigger"
-                    onClick={() => setEditingName(true)}
-                    title="Rename list"
-                  >
-                    <Icon name="edit" size={20} />
-                  </button>
+                  <div className="list-name-actions">
+                    <button
+                      className="edit-name-trigger"
+                      onClick={() => setEditingName(true)}
+                      title="Rename list"
+                    >
+                      <Icon name="edit" size={20} />
+                    </button>
+                    <button
+                      className="toggle-public-button-inline"
+                      onClick={handleTogglePublic}
+                      disabled={togglingPublic}
+                      title={list.is_public ? 'Public - Click to make private' : 'Private - Click to make public'}
+                    >
+                      <Icon name={list.is_public ? 'eye' : 'eye-off'} size={20} />
+                    </button>
+                    <button
+                      className="delete-list-button-inline"
+                      onClick={handleDeleteClick}
+                      title="Delete list"
+                    >
+                      <Icon name="trash" size={20} />
+                    </button>
+                  </div>
                 )}
               </div>
             )}
-            <div className="list-meta">
-              <span className="list-card-count">
-                {list.card_count} {list.card_count === 1 ? 'card' : 'cards'}
-              </span>
-              {isPublicView && listOwner && (
-                <span className="list-owner">
-                  Created by{' '}
-                  <a href={`/${viewingUsername}`} className="owner-link">
-                    {listOwner.first_name} {listOwner.last_name} @{viewingUsername}
-                  </a>
-                </span>
-              )}
+
+            {/* Summary section */}
+            {editingSummary && !isPublicView ? (
+              <div className="edit-summary-form">
+                <textarea
+                  value={newSummary}
+                  onChange={(e) => setNewSummary(e.target.value)}
+                  placeholder="Add a description for this list..."
+                  rows={3}
+                  autoFocus
+                />
+                <div className="edit-summary-actions">
+                  <button className="save-summary-button" onClick={handleSaveSummary}>
+                    <Icon name="check" size={16} />
+                    Save
+                  </button>
+                  <button
+                    className="cancel-summary-button"
+                    onClick={() => {
+                      setEditingSummary(false)
+                      setNewSummary(list.summary || '')
+                    }}
+                  >
+                    <Icon name="x" size={16} />
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                {list.summary && (
+                  <div className="list-summary-display">
+                    <p>{list.summary}</p>
+                    {!isPublicView && (
+                      <button
+                        className="edit-summary-trigger"
+                        onClick={() => setEditingSummary(true)}
+                        title="Edit summary"
+                      >
+                        <Icon name="edit" size={16} />
+                      </button>
+                    )}
+                  </div>
+                )}
+                {!list.summary && !isPublicView && (
+                  <button
+                    className="add-summary-button"
+                    onClick={() => setEditingSummary(true)}
+                  >
+                    <Icon name="plus" size={16} />
+                    Add description
+                  </button>
+                )}
+              </>
+            )}
+
+            {isPublicView && listOwner && (
+              <div className="list-owner-info">
+                Created by{' '}
+                <a href={`/${viewingUsername}`} className="owner-link">
+                  {listOwner.first_name} {listOwner.last_name} @{viewingUsername}
+                </a>
+              </div>
+            )}
+          </div>
+
+          <div className="list-stats">
+            <div className="stat-box">
+              <div className="stat-value">{list.card_count}</div>
+              <div className="stat-label">{list.card_count === 1 ? 'Card' : 'Cards'}</div>
             </div>
+            {(!isPublicView || (user && user.username === viewingUsername)) && (
+              <>
+                <div className="stat-box">
+                  <div className="stat-value">
+                    {cards.filter(card => card.user_card_count > 0).length}
+                  </div>
+                  <div className="stat-label">Owned</div>
+                </div>
+                <div className="stat-box stat-box-highlight">
+                  <div className="stat-value">
+                    {list.card_count > 0
+                      ? Math.round((cards.filter(card => card.user_card_count > 0).length / list.card_count) * 100)
+                      : 0}%
+                  </div>
+                  <div className="stat-label">Complete</div>
+                </div>
+              </>
+            )}
           </div>
 
           {isPublicView && user && listOwner && user.username !== viewingUsername && (
@@ -324,22 +435,6 @@ function ListDetail() {
               >
                 <Icon name="copy" size={16} />
                 {copyingList ? 'Copying...' : 'Copy List'}
-              </button>
-            </div>
-          )}
-
-          {!isPublicView && (
-            <div className="list-actions">
-              <button
-                className="toggle-public-button"
-                onClick={handleTogglePublic}
-                disabled={togglingPublic}
-                title={list.is_public ? 'Public - Click to make private' : 'Private - Click to make public'}
-              >
-                <Icon name={list.is_public ? 'eye' : 'eye-off'} size={16} />
-              </button>
-              <button className="delete-list-button" onClick={handleDeleteClick} title="Delete list">
-                <Icon name="trash" size={16} />
               </button>
             </div>
           )}

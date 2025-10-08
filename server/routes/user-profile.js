@@ -418,22 +418,34 @@ router.get('/user/:username', optionalAuthMiddleware, async (req, res) => {
             ul.user_list_id,
             ul.name,
             ul.card_count,
-            ul.created
+            ul.created,
+            (
+              SELECT COUNT(DISTINCT uc.card)
+              FROM user_list_card ulc
+              INNER JOIN user_card uc ON ulc.card = uc.card AND uc.[user] = ${BigInt(user.user_id)}
+              WHERE ulc.user_list = ul.user_list_id
+            ) as cards_owned_count
           FROM user_list ul
           WHERE ul.[user] = ${BigInt(user.user_id)}
             AND ul.is_public = 1
           ORDER BY ul.created DESC
         `
 
-        publicLists = lists.map(list => ({
-          user_list_id: Number(list.user_list_id),
-          name: list.name,
-          slug: list.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''),
-          card_count: list.card_count || 0,
-          cards_owned: list.card_count || 0,  // Temporary - just use card_count
-          completion_percentage: 100,  // Temporary - assume 100%
-          created: list.created
-        }))
+        publicLists = lists.map(list => {
+          const cardCount = list.card_count || 0
+          const cardsOwned = Number(list.cards_owned_count || 0)
+          const completionPercentage = cardCount > 0 ? Math.round((cardsOwned / cardCount) * 100) : 0
+
+          return {
+            user_list_id: Number(list.user_list_id),
+            name: list.name,
+            slug: list.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''),
+            card_count: cardCount,
+            cards_owned: cardsOwned,
+            completion_percentage: completionPercentage,
+            created: list.created
+          }
+        })
       } catch (listsError) {
         console.error('❌ Error fetching public lists for profile:', listsError)
         publicLists = []

@@ -1,6 +1,7 @@
 const express = require('express')
 const { PrismaClient } = require('@prisma/client')
 const { sanitizeParams } = require('../middleware/inputSanitization')
+const { optionalAuthMiddleware } = require('../middleware/auth')
 const router = express.Router()
 const prisma = new PrismaClient()
 
@@ -12,11 +13,12 @@ function createListSlug(name) {
     .replace(/^-+|-+$/g, '')
 }
 
-// GET /:username/:listSlug - Public list viewing (no auth required)
-router.get('/:username/:listSlug', sanitizeParams, async (req, res) => {
+// GET /:username/:listSlug - Public list viewing (optional auth for ownership info)
+router.get('/:username/:listSlug', optionalAuthMiddleware, sanitizeParams, async (req, res) => {
   try {
     const { username, listSlug } = req.params
-    console.log(`🔍 Fetching public list: username=${username}, listSlug=${listSlug}`)
+    const viewerId = req.user?.id // Optional - may be null if not authenticated
+    console.log(`🔍 Fetching public list: username=${username}, listSlug=${listSlug}, viewer=${viewerId || 'anonymous'}`)
 
     // First, find the user by username
     const userResult = await prisma.$queryRaw`
@@ -45,7 +47,7 @@ router.get('/:username/:listSlug', sanitizeParams, async (req, res) => {
 
     // Get all user's public lists and find the one matching the slug
     const listsResult = await prisma.$queryRaw`
-      SELECT user_list_id, name, card_count, created, is_public
+      SELECT user_list_id, name, summary, card_count, created, is_public
       FROM user_list
       WHERE [user] = ${BigInt(userId)}
         AND is_public = 1
@@ -72,47 +74,97 @@ router.get('/:username/:listSlug', sanitizeParams, async (req, res) => {
 
     // Get cards in the list with full details
     console.log(`🔍 Fetching cards for list ID ${listId}...`)
-    const cardsResult = await prisma.$queryRaw`
-      SELECT
-        c.card_id,
-        c.card_number,
-        c.is_rookie,
-        c.is_autograph,
-        c.is_relic,
-        c.print_run,
-        s.series_id,
-        s.name as series_name,
-        set_info.name as set_name,
-        set_info.year as set_year,
-        LOWER(REPLACE(REPLACE(REPLACE(s.name, ' ', '-'), '''', ''), '/', '-')) as series_slug,
-        LOWER(REPLACE(REPLACE(REPLACE(set_info.name, ' ', '-'), '''', ''), '/', '-')) as set_slug,
-        STRING_AGG(CONCAT(p.first_name, ' ', p.last_name), ', ') WITHIN GROUP (ORDER BY p.last_name, p.first_name) as player_name,
-        STRING_AGG(CAST(p.player_id AS NVARCHAR), ',') WITHIN GROUP (ORDER BY p.last_name, p.first_name) as player_ids,
-        (SELECT TOP 1 t.name
-         FROM card_player_team cpt2
-         INNER JOIN player_team pt2 ON cpt2.player_team = pt2.player_team_id
-         INNER JOIN team t ON pt2.team = t.team_Id
-         WHERE cpt2.card = c.card_id) as team_name,
-        (SELECT TOP 1 t.primary_color
-         FROM card_player_team cpt2
-         INNER JOIN player_team pt2 ON cpt2.player_team = pt2.player_team_id
-         INNER JOIN team t ON pt2.team = t.team_Id
-         WHERE cpt2.card = c.card_id) as team_color,
-        color.name as color_name
-      FROM user_list_card ulc
-      INNER JOIN card c ON ulc.card = c.card_id
-      LEFT JOIN series s ON c.series = s.series_id
-      LEFT JOIN [set] set_info ON s.[set] = set_info.set_id
-      LEFT JOIN card_player_team cpt ON c.card_id = cpt.card
-      LEFT JOIN player_team pt ON cpt.player_team = pt.player_team_id
-      LEFT JOIN player p ON pt.player = p.player_id
-      LEFT JOIN color ON c.color = color.color_id
-      WHERE ulc.user_list = ${BigInt(listId)}
-      GROUP BY
-        c.card_id, c.card_number, c.is_rookie, c.is_autograph, c.is_relic, c.print_run,
-        s.series_id, s.name, set_info.name, set_info.year, color.name
-      ORDER BY c.card_number ASC
-    `
+
+    // Build the ownership subquery conditionally
+    let cardsResult
+    if (viewerId) {
+      cardsResult = await prisma.$queryRaw`
+        SELECT
+          c.card_id,
+          c.card_number,
+          c.is_rookie,
+          c.is_autograph,
+          c.is_relic,
+          c.print_run,
+          s.series_id,
+          s.name as series_name,
+          set_info.name as set_name,
+          set_info.year as set_year,
+          LOWER(REPLACE(REPLACE(REPLACE(s.name, ' ', '-'), '''', ''), '/', '-')) as series_slug,
+          LOWER(REPLACE(REPLACE(REPLACE(set_info.name, ' ', '-'), '''', ''), '/', '-')) as set_slug,
+          STRING_AGG(CONCAT(p.first_name, ' ', p.last_name), ', ') WITHIN GROUP (ORDER BY p.last_name, p.first_name) as player_name,
+          STRING_AGG(CAST(p.player_id AS NVARCHAR), ',') WITHIN GROUP (ORDER BY p.last_name, p.first_name) as player_ids,
+          (SELECT TOP 1 t.name
+           FROM card_player_team cpt2
+           INNER JOIN player_team pt2 ON cpt2.player_team = pt2.player_team_id
+           INNER JOIN team t ON pt2.team = t.team_Id
+           WHERE cpt2.card = c.card_id) as team_name,
+          (SELECT TOP 1 t.primary_color
+           FROM card_player_team cpt2
+           INNER JOIN player_team pt2 ON cpt2.player_team = pt2.player_team_id
+           INNER JOIN team t ON pt2.team = t.team_Id
+           WHERE cpt2.card = c.card_id) as team_color,
+          color.name as color_name,
+          (SELECT COUNT(*) FROM user_card uc WHERE uc.card = c.card_id AND uc.[user] = ${BigInt(viewerId)}) as owned_count
+        FROM user_list_card ulc
+        INNER JOIN card c ON ulc.card = c.card_id
+        LEFT JOIN series s ON c.series = s.series_id
+        LEFT JOIN [set] set_info ON s.[set] = set_info.set_id
+        LEFT JOIN card_player_team cpt ON c.card_id = cpt.card
+        LEFT JOIN player_team pt ON cpt.player_team = pt.player_team_id
+        LEFT JOIN player p ON pt.player = p.player_id
+        LEFT JOIN color ON c.color = color.color_id
+        WHERE ulc.user_list = ${BigInt(listId)}
+        GROUP BY
+          c.card_id, c.card_number, c.is_rookie, c.is_autograph, c.is_relic, c.print_run,
+          s.series_id, s.name, set_info.name, set_info.year, color.name
+        ORDER BY c.card_number ASC
+      `
+    } else {
+      cardsResult = await prisma.$queryRaw`
+        SELECT
+          c.card_id,
+          c.card_number,
+          c.is_rookie,
+          c.is_autograph,
+          c.is_relic,
+          c.print_run,
+          s.series_id,
+          s.name as series_name,
+          set_info.name as set_name,
+          set_info.year as set_year,
+          LOWER(REPLACE(REPLACE(REPLACE(s.name, ' ', '-'), '''', ''), '/', '-')) as series_slug,
+          LOWER(REPLACE(REPLACE(REPLACE(set_info.name, ' ', '-'), '''', ''), '/', '-')) as set_slug,
+          STRING_AGG(CONCAT(p.first_name, ' ', p.last_name), ', ') WITHIN GROUP (ORDER BY p.last_name, p.first_name) as player_name,
+          STRING_AGG(CAST(p.player_id AS NVARCHAR), ',') WITHIN GROUP (ORDER BY p.last_name, p.first_name) as player_ids,
+          (SELECT TOP 1 t.name
+           FROM card_player_team cpt2
+           INNER JOIN player_team pt2 ON cpt2.player_team = pt2.player_team_id
+           INNER JOIN team t ON pt2.team = t.team_Id
+           WHERE cpt2.card = c.card_id) as team_name,
+          (SELECT TOP 1 t.primary_color
+           FROM card_player_team cpt2
+           INNER JOIN player_team pt2 ON cpt2.player_team = pt2.player_team_id
+           INNER JOIN team t ON pt2.team = t.team_Id
+           WHERE cpt2.card = c.card_id) as team_color,
+          color.name as color_name,
+          0 as owned_count
+        FROM user_list_card ulc
+        INNER JOIN card c ON ulc.card = c.card_id
+        LEFT JOIN series s ON c.series = s.series_id
+        LEFT JOIN [set] set_info ON s.[set] = set_info.set_id
+        LEFT JOIN card_player_team cpt ON c.card_id = cpt.card
+        LEFT JOIN player_team pt ON cpt.player_team = pt.player_team_id
+        LEFT JOIN player p ON pt.player = p.player_id
+        LEFT JOIN color ON c.color = color.color_id
+        WHERE ulc.user_list = ${BigInt(listId)}
+        GROUP BY
+          c.card_id, c.card_number, c.is_rookie, c.is_autograph, c.is_relic, c.print_run,
+          s.series_id, s.name, set_info.name, set_info.year, color.name
+        ORDER BY c.card_number ASC
+      `
+    }
+
     console.log(`✅ Cards query result: Found ${cardsResult.length} cards`)
 
     // Serialize cards - format for CardTable component
@@ -155,7 +207,8 @@ router.get('/:username/:listSlug', sanitizeParams, async (req, res) => {
           set_slug: row.set_slug
         },
         color: row.color_name ? { name: row.color_name } : null,
-        card_player_teams
+        card_player_teams,
+        user_card_count: Number(row.owned_count || 0)
       }
     })
 
@@ -164,6 +217,7 @@ router.get('/:username/:listSlug', sanitizeParams, async (req, res) => {
         user_list_id: listId,
         slug: listSlug,
         name: list.name,
+        summary: list.summary || '',
         card_count: list.card_count || 0,
         created: list.created,
         is_public: Boolean(list.is_public)
