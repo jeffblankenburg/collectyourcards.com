@@ -46,6 +46,7 @@ const CardTable = ({
   const { isAuthenticated } = useAuth()
   const [sortField, setSortField] = useState(defaultSort)
   const [sortDirection, setSortDirection] = useState('asc')
+
   
   // Column resizing state
   const [columnWidths, setColumnWidths] = useState({
@@ -120,61 +121,96 @@ const CardTable = ({
     })
   }, [cards, searchQuery])
 
-  // Sort filtered cards
+  // Sort filtered cards with multi-level sorting: primary field → series → card number → player
   const sortedCards = useMemo(() => {
     const sorted = [...filteredCards].sort((a, b) => {
+      // Helper to compare values
+      const compareValues = (aVal, bVal, direction) => {
+        if (typeof aVal === 'string' && typeof bVal === 'string') {
+          aVal = aVal.toLowerCase()
+          bVal = bVal.toLowerCase()
+        }
+        if (aVal < bVal) return direction === 'asc' ? -1 : 1
+        if (aVal > bVal) return direction === 'asc' ? 1 : -1
+        return 0
+      }
+
+      // PRIMARY SORT: by selected field
+      let primaryResult = 0
       let aVal = a[sortField]
       let bVal = b[sortField]
 
-      // Handle special sorting cases
       if (sortField === 'player_name') {
-        aVal = a.card_player_teams?.[0]?.player ? 
+        aVal = a.card_player_teams?.[0]?.player ?
           `${a.card_player_teams[0].player.first_name || ''} ${a.card_player_teams[0].player.last_name || ''}`.trim() : ''
-        bVal = b.card_player_teams?.[0]?.player ? 
+        bVal = b.card_player_teams?.[0]?.player ?
           `${b.card_player_teams[0].player.first_name || ''} ${b.card_player_teams[0].player.last_name || ''}`.trim() : ''
+        primaryResult = compareValues(aVal, bVal, sortDirection)
       } else if (sortField === 'is_autograph' || sortField === 'is_relic') {
-        // Boolean sorting: true values first when ascending
         aVal = a[sortField] ? 1 : 0
         bVal = b[sortField] ? 1 : 0
-        return sortDirection === 'asc' ? bVal - aVal : aVal - bVal
+        primaryResult = sortDirection === 'asc' ? bVal - aVal : aVal - bVal
       } else if (sortField === 'sort_order') {
-        // Handle sort_order as numeric
         const aNum = parseInt(a.sort_order) || 0
         const bNum = parseInt(b.sort_order) || 0
-        return sortDirection === 'asc' ? aNum - bNum : bNum - aNum
+        primaryResult = sortDirection === 'asc' ? aNum - bNum : bNum - aNum
       } else if (sortField === 'print_run') {
-        // Handle print_run as numeric, null values go to end
         const aNum = a.print_run ? parseInt(a.print_run) : 999999
         const bNum = b.print_run ? parseInt(b.print_run) : 999999
-        return sortDirection === 'asc' ? aNum - bNum : bNum - aNum
+        primaryResult = sortDirection === 'asc' ? aNum - bNum : bNum - aNum
       } else if (sortField === 'color') {
-        // Handle color sorting using color_rel
         aVal = a.color_rel?.color || ''
         bVal = b.color_rel?.color || ''
+        primaryResult = compareValues(aVal, bVal, sortDirection)
       } else if (sortField === 'card_number') {
-        // Smart card number sorting: numeric if all are numbers, alphabetic if mixed
         const aNum = parseInt(a.card_number)
         const bNum = parseInt(b.card_number)
-        
-        if (!isNaN(aNum) && !isNaN(bNum) && 
-            a.card_number === aNum.toString() && 
+        if (!isNaN(aNum) && !isNaN(bNum) &&
+            a.card_number === aNum.toString() &&
             b.card_number === bNum.toString()) {
-          return sortDirection === 'asc' ? aNum - bNum : bNum - aNum
+          primaryResult = sortDirection === 'asc' ? aNum - bNum : bNum - aNum
         } else {
-          aVal = String(a.card_number || '').toLowerCase()
-          bVal = String(b.card_number || '').toLowerCase()
+          primaryResult = compareValues(String(a.card_number || ''), String(b.card_number || ''), sortDirection)
+        }
+      } else if (sortField === 'series_name') {
+        aVal = a.series_rel?.name || ''
+        bVal = b.series_rel?.name || ''
+        primaryResult = compareValues(aVal, bVal, sortDirection)
+      } else {
+        primaryResult = compareValues(String(aVal || ''), String(bVal || ''), sortDirection)
+      }
+
+      if (primaryResult !== 0) return primaryResult
+
+      // SECONDARY SORT: by series name (if not already primary)
+      if (sortField !== 'series_name') {
+        const aSeriesName = a.series_rel?.name || ''
+        const bSeriesName = b.series_rel?.name || ''
+        const seriesResult = compareValues(aSeriesName, bSeriesName, 'asc')
+        if (seriesResult !== 0) return seriesResult
+      }
+
+      // TERTIARY SORT: by card number (if not already primary)
+      if (sortField !== 'card_number') {
+        const aNum = parseInt(a.card_number)
+        const bNum = parseInt(b.card_number)
+        if (!isNaN(aNum) && !isNaN(bNum)) {
+          if (aNum !== bNum) return aNum - bNum
+        } else {
+          const cardNumResult = compareValues(String(a.card_number || ''), String(b.card_number || ''), 'asc')
+          if (cardNumResult !== 0) return cardNumResult
         }
       }
 
-      // Convert to strings for comparison (if not already handled above)
-      if (sortField !== 'card_number' || typeof aVal === 'string') {
-        aVal = String(aVal || '').toLowerCase()
-        bVal = String(bVal || '').toLowerCase()
-
-        if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1
-        if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1
+      // QUATERNARY SORT: by player name (if not already primary)
+      if (sortField !== 'player_name') {
+        const aPlayerName = a.card_player_teams?.[0]?.player ?
+          `${a.card_player_teams[0].player.first_name || ''} ${a.card_player_teams[0].player.last_name || ''}`.trim() : ''
+        const bPlayerName = b.card_player_teams?.[0]?.player ?
+          `${b.card_player_teams[0].player.first_name || ''} ${b.card_player_teams[0].player.last_name || ''}`.trim() : ''
+        return compareValues(aPlayerName, bPlayerName, 'asc')
       }
-      
+
       return 0
     })
 
