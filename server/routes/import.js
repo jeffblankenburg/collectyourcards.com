@@ -1265,11 +1265,12 @@ async function batchFindPlayers(pool, playerNames, organizationId = null) {
     
     // Get all players WITH their teams for suggestions
     let baseQuery = `
-      SELECT DISTINCT 
+      SELECT DISTINCT
         p.player_id as playerId,
         LTRIM(RTRIM(COALESCE(p.first_name, '') + ' ' + COALESCE(p.last_name, ''))) as playerName,
         p.first_name as firstName,
         p.last_name as lastName,
+        p.nick_name as nickName,
         t.team_id as teamId,
         t.name as teamName,
         t.primary_color as primaryColor,
@@ -1315,6 +1316,7 @@ async function batchFindPlayers(pool, playerNames, organizationId = null) {
             playerName: row.playerName,
             firstName: row.firstName,
             lastName: row.lastName,
+            nickName: row.nickName,
             teams: []
           })
         }
@@ -1345,15 +1347,28 @@ async function batchFindPlayers(pool, playerNames, organizationId = null) {
       const normalizedSearchName = normalizePlayerName(searchName)
       console.log(`🔍 Searching for: "${searchName}" -> normalized: "${normalizedSearchName}"`)
       
-      // Find exact matches
+      // Find exact matches (check both regular name and nickname + last_name)
       const exactMatches = allPlayersGrouped.filter(player => {
         const normalizedPlayerName = normalizePlayerName(player.playerName || '')
-        const isMatch = normalizedPlayerName === normalizedSearchName
-        
-        if (isMatch) {
-          console.log(`✅ EXACT MATCH: "${searchName}" matches "${player.playerName}" with ${player.teams.length} teams`)
+        const isRegularMatch = normalizedPlayerName === normalizedSearchName
+
+        // Also check nickname + last_name (e.g., "Minnie Minoso")
+        let isNicknameMatch = false
+        if (player.nickName && player.lastName) {
+          const nickNameVariation = normalizePlayerName(`${player.nickName} ${player.lastName}`)
+          isNicknameMatch = nickNameVariation === normalizedSearchName
         }
-        
+
+        const isMatch = isRegularMatch || isNicknameMatch
+
+        if (isMatch) {
+          if (isNicknameMatch) {
+            console.log(`✅ EXACT NICKNAME MATCH: "${searchName}" matches "${player.nickName} ${player.lastName}" (${player.playerName}) with ${player.teams.length} teams`)
+          } else {
+            console.log(`✅ EXACT MATCH: "${searchName}" matches "${player.playerName}" with ${player.teams.length} teams`)
+          }
+        }
+
         return isMatch
       })
       
@@ -1381,10 +1396,24 @@ async function batchFindPlayers(pool, playerNames, organizationId = null) {
             }
           }
 
-          // Calculate similarity
+          // Calculate similarity for regular name
           const distance = levenshteinDistance(normalizedSearchName, dbPlayerName)
           const maxLength = Math.max(normalizedSearchName.length, dbPlayerName.length)
           const similarity = 1 - (distance / maxLength)
+
+          // Also check nickname similarity if available
+          let nickSimilarity = 0
+          let nickDistance = 999
+          if (player.nickName && player.lastName) {
+            const nickNameVariation = normalizePlayerName(`${player.nickName} ${player.lastName}`)
+            nickDistance = levenshteinDistance(normalizedSearchName, nickNameVariation)
+            const nickMaxLength = Math.max(normalizedSearchName.length, nickNameVariation.length)
+            nickSimilarity = 1 - (nickDistance / nickMaxLength)
+          }
+
+          // Use the best similarity score
+          const bestSimilarity = Math.max(similarity, nickSimilarity)
+          const bestDistance = Math.min(distance, nickDistance)
 
           // Check for close matches
           const nameParts = normalizedSearchName.split(' ')
@@ -1392,13 +1421,17 @@ async function batchFindPlayers(pool, playerNames, organizationId = null) {
           const lastNameMatch = nameParts.length > 1 && dbNameParts.length > 1 &&
                                nameParts[nameParts.length - 1] === dbNameParts[dbNameParts.length - 1]
 
-          const isFuzzyMatch = distance <= 2 || similarity > 0.85 || (lastNameMatch && similarity > 0.7)
+          const isFuzzyMatch = bestDistance <= 2 || bestSimilarity > 0.85 || (lastNameMatch && bestSimilarity > 0.7)
 
           if (isFuzzyMatch) {
-            console.log(`🔍 FUZZY MATCH: "${searchName}" ~= "${player.playerName}" (similarity: ${similarity.toFixed(2)}, teams: ${player.teams.length})`)
+            if (nickSimilarity > similarity) {
+              console.log(`🔍 FUZZY NICKNAME MATCH: "${searchName}" ~= "${player.nickName} ${player.lastName}" (${player.playerName}) (similarity: ${bestSimilarity.toFixed(2)}, teams: ${player.teams.length})`)
+            } else {
+              console.log(`🔍 FUZZY MATCH: "${searchName}" ~= "${player.playerName}" (similarity: ${bestSimilarity.toFixed(2)}, teams: ${player.teams.length})`)
+            }
             // Add similarity score to player object
-            player.similarity = similarity
-            player.distance = distance
+            player.similarity = bestSimilarity
+            player.distance = bestDistance
           }
 
           return isFuzzyMatch
@@ -1681,11 +1714,12 @@ async function findPlayerMatches(pool, playerName, organizationId = null) {
     }
     
     const exactQuery = `
-      SELECT DISTINCT 
+      SELECT DISTINCT
         p.player_id as playerId,
         LTRIM(RTRIM(COALESCE(p.first_name, '') + ' ' + COALESCE(p.last_name, ''))) as playerName,
         p.first_name as firstName,
         p.last_name as lastName,
+        p.nick_name as nickName,
         t.team_id as teamId,
         t.name as teamName,
         t.primary_color as primaryColor,
@@ -1694,18 +1728,27 @@ async function findPlayerMatches(pool, playerName, organizationId = null) {
       FROM player p
       LEFT JOIN player_team pt ON p.player_id = pt.player
       LEFT JOIN team t ON pt.team = t.team_id
-      WHERE LOWER(LTRIM(RTRIM(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
-        p.first_name + ' ' + p.last_name, 
-        'á', 'a'), 'é', 'e'), 'í', 'i'), 'ó', 'o'), 'ú', 'u'), 'ñ', 'n'), '.', ''), '  ', ' ')))) = @fullName
+      WHERE (
+        -- Match on first_name + last_name
+        LOWER(LTRIM(RTRIM(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
+          p.first_name + ' ' + p.last_name,
+          'á', 'a'), 'é', 'e'), 'í', 'i'), 'ó', 'o'), 'ú', 'u'), 'ñ', 'n'), '.', ''), '  ', ' ')))) = @fullName
+        OR
+        -- Match on nickname + last_name (e.g., "Minnie Minoso")
+        (p.nick_name IS NOT NULL AND
+         LOWER(LTRIM(RTRIM(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
+           p.nick_name + ' ' + p.last_name,
+           'á', 'a'), 'é', 'e'), 'í', 'i'), 'ó', 'o'), 'ú', 'u'), 'ñ', 'n'), '.', ''), '  ', ' ')))) = @fullName)
+      )
       ${organizationId ? `AND (
         -- Include players with NO teams (zero team associations)
         NOT EXISTS (SELECT 1 FROM player_team pt_check WHERE pt_check.player = p.player_id)
-        OR 
+        OR
         -- Include players with teams in the specified organization
         p.player_id IN (
-          SELECT DISTINCT pt2.player 
-          FROM player_team pt2 
-          JOIN team t2 ON pt2.team = t2.team_id 
+          SELECT DISTINCT pt2.player
+          FROM player_team pt2
+          JOIN team t2 ON pt2.team = t2.team_id
           WHERE t2.organization = @organizationId
         )
       )` : ''}
@@ -1722,11 +1765,12 @@ async function findPlayerMatches(pool, playerName, organizationId = null) {
     }
     
     const allPlayersQuery = `
-      SELECT DISTINCT 
+      SELECT DISTINCT
         p.player_id as playerId,
         LTRIM(RTRIM(COALESCE(p.first_name, '') + ' ' + COALESCE(p.last_name, ''))) as playerName,
         p.first_name as firstName,
         p.last_name as lastName,
+        p.nick_name as nickName,
         t.team_id as teamId,
         t.name as teamName,
         t.primary_color as primaryColor,
@@ -1738,12 +1782,12 @@ async function findPlayerMatches(pool, playerName, organizationId = null) {
       ${organizationId ? `WHERE (
         -- Include players with NO teams (zero team associations)
         NOT EXISTS (SELECT 1 FROM player_team pt_check WHERE pt_check.player = p.player_id)
-        OR 
+        OR
         -- Include players with teams in the specified organization
         p.player_id IN (
-          SELECT DISTINCT pt2.player 
-          FROM player_team pt2 
-          JOIN team t2 ON pt2.team = t2.team_id 
+          SELECT DISTINCT pt2.player
+          FROM player_team pt2
+          JOIN team t2 ON pt2.team = t2.team_id
           WHERE t2.organization = @organizationId
         )
       )` : ''}
@@ -1760,34 +1804,53 @@ async function findPlayerMatches(pool, playerName, organizationId = null) {
     for (const player of allPlayersResult.recordset) {
       // Skip if already in exact matches
       if (exactPlayerIds.has(player.playerId)) continue
-      
+
       // Skip if we've already processed this player
       if (processedPlayerIds.has(player.playerId)) continue
-      
+
       const dbPlayerName = normalizePlayerName(player.playerName || '')
-      
+
       // Skip players with no name
       if (!dbPlayerName) continue
-      
-      // Calculate Levenshtein distance
+
+      // Also check nickname + last_name variation
+      let nickNameVariation = null
+      if (player.nickName && player.lastName) {
+        nickNameVariation = normalizePlayerName(`${player.nickName} ${player.lastName}`)
+      }
+
+      // Calculate Levenshtein distance for both name variations
       const distance = levenshteinDistance(cleanPlayerName, dbPlayerName)
       const maxLength = Math.max(cleanPlayerName.length, dbPlayerName.length)
       const similarity = 1 - (distance / maxLength)
-      
+
+      // Also check nickname similarity if available
+      let nickSimilarity = 0
+      let nickDistance = 999
+      if (nickNameVariation) {
+        nickDistance = levenshteinDistance(cleanPlayerName, nickNameVariation)
+        const nickMaxLength = Math.max(cleanPlayerName.length, nickNameVariation.length)
+        nickSimilarity = 1 - (nickDistance / nickMaxLength)
+      }
+
+      // Use the best similarity score
+      const bestSimilarity = Math.max(similarity, nickSimilarity)
+      const bestDistance = Math.min(distance, nickDistance)
+
       // More strict criteria for fuzzy matches:
       // 1. Very close match (1-2 character difference for typos)
       // 2. OR high similarity (> 85%) for close variations
       // 3. OR last name exact match with similar first name
       const nameParts = cleanPlayerName.split(' ')
       const dbNameParts = dbPlayerName.split(' ')
-      const lastNameMatch = nameParts.length > 1 && dbNameParts.length > 1 && 
+      const lastNameMatch = nameParts.length > 1 && dbNameParts.length > 1 &&
                            nameParts[nameParts.length - 1] === dbNameParts[dbNameParts.length - 1]
-      
-      if (distance <= 2 || similarity > 0.85 || (lastNameMatch && similarity > 0.7)) {
+
+      if (bestDistance <= 2 || bestSimilarity > 0.85 || (lastNameMatch && bestSimilarity > 0.7)) {
         fuzzyMatches.push({
           ...player,
-          distance,
-          similarity
+          distance: bestDistance,
+          similarity: bestSimilarity
         })
         processedPlayerIds.add(player.playerId)
       }
@@ -1810,6 +1873,7 @@ async function findPlayerMatches(pool, playerName, organizationId = null) {
             playerName: row.playerName,
             firstName: row.firstName,
             lastName: row.lastName,
+            nickName: row.nickName,
             teams: []
           })
         }
