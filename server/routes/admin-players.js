@@ -783,4 +783,181 @@ router.delete('/:id', async (req, res) => {
   }
 })
 
+// POST /api/admin/players/:playerId/merge - Merge one player into another
+router.post('/:playerId/merge', async (req, res) => {
+  try {
+    const sourcePlayerId = BigInt(req.params.playerId)
+    const { targetPlayerId, targetTeamId } = req.body
+
+    if (!targetPlayerId) {
+      return res.status(400).json({
+        error: 'Validation error',
+        message: 'Target player ID is required'
+      })
+    }
+
+    const targetPlayerIdBigInt = BigInt(targetPlayerId)
+    const targetTeamIdInt = targetTeamId ? parseInt(targetTeamId) : null
+
+    if (sourcePlayerId === targetPlayerIdBigInt) {
+      return res.status(400).json({
+        error: 'Validation error',
+        message: 'Cannot merge a player into itself'
+      })
+    }
+
+    console.log('Admin: Merging players:', {
+      sourcePlayerId: sourcePlayerId.toString(),
+      targetPlayerId: targetPlayerId.toString(),
+      targetTeamId: targetTeamIdInt
+    })
+
+    // Verify both players exist
+    const sourcePlayer = await prisma.player.findUnique({
+      where: { player_id: sourcePlayerId }
+    })
+
+    const targetPlayer = await prisma.player.findUnique({
+      where: { player_id: targetPlayerIdBigInt }
+    })
+
+    if (!sourcePlayer) {
+      return res.status(404).json({
+        error: 'Not found',
+        message: 'Source player not found'
+      })
+    }
+
+    if (!targetPlayer) {
+      return res.status(404).json({
+        error: 'Not found',
+        message: 'Target player not found'
+      })
+    }
+
+    // Start transaction to merge players
+    await prisma.$transaction(async (tx) => {
+      // Get all card_player_team records for source player with team info
+      const sourceCardPlayerTeams = await tx.$queryRaw`
+        SELECT
+          cpt.card_player_team_id,
+          cpt.card,
+          cpt.player_team,
+          pt.player,
+          pt.team
+        FROM card_player_team cpt
+        INNER JOIN player_team pt ON cpt.player_team = pt.player_team_id
+        WHERE pt.player = ${sourcePlayerId}
+      `
+
+      console.log(`Found ${sourceCardPlayerTeams.length} card_player_team records to reassign`)
+
+      // Determine target player_team to use
+      let targetPlayerTeamId
+
+      if (targetTeamIdInt) {
+        // User selected a specific team - find or create that player_team record
+        const existingPlayerTeam = await tx.$queryRaw`
+          SELECT player_team_id
+          FROM player_team
+          WHERE player = ${targetPlayerIdBigInt} AND team = ${targetTeamIdInt}
+        `
+
+        if (existingPlayerTeam.length > 0) {
+          targetPlayerTeamId = existingPlayerTeam[0].player_team_id
+        } else {
+          // Create new player_team record
+          const newPlayerTeam = await tx.$queryRaw`
+            INSERT INTO player_team (player, team)
+            OUTPUT INSERTED.player_team_id
+            VALUES (${targetPlayerIdBigInt}, ${targetTeamIdInt})
+          `
+          targetPlayerTeamId = newPlayerTeam[0].player_team_id
+          console.log(`Created new player_team ${Number(targetPlayerTeamId)} for target player with team ${targetTeamIdInt}`)
+        }
+
+        // Update ALL card_player_team records to use this single target player_team
+        await tx.$executeRaw`
+          UPDATE card_player_team
+          SET player_team = ${targetPlayerTeamId}
+          WHERE card_player_team_id IN (
+            SELECT cpt.card_player_team_id
+            FROM card_player_team cpt
+            INNER JOIN player_team pt ON cpt.player_team = pt.player_team_id
+            WHERE pt.player = ${sourcePlayerId}
+          )
+        `
+        console.log(`Updated all cards to use player_team ${Number(targetPlayerTeamId)}`)
+      } else {
+        // No specific team selected - match teams (preserve team associations)
+        for (const cpt of sourceCardPlayerTeams) {
+          const teamId = cpt.team
+
+          // Check if target player already has this team
+          const existingPlayerTeam = await tx.$queryRaw`
+            SELECT player_team_id
+            FROM player_team
+            WHERE player = ${targetPlayerIdBigInt} AND team = ${teamId}
+          `
+
+          let matchingPlayerTeamId
+          if (existingPlayerTeam.length > 0) {
+            matchingPlayerTeamId = existingPlayerTeam[0].player_team_id
+          } else {
+            // Create new player_team record
+            const newPlayerTeam = await tx.$queryRaw`
+              INSERT INTO player_team (player, team)
+              OUTPUT INSERTED.player_team_id
+              VALUES (${targetPlayerIdBigInt}, ${teamId})
+            `
+            matchingPlayerTeamId = newPlayerTeam[0].player_team_id
+            console.log(`Created new player_team ${Number(matchingPlayerTeamId)} for target player with team ${teamId}`)
+          }
+
+          // Update this card_player_team to use matching player_team
+          await tx.$executeRaw`
+            UPDATE card_player_team
+            SET player_team = ${matchingPlayerTeamId}
+            WHERE card_player_team_id = ${cpt.card_player_team_id}
+          `
+        }
+      }
+
+      // Delete source player's player_team records
+      await tx.$executeRaw`
+        DELETE FROM player_team
+        WHERE player = ${sourcePlayerId}
+      `
+
+      // Delete source player
+      await tx.$executeRaw`
+        DELETE FROM player
+        WHERE player_id = ${sourcePlayerId}
+      `
+
+      console.log('Successfully merged players')
+    })
+
+    res.json({
+      message: 'Players merged successfully',
+      sourcePlayer: {
+        player_id: sourcePlayerId.toString(),
+        name: `${sourcePlayer.first_name || ''} ${sourcePlayer.last_name || ''}`.trim()
+      },
+      targetPlayer: {
+        player_id: targetPlayerIdBigInt.toString(),
+        name: `${targetPlayer.first_name || ''} ${targetPlayer.last_name || ''}`.trim()
+      }
+    })
+
+  } catch (error) {
+    console.error('Error merging players:', error)
+    res.status(500).json({
+      error: 'Database error',
+      message: 'Failed to merge players',
+      details: error.message
+    })
+  }
+})
+
 module.exports = router

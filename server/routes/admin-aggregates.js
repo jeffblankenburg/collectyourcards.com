@@ -118,15 +118,15 @@ router.post('/aggregates/update', async (req, res) => {
         const cardCountResult = await pool.request().query(`
           UPDATE series
           SET card_count = (
-            SELECT MAX(CAST(card_number AS INT))
+            SELECT MAX(TRY_CAST(card_number AS INT))
             FROM card
             WHERE card.series = series.series_id
-            AND ISNUMERIC(card_number) = 1
+            AND TRY_CAST(card_number AS INT) IS NOT NULL
           )
           WHERE EXISTS (
-            SELECT 1 FROM card 
-            WHERE card.series = series.series_id 
-            AND ISNUMERIC(card_number) = 1
+            SELECT 1 FROM card
+            WHERE card.series = series.series_id
+            AND TRY_CAST(card_number AS INT) IS NOT NULL
           )
         `)
         rowsUpdated = cardCountResult.rowsAffected[0]

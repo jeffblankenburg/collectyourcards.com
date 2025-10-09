@@ -98,6 +98,12 @@ function AdminPlayers() {
   const [reassignToTeam, setReassignToTeam] = useState('')
   const [reassigning, setReassigning] = useState(false)
   const [teamSearchTerm, setTeamSearchTerm] = useState('')
+  const [showMergeModal, setShowMergeModal] = useState(false)
+  const [playerToMerge, setPlayerToMerge] = useState(null)
+  const [mergeTargetSearch, setMergeTargetSearch] = useState('')
+  const [mergeTargetResults, setMergeTargetResults] = useState([])
+  const [selectedMergeTarget, setSelectedMergeTarget] = useState(null)
+  const [merging, setMerging] = useState(false)
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 })
   const [playerToDelete, setPlayerToDelete] = useState(null)
   const [deleting, setDeleting] = useState(false)
@@ -607,27 +613,120 @@ function AdminPlayers() {
   }
 
 
+  // Merge player handler
+  const handleMergeTargetSearch = async (searchValue) => {
+    setMergeTargetSearch(searchValue)
+
+    if (searchValue.length < 2) {
+      setMergeTargetResults([])
+      return
+    }
+
+    try {
+      const response = await axios.get('/api/admin/players', {
+        params: {
+          search: searchValue,
+          limit: 20 // Increase limit since we'll expand to player_team rows
+        }
+      })
+
+      // Filter out the player being merged and expand to player_team rows
+      const players = response.data.players.filter(p => p.player_id !== playerToMerge?.player_id)
+
+      // Expand each player into separate rows for each team
+      const expandedResults = []
+      players.forEach(player => {
+        if (player.teams && player.teams.length > 0) {
+          // Create a row for each team
+          player.teams.forEach(team => {
+            expandedResults.push({
+              player_id: player.player_id,
+              first_name: player.first_name,
+              last_name: player.last_name,
+              nick_name: player.nick_name,
+              card_count: player.card_count,
+              team: team,
+              display_name: `${player.first_name || ''} ${player.last_name || ''}`.trim(),
+              all_teams: player.teams // Keep reference to all teams for display
+            })
+          })
+        } else {
+          // Player with no teams - show as a single row
+          expandedResults.push({
+            player_id: player.player_id,
+            first_name: player.first_name,
+            last_name: player.last_name,
+            nick_name: player.nick_name,
+            card_count: player.card_count,
+            team: null,
+            display_name: `${player.first_name || ''} ${player.last_name || ''}`.trim(),
+            all_teams: []
+          })
+        }
+      })
+
+      setMergeTargetResults(expandedResults)
+    } catch (error) {
+      console.error('Error searching for merge target:', error)
+      addToast('Failed to search for players', 'error')
+    }
+  }
+
+  const handleMergeConfirm = async () => {
+    if (!playerToMerge || !selectedMergeTarget) return
+
+    try {
+      setMerging(true)
+
+      await axios.post(`/api/admin/players/${playerToMerge.player_id}/merge`, {
+        targetPlayerId: selectedMergeTarget.player_id,
+        targetTeamId: selectedMergeTarget.team?.team_id || null
+      })
+
+      const teamSuffix = selectedMergeTarget.team ? ` (${selectedMergeTarget.team.name})` : ''
+      addToast(
+        `Merged ${getPlayerNameString(playerToMerge)} into ${getPlayerNameString(selectedMergeTarget)}${teamSuffix}`,
+        'success'
+      )
+
+      // Close modal and reload
+      setShowMergeModal(false)
+      setPlayerToMerge(null)
+      setSelectedMergeTarget(null)
+      setMergeTargetSearch('')
+      setMergeTargetResults([])
+
+      await loadPlayers(searchTerm, showZeroCardsOnly, showDuplicatesOnly)
+
+    } catch (error) {
+      console.error('Error merging players:', error)
+      addToast(error.response?.data?.message || 'Failed to merge players', 'error')
+    } finally {
+      setMerging(false)
+    }
+  }
+
   // Utility function for getting player name as string (for toasts, etc.)
   const getPlayerNameString = useCallback((player) => {
     const firstName = player.first_name || ''
     const lastName = player.last_name || ''
     const nickname = player.nick_name || ''
-    
+
     // If we have both first and last name, and a nickname
     if (firstName && lastName && nickname) {
       return `${firstName} "${nickname}" ${lastName}`
     }
-    
+
     // If we have first and last name but no nickname
     if (firstName && lastName) {
       return `${firstName} ${lastName}`
     }
-    
+
     // If we only have nickname, use that
     if (nickname) {
       return nickname
     }
-    
+
     // Fallback to any available name or unknown
     return `${firstName} ${lastName}`.trim() || 'Unknown Player'
   }, [])
@@ -762,15 +861,28 @@ function AdminPlayers() {
                   title="Double-click to edit player"
                 >
                   <div className="col-actions">
-                    <button 
+                    <button
                       className="edit-btn"
                       title="Edit player"
                       onClick={() => handleEditPlayer(player)}
                     >
                       <Icon name="edit" size={16} />
                     </button>
+                    <button
+                      className="merge-btn"
+                      title="Merge this player into another player"
+                      onClick={() => {
+                        setPlayerToMerge(player)
+                        setShowMergeModal(true)
+                        setMergeTargetSearch('')
+                        setMergeTargetResults([])
+                        setSelectedMergeTarget(null)
+                      }}
+                    >
+                      <Icon name="combine" size={16} />
+                    </button>
                     {(player.card_count === 0) && (
-                      <button 
+                      <button
                         className="delete-btn"
                         title="Delete player (only allowed for players with 0 cards)"
                         onClick={() => setPlayerToDelete(player)}
@@ -1453,6 +1565,178 @@ function AdminPlayers() {
                     <>
                       <Icon name="user-plus" size={16} />
                       Create Player
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Merge Player Modal */}
+      {showMergeModal && playerToMerge && (
+        <div className="modal-overlay" onClick={() => setShowMergeModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>
+                <Icon name="combine" size={20} />
+                Merge Players
+              </h3>
+              <button
+                className="modal-close-btn"
+                onClick={() => setShowMergeModal(false)}
+                type="button"
+              >
+                <Icon name="x" size={20} />
+              </button>
+            </div>
+
+            <div className="modal-form">
+              {/* Player to be eliminated */}
+              <div className="form-group">
+                <div className="merge-warning">
+                  <Icon name="alert-triangle" size={24} className="warning-icon" />
+                  <div className="warning-content">
+                    <p>
+                      <strong>This player will be ELIMINATED:</strong>
+                    </p>
+                    <p className="player-display">
+                      {getPlayerNameString(playerToMerge)} (ID: {playerToMerge.player_id})
+                    </p>
+                    <p>
+                      Cards: <strong>{playerToMerge.card_count || 0}</strong>
+                    </p>
+                    <p className="error-text">
+                      <strong>WARNING:</strong> This action is irreversible. All cards will be reassigned to the target player.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Search for target player */}
+              <div className="form-group">
+                <label>Search for player to merge into:</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="Type player name..."
+                  value={mergeTargetSearch}
+                  onChange={(e) => handleMergeTargetSearch(e.target.value)}
+                  disabled={merging}
+                  autoFocus
+                />
+              </div>
+
+              {/* Search results */}
+              {mergeTargetResults.length > 0 && (
+                <div className="form-group">
+                  <label>Select target player:</label>
+                  <div className="merge-results">
+                    {mergeTargetResults.map((result, idx) => (
+                      <button
+                        key={`${result.player_id}-${result.team?.team_id || 'noteam'}-${idx}`}
+                        type="button"
+                        className={`merge-result-item ${selectedMergeTarget?.player_id === result.player_id && selectedMergeTarget?.team?.team_id === result.team?.team_id ? 'selected' : ''}`}
+                        onClick={() => setSelectedMergeTarget(result)}
+                        disabled={merging}
+                      >
+                        <div className="result-info">
+                          <div className="result-name-row">
+                            <span className="result-name">{getPlayerNameString(result)}</span>
+                            {result.team && (
+                              <div className="result-primary-team">
+                                <div
+                                  className="team-circle-base team-circle-sm"
+                                  style={{
+                                    '--primary-color': result.team.primary_color || '#666',
+                                    '--secondary-color': result.team.secondary_color || '#999'
+                                  }}
+                                  title={result.team.name}
+                                >
+                                  {result.team.abbreviation}
+                                </div>
+                                <span className="team-name-display">{result.team.name}</span>
+                              </div>
+                            )}
+                            {!result.team && (
+                              <span className="no-team-indicator">(No Team)</span>
+                            )}
+                          </div>
+                          <span className="result-details">
+                            ID: {result.player_id} • Cards: {result.card_count || 0} • All Teams: {result.all_teams?.length || 0}
+                          </span>
+                        </div>
+                        {selectedMergeTarget?.player_id === result.player_id && selectedMergeTarget?.team?.team_id === result.team?.team_id && (
+                          <Icon name="check-circle" size={20} className="check-icon" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Confirmation section */}
+              {selectedMergeTarget && (
+                <div className="form-group">
+                  <div className="merge-confirmation">
+                    <Icon name="arrow-right" size={24} className="arrow-icon" />
+                    <div className="confirmation-content">
+                      <p>
+                        <strong>All cards will be reassigned to:</strong>
+                      </p>
+                      <div className="confirmation-player-display">
+                        <p className="player-display success-text">
+                          {getPlayerNameString(selectedMergeTarget)} (ID: {selectedMergeTarget.player_id})
+                        </p>
+                        {selectedMergeTarget.team && (
+                          <div className="confirmation-team">
+                            <div
+                              className="team-circle-base team-circle-sm"
+                              style={{
+                                '--primary-color': selectedMergeTarget.team.primary_color || '#666',
+                                '--secondary-color': selectedMergeTarget.team.secondary_color || '#999'
+                              }}
+                              title={selectedMergeTarget.team.name}
+                            >
+                              {selectedMergeTarget.team.abbreviation}
+                            </div>
+                            <span className="team-name-display">{selectedMergeTarget.team.name}</span>
+                          </div>
+                        )}
+                      </div>
+                      <p>
+                        After merge, this player will have <strong>{(selectedMergeTarget.card_count || 0) + (playerToMerge.card_count || 0)}</strong> total cards.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="modal-actions">
+                <button
+                  type="button"
+                  className="btn-cancel"
+                  onClick={() => setShowMergeModal(false)}
+                  disabled={merging}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="btn-danger"
+                  onClick={handleMergeConfirm}
+                  disabled={merging || !selectedMergeTarget}
+                >
+                  {merging ? (
+                    <>
+                      <div className="spinner"></div>
+                      Merging...
+                    </>
+                  ) : (
+                    <>
+                      <Icon name="combine" size={16} />
+                      Merge Players (Irreversible)
                     </>
                   )}
                 </button>

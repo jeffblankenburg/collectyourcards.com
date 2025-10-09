@@ -106,7 +106,10 @@ import {
   Play,
   Code,
   Filter,
-  Copy
+  Copy,
+  GitMerge,
+  Merge,
+  ArrowLeftRight
 } from 'lucide-react'
 
 // Icon mapping for consistent usage across the app
@@ -120,6 +123,7 @@ const iconMap = {
   'import': FileSpreadsheet,
   'analytics': BarChart3,
   'trending': TrendingUp,
+  'trending-up': TrendingUp,
   'layers': Layers,
   'users': Users,
   
@@ -224,7 +228,11 @@ const iconMap = {
   'mail': Mail,
   'staging': Database, // Use same as database for staging
   'trash': Trash2,
-  
+  'git-merge': GitMerge,
+  'merge': Merge,
+  'combine': Merge,
+  'arrow-left-right': ArrowLeftRight,
+
   // Groups & Teams
   'flag': Flag,
   

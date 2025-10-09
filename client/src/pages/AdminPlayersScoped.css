@@ -1079,3 +1079,192 @@
     display: none;
   }
 }
+
+/* Merge Player Styles */
+.admin-players-page .merge-btn {
+  padding: 0.5rem;
+  background: rgba(168, 85, 247, 0.1);
+  border: 1px solid rgba(168, 85, 247, 0.2);
+  border-radius: 6px;
+  color: #a855f7;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.admin-players-page .merge-btn:hover {
+  background: rgba(168, 85, 247, 0.2);
+  border-color: rgba(168, 85, 247, 0.4);
+  transform: translateY(-2px);
+}
+
+.admin-players-page .merge-warning {
+  background: rgba(239, 68, 68, 0.1);
+  border: 2px solid rgba(239, 68, 68, 0.3);
+  border-radius: 12px;
+  padding: 1.5rem;
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.admin-players-page .merge-warning .warning-icon {
+  color: #ef4444;
+  flex-shrink: 0;
+}
+
+.admin-players-page .merge-warning .warning-content {
+  flex: 1;
+}
+
+.admin-players-page .merge-warning .player-display {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0.5rem 0;
+  color: #f3f4f6;
+}
+
+.admin-players-page .merge-results {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 300px;
+  overflow-y: auto;
+  padding: 0.5rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+}
+
+.admin-players-page .merge-result-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.admin-players-page .merge-result-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(168, 85, 247, 0.4);
+  transform: translateX(4px);
+}
+
+.admin-players-page .merge-result-item.selected {
+  background: rgba(168, 85, 247, 0.15);
+  border-color: #a855f7;
+}
+
+.admin-players-page .merge-result-item .result-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.admin-players-page .merge-result-item .result-name-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.admin-players-page .merge-result-item .result-name {
+  font-weight: 600;
+  font-size: 1rem;
+  color: #f3f4f6;
+}
+
+.admin-players-page .merge-result-item .result-teams {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-wrap: wrap;
+}
+
+.admin-players-page .merge-result-item .teams-overflow {
+  font-size: 0.75rem;
+  color: rgba(156, 163, 175, 0.7);
+  margin-left: 0.25rem;
+}
+
+.admin-players-page .merge-result-item .result-primary-team {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.75rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+}
+
+.admin-players-page .merge-result-item .team-name-display {
+  font-size: 0.9rem;
+  color: rgba(229, 231, 235, 0.9);
+  font-weight: 500;
+}
+
+.admin-players-page .merge-result-item .no-team-indicator {
+  font-size: 0.9rem;
+  color: rgba(156, 163, 175, 0.6);
+  font-style: italic;
+}
+
+.admin-players-page .merge-result-item .result-details {
+  font-size: 0.85rem;
+  color: rgba(156, 163, 175, 0.9);
+}
+
+.admin-players-page .merge-result-item .check-icon {
+  color: #a855f7;
+  flex-shrink: 0;
+}
+
+.admin-players-page .confirmation-player-display {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0.5rem 0;
+}
+
+.admin-players-page .confirmation-team {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.2);
+  border-radius: 6px;
+  width: fit-content;
+}
+
+.admin-players-page .merge-confirmation {
+  background: rgba(34, 197, 94, 0.1);
+  border: 2px solid rgba(34, 197, 94, 0.3);
+  border-radius: 12px;
+  padding: 1.5rem;
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.admin-players-page .merge-confirmation .arrow-icon {
+  color: #22c55e;
+  flex-shrink: 0;
+}
+
+.admin-players-page .merge-confirmation .confirmation-content {
+  flex: 1;
+}
+
+.admin-players-page .merge-confirmation .player-display {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0.5rem 0;
+}
