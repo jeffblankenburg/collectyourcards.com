@@ -135,8 +135,22 @@ function EditSetModal({
         const response = await axios.post('/api/admin/sets', setData)
         savedSet = response.data.set
         addToast('Set created successfully', 'success')
+
+        // Auto-create a series with the same name
+        try {
+          const seriesData = {
+            name: setData.name,
+            set: savedSet.set_id,
+            is_base: true
+          }
+          await axios.post('/api/admin/series', seriesData)
+          addToast(`Series "${setData.name}" auto-created`, 'success')
+        } catch (seriesError) {
+          console.error('Error auto-creating series:', seriesError)
+          addToast(`Set created but series creation failed: ${seriesError.response?.data?.message || seriesError.message}`, 'error')
+        }
       }
-      
+
       onClose()
       
       if (onSaveSuccess) {

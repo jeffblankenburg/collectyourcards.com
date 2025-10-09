@@ -83,6 +83,16 @@ function App() {
               <p>Assign every card a physical location so you can find it easily</p>
             </div>
             <div className="home-page-feature-card">
+              <Icon name="list" size={24} />
+              <h4>Create Custom Lists</h4>
+              <p>Make lists of cards that matter to you, and track your progress towards completing them</p>
+            </div>
+            <div className="home-page-feature-card">
+              <Icon name="share-2" size={24} />
+              <h4>Share Your Collection</h4>
+              <p>Share your cards, your lists, and even your profile with your social networks and friends</p>
+            </div>
+            <div className="home-page-feature-card">
               <Icon name="monitor" size={24} />
               <h4>Add eBay Purchases Automatically</h4>
               <p>Bought a card on eBay? It is automatically added to your collection</p>

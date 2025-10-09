@@ -110,6 +110,10 @@ router.get('/', async (req, res) => {
       `)
     } else if (showZeroCardsOnly) {
       // Zero cards mode: show only players with 0 cards
+      const normalizedSearch = search ? search.trim().replace(/[.''\-]/g, '') : ''
+      const escapedSearch = search ? search.trim().replace(/'/g, "''") : ''
+      const escapedNormalized = normalizedSearch.replace(/'/g, "''")
+
       players = await prisma.$queryRawUnsafe(`
         SELECT
           p.player_id,
@@ -126,10 +130,16 @@ router.get('/', async (req, res) => {
         LEFT JOIN team t ON pt.team = t.team_Id
         WHERE (p.card_count = 0 OR p.card_count IS NULL)
         ${search && search.trim() ? `AND (
-          p.first_name LIKE '%${search.trim()}%' COLLATE Latin1_General_CI_AI
-          OR p.last_name LIKE '%${search.trim()}%' COLLATE Latin1_General_CI_AI
-          OR p.nick_name LIKE '%${search.trim()}%' COLLATE Latin1_General_CI_AI
-          OR CONCAT(p.first_name, ' ', p.last_name) LIKE '%${search.trim()}%' COLLATE Latin1_General_CI_AI
+          p.first_name LIKE N'%${escapedSearch}%' COLLATE Latin1_General_CI_AI
+          OR p.last_name LIKE N'%${escapedSearch}%' COLLATE Latin1_General_CI_AI
+          OR p.nick_name LIKE N'%${escapedSearch}%' COLLATE Latin1_General_CI_AI
+          OR CONCAT(p.first_name, ' ', p.last_name) LIKE N'%${escapedSearch}%' COLLATE Latin1_General_CI_AI
+          OR CONCAT(p.nick_name, ' ', p.last_name) LIKE N'%${escapedSearch}%' COLLATE Latin1_General_CI_AI
+          OR REPLACE(REPLACE(REPLACE(p.first_name, '.', ''), CHAR(39), ''), '-', '') LIKE N'%${escapedNormalized}%' COLLATE Latin1_General_CI_AI
+          OR REPLACE(REPLACE(REPLACE(p.last_name, '.', ''), CHAR(39), ''), '-', '') LIKE N'%${escapedNormalized}%' COLLATE Latin1_General_CI_AI
+          OR REPLACE(REPLACE(REPLACE(p.nick_name, '.', ''), CHAR(39), ''), '-', '') LIKE N'%${escapedNormalized}%' COLLATE Latin1_General_CI_AI
+          OR REPLACE(REPLACE(REPLACE(CONCAT(p.first_name, ' ', p.last_name), '.', ''), CHAR(39), ''), '-', '') LIKE N'%${escapedNormalized}%' COLLATE Latin1_General_CI_AI
+          OR REPLACE(REPLACE(REPLACE(CONCAT(p.nick_name, ' ', p.last_name), '.', ''), CHAR(39), ''), '-', '') LIKE N'%${escapedNormalized}%' COLLATE Latin1_General_CI_AI
         )` : ''}
         GROUP BY p.player_id, p.first_name, p.last_name, p.nick_name, p.birthdate, p.is_hof, p.card_count
         ORDER BY p.last_name, p.first_name
@@ -139,8 +149,15 @@ router.get('/', async (req, res) => {
     } else if (search && search.trim()) {
       // Search mode: search by player name - get players with team data optimized
       const searchTerm = search.trim()
+      // Normalize search term by removing punctuation
+      const normalizedSearch = searchTerm.replace(/[.''\-]/g, '')
+
+      // Escape single quotes for SQL
+      const escapedSearch = searchTerm.replace(/'/g, "''")
+      const escapedNormalized = normalizedSearch.replace(/'/g, "''")
+
       players = await prisma.$queryRawUnsafe(`
-        SELECT 
+        SELECT
           p.player_id,
           p.first_name,
           p.last_name,
@@ -154,10 +171,16 @@ router.get('/', async (req, res) => {
         LEFT JOIN player_team pt ON p.player_id = pt.player
         LEFT JOIN team t ON pt.team = t.team_Id
         WHERE (
-          p.first_name LIKE '%${searchTerm}%' COLLATE Latin1_General_CI_AI
-          OR p.last_name LIKE '%${searchTerm}%' COLLATE Latin1_General_CI_AI
-          OR p.nick_name LIKE '%${searchTerm}%' COLLATE Latin1_General_CI_AI
-          OR CONCAT(p.first_name, ' ', p.last_name) LIKE '%${searchTerm}%' COLLATE Latin1_General_CI_AI
+          p.first_name LIKE N'%${escapedSearch}%' COLLATE Latin1_General_CI_AI
+          OR p.last_name LIKE N'%${escapedSearch}%' COLLATE Latin1_General_CI_AI
+          OR p.nick_name LIKE N'%${escapedSearch}%' COLLATE Latin1_General_CI_AI
+          OR CONCAT(p.first_name, ' ', p.last_name) LIKE N'%${escapedSearch}%' COLLATE Latin1_General_CI_AI
+          OR CONCAT(p.nick_name, ' ', p.last_name) LIKE N'%${escapedSearch}%' COLLATE Latin1_General_CI_AI
+          OR REPLACE(REPLACE(REPLACE(p.first_name, '.', ''), CHAR(39), ''), '-', '') LIKE N'%${escapedNormalized}%' COLLATE Latin1_General_CI_AI
+          OR REPLACE(REPLACE(REPLACE(p.last_name, '.', ''), CHAR(39), ''), '-', '') LIKE N'%${escapedNormalized}%' COLLATE Latin1_General_CI_AI
+          OR REPLACE(REPLACE(REPLACE(p.nick_name, '.', ''), CHAR(39), ''), '-', '') LIKE N'%${escapedNormalized}%' COLLATE Latin1_General_CI_AI
+          OR REPLACE(REPLACE(REPLACE(CONCAT(p.first_name, ' ', p.last_name), '.', ''), CHAR(39), ''), '-', '') LIKE N'%${escapedNormalized}%' COLLATE Latin1_General_CI_AI
+          OR REPLACE(REPLACE(REPLACE(CONCAT(p.nick_name, ' ', p.last_name), '.', ''), CHAR(39), ''), '-', '') LIKE N'%${escapedNormalized}%' COLLATE Latin1_General_CI_AI
         )
         GROUP BY p.player_id, p.first_name, p.last_name, p.nick_name, p.birthdate, p.is_hof, p.card_count
         ORDER BY p.last_name, p.first_name
@@ -255,6 +278,7 @@ router.get('/', async (req, res) => {
           OR p.last_name LIKE '%${searchTerm}%' COLLATE Latin1_General_CI_AI
           OR p.nick_name LIKE '%${searchTerm}%' COLLATE Latin1_General_CI_AI
           OR CONCAT(p.first_name, ' ', p.last_name) LIKE '%${searchTerm}%' COLLATE Latin1_General_CI_AI
+          OR CONCAT(p.nick_name, ' ', p.last_name) LIKE '%${searchTerm}%' COLLATE Latin1_General_CI_AI
         )
       `)
       totalCount = Number(totalCountResult[0].total)

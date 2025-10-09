@@ -7,13 +7,31 @@ import Icon from '../components/Icon'
 import ImportTable from '../components/tables/ImportTable'
 import './AdminImportScoped.css'
 
-const SearchableSeriesDropdown = ({ series, onSelect, placeholder, selectedSeries }) => {
+const SearchableSeriesDropdown = ({ series, onSelect, placeholder, selectedSeries, onSearch }) => {
   const [searchTerm, setSearchTerm] = useState('')
   const [isOpen, setIsOpen] = useState(false)
   const [selectedIndex, setSelectedIndex] = useState(-1)
   const searchInputRef = useRef(null)
   const dropdownRef = useRef(null)
-  
+  const searchTimeoutRef = useRef(null)
+
+  // Debounced API search
+  useEffect(() => {
+    if (searchTerm.trim() && onSearch) {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current)
+      }
+      searchTimeoutRef.current = setTimeout(() => {
+        onSearch(searchTerm.trim())
+      }, 300)
+    }
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current)
+      }
+    }
+  }, [searchTerm, onSearch])
+
   const filteredSeries = (series || []).filter(seriesItem =>
     (seriesItem.name && seriesItem.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
     (seriesItem.set_name && seriesItem.set_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
@@ -211,13 +229,18 @@ const AdminImport = () => {
   // Auto-select series from URL parameter and advance to Step 2
   useEffect(() => {
     const seriesIdParam = searchParams.get('series')
-    if (seriesIdParam && series.length > 0 && !selectedSeries) {
+    if (seriesIdParam && !selectedSeries) {
       const seriesId = parseInt(seriesIdParam)
+
+      // First check if series is already in the list
       const foundSeries = series.find(s => s.series_id === seriesId)
       if (foundSeries) {
         setSelectedSeries(foundSeries)
-        setCurrentStep(2) // Skip to file upload step
+        setCurrentStep(2)
         console.log('Auto-selected series from URL and advanced to Step 2:', foundSeries.name)
+      } else if (series.length > 0) {
+        // Series not in list, load it specifically by ID
+        loadSeries('', seriesId)
       }
     }
   }, [searchParams, series, selectedSeries])
@@ -229,9 +252,22 @@ const AdminImport = () => {
     }
   }, [currentStep, generatedSql, generatingSql, matchedCards.length])
 
-  const loadSeries = async () => {
+  const loadSeries = async (searchQuery = '', seriesId = null) => {
     try {
-      const response = await axios.get('/api/admin/series')
+      let url = '/api/admin/series'
+      const params = new URLSearchParams()
+
+      if (seriesId) {
+        params.append('series_id', seriesId)
+      } else if (searchQuery) {
+        params.append('search', searchQuery)
+      }
+
+      if (params.toString()) {
+        url += '?' + params.toString()
+      }
+
+      const response = await axios.get(url)
       setSeries(response.data.series || [])
     } catch (error) {
       console.error('Error loading series:', error)
@@ -511,11 +547,12 @@ const AdminImport = () => {
           <span>Loading series...</span>
         </div>
       ) : (
-        <SearchableSeriesDropdown 
+        <SearchableSeriesDropdown
           series={series}
           onSelect={handleSeriesSelect}
           placeholder="Search for a series..."
           selectedSeries={selectedSeries}
+          onSearch={(query) => loadSeries(query)}
         />
       )}
     </div>

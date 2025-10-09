@@ -1288,11 +1288,11 @@ async function batchFindPlayers(pool, playerNames, organizationId = null) {
       baseQuery += `
         WHERE (
           NOT EXISTS (SELECT 1 FROM player_team pt_check WHERE pt_check.player = p.player_id)
-          OR 
+          OR
           p.player_id IN (
-            SELECT DISTINCT pt2.player 
-            FROM player_team pt2 
-            JOIN team t2 ON pt2.team = t2.team_id 
+            SELECT DISTINCT pt2.player
+            FROM player_team pt2
+            JOIN team t2 ON pt2.team = t2.team_id
             WHERE t2.organization = @organizationId
           )
         )
@@ -1382,15 +1382,24 @@ async function batchFindPlayers(pool, playerNames, organizationId = null) {
           const dbPlayerName = normalizePlayerName(player.playerName || '')
           if (!dbPlayerName) return false
 
-          // Special handling for single-name players (e.g., "Ichiro")
+          // Special handling for single-name players (e.g., "Ichiro", "Checklist")
           if (isSingleName) {
             const dbFirstName = normalizePlayerName(player.firstName || '')
             const dbLastName = normalizePlayerName(player.lastName || '')
 
-            // Check if the search matches the first name OR last name exactly
+            // PRIORITY 1: Check if search matches ONLY the first name (and last name is empty/null)
+            // This handles "Checklist" matching player with first="Checklist", last=""
+            if (dbFirstName === normalizedSearchName && (!player.lastName || player.lastName.trim() === '')) {
+              console.log(`👤 EXACT SINGLE NAME MATCH: "${searchName}" matches "${player.playerName}" (only first name, no last name)`)
+              player.similarity = 1.0 // Perfect match
+              player.distance = 0
+              return true
+            }
+
+            // PRIORITY 2: Check if search matches the first name OR last name exactly (for compound names)
             if (dbFirstName === normalizedSearchName || dbLastName === normalizedSearchName) {
-              console.log(`👤 SINGLE NAME MATCH: "${searchName}" matches "${player.playerName}" (first: "${player.firstName}", last: "${player.lastName}")`)
-              player.similarity = 0.95 // High similarity for single-name matches
+              console.log(`👤 SINGLE NAME COMPONENT MATCH: "${searchName}" matches "${player.playerName}" (first: "${player.firstName}", last: "${player.lastName}")`)
+              player.similarity = 0.85 // Lower priority than exact single-name match
               player.distance = 0
               return true
             }
@@ -1437,9 +1446,21 @@ async function batchFindPlayers(pool, playerNames, organizationId = null) {
           return isFuzzyMatch
         })
 
-        // Sort fuzzy matches by similarity (best first) and take top 5
+        // Sort fuzzy matches by similarity (best first)
         fuzzyMatches.sort((a, b) => b.similarity - a.similarity)
-        fuzzyMatches = fuzzyMatches.slice(0, 5)
+
+        // If we have a perfect single-name match (similarity = 1.0), prioritize it heavily
+        // and limit other results
+        const hasPerfectMatch = fuzzyMatches.some(p => p.similarity === 1.0)
+        if (hasPerfectMatch) {
+          // Show perfect match(es) first, then only top 2 others
+          const perfectMatches = fuzzyMatches.filter(p => p.similarity === 1.0)
+          const otherMatches = fuzzyMatches.filter(p => p.similarity < 1.0).slice(0, 2)
+          fuzzyMatches = [...perfectMatches, ...otherMatches]
+        } else {
+          // No perfect match, show top 5
+          fuzzyMatches = fuzzyMatches.slice(0, 5)
+        }
       }
       
       playerLookup[searchName] = {

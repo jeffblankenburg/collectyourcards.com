@@ -991,7 +991,7 @@ const ImportTable = ({
                                                       '--primary-color': team.primaryColor || '#666',
                                                       '--secondary-color': team.secondaryColor || '#999'
                                                     }}
-                                                    title={team.teamName}
+                                                    title={`${team.teamName} (Player ID: ${match.playerId})`}
                                                   >
                                                     {team.abbreviation || team.teamName?.substring(0, 3)?.toUpperCase()}
                                                   </div>
@@ -1176,7 +1176,7 @@ const ImportTable = ({
                                       '--primary-color': team.primaryColor || '#666',
                                       '--secondary-color': team.secondaryColor || '#999'
                                     }}
-                                    title={team.teamName}
+                                    title={`${team.teamName} (Player ID: ${player.selectedPlayer.playerId})`}
                                   >
                                     {team.abbreviation || team.teamName?.substring(0, 3)?.toUpperCase()}
                                   </div>
@@ -1259,7 +1259,7 @@ const ImportTable = ({
                                       }
                                     }
                                   }}
-                                  title={`Create player-team: ${player.selectedPlayer.playerName} - ${team.teamName}`}
+                                  title={`Create player-team: ${player.selectedPlayer.playerName} - ${team.teamName} (Player ID: ${player.selectedPlayer.playerId})`}
                                 >
                                   <span className="pt-plus">+</span>
                                   <span className="pt-player-name">{player.selectedPlayer.playerName}</span>
@@ -1269,7 +1269,7 @@ const ImportTable = ({
                                       '--primary-color': team.primaryColor || '#666',
                                       '--secondary-color': team.secondaryColor || '#999'
                                     }}
-                                    title={team.teamName}
+                                    title={`${team.teamName} (Player ID: ${player.selectedPlayer.playerId})`}
                                   >
                                     {team.abbreviation || team.teamName?.substring(0, 3)?.toUpperCase()}
                                   </div>
