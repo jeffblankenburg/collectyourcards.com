@@ -29,6 +29,7 @@ function ListDetail() {
   const [isPublicView, setIsPublicView] = useState(false)
   const [copyingList, setCopyingList] = useState(false)
   const [listOwner, setListOwner] = useState(null)
+  const [sharingList, setSharingList] = useState(false)
 
   // Determine if we're viewing via /lists/:slug or /:username/:listSlug
   const viewingSlug = listSlug || slug
@@ -210,6 +211,27 @@ function ListDetail() {
       addToast(error.response?.data?.message || 'Failed to copy list', 'error')
     } finally {
       setCopyingList(false)
+    }
+  }
+
+  const handleShareList = async () => {
+    // Determine the username to use for the public URL
+    const usernameForUrl = viewingUsername || user?.username
+    if (!usernameForUrl) {
+      addToast('Unable to generate share link', 'error')
+      return
+    }
+
+    const publicUrl = `${window.location.origin}/${usernameForUrl}/${viewingSlug}`
+
+    try {
+      await navigator.clipboard.writeText(publicUrl)
+      setSharingList(true)
+      addToast('Link copied to clipboard!', 'success')
+      setTimeout(() => setSharingList(false), 2000)
+    } catch (error) {
+      console.error('Error copying to clipboard:', error)
+      addToast('Failed to copy link', 'error')
     }
   }
 
@@ -400,29 +422,41 @@ function ListDetail() {
             )}
           </div>
 
-          <div className="list-stats">
-            <div className="stat-box">
-              <div className="stat-value">{list.card_count}</div>
-              <div className="stat-label">{list.card_count === 1 ? 'Card' : 'Cards'}</div>
+          <div className="list-header-right">
+            <div className="list-stats">
+              <div className="stat-box">
+                <div className="stat-value">{list.card_count}</div>
+                <div className="stat-label">{list.card_count === 1 ? 'Card' : 'Cards'}</div>
+              </div>
+              {(!isPublicView || (user && user.username === viewingUsername)) && (
+                <>
+                  <div className="stat-box">
+                    <div className="stat-value">
+                      {cards.filter(card => card.user_card_count > 0).length}
+                    </div>
+                    <div className="stat-label">Owned</div>
+                  </div>
+                  <div className="stat-box stat-box-highlight">
+                    <div className="stat-value">
+                      {list.card_count > 0
+                        ? Math.round((cards.filter(card => card.user_card_count > 0).length / list.card_count) * 100)
+                        : 0}%
+                    </div>
+                    <div className="stat-label">Complete</div>
+                  </div>
+                </>
+              )}
             </div>
-            {(!isPublicView || (user && user.username === viewingUsername)) && (
-              <>
-                <div className="stat-box">
-                  <div className="stat-value">
-                    {cards.filter(card => card.user_card_count > 0).length}
-                  </div>
-                  <div className="stat-label">Owned</div>
-                </div>
-                <div className="stat-box stat-box-highlight">
-                  <div className="stat-value">
-                    {list.card_count > 0
-                      ? Math.round((cards.filter(card => card.user_card_count > 0).length / list.card_count) * 100)
-                      : 0}%
-                  </div>
-                  <div className="stat-label">Complete</div>
-                </div>
-              </>
-            )}
+
+            <button
+              className="share-list-button"
+              onClick={handleShareList}
+              disabled={sharingList}
+              title="Copy link to clipboard"
+            >
+              <Icon name={sharingList ? 'check' : 'share-2'} size={16} />
+              {sharingList ? 'Copied!' : 'Share'}
+            </button>
           </div>
 
           {isPublicView && user && listOwner && user.username !== viewingUsername && (
