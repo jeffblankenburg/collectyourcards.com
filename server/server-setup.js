@@ -217,6 +217,7 @@ if (config.environment === 'test') {
     { path: '/api/admin/dashboard', file: './routes/admin-dashboard', name: 'Admin Dashboard' },
     { path: '/api/admin/colors', file: './routes/admin-colors', name: 'Admin Colors' },
     { path: '/api/admin/moderation', file: './routes/admin-moderation', name: 'Admin Moderation' },
+    { path: '/api/admin/series-metadata', file: './routes/admin-series-metadata', name: 'Admin Series Metadata' },
     { path: '/api/database-stats', file: './routes/database-stats', name: 'Database Stats' },
     { path: '/api/cards', file: './routes/cards', name: 'Cards' },
     { path: '/api/collection', file: './routes/collection', name: 'Collection' },
