@@ -718,6 +718,7 @@ async function searchSeries(query, limit) {
         s.rookie_count,
         s.is_base,
         s.parallel_of_series,
+        s.print_run_display,
         parent_s.name as parallel_parent_name,
         st.name as set_name,
         st.year as set_year,
@@ -755,10 +756,11 @@ async function searchSeries(query, limit) {
         name: series.series_name, // Map to expected field name
         series_name: series.series_name,
         card_count: Number(series.card_count || 0),
-        rookie_count: Number(series.rookie_count || 0), 
+        rookie_count: Number(series.rookie_count || 0),
         rc_count: Number(series.rookie_count || 0), // Alternative field name
         is_base: !!series.is_base,
         parallel_of_series: series.parallel_of_series ? Number(series.parallel_of_series) : null,
+        is_parallel: !!series.parallel_of_series,
         parallel_parent_name: series.parallel_parent_name,
         set_name: series.set_name,
         set_year: series.set_year ? Number(series.set_year) : null,
@@ -767,6 +769,8 @@ async function searchSeries(query, limit) {
         color_name: series.color_name,
         color_hex_value: series.color_hex_value,
         color_hex: series.color_hex_value, // Alternative field name
+        print_run_display: series.print_run_display,
+        print_run: series.print_run_display ? Number(series.print_run_display) : null,
         // Add navigation slugs
         slug: generateSlug(series.series_name),
         series_slug: generateSlug(series.series_name),

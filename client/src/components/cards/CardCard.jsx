@@ -68,11 +68,11 @@ function CardCard({ card, showBadge = false, customOnClick = null }) {
     >
       {/* Color stripe */}
       {(card.is_parallel || card.color_name) && (
-        <div 
-          className="cardcard-color-stripe" 
-          style={{ 
-            '--stripe-color': card.color_hex || '#ec4899', 
-            '--text-color': isLightColor(card.color_hex) ? '#000000' : '#ffffff' 
+        <div
+          className="cardcard-color-stripe"
+          style={{
+            '--stripe-color': card.color_hex || '#808080',
+            '--text-color': isLightColor(card.color_hex) ? '#000000' : '#ffffff'
           }}
         >
           <div className="cardcard-stripe-text">

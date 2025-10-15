@@ -43,10 +43,10 @@ function SeriesCard({ series, showBadge = false, customOnClick = null, hideSetNa
     >
       {/* Color stripe */}
       {series.color_name && (
-        <div 
-          className="seriescard-color-stripe" 
-          style={{ 
-            '--stripe-color': series.color_hex || '#ec4899', 
+        <div
+          className="seriescard-color-stripe"
+          style={{
+            '--stripe-color': series.color_hex || '#808080',
             '--text-color': isLightColor(series.color_hex) ? '#000000' : '#ffffff'
           }}
         >
