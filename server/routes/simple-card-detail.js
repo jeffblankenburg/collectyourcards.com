@@ -78,7 +78,7 @@ router.get('/:seriesSlug/:cardNumber/:playerName', async (req, res) => {
       LEFT JOIN player p ON pt.player = p.player_id
       LEFT JOIN team t ON pt.team = t.team_id
       WHERE c.card_number = '${normalizedCardNumber}'
-        AND LOWER(s.name) = '${seriesNameFromSlug.replace(/'/g, "''")}'
+        AND REPLACE(LOWER(s.name), '-', ' ') = '${seriesNameFromSlug.replace(/'/g, "''")}'
       GROUP BY c.card_id, c.card_number, c.is_rookie, c.is_autograph, c.is_relic, c.print_run,
                s.series_id, s.name, st.set_id, st.name, st.year, m.name, s.parallel_of_series, col.name, col.hex_value
       HAVING ${playerNameParts.length > 0 ? 
@@ -120,7 +120,7 @@ router.get('/:seriesSlug/:cardNumber/:playerName', async (req, res) => {
         LEFT JOIN player p ON pt.player = p.player_id
         LEFT JOIN team t ON pt.team = t.team_id
         WHERE (c.card_number LIKE '%${normalizedCardNumber}%' OR '${normalizedCardNumber}' LIKE '%' + c.card_number + '%')
-          AND LOWER(s.name) LIKE '${seriesNameFromSlug.replace(/'/g, "''")}%'
+          AND REPLACE(LOWER(s.name), '-', ' ') LIKE '${seriesNameFromSlug.replace(/'/g, "''")}%'
         GROUP BY c.card_id, c.card_number, c.is_rookie, c.is_autograph, c.is_relic, c.print_run,
                  s.series_id, s.name, st.set_id, st.name, st.year, m.name, s.parallel_of_series, col.name, col.hex_value
         HAVING ${playerNameParts.length > 0 ? 
