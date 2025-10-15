@@ -40,13 +40,13 @@ router.get('/:seriesSlug/:cardNumber/:playerName', async (req, res) => {
     // This allows matching cards with multiple players even if only one name is provided
     const playerNameParts = normalizedPlayerName.split(/\s+/).filter(part => part.length > 2) // Filter out short words like "jr"
     
-    // Generate potential series name patterns from the slug
-    // Convert slug back to a searchable pattern by replacing dashes with spaces and wildcards
-    const seriesSearchPattern = seriesSlug
-      .replace(/-/g, '%')  // Replace dashes with SQL wildcards for flexible matching
+    // Generate series name from slug for exact matching
+    // Convert slug to expected series name by replacing dashes with spaces
+    const seriesNameFromSlug = seriesSlug
+      .replace(/-/g, ' ')
       .toLowerCase()
-    
-    console.log(`Searching for card: ${normalizedCardNumber}, player: ${normalizedPlayerName}, series pattern: ${seriesSearchPattern}`)
+
+    console.log(`Searching for card: ${normalizedCardNumber}, player: ${normalizedPlayerName}, series: ${seriesNameFromSlug}`)
     
     // Search for the card using comprehensive query with player name matching
     const results = await prisma.$queryRawUnsafe(`
@@ -78,7 +78,7 @@ router.get('/:seriesSlug/:cardNumber/:playerName', async (req, res) => {
       LEFT JOIN player p ON pt.player = p.player_id
       LEFT JOIN team t ON pt.team = t.team_id
       WHERE c.card_number = '${normalizedCardNumber}'
-        AND LOWER(s.name) LIKE '%${seriesSearchPattern.replace(/'/g, "''")}%'
+        AND LOWER(s.name) = '${seriesNameFromSlug.replace(/'/g, "''")}'
       GROUP BY c.card_id, c.card_number, c.is_rookie, c.is_autograph, c.is_relic, c.print_run,
                s.series_id, s.name, st.set_id, st.name, st.year, m.name, s.parallel_of_series, col.name, col.hex_value
       HAVING ${playerNameParts.length > 0 ? 
@@ -89,7 +89,8 @@ router.get('/:seriesSlug/:cardNumber/:playerName', async (req, res) => {
     `)
     
     if (results.length === 0) {
-      // If exact match fails, try fuzzy matching with partial card number
+      // If exact match fails, try fuzzy matching with series name starting with the slug pattern
+      // But be more restrictive - only match series names that START with the expected pattern
       const fuzzyResults = await prisma.$queryRawUnsafe(`
         SELECT TOP 5
           c.card_id,
@@ -119,7 +120,7 @@ router.get('/:seriesSlug/:cardNumber/:playerName', async (req, res) => {
         LEFT JOIN player p ON pt.player = p.player_id
         LEFT JOIN team t ON pt.team = t.team_id
         WHERE (c.card_number LIKE '%${normalizedCardNumber}%' OR '${normalizedCardNumber}' LIKE '%' + c.card_number + '%')
-          AND LOWER(s.name) LIKE '%${seriesSearchPattern.replace(/'/g, "''")}%'
+          AND LOWER(s.name) LIKE '${seriesNameFromSlug.replace(/'/g, "''")}%'
         GROUP BY c.card_id, c.card_number, c.is_rookie, c.is_autograph, c.is_relic, c.print_run,
                  s.series_id, s.name, st.set_id, st.name, st.year, m.name, s.parallel_of_series, col.name, col.hex_value
         HAVING ${playerNameParts.length > 0 ? 

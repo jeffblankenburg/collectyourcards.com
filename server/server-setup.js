@@ -245,6 +245,7 @@ if (config.environment === 'test') {
     { path: '/api/comments', file: './routes/comments', name: 'Comments' },
     { path: '/api/notifications', file: './routes/notifications', name: 'Notifications' },
     { path: '/api/profile', file: './routes/user-profile', name: 'User Profiles' },
+    { path: '/api/follow', file: './routes/user-follow', name: 'User Follow' },
     { path: '/api/achievements', file: './routes/achievements', name: 'Achievements' },
     { path: '/api/user/achievements', file: './routes/user-achievements', name: 'User Achievements' },
     { path: '/api/admin/achievements', file: './routes/admin-achievements', name: 'Admin Achievements' },

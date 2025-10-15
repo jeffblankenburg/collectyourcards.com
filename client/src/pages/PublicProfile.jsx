@@ -17,10 +17,24 @@ function PublicProfile() {
   const [publicLists, setPublicLists] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [followStatus, setFollowStatus] = useState({
+    is_following: false,
+    are_friends: false,
+    can_follow: false
+  })
+  const [followLoading, setFollowLoading] = useState(false)
+  const [followError, setFollowError] = useState(null)
+  const [isHoveringFollow, setIsHoveringFollow] = useState(false)
 
   useEffect(() => {
     fetchProfile()
   }, [username])
+
+  useEffect(() => {
+    if (profile && isAuthenticated && !profile.is_own_profile) {
+      fetchFollowStatus()
+    }
+  }, [profile, isAuthenticated])
 
   useEffect(() => {
     if (profile) {
@@ -59,6 +73,68 @@ function PublicProfile() {
       }
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchFollowStatus = async () => {
+    if (!profile || !profile.user_id) return
+
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) return
+
+      const response = await axios.get(`/api/follow/status/${profile.user_id}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+
+      setFollowStatus(response.data)
+    } catch (err) {
+      console.error('Error fetching follow status:', err)
+    }
+  }
+
+  const handleFollowToggle = async () => {
+    if (!isAuthenticated || !profile || followLoading) return
+
+    try {
+      setFollowLoading(true)
+      setFollowError(null)
+      const token = localStorage.getItem('token')
+      if (!token) return
+
+      if (followStatus.is_following) {
+        // Unfollow
+        await axios.delete(`/api/follow/${profile.user_id}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+        setFollowStatus({
+          is_following: false,
+          are_friends: false,
+          can_follow: true
+        })
+      } else {
+        // Follow
+        const response = await axios.post(`/api/follow/${profile.user_id}`, {}, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+        setFollowStatus({
+          is_following: true,
+          are_friends: response.data.are_friends,
+          can_follow: true
+        })
+      }
+    } catch (err) {
+      console.error('Error toggling follow:', err)
+      if (err.response?.status === 401) {
+        setFollowError('Please log in to follow users')
+      } else {
+        setFollowError('Failed to update follow status. Please try again.')
+      }
+
+      // Auto-dismiss error after 5 seconds
+      setTimeout(() => setFollowError(null), 5000)
+    } finally {
+      setFollowLoading(false)
     }
   }
 
@@ -180,7 +256,53 @@ function PublicProfile() {
                       Edit Profile
                     </Link>
                   )}
+                  {!profile.is_own_profile && isAuthenticated && followStatus.can_follow && (
+                    <button
+                      onClick={handleFollowToggle}
+                      onMouseEnter={() => setIsHoveringFollow(true)}
+                      onMouseLeave={() => setIsHoveringFollow(false)}
+                      disabled={followLoading}
+                      className={`follow-btn ${
+                        followStatus.are_friends
+                          ? (isHoveringFollow ? 'unfollow' : 'friends')
+                          : followStatus.is_following
+                            ? (isHoveringFollow ? 'unfollow' : 'following')
+                            : 'follow'
+                      }`}
+                      title={followStatus.are_friends ? 'You are friends' : followStatus.is_following ? 'Click to unfollow' : 'Click to follow'}
+                    >
+                      {followLoading ? (
+                        <Icon name="activity" size={14} className="spinner" />
+                      ) : (followStatus.are_friends || followStatus.is_following) && isHoveringFollow ? (
+                        <>
+                          <Icon name="user-x" size={14} />
+                          Unfollow
+                        </>
+                      ) : followStatus.are_friends ? (
+                        <>
+                          <Icon name="users" size={14} />
+                          Friends
+                        </>
+                      ) : followStatus.is_following ? (
+                        <>
+                          <Icon name="user-check" size={14} />
+                          Following
+                        </>
+                      ) : (
+                        <>
+                          <Icon name="user-plus" size={14} />
+                          Follow
+                        </>
+                      )}
+                    </button>
+                  )}
                 </div>
+                {followError && (
+                  <div className="follow-error-message">
+                    <Icon name="alert-circle" size={14} />
+                    {followError}
+                  </div>
+                )}
               </div>
             </div>
             
@@ -223,7 +345,7 @@ function PublicProfile() {
                   </div>
                 </div>
                 <div className="stat-item">
-                  <Icon name="patch" size={18} />
+                  <Icon name="jersey" size={18} />
                   <div className="stat-content">
                     <span className="stat-value">{stats.relic_cards.toLocaleString()}</span>
                     <span className="stat-label">Relics</span>

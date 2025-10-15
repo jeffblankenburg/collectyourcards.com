@@ -206,6 +206,97 @@
   color: #93c5fd;
 }
 
+/* Follow Button Styles */
+.public-profile-page .follow-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: none;
+}
+
+.public-profile-page .follow-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.public-profile-page .follow-btn.spinner {
+  animation: spin 1s linear infinite;
+}
+
+/* Follow state (not following yet) */
+.public-profile-page .follow-btn.follow {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+  border: 1px solid transparent;
+}
+
+.public-profile-page .follow-btn.follow:hover:not(:disabled) {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+}
+
+/* Following state (one-way follow) */
+.public-profile-page .follow-btn.following {
+  background: rgba(96, 165, 250, 0.15);
+  color: #60a5fa;
+  border: 1px solid rgba(96, 165, 250, 0.3);
+}
+
+/* Friends state (reciprocal follow) */
+.public-profile-page .follow-btn.friends {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  border: 1px solid transparent;
+}
+
+/* Unfollow state (hover on following or friends) */
+.public-profile-page .follow-btn.unfollow {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: white;
+  border: 1px solid transparent;
+}
+
+.public-profile-page .follow-btn.unfollow:hover:not(:disabled) {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+}
+
+/* Follow Error Message */
+.public-profile-page .follow-error-message {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 8px;
+  color: #ef4444;
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-top: 0.5rem;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* Header Stats Grid */
 .public-profile-page .header-stats {
   display: grid;
