@@ -9,6 +9,7 @@ import AddCardModal from '../components/modals/AddCardModal'
 import BulkCardModal from '../components/modals/BulkCardModal'
 import CommentsSection from '../components/CommentsSection'
 import ActivityFeed from '../components/ActivityFeed'
+import { generateSlug } from '../utils/slugs'
 import './SeriesDetail.css'
 
 
@@ -84,11 +85,7 @@ function SeriesDetail() {
         const allSets = setsResponse.data.sets || []
         const foundSet = allSets.find(set => {
           const setYear = set.year || parseInt(set.name.split(' ')[0])
-          const slug = set.name
-            .toLowerCase()
-            .replace(/'/g, '') // Remove apostrophes completely
-            .replace(/[^a-z0-9]+/g, '-') // Replace other special chars with hyphens
-            .replace(/^-|-$/g, '') // Remove leading/trailing hyphens
+          const slug = generateSlug(set.name)
           return setYear === parseInt(year) && slug === setSlug
         })
         
@@ -103,14 +100,10 @@ function SeriesDetail() {
         seriesList = response.data.series || []
       }
       
-      // Find series by slug (recreate slug logic matching the one used in SeriesCard)
+      // Find series by slug (using standard slug generation)
       const foundSeries = seriesList.find(s => {
         if (!s.name) return false
-        const slug = s.name
-          .toLowerCase()
-          .replace(/'/g, '') // Remove apostrophes completely
-          .replace(/[^a-z0-9]+/g, '-') // Replace other special chars with hyphens
-          .replace(/^-|-$/g, '') // Remove leading/trailing hyphens
+        const slug = generateSlug(s.name)
         return slug === seriesSlug
       })
 
@@ -271,18 +264,13 @@ function SeriesDetail() {
 
   const handleCardClick = (card) => {
     // Generate the player names for URL
-    const playerNames = card.card_player_teams?.map(cpt => 
+    const playerNames = card.card_player_teams?.map(cpt =>
       `${cpt.player?.first_name || ''} ${cpt.player?.last_name || ''}`.trim()
     ).filter(name => name).join(', ') || 'unknown'
-    
+
     // Use simple URL format for navigation with series
-    const playerSlug = playerNames
-      .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, '')
-      .replace(/\s+/g, '-')
-      .replace(/-+/g, '-')
-      .trim()
-    
+    const playerSlug = generateSlug(playerNames)
+
     navigate(`/card/${seriesSlug}/${card.card_number}/${playerSlug}`)
   }
 
@@ -467,16 +455,11 @@ function SeriesDetail() {
                       {showParallels && (
                         <div className="parallels-dropdown-menu">
                           {parallels.map(parallel => (
-                            <div 
+                            <div
                               key={parallel.series_id}
                               className={`parallel-item-compact ${parallel.relationship}`}
                               onClick={() => {
-                                const slug = parallel.name
-                                  .toLowerCase()
-                                  .replace(/[^a-z0-9\s-]/g, '')
-                                  .replace(/\s+/g, '-')
-                                  .replace(/-+/g, '-')
-                                  .trim()
+                                const slug = generateSlug(parallel.name)
                                 navigate(`/series/${slug}`)
                               }}
                             >
@@ -513,10 +496,8 @@ function SeriesDetail() {
             onAddCard={handleAddCard}
             onCardClick={handleCardClick}
             onPlayerClick={(player) => {
-              const playerSlug = `${player.first_name}-${player.last_name}`
-                .toLowerCase()
-                .replace(/[^a-z0-9-]/g, '')
-                .replace(/-+/g, '-')
+              const playerName = `${player.first_name} ${player.last_name}`
+              const playerSlug = generateSlug(playerName)
               navigate(`/player/${playerSlug}`)
             }}
             bulkSelectionMode={bulkSelectionMode}

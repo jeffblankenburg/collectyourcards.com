@@ -7,6 +7,7 @@ import { useToast } from '../contexts/ToastContext'
 import Icon from './Icon'
 import AddCardModal from './modals/AddCardModal'
 import EditCardModal from './EditCardModal'
+import { generateSlug } from '../utils/slugs'
 import './UniversalCardTable.css'
 
 const UniversalCardTable = ({
@@ -243,15 +244,9 @@ const UniversalCardTable = ({
 
   const getCardShareUrl = (card) => {
     const playerNames = card.card_player_teams?.map((cpt, i) => cpt.player?.name).join(', ') || card.player_name || 'unknown'
-    const playerSlug = playerNames
-      .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, '')
-      .replace(/\s+/g, '-')
-      .replace(/-+/g, '-')
-      .trim()
-    
-    const seriesSlug = card.series_rel?.name?.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').trim() || 'unknown'
-    
+    const playerSlug = generateSlug(playerNames)
+    const seriesSlug = card.series_rel?.name ? generateSlug(card.series_rel.name) : 'unknown'
+
     return `${window.location.origin}/card/${seriesSlug}/${card.card_number}/${playerSlug}`
   }
 
@@ -389,29 +384,19 @@ const UniversalCardTable = ({
       if (card.series_slug) {
         seriesSlug = card.series_slug
       } else if (card.series_rel?.name) {
-        // Create slug from series name (collection view)
-        seriesSlug = card.series_rel.name
-          .toLowerCase()
-          .replace(/'/g, '') // Remove apostrophes completely
-          .replace(/[^a-z0-9]+/g, '-') // Replace other special chars with hyphens
-          .replace(/^-|-$/g, '') // Remove leading/trailing hyphens
+        seriesSlug = generateSlug(card.series_rel.name)
       } else if (card.series_name) {
-        // Create slug from series_name field
-        seriesSlug = card.series_name
-          .toLowerCase()
-          .replace(/'/g, '') // Remove apostrophes completely
-          .replace(/[^a-z0-9]+/g, '-') // Replace other special chars with hyphens
-          .replace(/^-|-$/g, '') // Remove leading/trailing hyphens
+        seriesSlug = generateSlug(card.series_name)
       }
-      
+
       if (!seriesSlug) {
         console.warn('No series information available for navigation:', card)
         return
       }
-      
+
       // Get player name from available data
       let playerName = ''
-      
+
       if (card.card_player_teams && card.card_player_teams.length > 0) {
         // From card_player_teams array
         playerName = card.card_player_teams
@@ -436,19 +421,14 @@ const UniversalCardTable = ({
         // Fallback to title
         playerName = card.title
       }
-      
+
       if (!playerName) {
         playerName = 'unknown'
       }
-      
-      // Create player slug
-      const playerSlug = playerName
-        .toLowerCase()
-        .replace(/[^a-z0-9\s-]/g, '')
-        .replace(/\s+/g, '-')
-        .replace(/-+/g, '-')
-        .trim()
-      
+
+      // Create player slug using standard function
+      const playerSlug = generateSlug(playerName)
+
       console.log('Navigating to:', `/card/${seriesSlug}/${card.card_number}/${playerSlug}`)
       navigate(`/card/${seriesSlug}/${card.card_number}/${playerSlug}`)
     }
