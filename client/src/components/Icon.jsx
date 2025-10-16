@@ -355,6 +355,15 @@ const FootballIcon = ({ size = 16, className = '' }) => (
   </svg>
 )
 
+// Custom rainbow icon - by Viola Yorika from Noun Project
+const RainbowIcon = ({ size = 16, className = '' }) => (
+  <svg width={size} height={size} viewBox="14 30 72 40" className={className} fill="currentColor">
+    <path fillRule="evenodd" clipRule="evenodd" d="M50 62C47.7909 62 46 63.7909 46 66V70H38V66C38 59.3726 43.3726 54 50 54C56.6274 54 62 59.3726 62 66V70H54V66C54 63.7909 52.2091 62 50 62Z"/>
+    <path fillRule="evenodd" clipRule="evenodd" d="M50 50C41.1634 50 34 57.1634 34 66V70H26V66C26 52.7452 36.7452 42 50 42C63.2548 42 74 52.7452 74 66V70H66V66C66 57.1634 58.8366 50 50 50Z"/>
+    <path fillRule="evenodd" clipRule="evenodd" d="M50 38C34.536 38 22 50.536 22 66V70H14V66C14 46.1177 30.1177 30 50 30C69.8823 30 86 46.1177 86 66V70H78V66C78 50.536 65.464 38 50 38Z"/>
+  </svg>
+)
+
 function Icon({ 
   name, 
   size = 16, 
@@ -392,13 +401,18 @@ function Icon({
   if (name === 'baseball') {
     return <BaseballIcon size={size} className={className} />
   }
-  
+
   if (name === 'football') {
     return <FootballIcon size={size} className={className} />
   }
-  
+
   if (name === 'basketball') {
     return <BasketballIcon size={size} className={className} />
+  }
+
+  // Handle custom rainbow icon
+  if (name === 'rainbow') {
+    return <RainbowIcon size={size} className={className} />
   }
   
   const IconComponent = iconMap[name]

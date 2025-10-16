@@ -225,6 +225,153 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
   }
 })
 
+// GET /api/cards/rainbow - Get all parallel cards with the same card number in a set
+router.get('/rainbow', optionalAuthMiddleware, async (req, res) => {
+  try {
+    const { set_id, card_number } = req.query
+
+    if (!set_id || !card_number) {
+      return res.status(400).json({
+        error: 'Missing required parameters',
+        message: 'set_id and card_number are required'
+      })
+    }
+
+    const setIdNum = parseInt(set_id)
+    if (isNaN(setIdNum)) {
+      return res.status(400).json({
+        error: 'Invalid set_id',
+        message: 'set_id must be a valid number'
+      })
+    }
+
+    const userId = req.user?.userId
+    const userIdNumber = userId ? Number(userId) : null
+    const userCollectionJoin = userIdNumber ? `
+      LEFT JOIN user_card uc ON c.card_id = uc.card AND uc.[user] = ${userIdNumber}
+    ` : ''
+
+    // Get all cards with the same card_number in all series within the set
+    const cardsQuery = `
+      SELECT
+        c.card_id, c.card_number, c.is_rookie, c.is_autograph, c.is_relic,
+        c.print_run, c.sort_order, c.notes,
+        s.series_id, s.name as series_name, s.is_base,
+        col.name as color, col.hex_value as hex_color,
+        ${userIdNumber ? 'ISNULL(COUNT(uc.user_card_id), 0) as user_card_count' : '0 as user_card_count'}
+      FROM card c
+      JOIN series s ON c.series = s.series_id
+      LEFT JOIN color col ON c.color = col.color_id
+      ${userCollectionJoin}
+      WHERE s.[set] = ${setIdNum}
+        AND c.card_number = '${card_number.replace(/'/g, "''")}'
+      GROUP BY c.card_id, c.card_number, c.is_rookie, c.is_autograph, c.is_relic,
+               c.print_run, c.sort_order, c.notes, s.series_id, s.name, s.is_base,
+               col.name, col.hex_value
+      ORDER BY s.is_base DESC, s.name ASC
+    `
+
+    const cardResults = await prisma.$queryRawUnsafe(cardsQuery)
+
+    // Get player-team associations for these cards
+    const cardIds = cardResults.map(card => Number(card.card_id))
+
+    let cardPlayerTeamMap = {}
+    if (cardIds.length > 0) {
+      const playerTeamQuery = `
+        SELECT
+          cpt.card as card_id,
+          p.player_id,
+          p.first_name,
+          p.last_name,
+          t.team_id,
+          t.name as team_name,
+          t.abbreviation as team_abbr,
+          t.primary_color,
+          t.secondary_color
+        FROM card_player_team cpt
+        JOIN player_team pt ON cpt.player_team = pt.player_team_id
+        JOIN player p ON pt.player = p.player_id
+        JOIN team t ON pt.team = t.team_id
+        WHERE cpt.card IN (${cardIds.join(',')})
+        ORDER BY cpt.card, p.last_name
+      `
+
+      const cardPlayerResults = await prisma.$queryRawUnsafe(playerTeamQuery)
+
+      // Group by card_id
+      cardPlayerResults.forEach(row => {
+        const cardId = Number(row.card_id)
+        if (!cardPlayerTeamMap[cardId]) {
+          cardPlayerTeamMap[cardId] = []
+        }
+
+        cardPlayerTeamMap[cardId].push({
+          player: {
+            player_id: Number(row.player_id),
+            name: `${row.first_name || ''} ${row.last_name || ''}`.trim(),
+            first_name: row.first_name,
+            last_name: row.last_name
+          },
+          team: {
+            team_id: Number(row.team_id),
+            name: row.team_name,
+            abbreviation: row.team_abbr,
+            primary_color: row.primary_color,
+            secondary_color: row.secondary_color
+          }
+        })
+      })
+    }
+
+    // Transform cards to match frontend structure
+    const cards = cardResults.map(card => {
+      const serialized = {}
+      Object.keys(card).forEach(key => {
+        serialized[key] = typeof card[key] === 'bigint' ? Number(card[key]) : card[key]
+      })
+
+      const cardId = Number(serialized.card_id)
+
+      return {
+        card_id: cardId,
+        card_number: serialized.card_number,
+        is_rookie: serialized.is_rookie,
+        is_autograph: serialized.is_autograph,
+        is_relic: serialized.is_relic,
+        print_run: serialized.print_run,
+        sort_order: serialized.sort_order,
+        notes: serialized.notes,
+        user_card_count: Number(serialized.user_card_count) || 0,
+        card_player_teams: cardPlayerTeamMap[cardId] || [],
+        series_rel: {
+          series_id: serialized.series_id,
+          name: serialized.series_name,
+          is_base: Boolean(serialized.is_base)
+        },
+        color_rel: serialized.color ? {
+          color: serialized.color,
+          hex_color: serialized.hex_color
+        } : null
+      }
+    })
+
+    res.json({
+      success: true,
+      cards,
+      total: cards.length
+    })
+
+  } catch (error) {
+    console.error('Error fetching rainbow cards:', error)
+    res.status(500).json({
+      error: 'Database error',
+      message: 'Failed to fetch rainbow cards',
+      details: error.message
+    })
+  }
+})
+
 // GET /api/parallel-series - Get parallel series for a specific card number in a set
 router.get('/parallel-series', async (req, res) => {
   try {

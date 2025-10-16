@@ -99,24 +99,36 @@ const CardTable = ({
   // Filter cards based on search query
   const filteredCards = useMemo(() => {
     if (!searchQuery.trim()) return cards
-    
+
     const query = searchQuery.toLowerCase()
     return cards.filter(card => {
       // Search in card number
       if (card.card_number?.toLowerCase().includes(query)) return true
-      
+
       // Search in player names
-      const playerNames = card.card_player_teams?.map(cpt => 
+      const playerNames = card.card_player_teams?.map(cpt =>
         `${cpt.player?.first_name || ''} ${cpt.player?.last_name || ''}`.trim()
       ).join(' ').toLowerCase()
       if (playerNames.includes(query)) return true
-      
+
       // Search in team names
-      const teamNames = card.card_player_teams?.map(cpt => 
+      const teamNames = card.card_player_teams?.map(cpt =>
         cpt.team?.name || ''
       ).join(' ').toLowerCase()
       if (teamNames.includes(query)) return true
-      
+
+      // Search in color
+      if (card.color_rel?.color?.toLowerCase().includes(query)) return true
+
+      // Search in series name
+      if (card.series_rel?.name?.toLowerCase().includes(query)) return true
+
+      // Search in print run
+      if (card.print_run && String(card.print_run).includes(query)) return true
+
+      // Search in notes
+      if (card.notes?.toLowerCase().includes(query)) return true
+
       return false
     })
   }, [cards, searchQuery])

@@ -566,6 +566,23 @@ function CardDetail() {
                       className="squircle-button add-button"
                     />
                   )}
+                  {parallelSeries.length > 1 && (
+                    <button
+                      onClick={() => {
+                        const playerSlug = card.player_names
+                          .toLowerCase()
+                          .replace(/[^a-z0-9\s-]/g, '')
+                          .replace(/\s+/g, '-')
+                          .replace(/-+/g, '-')
+                          .trim()
+                        navigate(`/rainbow/${card.series_slug}/${card.card_number}/${playerSlug}`)
+                      }}
+                      className="squircle-button rainbow-button"
+                      title="View all parallels (Rainbow View)"
+                    >
+                      <Icon name="rainbow" size={16} />
+                    </button>
+                  )}
                   <SocialShareButton
                     card={card}
                     iconOnly={true}

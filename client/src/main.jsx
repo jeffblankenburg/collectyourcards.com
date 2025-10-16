@@ -30,6 +30,7 @@ import AdminCards from './pages/AdminCards.jsx'
 import AdminImport from './pages/AdminImport.jsx'
 import CollectionDashboard from './pages/CollectionDashboard.jsx'
 import CardDetail from './pages/CardDetail.jsx'
+import RainbowView from './pages/RainbowView.jsx'
 import PublicProfile from './pages/PublicProfile.jsx'
 import ProfileManagement from './pages/ProfileManagement.jsx'
 import DesignSystemDemo from './pages/DesignSystemDemo.jsx'
@@ -82,6 +83,10 @@ createRoot(document.getElementById('root')).render(
               {/* CardDetail routes */}
               <Route path="/sets/:year/:setSlug/:seriesSlug/:cardSlug" element={<CardDetail />} />
               <Route path="/card/:seriesSlug/:cardNumber/:playerName" element={<CardDetail />} />
+
+              {/* RainbowView route - shows all parallel cards with same card number */}
+              <Route path="/rainbow/:seriesSlug/:cardNumber/:playerName" element={<RainbowView />} />
+
               <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
               <Route path="/admin/users" element={<ProtectedRoute><AdminUsers /></ProtectedRoute>} />
               <Route path="/admin/teams" element={<ProtectedRoute><AdminTeams /></ProtectedRoute>} />
