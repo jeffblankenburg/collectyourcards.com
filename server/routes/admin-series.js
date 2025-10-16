@@ -409,9 +409,9 @@ router.post('/series/:id/duplicate', async (req, res) => {
           is_rookie: card.is_rookie,
           is_autograph: card.is_autograph,
           is_relic: card.is_relic,
-          print_run: print_run ? parseInt(print_run) : card.print_run,
+          print_run: print_run ? parseInt(print_run) : null,
           series: newSeries.series_id,
-          color: color_id ? parseInt(color_id) : card.color,
+          color: color_id ? parseInt(color_id) : null,
           notes: card.notes,
           created: new Date()
         }
