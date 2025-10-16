@@ -227,23 +227,14 @@ router.put('/series/:id', async (req, res) => {
       rookie_count: rookie_count !== undefined ? parseInt(rookie_count) : existingSeries.rookie_count
     }
     
-    // Handle foreign key relationships
+    // Handle set field (direct foreign key)
     if (set !== undefined) {
-      updateData.set_series_setToset = {
-        connect: { set_id: parseInt(set) }
-      }
+      updateData.set = set ? parseInt(set) : null
     }
     
+    // Handle color field (direct foreign key)
     if (color_id !== undefined) {
-      if (color_id) {
-        updateData.color_series_colorTocolor = {
-          connect: { color_id: parseInt(color_id) }
-        }
-      } else {
-        updateData.color_series_colorTocolor = {
-          disconnect: true
-        }
-      }
+      updateData.color = color_id ? parseInt(color_id) : null
     }
 
     // Store old values for logging
