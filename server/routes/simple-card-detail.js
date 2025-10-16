@@ -41,9 +41,9 @@ router.get('/:seriesSlug/:cardNumber/:playerName', async (req, res) => {
     const playerNameParts = normalizedPlayerName.split(/\s+/).filter(part => part.length > 2) // Filter out short words like "jr"
     
     // Generate series name from slug for exact matching
-    // Convert slug to expected series name by replacing dashes with spaces
+    // Convert slug to expected series name by replacing dashes with spaces, then remove spaces entirely for comparison
     const seriesNameFromSlug = seriesSlug
-      .replace(/-/g, ' ')
+      .replace(/-/g, '')
       .toLowerCase()
 
     console.log(`Searching for card: ${normalizedCardNumber}, player: ${normalizedPlayerName}, series: ${seriesNameFromSlug}`)
@@ -78,7 +78,7 @@ router.get('/:seriesSlug/:cardNumber/:playerName', async (req, res) => {
       LEFT JOIN player p ON pt.player = p.player_id
       LEFT JOIN team t ON pt.team = t.team_id
       WHERE c.card_number = '${normalizedCardNumber}'
-        AND REPLACE(REPLACE(REPLACE(LOWER(s.name), ' & ', ' '), '-', ' '), '  ', ' ') = '${seriesNameFromSlug.replace(/'/g, "''")}'
+        AND REPLACE(REPLACE(REPLACE(REPLACE(LOWER(s.name), '/', ''), ' & ', ''), '-', ''), ' ', '') = '${seriesNameFromSlug.replace(/'/g, "''")}'
       GROUP BY c.card_id, c.card_number, c.is_rookie, c.is_autograph, c.is_relic, c.print_run,
                s.series_id, s.name, st.set_id, st.name, st.year, m.name, s.parallel_of_series, col.name, col.hex_value
       HAVING ${playerNameParts.length > 0 ? 
@@ -120,7 +120,7 @@ router.get('/:seriesSlug/:cardNumber/:playerName', async (req, res) => {
         LEFT JOIN player p ON pt.player = p.player_id
         LEFT JOIN team t ON pt.team = t.team_id
         WHERE (c.card_number LIKE '%${normalizedCardNumber}%' OR '${normalizedCardNumber}' LIKE '%' + c.card_number + '%')
-          AND REPLACE(REPLACE(REPLACE(LOWER(s.name), ' & ', ' '), '-', ' '), '  ', ' ') LIKE '${seriesNameFromSlug.replace(/'/g, "''")}%'
+          AND REPLACE(REPLACE(REPLACE(REPLACE(LOWER(s.name), '/', ''), ' & ', ''), '-', ''), ' ', '') LIKE '${seriesNameFromSlug.replace(/'/g, "''")}%'
         GROUP BY c.card_id, c.card_number, c.is_rookie, c.is_autograph, c.is_relic, c.print_run,
                  s.series_id, s.name, st.set_id, st.name, st.year, m.name, s.parallel_of_series, col.name, col.hex_value
         HAVING ${playerNameParts.length > 0 ? 
