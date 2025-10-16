@@ -165,9 +165,10 @@ router.get('/series', async (req, res) => {
 router.put('/series/:id', async (req, res) => {
   try {
     const { id } = req.params
-    const { 
-      name, 
+    const {
+      name,
       set,
+      set_id,
       card_count,
       card_entered_count,
       is_base,
@@ -227,9 +228,10 @@ router.put('/series/:id', async (req, res) => {
       rookie_count: rookie_count !== undefined ? parseInt(rookie_count) : existingSeries.rookie_count
     }
     
-    // Handle set field (direct foreign key)
-    if (set !== undefined) {
-      updateData.set = set ? parseInt(set) : null
+    // Handle set field (direct foreign key) - accept either 'set' or 'set_id' from frontend
+    const setValue = set_id !== undefined ? set_id : set
+    if (setValue !== undefined) {
+      updateData.set = setValue ? parseInt(setValue) : null
     }
     
     // Handle color field (direct foreign key)
