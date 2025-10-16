@@ -326,7 +326,15 @@ function AdminSeries() {
   const handleEditSeries = useCallback(async (seriesItem) => {
     setEditingSeries(seriesItem)
     const setId = seriesItem.set_id ? Number(seriesItem.set_id) : ''
-    
+
+    // Load sets and series for dropdowns BEFORE setting form and showing modal
+    await loadSets()
+    // Load series for the current set if one is selected
+    if (seriesItem.set_id) {
+      await loadSeriesForSet(seriesItem.set_id)
+    }
+
+    // Now set the form with the loaded data
     setEditForm({
       name: seriesItem.name || '',
       is_base: seriesItem.is_base || false,
@@ -338,14 +346,7 @@ function AdminSeries() {
       set_id: setId,
       parallel_of_series: seriesItem.parallel_of_series ? Number(seriesItem.parallel_of_series) : ''
     })
-    
-    // Load sets and series for dropdowns
-    await loadSets()
-    // Load series for the current set if one is selected
-    if (seriesItem.set_id) {
-      await loadSeriesForSet(seriesItem.set_id)
-    }
-    
+
     setShowEditModal(true)
   }, [loadSets, loadSeriesForSet])
 
