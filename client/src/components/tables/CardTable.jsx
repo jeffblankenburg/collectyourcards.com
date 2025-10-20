@@ -55,6 +55,7 @@ const CardTable = ({
     card_number: 120,  // 2x the owned column width
     player: 'auto',    // Gets extra space from card_number
     series: 'auto',    // Series column between player and color
+    production_code: 150, // Width for production code (10-12 characters)
     color: 'auto',
     print_run: 120,    // Width for "PRINT RUN" header text
     auto: 80,          // Width for "AUTO" column (split from attributes)
@@ -312,7 +313,8 @@ const CardTable = ({
         'Color',
         'Auto',
         'Relic',
-        'Notes'
+        'Notes',
+        'Production Code'
       ]
 
       const csvData = [
@@ -335,7 +337,8 @@ const CardTable = ({
             `"${card.color_rel?.color || ''}"`,
             `"${auto}"`,
             `"${relic}"`,
-            `"${card.notes || ''}"`
+            `"${card.notes || ''}"`,
+            `"${card.series_rel?.production_code || ''}"`
           ]
           
           return row.join(',')
@@ -524,6 +527,13 @@ const CardTable = ({
                   NOTES
                 </div>
               </th>
+              <th className="production-code-header" style={{ width: columnWidths.production_code }}>
+                <div className="card-table-header-with-resize">
+                  <div className="card-table-header-content">
+                    PRODUCTION CODE
+                  </div>
+                </div>
+              </th>
               <th className="find-header" style={{ width: columnWidths.find }}>
                 <div className="card-table-header-content">
                   SHOP
@@ -627,7 +637,7 @@ const CardTable = ({
                   </td>
                   <td className="card-table-series-cell">
                     {onSeriesClick ? (
-                      <button 
+                      <button
                         className="card-table-series-link"
                         onClick={(e) => {
                           e.stopPropagation()
@@ -677,6 +687,7 @@ const CardTable = ({
                   <td className="notes-cell">
                     {card.notes}
                   </td>
+                  <td className="production-code-cell">{card.series_rel?.production_code || ''}</td>
                   <td className="find-cell">
                     <div
                       className="marketplace-dropdown"

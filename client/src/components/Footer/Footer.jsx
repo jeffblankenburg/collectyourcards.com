@@ -87,6 +87,9 @@ function Footer() {
         <div className="footer-section">
           <h4>Platform</h4>
           <div className="footer-links">
+            <Link to="/blog" className="footer-link">
+              <Icon name="message-square" size={16} /> Blog
+            </Link>
             <Link to="/status" className="footer-link">
               <Icon name="activity" size={16} /> System Status
             </Link>

@@ -48,6 +48,7 @@ const CollectionTable = ({
     card_number: 100,  // Fixed width for card numbers
     player: 250,       // Generous width for player names (most important)
     series: 300,       // Generous width for series names (most important)
+    production_code: 150, // Width for production code (10-12 characters)
     serial: 110,       // Width for "SERIAL #" header text
     color: 120,        // Fixed width for color tags
     photos: 100,       // Width for photo count - repositioned after COLOR
@@ -300,7 +301,8 @@ const CollectionTable = ({
         'Added',
         'Grade',
         'AM Auto',
-        'Notes'
+        'Notes',
+        'Production Code'
       ]
 
       const csvData = [
@@ -344,7 +346,8 @@ const CollectionTable = ({
             `"${formatDateAdded(card.date_added)}"`,
             `"${grade}"`,
             `"${card.aftermarket_autograph ? '✓' : ''}"`,
-            `"${card.notes || ''}"`
+            `"${card.notes || ''}"`,
+            `"${card.series_rel?.production_code || ''}"`
           ]
           
           return row.join(',')
@@ -530,7 +533,7 @@ const CollectionTable = ({
                   <ResizeHandle columnKey="player" />
                 </div>
               </th>
-              <th 
+              <th
                 className="sortable collection-table-series-header"
                 style={{ width: columnWidths.series }}
               >
@@ -541,7 +544,7 @@ const CollectionTable = ({
                   <ResizeHandle columnKey="series" />
                 </div>
               </th>
-              <th 
+              <th
                 className="sortable serial-header"
                 style={{ width: columnWidths.serial }}
               >
@@ -667,6 +670,17 @@ const CollectionTable = ({
               <th className="notes-header" style={{ width: columnWidths.notes }}>
                 <div className="header-with-resize">
                   NOTES
+                </div>
+              </th>
+              <th
+                className="production-code-header"
+                style={{ width: columnWidths.production_code }}
+              >
+                <div className="header-with-resize">
+                  <div className="collection-table-header-content">
+                    PRODUCTION CODE
+                  </div>
+                  <ResizeHandle columnKey="production_code" />
                 </div>
               </th>
               <th className="delete-header" style={{ width: columnWidths.delete }}>
@@ -811,6 +825,7 @@ const CollectionTable = ({
                   )}
                 </td>
                 <td className="notes-cell">{card.notes}</td>
+                <td className="production-code-cell">{card.series_rel?.production_code || ''}</td>
                 <td className="delete-cell">
                   <button
                     className="delete-card-btn"

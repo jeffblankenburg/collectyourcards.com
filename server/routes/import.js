@@ -670,13 +670,62 @@ router.post('/match-cards', requireAuth, requireAdmin, async (req, res) => {
 
         // Collect teams for player_team checking (based on position guess)
         const playerTeamCheckTeams = { exact: [], fuzzy: [] }
-        playerTeamGuess.forEach(teamName => {
-          const teamMatch = teamLookup[teamName]
-          if (teamMatch) {
-            playerTeamCheckTeams.exact.push(...teamMatch.exact)
-            playerTeamCheckTeams.fuzzy.push(...teamMatch.fuzzy)
+
+        console.log(`📋 Team situation for "${playerName}": teamNamesList.length=${teamNamesList.length}, playerTeamGuess.length=${playerTeamGuess.length}`)
+        console.log(`📋 teamNamesList:`, teamNamesList)
+        console.log(`📋 playerTeamGuess:`, playerTeamGuess)
+
+        // If NO teams specified, recommend "no-name" teams
+        if (teamNamesList.length === 0 || playerTeamGuess.length === 0) {
+          console.log(`⚠️ No team specified for "${playerName}" - recommending no-name teams`)
+          console.log(`🔍 Querying for no-name teams with organizationId: ${organizationId}`)
+
+          // Get no-name teams from database
+          const noNameTeamsQuery = `
+            SELECT
+              team_id as teamId,
+              name as teamName,
+              organization,
+              primary_color as primaryColor,
+              secondary_color as secondaryColor,
+              abbreviation
+            FROM team
+            WHERE (name IS NULL OR name = '' OR LOWER(name) = 'no name')
+            ${organizationId ? `AND (organization = ${organizationId} OR organization IS NULL)` : ''}
+            ORDER BY organization DESC NULLS LAST
+          `
+
+          console.log(`🔍 Executing query:`, noNameTeamsQuery)
+          const noNameTeamsResult = await pool.request().query(noNameTeamsQuery)
+          console.log(`📊 Query returned ${noNameTeamsResult.recordset.length} results`)
+
+          if (noNameTeamsResult.recordset.length > 0) {
+            console.log(`✅ Found ${noNameTeamsResult.recordset.length} no-name teams`)
+            noNameTeamsResult.recordset.forEach(team => {
+              const teamObj = {
+                teamId: String(team.teamId),
+                teamName: team.teamName || 'No Name',
+                organization: team.organization,
+                primaryColor: team.primaryColor,
+                secondaryColor: team.secondaryColor,
+                abbreviation: team.abbreviation
+              }
+              playerTeamCheckTeams.exact.push(teamObj)
+              console.log(`   ✅ Recommending: "${teamObj.teamName}" (teamId: ${teamObj.teamId}, org: ${teamObj.organization || 'none'})`)
+            })
+          } else {
+            console.log(`❌ No no-name teams found in database`)
           }
-        })
+        } else {
+          // Normal team matching
+          playerTeamGuess.forEach(teamName => {
+            const teamMatch = teamLookup[teamName]
+            if (teamMatch) {
+              playerTeamCheckTeams.exact.push(...teamMatch.exact)
+              playerTeamCheckTeams.fuzzy.push(...teamMatch.fuzzy)
+            }
+          })
+        }
 
         // Get player_team combinations from cached lookup (only for guessed teams)
         const playerTeamMatches = []
@@ -1379,44 +1428,47 @@ async function batchFindPlayers(pool, playerNames, organizationId = null) {
         const isSingleName = !normalizedSearchName.includes(' ')
 
         fuzzyMatches = allPlayersGrouped.filter(player => {
-          const dbPlayerName = normalizePlayerName(player.playerName || '')
-          if (!dbPlayerName) return false
+          // Construct full name from database fields
+          const dbFullName = `${player.firstName || ''} ${player.lastName || ''}`.trim()
+          const normalizedDbName = normalizePlayerName(dbFullName)
 
-          // Special handling for single-name players (e.g., "Ichiro", "Checklist")
+          if (!normalizedDbName) return false
+
+          // Special handling for single-name searches (e.g., "Ichiro")
           if (isSingleName) {
-            const dbFirstName = normalizePlayerName(player.firstName || '')
-            const dbLastName = normalizePlayerName(player.lastName || '')
+            const normalizedFirstName = normalizePlayerName(player.firstName || '')
+            const normalizedLastName = normalizePlayerName(player.lastName || '')
 
-            // PRIORITY 1: Check if search matches ONLY the first name (and last name is empty/null)
-            // This handles "Checklist" matching player with first="Checklist", last=""
-            if (dbFirstName === normalizedSearchName && (!player.lastName || player.lastName.trim() === '')) {
-              console.log(`👤 EXACT SINGLE NAME MATCH: "${searchName}" matches "${player.playerName}" (only first name, no last name)`)
-              player.similarity = 1.0 // Perfect match
+            // Check if search matches just the first name
+            if (normalizedFirstName === normalizedSearchName) {
+              console.log(`👤 SINGLE NAME MATCH (first name): "${searchName}" matches "${dbFullName}"`)
+              player.similarity = 0.95 // High priority for single-name matches
               player.distance = 0
               return true
             }
 
-            // PRIORITY 2: Check if search matches the first name OR last name exactly (for compound names)
-            if (dbFirstName === normalizedSearchName || dbLastName === normalizedSearchName) {
-              console.log(`👤 SINGLE NAME COMPONENT MATCH: "${searchName}" matches "${player.playerName}" (first: "${player.firstName}", last: "${player.lastName}")`)
-              player.similarity = 0.85 // Lower priority than exact single-name match
+            // Check if search matches just the last name
+            if (normalizedLastName === normalizedSearchName) {
+              console.log(`👤 SINGLE NAME MATCH (last name): "${searchName}" matches "${dbFullName}"`)
+              player.similarity = 0.95
               player.distance = 0
               return true
             }
           }
 
-          // Calculate similarity for regular name
-          const distance = levenshteinDistance(normalizedSearchName, dbPlayerName)
-          const maxLength = Math.max(normalizedSearchName.length, dbPlayerName.length)
+          // Calculate similarity between search string and database full name
+          const distance = levenshteinDistance(normalizedSearchName, normalizedDbName)
+          const maxLength = Math.max(normalizedSearchName.length, normalizedDbName.length)
           const similarity = 1 - (distance / maxLength)
 
-          // Also check nickname similarity if available
+          // Also check nickname variation if available
           let nickSimilarity = 0
           let nickDistance = 999
           if (player.nickName && player.lastName) {
-            const nickNameVariation = normalizePlayerName(`${player.nickName} ${player.lastName}`)
-            nickDistance = levenshteinDistance(normalizedSearchName, nickNameVariation)
-            const nickMaxLength = Math.max(normalizedSearchName.length, nickNameVariation.length)
+            const nickFullName = `${player.nickName} ${player.lastName}`.trim()
+            const normalizedNickName = normalizePlayerName(nickFullName)
+            nickDistance = levenshteinDistance(normalizedSearchName, normalizedNickName)
+            const nickMaxLength = Math.max(normalizedSearchName.length, normalizedNickName.length)
             nickSimilarity = 1 - (nickDistance / nickMaxLength)
           }
 
@@ -1424,21 +1476,17 @@ async function batchFindPlayers(pool, playerNames, organizationId = null) {
           const bestSimilarity = Math.max(similarity, nickSimilarity)
           const bestDistance = Math.min(distance, nickDistance)
 
-          // Check for close matches
-          const nameParts = normalizedSearchName.split(' ')
-          const dbNameParts = dbPlayerName.split(' ')
-          const lastNameMatch = nameParts.length > 1 && dbNameParts.length > 1 &&
-                               nameParts[nameParts.length - 1] === dbNameParts[dbNameParts.length - 1]
-
-          const isFuzzyMatch = bestDistance <= 2 || bestSimilarity > 0.85 || (lastNameMatch && bestSimilarity > 0.7)
+          // Match if BOTH distance is close AND similarity is reasonable
+          // Very close matches (distance <= 2) are always accepted
+          // Medium distance (3) requires good similarity to avoid false positives
+          const isFuzzyMatch = bestDistance <= 2 || (bestDistance <= 3 && bestSimilarity > 0.75) || bestSimilarity > 0.85
 
           if (isFuzzyMatch) {
             if (nickSimilarity > similarity) {
-              console.log(`🔍 FUZZY NICKNAME MATCH: "${searchName}" ~= "${player.nickName} ${player.lastName}" (${player.playerName}) (similarity: ${bestSimilarity.toFixed(2)}, teams: ${player.teams.length})`)
+              console.log(`🔍 FUZZY NICKNAME MATCH: "${searchName}" ~= "${player.nickName} ${player.lastName}" (similarity: ${bestSimilarity.toFixed(2)}, distance: ${bestDistance}, teams: ${player.teams.length})`)
             } else {
-              console.log(`🔍 FUZZY MATCH: "${searchName}" ~= "${player.playerName}" (similarity: ${bestSimilarity.toFixed(2)}, teams: ${player.teams.length})`)
+              console.log(`🔍 FUZZY MATCH: "${searchName}" ~= "${dbFullName}" (similarity: ${bestSimilarity.toFixed(2)}, distance: ${bestDistance}, teams: ${player.teams.length})`)
             }
-            // Add similarity score to player object
             player.similarity = bestSimilarity
             player.distance = bestDistance
           }

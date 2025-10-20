@@ -13,7 +13,7 @@ router.get('/:type/:itemId', async (req, res) => {
     const { page = 1, limit = 50 } = req.query
     
     // Validate comment type
-    if (!['card', 'series', 'set'].includes(type)) {
+    if (!['card', 'series', 'set', 'blog_post'].includes(type)) {
       return res.status(400).json({ error: 'Invalid comment type' })
     }
     
@@ -105,7 +105,7 @@ router.post('/:type/:itemId', authMiddleware, mutedUserMiddleware, commentModera
     const userId = req.user.userId
     
     // Validate input
-    if (!['card', 'series', 'set'].includes(type)) {
+    if (!['card', 'series', 'set', 'blog_post'].includes(type)) {
       return res.status(400).json({ error: 'Invalid comment type' })
     }
     
@@ -148,8 +148,8 @@ router.post('/:type/:itemId', authMiddleware, mutedUserMiddleware, commentModera
     
     // Insert comment
     const result = await prisma.$executeRaw`
-      INSERT INTO universal_comments (user_id, comment_type, item_id, comment_text, parent_comment_id)
-      VALUES (${Number(userId)}, ${type}, ${itemIdNumber}, ${comment_text}, ${parentCommentIdNumber})
+      INSERT INTO universal_comments (user_id, comment_type, item_id, comment_text, parent_comment_id, comment_status)
+      VALUES (${Number(userId)}, ${type}, ${itemIdNumber}, ${comment_text}, ${parentCommentIdNumber}, 'visible')
     `
     
     // Get the inserted comment with user info

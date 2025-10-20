@@ -42,6 +42,8 @@ import VerifyEmail from './pages/VerifyEmail.jsx'
 import CheckEmail from './pages/CheckEmail.jsx'
 import Lists from './pages/Lists.jsx'
 import ListDetail from './pages/ListDetail.jsx'
+import Blog from './pages/Blog.jsx'
+import BlogPost from './pages/BlogPost.jsx'
 import './index.css'
 // import './styles/global-design-system.css' // Temporarily removed to prevent conflicts
 
@@ -112,6 +114,10 @@ createRoot(document.getElementById('root')).render(
               {/* Lists routes - MUST BE BEFORE username route */}
               <Route path="/lists" element={<ProtectedRoute><Lists /></ProtectedRoute>} />
               <Route path="/lists/:slug" element={<ProtectedRoute><ListDetail /></ProtectedRoute>} />
+
+              {/* Blog routes - MUST BE BEFORE username route */}
+              <Route path="/blog" element={<Blog />} />
+              <Route path="/blog/:slug" element={<BlogPost />} />
 
               {/* Public profile route - MUST BE LAST to avoid conflicts with other routes */}
               <Route path="/:username" element={<PublicProfile />} />

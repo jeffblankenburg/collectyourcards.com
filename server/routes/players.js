@@ -8,20 +8,32 @@ router.get('/by-slug/:slug', async (req, res) => {
   try {
     const { slug } = req.params
     const nameParts = slug.toLowerCase().split('-')
-    
-    if (nameParts.length < 2) {
+
+    if (nameParts.length === 0) {
       return res.status(400).json({
         error: 'Invalid slug format',
-        message: 'Slug must contain at least first and last name'
+        message: 'Slug cannot be empty'
       })
     }
-    
-    // Use the same simple approach as the debug route that works
-    const results = await prisma.$queryRaw`
-      SELECT TOP 1 * FROM player 
-      WHERE LOWER(first_name) LIKE ${`%${nameParts[0]}%`} 
-      AND LOWER(last_name) LIKE ${`%${nameParts[1]}%`}
-    `
+
+    // Handle single-name players (e.g., "Rhino", "Ichiro")
+    let results
+    if (nameParts.length === 1) {
+      // Search by first name only for single-name players - use exact match
+      results = await prisma.$queryRaw`
+        SELECT TOP 1 * FROM player
+        WHERE LOWER(first_name) = ${nameParts[0]}
+        AND (last_name IS NULL OR last_name = '')
+        ORDER BY player_id
+      `
+    } else {
+      // Search by first and last name for multi-part names - use exact match
+      results = await prisma.$queryRaw`
+        SELECT TOP 1 * FROM player
+        WHERE LOWER(first_name) = ${nameParts[0]}
+        AND LOWER(last_name) = ${nameParts[1]}
+      `
+    }
     
     if (results.length === 0) {
       return res.status(404).json({

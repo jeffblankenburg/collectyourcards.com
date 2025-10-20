@@ -107,7 +107,9 @@ function PlayersLanding() {
   }
 
   const handlePlayerClick = (player, teamId = null) => {
-    const slug = `${player.first_name}-${player.last_name}`
+    // Handle null/empty last names
+    const fullName = `${player.first_name || ''} ${player.last_name || ''}`.trim()
+    const slug = fullName
       .toLowerCase()
       .replace(/[^a-z0-9\s-]/g, '')
       .replace(/\s+/g, '-')
@@ -152,7 +154,9 @@ function PlayersLanding() {
     // Navigate to player page with team filter
     const team = player.teams?.find(t => t.team_id === teamId)
     if (team) {
-      const playerSlug = `${player.first_name}-${player.last_name}`
+      // Handle null/empty last names
+      const fullName = `${player.first_name || ''} ${player.last_name || ''}`.trim()
+      const playerSlug = fullName
         .toLowerCase()
         .replace(/[^a-z0-9\s-]/g, '')
         .replace(/\s+/g, '-')

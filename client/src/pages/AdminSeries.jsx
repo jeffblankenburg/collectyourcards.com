@@ -33,6 +33,7 @@ function AdminSeries() {
     card_entered_count: '',
     rookie_count: '',
     print_run_display: '',
+    production_code: '',
     set_id: '',
     parallel_of_series: ''
   })
@@ -343,6 +344,7 @@ function AdminSeries() {
       card_entered_count: seriesItem.card_entered_count || '',
       rookie_count: seriesItem.rookie_count || '',
       print_run_display: seriesItem.print_run_display || '',
+      production_code: seriesItem.production_code || '',
       set_id: setId,
       parallel_of_series: seriesItem.parallel_of_series ? Number(seriesItem.parallel_of_series) : ''
     })
@@ -377,6 +379,7 @@ function AdminSeries() {
         card_entered_count: '',
         rookie_count: '',
         print_run_display: '',
+        production_code: '',
         set_id: '',
         parallel_of_series: ''
       })
@@ -464,6 +467,7 @@ function AdminSeries() {
         card_entered_count: addForm.card_entered_count ? Number(addForm.card_entered_count) : null,
         rookie_count: addForm.rookie_count ? Number(addForm.rookie_count) : null,
         print_run_display: addForm.print_run_display.trim() || null,
+        production_code: addForm.production_code.trim() || null,
         parallel_of_series: addForm.parallel_of_series ? Number(addForm.parallel_of_series) : null
       }
 
@@ -485,6 +489,7 @@ function AdminSeries() {
         card_entered_count: '',
         rookie_count: '',
         print_run_display: '',
+        production_code: '',
         set_id: '',
         parallel_of_series: ''
       })
@@ -522,6 +527,7 @@ function AdminSeries() {
         card_entered_count: editForm.card_entered_count ? Number(editForm.card_entered_count) : null,
         rookie_count: editForm.rookie_count ? Number(editForm.rookie_count) : null,
         print_run_display: editForm.print_run_display.trim() || null,
+        production_code: editForm.production_code.trim() || null,
         parallel_of_series: editForm.parallel_of_series ? Number(editForm.parallel_of_series) : null
       }
 
@@ -850,7 +856,19 @@ function AdminSeries() {
                       placeholder="e.g., 1000-2000, 500, Limited"
                     />
                   </div>
-            
+
+                  <div className="form-field-row">
+                    <label className="field-label">Production Code</label>
+                    <input
+                      type="text"
+                      className="field-input"
+                      value={addForm.production_code}
+                      onChange={(e) => setAddForm({...addForm, production_code: e.target.value})}
+                      placeholder="e.g., ABC123XYZ"
+                      maxLength={12}
+                    />
+                  </div>
+
             <div className="modal-actions">
               <button className="cancel-btn" onClick={() => setShowAddModal(false)} disabled={creating}>
                 Cancel
@@ -967,7 +985,19 @@ function AdminSeries() {
                       placeholder="e.g., 1000-2000, 500, Limited"
                     />
                   </div>
-            
+
+                  <div className="form-field-row">
+                    <label className="field-label">Production Code</label>
+                    <input
+                      type="text"
+                      className="field-input"
+                      value={editForm.production_code}
+                      onChange={(e) => setEditForm({...editForm, production_code: e.target.value})}
+                      placeholder="e.g., ABC123XYZ"
+                      maxLength={12}
+                    />
+                  </div>
+
             <div className="modal-actions">
               <button 
                 className="delete-series-btn"

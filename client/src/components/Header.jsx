@@ -265,8 +265,8 @@ function Header() {
             <Icon name="team" size={18} className="nav-icon" />
             <span className="nav-text">Teams</span>
           </Link>
-          <Link 
-            to="/sets" 
+          <Link
+            to="/sets"
             className={`nav-link ${location.pathname.startsWith('/sets') ? 'active' : ''}`}
           >
             <Icon name="series" size={18} className="nav-icon" />
@@ -291,8 +291,8 @@ function Header() {
               <Icon name="team" size={20} />
               <span>Teams</span>
             </Link>
-            <Link 
-              to="/sets" 
+            <Link
+              to="/sets"
               className={`mobile-nav-link ${location.pathname.startsWith('/sets') ? 'active' : ''}`}
             >
               <Icon name="series" size={20} />

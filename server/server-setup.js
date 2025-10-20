@@ -251,7 +251,8 @@ if (config.environment === 'test') {
     { path: '/api/user/achievements', file: './routes/user-achievements', name: 'User Achievements' },
     { path: '/api/admin/achievements', file: './routes/admin-achievements', name: 'Admin Achievements' },
     { path: '/api/admin/import', file: './routes/import', name: 'Admin Import' },
-    { path: '/api/admin', file: './routes/admin-query-tester', name: 'Admin Query Tester' }
+    { path: '/api/admin', file: './routes/admin-query-tester', name: 'Admin Query Tester' },
+    { path: '/api/blog', file: './routes/blog', name: 'Blog' }
   ];
 
   console.log('📍 Loading API routes in production mode...');
