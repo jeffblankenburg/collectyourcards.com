@@ -1066,11 +1066,13 @@ router.post('/create-cards', requireAuth, requireAdmin, async (req, res) => {
           .input('isRookie', sql.Bit, Boolean(card.isRC))
           .input('isAutograph', sql.Bit, Boolean(card.isAutograph))
           .input('isRelic', sql.Bit, Boolean(card.isRelic))
+          .input('printRun', sql.Int, card.printRun || null)
+          .input('colorId', sql.Int, card.colorId || null)
           .input('notes', sql.NVarChar, card.notes || null)
           .input('sortOrder', sql.Int, card.sortOrder || 0)
           .query(`
-            INSERT INTO card (card_number, series, is_rookie, is_autograph, is_relic, notes, sort_order, created)
-            VALUES (@cardNumber, @seriesId, @isRookie, @isAutograph, @isRelic, @notes, @sortOrder, GETDATE());
+            INSERT INTO card (card_number, series, is_rookie, is_autograph, is_relic, print_run, color, notes, sort_order, created)
+            VALUES (@cardNumber, @seriesId, @isRookie, @isAutograph, @isRelic, @printRun, @colorId, @notes, @sortOrder, GETDATE());
             SELECT SCOPE_IDENTITY() AS card_id;
           `)
         

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import axios from 'axios'
 import { useToast } from '../../contexts/ToastContext'
 import Icon from '../Icon'
@@ -28,7 +28,30 @@ const ImportTable = ({
   const [sortField, setSortField] = useState('sortOrder')
   const [sortDirection, setSortDirection] = useState('asc')
   const [expandedCards, setExpandedCards] = useState(new Set())
+  const [colors, setColors] = useState([])
+  const [loadingColors, setLoadingColors] = useState(true)
+  const [bulkPrintRun, setBulkPrintRun] = useState('')
+  const [bulkColorId, setBulkColorId] = useState('')
+  const [showBulkModal, setShowBulkModal] = useState(false)
   
+  // Fetch colors on mount
+  useEffect(() => {
+    const fetchColors = async () => {
+      try {
+        const response = await axios.get('/api/admin/colors')
+        setColors(response.data.colors || [])
+      } catch (error) {
+        console.error('Error fetching colors:', error)
+        if (showToast) {
+          showToast('Failed to load colors', 'error')
+        }
+      } finally {
+        setLoadingColors(false)
+      }
+    }
+    fetchColors()
+  }, [showToast])
+
   const handleNotesChange = (cardIndex, newNotes) => {
     if (onCardUpdate) {
       const updatedCards = [...cards]
@@ -36,7 +59,60 @@ const ImportTable = ({
       onCardUpdate(updatedCards)
     }
   }
-  
+
+  const handlePrintRunChange = (cardSortOrder, newPrintRun) => {
+    if (onCardUpdate) {
+      const cardIndex = cards.findIndex(card => card.sortOrder === cardSortOrder)
+      if (cardIndex === -1) return
+
+      const updatedCards = [...cards]
+      updatedCards[cardIndex].printRun = newPrintRun === '' ? null : parseInt(newPrintRun) || null
+      onCardUpdate(updatedCards)
+    }
+  }
+
+  const handleColorChange = (cardSortOrder, newColorId) => {
+    if (onCardUpdate) {
+      const cardIndex = cards.findIndex(card => card.sortOrder === cardSortOrder)
+      if (cardIndex === -1) return
+
+      const updatedCards = [...cards]
+      updatedCards[cardIndex].colorId = newColorId === '' ? null : parseInt(newColorId) || null
+      onCardUpdate(updatedCards)
+    }
+  }
+
+  const handleBulkPrintRunApply = () => {
+    if (onCardUpdate) {
+      const printRunValue = bulkPrintRun === '' ? null : parseInt(bulkPrintRun) || null
+      const updatedCards = cards.map(card => ({
+        ...card,
+        printRun: printRunValue
+      }))
+      onCardUpdate(updatedCards)
+      if (showToast) {
+        showToast(`Applied print run ${printRunValue || '(none)'} to all cards`, 'success')
+      }
+      setShowBulkModal(false)
+    }
+  }
+
+  const handleBulkColorApply = () => {
+    if (onCardUpdate) {
+      const colorIdValue = bulkColorId === '' ? null : parseInt(bulkColorId) || null
+      const updatedCards = cards.map(card => ({
+        ...card,
+        colorId: colorIdValue
+      }))
+      onCardUpdate(updatedCards)
+      const colorName = colors.find(c => c.color_id === colorIdValue)?.name || '(none)'
+      if (showToast) {
+        showToast(`Applied color "${colorName}" to all cards`, 'success')
+      }
+      setShowBulkModal(false)
+    }
+  }
+
   // Filter cards based on search query
   const filteredCards = useMemo(() => {
     if (!searchQuery.trim()) return cards
@@ -815,6 +891,75 @@ const ImportTable = ({
 
   return (
     <div className="import-table-container">
+      {/* Bulk Edit Modal */}
+      {showBulkModal && (
+        <div className="bulk-edit-modal-overlay" onClick={() => setShowBulkModal(false)}>
+          <div className="bulk-edit-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="bulk-edit-header">
+              <h3>
+                {showBulkModal === 'printRun' ? 'Set Print Run for All Cards' : 'Set Color for All Cards'}
+              </h3>
+              <button className="modal-close-btn" onClick={() => setShowBulkModal(false)}>
+                <Icon name="x" size={20} />
+              </button>
+            </div>
+            <div className="bulk-edit-content">
+              {showBulkModal === 'printRun' ? (
+                <>
+                  <label htmlFor="bulk-print-run">Print Run:</label>
+                  <input
+                    id="bulk-print-run"
+                    type="number"
+                    className="bulk-input"
+                    value={bulkPrintRun}
+                    onChange={(e) => setBulkPrintRun(e.target.value)}
+                    placeholder="Enter print run (leave empty for none)"
+                    min="1"
+                    autoFocus
+                  />
+                  <p className="bulk-help-text">
+                    This will apply the same print run to all {cards.length} cards in this import.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <label htmlFor="bulk-color">Color:</label>
+                  <select
+                    id="bulk-color"
+                    className="bulk-select"
+                    value={bulkColorId}
+                    onChange={(e) => setBulkColorId(e.target.value)}
+                    autoFocus
+                  >
+                    <option value="">— No Color —</option>
+                    {colors.map(color => (
+                      <option key={color.color_id} value={color.color_id}>
+                        {color.name}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="bulk-help-text">
+                    This will apply the same color to all {cards.length} cards in this import.
+                  </p>
+                </>
+              )}
+            </div>
+            <div className="bulk-edit-actions">
+              <button className="bulk-cancel-btn" onClick={() => setShowBulkModal(false)}>
+                Cancel
+              </button>
+              <button
+                className="bulk-apply-btn"
+                onClick={showBulkModal === 'printRun' ? handleBulkPrintRunApply : handleBulkColorApply}
+              >
+                Apply to All Cards
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Rest of component */}
       {/* Table Controls */}
       {showSearch && (
         <div className="import-table-controls">
@@ -885,12 +1030,30 @@ const ImportTable = ({
                 </div>
               </th>
               <th className="relic-header">
-                <div 
+                <div
                   className="import-table-header-content clickable-header"
                   onClick={handleToggleAllRelic}
                   title="Click to toggle all RELIC"
                 >
                   RELIC
+                </div>
+              </th>
+              <th className="print-run-header">
+                <div
+                  className="import-table-header-content clickable-header"
+                  onClick={() => setShowBulkModal('printRun')}
+                  title="Click to set print run for all cards"
+                >
+                  PRINT RUN
+                </div>
+              </th>
+              <th className="color-header">
+                <div
+                  className="import-table-header-content clickable-header"
+                  onClick={() => setShowBulkModal('color')}
+                  title="Click to set color for all cards"
+                >
+                  COLOR
                 </div>
               </th>
               <th className="player-team-combo-header">
@@ -1123,12 +1286,36 @@ const ImportTable = ({
                       </button>
                     </td>
                     <td className="relic-cell">
-                      <button 
+                      <button
                         className={`import-relic-toggle ${card.isRelic ? 'active' : ''}`}
                         onClick={() => handleRelicToggle(card.sortOrder)}
                       >
                         {card.isRelic ? 'RELIC' : '—'}
                       </button>
+                    </td>
+                    <td className="print-run-cell">
+                      <input
+                        type="number"
+                        className="import-print-run-input"
+                        value={card.printRun || ''}
+                        onChange={(e) => handlePrintRunChange(card.sortOrder, e.target.value)}
+                        placeholder="—"
+                        min="1"
+                      />
+                    </td>
+                    <td className="color-cell">
+                      <select
+                        className="import-color-select"
+                        value={card.colorId || ''}
+                        onChange={(e) => handleColorChange(card.sortOrder, e.target.value)}
+                      >
+                        <option value="">—</option>
+                        {colors.map(color => (
+                          <option key={color.color_id} value={color.color_id}>
+                            {color.name}
+                          </option>
+                        ))}
+                      </select>
                     </td>
                     <td className="player-team-combo-cell">
                       <div className="player-team-combos">
@@ -1300,7 +1487,7 @@ const ImportTable = ({
                   {/* Expanded Details Row */}
                   {isExpanded && (
                     <tr className="import-details-row">
-                      <td colSpan="9" className="import-details-cell">
+                      <td colSpan="11" className="import-details-cell">
                         <div className="import-details-content">
                           {(card.players || []).map((player, playerIndex) => (
                             <div key={playerIndex} className="import-player-details">
