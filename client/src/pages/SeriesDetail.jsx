@@ -498,7 +498,7 @@ function SeriesDetail() {
             onPlayerClick={(player) => {
               const playerName = `${player.first_name} ${player.last_name}`
               const playerSlug = generateSlug(playerName)
-              navigate(`/player/${playerSlug}`)
+              navigate(`/players/${playerSlug}`)
             }}
             bulkSelectionMode={bulkSelectionMode}
             selectedCards={selectedCards}
