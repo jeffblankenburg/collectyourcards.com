@@ -51,6 +51,7 @@ function AdminSeries() {
   })
   const [colorDropdownOpen, setColorDropdownOpen] = useState(false)
   const [colorSearchTerm, setColorSearchTerm] = useState('')
+  const [highlightedColorIndex, setHighlightedColorIndex] = useState(-1)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [deletingSeries, setDeletingSeries] = useState(null)
   const [deleting, setDeleting] = useState(false)
@@ -398,6 +399,9 @@ function AdminSeries() {
       color_id: '',
       print_run: ''
     })
+    setColorSearchTerm('') // Reset color search term
+    setHighlightedColorIndex(-1) // Reset highlighted index
+    setColorDropdownOpen(false) // Ensure dropdown is closed
     setShowDuplicateModal(true)
   }, [])
 
@@ -421,6 +425,8 @@ function AdminSeries() {
         setShowDuplicateModal(false)
         setDuplicatingSeries(null)
         setDuplicateForm({ name: '', color_id: '', print_run: '' })
+        setColorSearchTerm('') // Reset color search term
+        setColorDropdownOpen(false) // Close dropdown
         loadSeries(searchTerm)
       } else {
         addToast(response.data.message || 'Failed to duplicate series', 'error')
@@ -1087,33 +1093,75 @@ function AdminSeries() {
                         onChange={(e) => {
                           setColorSearchTerm(e.target.value)
                           setColorDropdownOpen(true)
+                          setHighlightedColorIndex(-1) // Reset highlight when searching
                         }}
-                        onFocus={() => setColorDropdownOpen(true)}
+                        onFocus={() => {
+                          setColorDropdownOpen(true)
+                          setHighlightedColorIndex(-1)
+                        }}
                         onBlur={(e) => {
-                          // Only close if clicking outside the dropdown menu
+                          // Only close if clicking outside the dropdown menu or if Tab key was pressed
                           setTimeout(() => {
                             if (!e.relatedTarget?.closest('.color-dropdown-menu')) {
                               setColorDropdownOpen(false)
+                              setHighlightedColorIndex(-1)
                             }
                           }, 150)
                         }}
                         onKeyDown={(e) => {
+                          const filteredColors = availableColors.filter(color =>
+                            color.name.toLowerCase().includes(colorSearchTerm.toLowerCase())
+                          )
+
                           if (e.key === 'Escape') {
                             setColorDropdownOpen(false)
                             setColorSearchTerm('')
+                            setHighlightedColorIndex(-1)
+                          } else if (e.key === 'Tab') {
+                            // Close dropdown on Tab key
+                            setColorDropdownOpen(false)
+                            setHighlightedColorIndex(-1)
+                            // Allow default Tab behavior to move to next field
+                          } else if (e.key === 'ArrowDown') {
+                            e.preventDefault()
+                            if (!colorDropdownOpen) {
+                              setColorDropdownOpen(true)
+                              setHighlightedColorIndex(0)
+                            } else {
+                              setHighlightedColorIndex(prev =>
+                                prev < filteredColors.length ? prev + 1 : prev
+                              )
+                            }
+                          } else if (e.key === 'ArrowUp') {
+                            e.preventDefault()
+                            setHighlightedColorIndex(prev => prev > -1 ? prev - 1 : -1)
                           } else if (e.key === 'Enter') {
                             e.preventDefault()
-                            const filteredColors = availableColors.filter(color => 
-                              color.name.toLowerCase().includes(colorSearchTerm.toLowerCase())
-                            )
-                            if (filteredColors.length === 1) {
+
+                            // If an item is highlighted, select it
+                            if (highlightedColorIndex === -1) {
+                              // "No Color" option
+                              setDuplicateForm({...duplicateForm, color_id: ''})
+                              setColorSearchTerm('')
+                              setColorDropdownOpen(false)
+                              setHighlightedColorIndex(-1)
+                            } else if (highlightedColorIndex >= 0 && highlightedColorIndex < filteredColors.length) {
+                              const selectedColor = filteredColors[highlightedColorIndex]
+                              setDuplicateForm({...duplicateForm, color_id: selectedColor.color_id})
+                              setColorSearchTerm(selectedColor.name)
+                              setColorDropdownOpen(false)
+                              setHighlightedColorIndex(-1)
+                            } else if (filteredColors.length === 1) {
+                              // Only one match, select it
                               setDuplicateForm({...duplicateForm, color_id: filteredColors[0].color_id})
                               setColorSearchTerm(filteredColors[0].name)
                               setColorDropdownOpen(false)
+                              setHighlightedColorIndex(-1)
                             } else if (colorSearchTerm === '' || colorSearchTerm.toLowerCase() === 'no color') {
                               setDuplicateForm({...duplicateForm, color_id: ''})
                               setColorSearchTerm('')
                               setColorDropdownOpen(false)
+                              setHighlightedColorIndex(-1)
                             }
                           }
                         }}
@@ -1131,32 +1179,36 @@ function AdminSeries() {
                     
                     {colorDropdownOpen && (
                       <div className="color-dropdown-menu">
-                        <div 
-                          className="color-dropdown-item"
+                        <div
+                          className={`color-dropdown-item ${highlightedColorIndex === -1 ? 'highlighted' : ''}`}
                           onMouseDown={() => {
                             setDuplicateForm({...duplicateForm, color_id: ''})
                             setColorSearchTerm('')
                             setColorDropdownOpen(false)
+                            setHighlightedColorIndex(-1)
                           }}
+                          onMouseEnter={() => setHighlightedColorIndex(-1)}
                         >
                           <div className="color-dot no-color" />
                           <span>No Color</span>
                         </div>
                         {availableColors
-                          .filter(color => 
+                          .filter(color =>
                             color.name.toLowerCase().includes(colorSearchTerm.toLowerCase())
                           )
-                          .map(color => (
-                          <div 
+                          .map((color, index) => (
+                          <div
                             key={color.color_id}
-                            className="color-dropdown-item"
+                            className={`color-dropdown-item ${highlightedColorIndex === index ? 'highlighted' : ''}`}
                             onMouseDown={() => {
                               setDuplicateForm({...duplicateForm, color_id: color.color_id})
                               setColorSearchTerm(color.name)
                               setColorDropdownOpen(false)
+                              setHighlightedColorIndex(-1)
                             }}
+                            onMouseEnter={() => setHighlightedColorIndex(index)}
                           >
-                            <div 
+                            <div
                               className="color-dot"
                               style={{ backgroundColor: color.hex_value || '#ec4899' }}
                             />

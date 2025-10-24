@@ -792,7 +792,8 @@
   border-bottom: none;
 }
 
-.admin-series-page .color-dropdown-item:hover {
+.admin-series-page .color-dropdown-item:hover,
+.admin-series-page .color-dropdown-item.highlighted {
   background: rgba(255, 255, 255, 0.1);
 }
 
