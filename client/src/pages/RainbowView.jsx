@@ -49,26 +49,31 @@ function RainbowView() {
         const setsResponse = await axios.get('/api/sets-list')
         const allSets = setsResponse.data.sets || []
 
-        const generateSlugLocal = (name) => {
-          return name
-            .toLowerCase()
-            .replace(/[^a-z0-9]+/g, '-')
-            .replace(/^-|-$/g, '')
-        }
+        console.log('🔍 Looking for set with year:', year, 'and slug:', setSlug)
+        console.log('📚 Total sets available:', allSets.length)
 
         const foundSet = allSets.find(set => {
           const setYear = set.year || parseInt(set.name.split(' ')[0])
-          const slug = generateSlugLocal(set.name)
+          const slug = generateSlug(set.name)  // Use the imported generateSlug function
+
+          if (setYear === parseInt(year)) {
+            console.log(`  📖 Checking set: "${set.name}" (year: ${setYear}, slug: "${slug}", set_id: ${set.set_id})`)
+          }
+
           return setYear === parseInt(year) && slug === setSlug
         })
 
         if (foundSet) {
           targetSetId = foundSet.set_id
+          console.log('✅ Found matching set:', foundSet.name, 'with set_id:', targetSetId)
+        } else {
+          console.warn('❌ No matching set found for year:', year, 'slug:', setSlug)
         }
       }
 
       // Fetch the card - if we have targetSetId, we'll validate it matches
       const cardApiPath = `/api/card/${seriesSlug}/${cardNumber}/${playerName}`
+      console.log('🎴 Fetching card from:', cardApiPath)
       const cardResponse = await axios.get(cardApiPath)
 
       if (!cardResponse.data.success) {
@@ -77,10 +82,12 @@ function RainbowView() {
       }
 
       const card = cardResponse.data.card
+      console.log('🎴 Card fetched - set_id:', card.set_id, 'set_name:', card.set_name)
 
       // If we determined a target set, verify the card is from that set
       if (targetSetId && card.set_id !== targetSetId) {
-        setError(`Card #${cardNumber} not found in the specified set`)
+        console.error('❌ Set mismatch! Expected set_id:', targetSetId, 'but card has set_id:', card.set_id)
+        setError(`Card #${cardNumber} not found in the specified set. Expected set_id ${targetSetId} but card has set_id ${card.set_id}`)
         return
       }
 
