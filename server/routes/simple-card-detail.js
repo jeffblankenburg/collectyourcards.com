@@ -18,6 +18,7 @@ function normalizePlayerName(name) {
 }
 
 // GET /api/card/:seriesSlug/:cardNumber/:playerName - Get card details using simplified URL
+// Optional query param: set_id - when provided, only match cards from that specific set
 router.get('/:seriesSlug/:cardNumber/:playerName', async (req, res) => {
   if (!databaseAvailable) {
     return res.status(503).json({
@@ -28,26 +29,30 @@ router.get('/:seriesSlug/:cardNumber/:playerName', async (req, res) => {
 
   try {
     const { seriesSlug, cardNumber, playerName } = req.params
-    
+    const { set_id } = req.query  // Optional set_id for disambiguation
+
     // Normalize the card number (uppercase, handle common variations)
     const normalizedCardNumber = cardNumber.toUpperCase()
-    
+
     // Normalize player name for searching
     // Handle both single players and multiple players (with or without commas in the URL)
     const normalizedPlayerName = normalizePlayerName(playerName.replace(/-/g, ' '))
-    
+
     // Split the player name into individual names for flexible matching
     // This allows matching cards with multiple players even if only one name is provided
     const playerNameParts = normalizedPlayerName.split(/\s+/).filter(part => part.length > 2) // Filter out short words like "jr"
-    
+
     // Generate series name from slug for exact matching
     // Convert slug to expected series name by replacing dashes with spaces, then remove spaces entirely for comparison
     const seriesNameFromSlug = seriesSlug
       .replace(/-/g, '')
       .toLowerCase()
 
-    console.log(`Searching for card: ${normalizedCardNumber}, player: ${normalizedPlayerName}, series: ${seriesNameFromSlug}`)
-    
+    console.log(`Searching for card: ${normalizedCardNumber}, player: ${normalizedPlayerName}, series: ${seriesNameFromSlug}${set_id ? `, set_id: ${set_id}` : ''}`)
+
+    // Build set filter clause
+    const setFilter = set_id ? `AND st.set_id = ${parseInt(set_id)}` : ''
+
     // Search for the card using comprehensive query with player name matching
     const results = await prisma.$queryRawUnsafe(`
       SELECT TOP 1
@@ -79,12 +84,13 @@ router.get('/:seriesSlug/:cardNumber/:playerName', async (req, res) => {
       LEFT JOIN team t ON pt.team = t.team_id
       WHERE c.card_number = '${normalizedCardNumber}'
         AND REPLACE(REPLACE(REPLACE(REPLACE(LOWER(s.name), '/', ''), ' & ', ''), '-', ''), ' ', '') = '${seriesNameFromSlug.replace(/'/g, "''")}'
+        ${setFilter}
       GROUP BY c.card_id, c.card_number, c.is_rookie, c.is_autograph, c.is_relic, c.print_run,
                s.series_id, s.name, st.set_id, st.name, st.year, m.name, s.parallel_of_series, col.name, col.hex_value
-      HAVING ${playerNameParts.length > 0 ? 
-        playerNameParts.map(part => 
+      HAVING ${playerNameParts.length > 0 ?
+        playerNameParts.map(part =>
           `STRING_AGG(LOWER(CONCAT(p.first_name, ' ', p.last_name)), ', ') LIKE '%${part.replace(/'/g, "''")}%'`
-        ).join(' AND ') 
+        ).join(' AND ')
         : '1=1'}
     `)
     
@@ -121,15 +127,16 @@ router.get('/:seriesSlug/:cardNumber/:playerName', async (req, res) => {
         LEFT JOIN team t ON pt.team = t.team_id
         WHERE (c.card_number LIKE '%${normalizedCardNumber}%' OR '${normalizedCardNumber}' LIKE '%' + c.card_number + '%')
           AND REPLACE(REPLACE(REPLACE(REPLACE(LOWER(s.name), '/', ''), ' & ', ''), '-', ''), ' ', '') LIKE '${seriesNameFromSlug.replace(/'/g, "''")}%'
+          ${setFilter}
         GROUP BY c.card_id, c.card_number, c.is_rookie, c.is_autograph, c.is_relic, c.print_run,
                  s.series_id, s.name, st.set_id, st.name, st.year, m.name, s.parallel_of_series, col.name, col.hex_value
-        HAVING ${playerNameParts.length > 0 ? 
-        playerNameParts.map(part => 
+        HAVING ${playerNameParts.length > 0 ?
+        playerNameParts.map(part =>
           `STRING_AGG(LOWER(CONCAT(p.first_name, ' ', p.last_name)), ', ') LIKE '%${part.replace(/'/g, "''")}%'`
-        ).join(' AND ') 
+        ).join(' AND ')
         : '1=1'}
-        ORDER BY 
-          CASE 
+        ORDER BY
+          CASE
             WHEN c.card_number = '${normalizedCardNumber}' THEN 1
             WHEN c.card_number LIKE '${normalizedCardNumber}%' THEN 2
             ELSE 3

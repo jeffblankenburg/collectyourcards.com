@@ -7,13 +7,18 @@ import CardTable from '../components/tables/CardTable'
 import AddCardModal from '../components/modals/AddCardModal'
 import { useToast } from '../contexts/ToastContext'
 import { generateSlug } from '../utils/slugs'
+import { createLogger } from '../utils/logger'
 import './CardDetailScoped.css'
+
+const log = createLogger('RainbowView')
 
 function RainbowView() {
   const { year, setSlug, seriesSlug, cardNumber, playerName } = useParams()
   const navigate = useNavigate()
   const { isAuthenticated } = useAuth()
   const { success, error: showError } = useToast()
+
+  log.info('RainbowView mounted', { year, setSlug, seriesSlug, cardNumber, playerName })
 
   const [rainbowCards, setRainbowCards] = useState([])
   const [loading, setLoading] = useState(true)
@@ -37,74 +42,133 @@ function RainbowView() {
   }, [cardInfo, loading])
 
   const fetchRainbowCards = async () => {
+    const startTime = performance.now()
+
     try {
       setLoading(true)
       setError(null)
+      log.info('Starting rainbow card fetch', { seriesSlug, cardNumber, playerName })
 
       // First, get the correct set_id using year and setSlug
       let targetSetId = null
 
       if (year && setSlug) {
-        // Get all sets and find the one matching year/setSlug
+        log.debug('Fetching sets list for set validation', { year, setSlug })
         const setsResponse = await axios.get('/api/sets-list')
         const allSets = setsResponse.data.sets || []
 
-        console.log('🔍 Looking for set with year:', year, 'and slug:', setSlug)
-        console.log('📚 Total sets available:', allSets.length)
+        log.debug('Sets list received', { totalSets: allSets.length })
+
+        // Log all 2022 sets for debugging
+        const matchingYearSets = allSets.filter(set => {
+          const setYear = set.year || parseInt(set.name.split(' ')[0])
+          return setYear === parseInt(year)
+        })
+
+        log.group(`Found ${matchingYearSets.length} sets for year ${year}`, () => {
+          matchingYearSets.forEach(set => {
+            const slug = generateSlug(set.name)
+            log.debug(`  "${set.name}"`, {
+              set_id: set.set_id,
+              year: set.year,
+              slug: slug,
+              matches: slug === setSlug
+            })
+          })
+        })
 
         const foundSet = allSets.find(set => {
           const setYear = set.year || parseInt(set.name.split(' ')[0])
-          const slug = generateSlug(set.name)  // Use the imported generateSlug function
-
-          if (setYear === parseInt(year)) {
-            console.log(`  📖 Checking set: "${set.name}" (year: ${setYear}, slug: "${slug}", set_id: ${set.set_id})`)
-          }
-
+          const slug = generateSlug(set.name)
           return setYear === parseInt(year) && slug === setSlug
         })
 
         if (foundSet) {
           targetSetId = foundSet.set_id
-          console.log('✅ Found matching set:', foundSet.name, 'with set_id:', targetSetId)
+          log.success(`Found matching set: "${foundSet.name}"`, {
+            set_id: targetSetId,
+            slug: generateSlug(foundSet.name)
+          })
         } else {
-          console.warn('❌ No matching set found for year:', year, 'slug:', setSlug)
+          log.warn('No matching set found', {
+            year,
+            setSlug,
+            availableSlugs: matchingYearSets.map(s => generateSlug(s.name))
+          })
         }
+      } else {
+        log.debug('No year/setSlug provided, skipping set validation')
       }
 
-      // Fetch the card - if we have targetSetId, we'll validate it matches
+      // Fetch the card - pass set_id if we have it for disambiguation
       const cardApiPath = `/api/card/${seriesSlug}/${cardNumber}/${playerName}`
-      console.log('🎴 Fetching card from:', cardApiPath)
-      const cardResponse = await axios.get(cardApiPath)
+      const apiParams = targetSetId ? { set_id: targetSetId } : {}
+      log.debug('Fetching card', { path: cardApiPath, params: apiParams })
+
+      const cardFetchStart = performance.now()
+      const cardResponse = await axios.get(cardApiPath, { params: apiParams })
+      log.performance('Card fetch', cardFetchStart)
 
       if (!cardResponse.data.success) {
+        log.error('Card not found in API response')
         setError('Card not found')
         return
       }
 
       const card = cardResponse.data.card
-      console.log('🎴 Card fetched - set_id:', card.set_id, 'set_name:', card.set_name)
+      log.info('Card fetched successfully', {
+        card_id: card.card_id,
+        card_number: card.card_number,
+        set_id: card.set_id,
+        set_name: card.set_name,
+        series_name: card.series_name
+      })
 
-      // If we determined a target set, verify the card is from that set
+      // Verify the card is from the expected set (should match since we passed set_id to API)
       if (targetSetId && card.set_id !== targetSetId) {
-        console.error('❌ Set mismatch! Expected set_id:', targetSetId, 'but card has set_id:', card.set_id)
-        setError(`Card #${cardNumber} not found in the specified set. Expected set_id ${targetSetId} but card has set_id ${card.set_id}`)
+        log.error('Set validation failed - API returned card from wrong set', {
+          expectedSetId: targetSetId,
+          actualSetId: card.set_id,
+          cardSetName: card.set_name,
+          urlYear: year,
+          urlSetSlug: setSlug
+        })
+        setError(`Card #${cardNumber} not found in the specified set`)
         return
       }
 
+      if (targetSetId) {
+        log.success('Set validation passed - card is from correct set')
+      }
       setCardInfo(card)
 
       // Now fetch all rainbow cards (parallels with same card number in the set)
+      log.debug('Fetching rainbow parallels', {
+        set_id: card.set_id,
+        card_number: card.card_number
+      })
+
+      const rainbowFetchStart = performance.now()
       const rainbowResponse = await axios.get(`/api/cards/rainbow`, {
         params: {
           set_id: card.set_id,
           card_number: card.card_number
         }
       })
+      log.performance('Rainbow fetch', rainbowFetchStart)
 
-      setRainbowCards(rainbowResponse.data.cards || [])
+      const rainbowCards = rainbowResponse.data.cards || []
+      log.success(`Loaded ${rainbowCards.length} rainbow parallels`)
+
+      setRainbowCards(rainbowCards)
+      log.performance('Complete rainbow view load', startTime)
 
     } catch (err) {
-      console.error('Error fetching rainbow cards:', err)
+      log.error('Failed to fetch rainbow cards', {
+        error: err.message,
+        response: err.response?.data,
+        status: err.response?.status
+      })
       setError(err.response?.data?.message || 'Failed to load rainbow view')
     } finally {
       setLoading(false)
