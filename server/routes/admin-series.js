@@ -118,6 +118,7 @@ router.get('/series', async (req, res) => {
           min_print_run: s.min_print_run,
           max_print_run: s.max_print_run,
           print_run_display: s.print_run_display,
+          production_code: s.production_code,
           front_image_path: s.front_image_path,
           back_image_path: s.back_image_path,
           created: s.created
@@ -177,6 +178,7 @@ router.put('/series/:id', async (req, res) => {
       min_print_run,
       max_print_run,
       print_run_display,
+      production_code,
       rookie_count
     } = req.body
 
@@ -204,6 +206,7 @@ router.put('/series/:id', async (req, res) => {
         min_print_run: true,
         max_print_run: true,
         print_run_display: true,
+        production_code: true,
         rookie_count: true
       }
     })
@@ -225,6 +228,7 @@ router.put('/series/:id', async (req, res) => {
       min_print_run: min_print_run !== undefined ? (min_print_run ? parseInt(min_print_run) : null) : existingSeries.min_print_run,
       max_print_run: max_print_run !== undefined ? (max_print_run ? parseInt(max_print_run) : null) : existingSeries.max_print_run,
       print_run_display: print_run_display?.trim() || null,
+      production_code: production_code !== undefined ? (production_code?.trim() || null) : existingSeries.production_code,
       rookie_count: rookie_count !== undefined ? parseInt(rookie_count) : existingSeries.rookie_count
     }
     
@@ -250,6 +254,7 @@ router.put('/series/:id', async (req, res) => {
       min_print_run: existingSeries.min_print_run,
       max_print_run: existingSeries.max_print_run,
       print_run_display: existingSeries.print_run_display,
+      production_code: existingSeries.production_code,
       rookie_count: existingSeries.rookie_count
     })
 
@@ -269,6 +274,7 @@ router.put('/series/:id', async (req, res) => {
         min_print_run: true,
         max_print_run: true,
         print_run_display: true,
+        production_code: true,
         rookie_count: true
       }
     })
