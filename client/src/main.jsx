@@ -83,7 +83,7 @@ createRoot(document.getElementById('root')).render(
               <Route path="/series/:seriesSlug" element={<SeriesDetail />} />
               
               {/* CardDetail routes */}
-              <Route path="/sets/:year/:setSlug/:seriesSlug/:cardSlug" element={<CardDetail />} />
+              <Route path="/sets/:year/:setSlug/:seriesSlug/:cardNumber/:playerName" element={<CardDetail />} />
               <Route path="/card/:seriesSlug/:cardNumber/:playerName" element={<CardDetail />} />
 
               {/* RainbowView route - shows all parallel cards with same card number */}

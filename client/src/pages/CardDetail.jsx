@@ -13,29 +13,20 @@ import SocialShareButton from '../components/SocialShareButton'
 import './CardDetailScoped.css'
 
 function CardDetail() {
-  // Handle both URL formats: 
-  // 1. Complex: /sets/:year/:setSlug/:seriesSlug/:cardSlug
+  // Handle both URL formats:
+  // 1. Canonical: /sets/:year/:setSlug/:seriesSlug/:cardNumber/:playerName
   // 2. Simple: /card/:seriesSlug/:cardNumber/:playerName
   const params = useParams()
   const navigate = useNavigate()
   const { isAuthenticated, user } = useAuth()
   const { success, error: showError } = useToast()
-  
-  // Extract parameters - check if we have the simple URL structure
-  let year, setSlug, seriesSlug, cardSlug, cardNumber, playerName
-  
-  if (params.cardNumber && params.playerName && !params.year) {
-    // Simple URL format: /card/:seriesSlug/:cardNumber/:playerName
-    seriesSlug = params.seriesSlug
-    cardNumber = params.cardNumber
-    playerName = params.playerName
-  } else {
-    // Complex URL format: /sets/:year/:setSlug/:seriesSlug/:cardSlug
-    year = params.year
-    setSlug = params.setSlug
-    seriesSlug = params.seriesSlug
-    cardSlug = params.cardSlug
-  }
+
+  // Extract parameters
+  const year = params.year
+  const setSlug = params.setSlug
+  const seriesSlug = params.seriesSlug
+  const cardNumber = params.cardNumber
+  const playerName = params.playerName
   
   const [card, setCard] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -52,9 +43,9 @@ function CardDetail() {
   const [parallelSeries, setParallelSeries] = useState([])
   const [showParallels, setShowParallels] = useState(false)
   const parallelsRef = useRef(null)
-  
-  // Determine which URL format we're using
-  const isSimpleUrl = !!(cardNumber && playerName)
+
+  // Determine which URL format we're using based on presence of year/setSlug
+  const isSimpleUrl = !year || !setSlug
   
   // Check if user is admin
   const isAdmin = user && ['admin', 'superadmin', 'data_admin'].includes(user.role)
@@ -75,7 +66,7 @@ function CardDetail() {
 
   useEffect(() => {
     fetchCardDetails()
-  }, [year, setSlug, seriesSlug, cardSlug, cardNumber, playerName])
+  }, [year, setSlug, seriesSlug, cardNumber, playerName])
 
   // Set page title when card loads
   useEffect(() => {
@@ -121,16 +112,9 @@ function CardDetail() {
     try {
       setLoading(true)
       setError(null)
-      
-      let response
-      
-      if (isSimpleUrl) {
-        // Use simple URL format API endpoint with series
-        response = await axios.get(`/api/card/${seriesSlug}/${cardNumber}/${playerName}`)
-      } else {
-        // Use complex URL format API endpoint
-        response = await axios.get(`/api/card-detail/${year}/${setSlug}/${seriesSlug}/${cardSlug}`)
-      }
+
+      // Always use simple API endpoint - both URL formats have the same card data
+      const response = await axios.get(`/api/card/${seriesSlug}/${cardNumber}/${playerName}`)
       
       if (response.data.success) {
         setCard(response.data.card)

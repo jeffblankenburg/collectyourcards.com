@@ -274,10 +274,15 @@ function SeriesDetail() {
       `${cpt.player?.first_name || ''} ${cpt.player?.last_name || ''}`.trim()
     ).filter(name => name).join(', ') || 'unknown'
 
-    // Use simple URL format for navigation with series
     const playerSlug = generateSlug(playerNames)
 
-    navigate(`/card/${seriesSlug}/${card.card_number}/${playerSlug}`)
+    // Use canonical URL with year/setSlug when available
+    if (year && setSlug) {
+      navigate(`/sets/${year}/${setSlug}/${seriesSlug}/${card.card_number}/${playerSlug}`)
+    } else {
+      // Fallback to simple route
+      navigate(`/card/${seriesSlug}/${card.card_number}/${playerSlug}`)
+    }
   }
 
   if (loading) {
