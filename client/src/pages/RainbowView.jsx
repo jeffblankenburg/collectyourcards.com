@@ -41,9 +41,34 @@ function RainbowView() {
       setLoading(true)
       setError(null)
 
-      // API always uses the simple path - year/setSlug are only for frontend routing
-      const cardApiPath = `/api/card/${seriesSlug}/${cardNumber}/${playerName}`
+      // First, get the correct set_id using year and setSlug
+      let targetSetId = null
 
+      if (year && setSlug) {
+        // Get all sets and find the one matching year/setSlug
+        const setsResponse = await axios.get('/api/sets-list')
+        const allSets = setsResponse.data.sets || []
+
+        const generateSlugLocal = (name) => {
+          return name
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-|-$/g, '')
+        }
+
+        const foundSet = allSets.find(set => {
+          const setYear = set.year || parseInt(set.name.split(' ')[0])
+          const slug = generateSlugLocal(set.name)
+          return setYear === parseInt(year) && slug === setSlug
+        })
+
+        if (foundSet) {
+          targetSetId = foundSet.set_id
+        }
+      }
+
+      // Fetch the card - if we have targetSetId, we'll validate it matches
+      const cardApiPath = `/api/card/${seriesSlug}/${cardNumber}/${playerName}`
       const cardResponse = await axios.get(cardApiPath)
 
       if (!cardResponse.data.success) {
@@ -52,6 +77,13 @@ function RainbowView() {
       }
 
       const card = cardResponse.data.card
+
+      // If we determined a target set, verify the card is from that set
+      if (targetSetId && card.set_id !== targetSetId) {
+        setError(`Card #${cardNumber} not found in the specified set`)
+        return
+      }
+
       setCardInfo(card)
 
       // Now fetch all rainbow cards (parallels with same card number in the set)
