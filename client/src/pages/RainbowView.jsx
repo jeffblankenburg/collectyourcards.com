@@ -41,14 +41,8 @@ function RainbowView() {
       setLoading(true)
       setError(null)
 
-      // Build the card detail API path - use year/setSlug if available
-      let cardApiPath
-      if (year && setSlug) {
-        cardApiPath = `/api/card/${year}/${setSlug}/${seriesSlug}/${cardNumber}/${playerName}`
-      } else {
-        // Fallback to simple path (shouldn't happen with new URL structure)
-        cardApiPath = `/api/card/${seriesSlug}/${cardNumber}/${playerName}`
-      }
+      // API always uses the simple path - year/setSlug are only for frontend routing
+      const cardApiPath = `/api/card/${seriesSlug}/${cardNumber}/${playerName}`
 
       const cardResponse = await axios.get(cardApiPath)
 
@@ -96,12 +90,9 @@ function RainbowView() {
     const clickedSeriesSlug = generateSlug(card.series_rel?.name || '')
     const playerSlug = generateSlug(playerNames)
 
-    // Use year/setSlug if available for proper routing
-    if (year && setSlug) {
-      navigate(`/sets/${year}/${setSlug}/${clickedSeriesSlug}`)
-    } else {
-      navigate(`/card/${clickedSeriesSlug}/${card.card_number}/${playerSlug}`)
-    }
+    // Navigate to the specific card detail page
+    // Always use the simple /card/ route - CardDetail will handle canonical URL internally
+    navigate(`/card/${clickedSeriesSlug}/${card.card_number}/${playerSlug}`)
   }
 
   const handleAddCard = (card) => {
