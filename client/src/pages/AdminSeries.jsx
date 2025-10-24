@@ -307,6 +307,12 @@ function AdminSeries() {
     }
   }, [])
 
+  // Load sets and colors on mount so they're always available for dropdowns
+  useEffect(() => {
+    loadSets()
+    loadColors()
+  }, [loadSets, loadColors])
+
   const loadSeriesForSet = useCallback(async (setId) => {
     if (!setId) {
       setSeriesForSet([])
@@ -328,8 +334,6 @@ function AdminSeries() {
     setEditingSeries(seriesItem)
     const setId = seriesItem.set_id ? Number(seriesItem.set_id) : ''
 
-    // Load sets and series for dropdowns BEFORE setting form and showing modal
-    await loadSets()
     // Load series for the current set if one is selected
     if (seriesItem.set_id) {
       await loadSeriesForSet(seriesItem.set_id)
@@ -350,12 +354,10 @@ function AdminSeries() {
     })
 
     setShowEditModal(true)
-  }, [loadSets, loadSeriesForSet])
+  }, [loadSeriesForSet])
 
   // Memoized add modal handler
   const handleShowAddModal = useCallback(async () => {
-    // Load sets for dropdown
-    await loadSets()
     setSeriesForSet([]) // Clear series until set is selected
 
     // Prepopulate name field with set name + trailing space if we're on a set page
@@ -386,19 +388,18 @@ function AdminSeries() {
     }
 
     setShowAddModal(true)
-  }, [loadSets, setInfo, setId, loadSeriesForSet])
+  }, [setInfo, setId, loadSeriesForSet])
 
   // Memoized duplicate modal handler
-  const handleShowDuplicateModal = useCallback(async (seriesItem) => {
+  const handleShowDuplicateModal = useCallback((seriesItem) => {
     setDuplicatingSeries(seriesItem)
     setDuplicateForm({
       name: seriesItem.name + ' 2',
       color_id: '',
       print_run: ''
     })
-    await loadColors()
     setShowDuplicateModal(true)
-  }, [loadColors])
+  }, [])
 
   const handleDuplicateSeries = async () => {
     if (!duplicatingSeries || !duplicateForm.name.trim()) {

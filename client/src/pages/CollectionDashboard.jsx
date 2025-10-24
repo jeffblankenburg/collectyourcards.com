@@ -18,17 +18,6 @@ function CollectionDashboard() {
 
   log.info('CollectionDashboard mounted', { isAuthenticated, userId: user?.user_id })
   
-  const [dashboardStats, setDashboardStats] = useState({
-    total_cards: 0,
-    total_value: 0,
-    unique_players: 0,
-    unique_series: 0,
-    rookie_cards: 0,
-    autograph_cards: 0,
-    relic_cards: 0,
-    graded_cards: 0
-  })
-  
   const [achievementStats, setAchievementStats] = useState({
     total_achievements: 0,
     total_points: 0
@@ -55,11 +44,97 @@ function CollectionDashboard() {
   const [showEditModal, setShowEditModal] = useState(false)
   const [selectedCard, setSelectedCard] = useState(null)
   const [gradingAgencies, setGradingAgencies] = useState([])
-  const [teams, setTeams] = useState([])
   const [selectedTeamIds, setSelectedTeamIds] = useState([])
-  const [teamsLoading, setTeamsLoading] = useState(false)
-  
+
   const navigate = useNavigate()
+
+  // Calculate stats from filtered cards (not from API)
+  const filteredStats = useMemo(() => {
+    log.debug('Recalculating filtered stats', { cardCount: cards.length })
+
+    const uniquePlayers = new Set()
+    const uniqueSeries = new Set()
+    let totalValue = 0
+    let rookieCount = 0
+    let autoCount = 0
+    let relicCount = 0
+    let gradedCount = 0
+
+    cards.forEach(card => {
+      // Track unique players
+      card.card_player_teams?.forEach(cpt => {
+        if (cpt.player?.player_id) {
+          uniquePlayers.add(cpt.player.player_id)
+        }
+      })
+
+      // Track unique series
+      if (card.series_rel?.series_id) {
+        uniqueSeries.add(card.series_rel.series_id)
+      }
+
+      // Calculate total value
+      if (card.current_value) {
+        totalValue += parseFloat(card.current_value)
+      }
+
+      // Count special card types
+      if (card.is_rookie) rookieCount++
+      if (card.is_autograph) autoCount++
+      if (card.is_relic) relicCount++
+      if (card.grade_value) gradedCount++
+    })
+
+    return {
+      total_cards: cards.length,
+      total_value: totalValue,
+      unique_players: uniquePlayers.size,
+      unique_series: uniqueSeries.size,
+      rookie_cards: rookieCount,
+      autograph_cards: autoCount,
+      relic_cards: relicCount,
+      graded_cards: gradedCount
+    }
+  }, [cards])
+
+  // Calculate teams from filtered cards
+  const filteredTeams = useMemo(() => {
+    log.debug('Recalculating filtered teams', { cardCount: cards.length })
+
+    const teamMap = new Map()
+
+    cards.forEach(card => {
+      card.card_player_teams?.forEach(cpt => {
+        if (cpt.team) {
+          const team = cpt.team
+          const teamId = team.team_id
+
+          if (!teamMap.has(teamId)) {
+            teamMap.set(teamId, {
+              ...team,
+              card_count: 0,
+              player_ids: new Set()
+            })
+          }
+
+          const teamData = teamMap.get(teamId)
+          teamData.card_count++
+          if (cpt.player?.first_name && cpt.player?.last_name) {
+            teamData.player_ids.add(`${cpt.player.first_name} ${cpt.player.last_name}`)
+          }
+        }
+      })
+    })
+
+    // Convert to array and add player_count
+    return Array.from(teamMap.values())
+      .map(team => ({
+        ...team,
+        player_count: team.player_ids.size,
+        player_ids: undefined // Remove the Set from the final object
+      }))
+      .sort((a, b) => b.card_count - a.card_count) // Sort by card count descending
+  }, [cards])
 
   // Memoize the API endpoint for filtered cards
   const apiEndpoint = useMemo(() => {
@@ -93,9 +168,8 @@ function CollectionDashboard() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      fetchDashboardData()
+      fetchAchievementStats() // Only fetch achievement stats from API
       fetchLocations()
-      fetchTeamsData()
       // Pre-load grading agencies for edit modal
       fetchGradingAgencies()
     }
@@ -122,30 +196,19 @@ function CollectionDashboard() {
     }
   }, [apiEndpoint, isAuthenticated, hasInitializedLocations])
 
-  const fetchDashboardData = async () => {
+  const fetchAchievementStats = async () => {
     try {
       setLoading(true)
-      
-      // Fetch collection stats
-      const response = await axios.get('/api/user/collection/stats')
-      setDashboardStats(response.data.stats || {})
-      
-      // Fetch achievement stats
-      try {
-        const achievementResponse = await axios.get('/api/user/achievements/stats')
-        if (achievementResponse.data.success) {
-          setAchievementStats({
-            total_achievements: achievementResponse.data.stats.total_achievements || 0,
-            total_points: achievementResponse.data.stats.total_points || 0
-          })
-        }
-      } catch (achievementErr) {
-        console.error('Error fetching achievement stats:', achievementErr)
-        // Continue without achievements if they fail
+      const achievementResponse = await axios.get('/api/user/achievements/stats')
+      if (achievementResponse.data.success) {
+        setAchievementStats({
+          total_achievements: achievementResponse.data.stats.total_achievements || 0,
+          total_points: achievementResponse.data.stats.total_points || 0
+        })
       }
     } catch (err) {
-      console.error('Error fetching dashboard stats:', err)
-      error('Failed to load collection statistics')
+      log.error('Failed to fetch achievement stats', err)
+      // Continue without achievements if they fail
     } finally {
       setLoading(false)
     }
@@ -166,20 +229,7 @@ function CollectionDashboard() {
       const response = await axios.get('/api/grading-agencies')
       setGradingAgencies(response.data.agencies || [])
     } catch (err) {
-      console.error('Error fetching grading agencies:', err)
-    }
-  }
-
-  const fetchTeamsData = async () => {
-    try {
-      setTeamsLoading(true)
-      const response = await axios.get('/api/user/collection/cards/teams-with-players')
-      setTeams(response.data.teams || [])
-    } catch (err) {
-      console.error('Error fetching teams data:', err)
-      error('Failed to load team data')
-    } finally {
-      setTeamsLoading(false)
+      log.error('Failed to fetch grading agencies', err)
     }
   }
 
@@ -260,16 +310,16 @@ function CollectionDashboard() {
 
   const handleDeleteCard = useCallback(async (card) => {
     // Remove confirmation dialog per CLAUDE.md rules - NO JAVASCRIPT ALERTS
+    log.info('Deleting card from collection', { user_card_id: card.user_card_id })
+
     try {
       await axios.delete(`/api/user/cards/${card.user_card_id}`)
       success(`Card ${card.card_number} removed from collection`)
-      
-      // Refresh the cards list
+
+      // Refresh the cards list (stats will auto-recalculate via useMemo)
       setCards(prev => prev.filter(c => c.user_card_id !== card.user_card_id))
-      
-      // Refresh stats
-      await fetchDashboardData()
     } catch (err) {
+      log.error('Failed to delete card', err)
       error('Failed to delete card: ' + (err.response?.data?.error || err.message))
     }
   }, [success, error])
@@ -308,13 +358,11 @@ function CollectionDashboard() {
   }
 
   const handleEditModalSave = async () => {
-    // Refresh the cards list after the modal handles the update
+    log.debug('Card updated, refreshing collection')
+    // Refresh the cards list after the modal handles the update (stats will auto-recalculate)
     const updatedCards = await axios.get(apiEndpoint)
     setCards(updatedCards.data.cards || [])
-    
-    // Refresh stats
-    await fetchDashboardData()
-    
+
     setShowEditModal(false)
     setSelectedCard(null)
   }
@@ -408,27 +456,27 @@ function CollectionDashboard() {
 
     try {
       setDeletingLocationId(locationToDelete.user_location_id)
-      
+
       // Call API to reassign and delete
       await axios.delete(`/api/user/locations/${locationToDelete.user_location_id}`, {
         data: { reassign_to: reassignLocationId }
       })
-      
+
       success(`Cards reassigned and location "${locationToDelete.location}" deleted successfully`)
-      
-      // Refresh locations and stats
+
+      // Refresh locations and cards (stats will auto-recalculate)
       await fetchLocations()
-      await fetchDashboardData()
-      
+      await fetchCards(apiEndpoint)
+
       // Remove from selected locations if it was selected
       setSelectedLocationIds(prev => prev.filter(id => id !== locationToDelete.user_location_id))
-      
+
       // Close modal and reset
       setShowReassignModal(false)
       setLocationToDelete(null)
       setReassignLocationId('')
     } catch (err) {
-      console.error('Error reassigning and deleting location:', err)
+      log.error('Failed to reassign and delete location', err)
       error('Failed to reassign cards and delete location')
     } finally {
       setDeletingLocationId(null)
@@ -474,10 +522,10 @@ function CollectionDashboard() {
               </div>
               
               {/* Team Filter Circles - Below title */}
-              {teams.length > 0 && (
+              {filteredTeams.length > 0 && (
                 <div className="collection-team-filters">
-                  <TeamFilterCircles 
-                    teams={teams}
+                  <TeamFilterCircles
+                    teams={filteredTeams}
                     selectedTeamIds={selectedTeamIds}
                     onTeamFilter={handleTeamFilter}
                     compact={true}
@@ -490,25 +538,25 @@ function CollectionDashboard() {
             <div className="stat-item">
               <Icon name="layers" size={18} />
               <div className="stat-content">
-                <span className="stat-value">{formatNumber(dashboardStats.total_cards)}</span>
+                <span className="stat-value">{formatNumber(filteredStats.total_cards)}</span>
                 <span className="stat-label">Cards</span>
               </div>
             </div>
             <div className="stat-item">
               <Icon name="value" size={18} />
               <div className="stat-content">
-                <span className="stat-value">{formatCurrency(dashboardStats.total_value)}</span>
+                <span className="stat-value">{formatCurrency(filteredStats.total_value)}</span>
                 <span className="stat-label">Value</span>
               </div>
             </div>
             <div className="stat-item">
               <Icon name="user" size={18} />
               <div className="stat-content">
-                <span className="stat-value">{formatNumber(dashboardStats.unique_players)}</span>
+                <span className="stat-value">{formatNumber(filteredStats.unique_players)}</span>
                 <span className="stat-label">Players</span>
               </div>
             </div>
-            <div 
+            <div
               className="stat-item clickable achievement-stat"
               onClick={() => navigate('/achievements')}
               title="View your achievements"
@@ -522,47 +570,47 @@ function CollectionDashboard() {
                 )}
               </div>
             </div>
-            <div 
+            <div
               className={`stat-item clickable ${activeFilters.has('autos') ? 'active' : ''}`}
               onClick={() => handleFilterToggle('autos')}
               title="Click to filter by autographed cards"
             >
               <Icon name="edit" size={18} />
               <div className="stat-content">
-                <span className="stat-value">{formatNumber(dashboardStats.autograph_cards)}</span>
+                <span className="stat-value">{formatNumber(filteredStats.autograph_cards)}</span>
                 <span className="stat-label">Autos</span>
               </div>
             </div>
-            <div 
+            <div
               className={`stat-item clickable ${activeFilters.has('relics') ? 'active' : ''}`}
               onClick={() => handleFilterToggle('relics')}
               title="Click to filter by relic cards"
             >
               <Icon name="jersey" size={18} />
               <div className="stat-content">
-                <span className="stat-value">{formatNumber(dashboardStats.relic_cards)}</span>
+                <span className="stat-value">{formatNumber(filteredStats.relic_cards)}</span>
                 <span className="stat-label">Relics</span>
               </div>
             </div>
-            <div 
+            <div
               className={`stat-item clickable ${activeFilters.has('graded') ? 'active' : ''}`}
               onClick={() => handleFilterToggle('graded')}
               title="Click to filter by graded cards"
             >
               <Icon name="graded-slab" size={18} />
               <div className="stat-content">
-                <span className="stat-value">{formatNumber(dashboardStats.graded_cards)}</span>
+                <span className="stat-value">{formatNumber(filteredStats.graded_cards)}</span>
                 <span className="stat-label">Graded</span>
               </div>
             </div>
-            <div 
+            <div
               className={`stat-item clickable ${activeFilters.has('rookies') ? 'active' : ''}`}
               onClick={() => handleFilterToggle('rookies')}
               title="Click to filter by rookie cards"
             >
               <span className="rc-tag">RC</span>
               <div className="stat-content">
-                <span className="stat-value">{formatNumber(dashboardStats.rookie_cards)}</span>
+                <span className="stat-value">{formatNumber(filteredStats.rookie_cards)}</span>
                 <span className="stat-label">Rookies</span>
               </div>
             </div>
