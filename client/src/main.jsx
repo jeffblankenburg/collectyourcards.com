@@ -87,7 +87,7 @@ createRoot(document.getElementById('root')).render(
               <Route path="/card/:seriesSlug/:cardNumber/:playerName" element={<CardDetail />} />
 
               {/* RainbowView route - shows all parallel cards with same card number */}
-              <Route path="/rainbow/:seriesSlug/:cardNumber/:playerName" element={<RainbowView />} />
+              <Route path="/rainbow/:year/:setSlug/:seriesSlug/:cardNumber/:playerName" element={<RainbowView />} />
 
               <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
               <Route path="/admin/users" element={<ProtectedRoute><AdminUsers /></ProtectedRoute>} />

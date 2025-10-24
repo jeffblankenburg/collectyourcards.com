@@ -575,7 +575,10 @@ function CardDetail() {
                           .replace(/\s+/g, '-')
                           .replace(/-+/g, '-')
                           .trim()
-                        navigate(`/rainbow/${card.series_slug}/${card.card_number}/${playerSlug}`)
+                        // Use year/setSlug if available, otherwise use card data
+                        const rainbowYear = year || card.set_year
+                        const rainbowSetSlug = setSlug || card.set_slug
+                        navigate(`/rainbow/${rainbowYear}/${rainbowSetSlug}/${card.series_slug}/${card.card_number}/${playerSlug}`)
                       }}
                       className="squircle-button rainbow-button"
                       title="View all parallels (Rainbow View)"

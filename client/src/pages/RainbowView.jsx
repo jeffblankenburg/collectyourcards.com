@@ -10,7 +10,7 @@ import { generateSlug } from '../utils/slugs'
 import './CardDetailScoped.css'
 
 function RainbowView() {
-  const { seriesSlug, cardNumber, playerName } = useParams()
+  const { year, setSlug, seriesSlug, cardNumber, playerName } = useParams()
   const navigate = useNavigate()
   const { isAuthenticated } = useAuth()
   const { success, error: showError } = useToast()
@@ -25,7 +25,7 @@ function RainbowView() {
 
   useEffect(() => {
     fetchRainbowCards()
-  }, [seriesSlug, cardNumber, playerName])
+  }, [year, setSlug, seriesSlug, cardNumber, playerName])
 
   // Set page title when data loads
   useEffect(() => {
@@ -41,8 +41,16 @@ function RainbowView() {
       setLoading(true)
       setError(null)
 
-      // First, get the card info from the simple card detail endpoint to get set_id
-      const cardResponse = await axios.get(`/api/card/${seriesSlug}/${cardNumber}/${playerName}`)
+      // Build the card detail API path - use year/setSlug if available
+      let cardApiPath
+      if (year && setSlug) {
+        cardApiPath = `/api/card/${year}/${setSlug}/${seriesSlug}/${cardNumber}/${playerName}`
+      } else {
+        // Fallback to simple path (shouldn't happen with new URL structure)
+        cardApiPath = `/api/card/${seriesSlug}/${cardNumber}/${playerName}`
+      }
+
+      const cardResponse = await axios.get(cardApiPath)
 
       if (!cardResponse.data.success) {
         setError('Card not found')
@@ -71,8 +79,12 @@ function RainbowView() {
   }
 
   const handleBackToCard = () => {
-    // Navigate back to the original card detail page
-    navigate(`/card/${seriesSlug}/${cardNumber}/${playerName}`)
+    // Navigate back to the original card detail page using year/setSlug
+    if (year && setSlug) {
+      navigate(`/sets/${year}/${setSlug}/${seriesSlug}`)
+    } else {
+      navigate(`/card/${seriesSlug}/${cardNumber}/${playerName}`)
+    }
   }
 
   const handleCardClick = (card) => {
@@ -84,7 +96,12 @@ function RainbowView() {
     const clickedSeriesSlug = generateSlug(card.series_rel?.name || '')
     const playerSlug = generateSlug(playerNames)
 
-    navigate(`/card/${clickedSeriesSlug}/${card.card_number}/${playerSlug}`)
+    // Use year/setSlug if available for proper routing
+    if (year && setSlug) {
+      navigate(`/sets/${year}/${setSlug}/${clickedSeriesSlug}`)
+    } else {
+      navigate(`/card/${clickedSeriesSlug}/${card.card_number}/${playerSlug}`)
+    }
   }
 
   const handleAddCard = (card) => {

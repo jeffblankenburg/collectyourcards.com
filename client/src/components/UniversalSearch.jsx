@@ -215,7 +215,14 @@ function UniversalSearch({ className = '' }) {
             .replace(/\s+/g, '-')
             .replace(/-+/g, '-')
             .trim()
-          navigate(`/series/${seriesSlug}`)
+
+          // Use canonical URL with year/setSlug if available
+          if (result.data?.set_year && result.data?.set_slug) {
+            navigate(`/sets/${result.data.set_year}/${result.data.set_slug}/${seriesSlug}`)
+          } else {
+            // Fallback to simple series route (will redirect to canonical)
+            navigate(`/series/${seriesSlug}`)
+          }
         } else {
           console.error('Series name missing for navigation:', result)
         }

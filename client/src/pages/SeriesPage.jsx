@@ -428,12 +428,13 @@ function SeriesPage() {
           }}
         >
           {getParallelsForSeries(openDropdownSeriesId).map(parallel => (
-            <div 
+            <div
               key={parallel.series_id}
               className="parallel-item-compact"
               onClick={(e) => {
                 e.stopPropagation()
-                navigate(`/series/${generateSlug(parallel.name)}`)
+                // Use canonical URL with year/setSlug
+                navigate(`/sets/${year}/${setSlug}/${generateSlug(parallel.name)}`)
                 setOpenDropdownSeriesId(null)
                 activeParallelsBoxRef.current = null
               }}

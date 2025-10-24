@@ -509,14 +509,23 @@ function SearchResults() {
         navigate(`/sets/${result.year}/${result.slug}`)
         break
       case 'series':
-        navigate(`/series/${result.slug || result.series_id}`)
+        // Use canonical URL with year/setSlug if available
+        if (result.set_year && result.set_slug) {
+          navigate(`/sets/${result.set_year}/${result.set_slug}/${result.slug || result.series_id}`)
+        } else {
+          navigate(`/series/${result.slug || result.series_id}`)
+        }
         break
       case 'year':
         navigate(`/years/${result.year}`)
         break
       case 'card':
         // For cards, navigate to the series detail page
-        navigate(`/series/${result.series_id}`)
+        if (result.set_year && result.set_slug && result.series_slug) {
+          navigate(`/sets/${result.set_year}/${result.set_slug}/${result.series_slug}`)
+        } else {
+          navigate(`/series/${result.series_id}`)
+        }
         break
     }
   }

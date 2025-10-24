@@ -262,7 +262,14 @@ function ListDetail() {
 
   const handleSeriesClick = (series) => {
     if (!series?.slug) return
-    navigate(`/series/${series.slug}`)
+
+    // Use canonical URL with year/setSlug if available
+    if (series.set_year && series.set_slug) {
+      navigate(`/sets/${series.set_year}/${series.set_slug}/${series.slug}`)
+    } else {
+      // Fallback to simple series route (will redirect to canonical)
+      navigate(`/series/${series.slug}`)
+    }
   }
 
   const formatDate = (dateString) => {

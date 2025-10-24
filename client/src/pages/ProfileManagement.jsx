@@ -105,8 +105,8 @@ function ProfileManagement() {
 
   const handleSeriesClick = (seriesName) => {
     if (!seriesName) return
-    
-    // Navigate to series detail page
+
+    // Navigate to series detail page (will redirect to canonical if needed)
     const seriesSlug = seriesName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+$/, '')
     navigate(`/series/${seriesSlug}`)
   }

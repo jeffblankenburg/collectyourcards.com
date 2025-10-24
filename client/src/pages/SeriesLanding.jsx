@@ -217,7 +217,13 @@ function SeriesLanding() {
       })
     }
 
-    navigate(`/series/${slug}`)
+    // Use canonical URL with year/setSlug if available
+    if (year && setSlug) {
+      navigate(`/sets/${year}/${setSlug}/${slug}`)
+    } else {
+      // Fallback to simple series route (will redirect to canonical)
+      navigate(`/series/${slug}`)
+    }
   }
 
   const trackSeriesVisit = (seriesItem) => {

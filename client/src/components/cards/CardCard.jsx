@@ -31,7 +31,13 @@ function CardCard({ card, showBadge = false, customOnClick = null }) {
       } else {
         // Final fallback to series page
         if (card.series_slug) {
-          navigate(`/series/${card.series_slug}`)
+          // Use canonical URL with year/setSlug if available
+          if (card.set_year && card.set_slug) {
+            navigate(`/sets/${card.set_year}/${card.set_slug}/${card.series_slug}`)
+          } else {
+            // Fallback to simple series route (will redirect to canonical)
+            navigate(`/series/${card.series_slug}`)
+          }
         }
       }
     }

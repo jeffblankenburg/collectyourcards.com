@@ -200,7 +200,14 @@ function PlayerDetail() {
         .replace(/\s+/g, '-')
         .replace(/-+/g, '-')
         .trim()
-      navigate(`/series/${slug}`)
+
+      // Use canonical URL with year/setSlug if available (from series_rel)
+      if (series.set_year && series.set_slug) {
+        navigate(`/sets/${series.set_year}/${series.set_slug}/${slug}`)
+      } else {
+        // Fallback to simple series route (will redirect to canonical)
+        navigate(`/series/${slug}`)
+      }
     }
   }
 

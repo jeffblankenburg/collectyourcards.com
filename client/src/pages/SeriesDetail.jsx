@@ -109,15 +109,21 @@ function SeriesDetail() {
 
       if (foundSeries) {
         setSeries(foundSeries)
-        
+
+        // If we're on the fallback /series/:seriesSlug route, redirect to canonical URL
+        if (!year && !setSlug && foundSeries.set_year && foundSeries.set_slug) {
+          navigate(`/sets/${foundSeries.set_year}/${foundSeries.set_slug}/${seriesSlug}`, { replace: true })
+          return
+        }
+
         // Get actual stats for the series
         await fetchSeriesStats(foundSeries)
-        
+
         // Get related parallels
         await fetchRelatedParallels(foundSeries, seriesList)
-        
+
         // Collection completion will be calculated by UniversalCardTable
-        
+
         setError(null)
       } else {
         setError('Series not found')
@@ -460,7 +466,14 @@ function SeriesDetail() {
                               className={`parallel-item-compact ${parallel.relationship}`}
                               onClick={() => {
                                 const slug = generateSlug(parallel.name)
-                                navigate(`/series/${slug}`)
+                                // Use canonical URL with year/setSlug if available
+                                if (year && setSlug) {
+                                  navigate(`/sets/${year}/${setSlug}/${slug}`)
+                                } else if (parallel.set_year && parallel.set_slug) {
+                                  navigate(`/sets/${parallel.set_year}/${parallel.set_slug}/${slug}`)
+                                } else {
+                                  navigate(`/series/${slug}`)
+                                }
                               }}
                             >
                               <div className="parallel-content-compact">
