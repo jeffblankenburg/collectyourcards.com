@@ -4,12 +4,17 @@ import axios from 'axios'
 import { useAuth } from '../contexts/AuthContext'
 import Icon from '../components/Icon'
 import PlayerCard from '../components/cards/PlayerCard'
+import { createLogger } from '../utils/logger'
 import './TeamDetailScoped.css'
+
+const log = createLogger('TeamDetail')
 
 function TeamDetail() {
   const { teamSlug } = useParams()
   const navigate = useNavigate()
   const { isAuthenticated, user } = useAuth()
+
+  log.info('TeamDetail mounted', { teamSlug, isAuthenticated })
   const [team, setTeam] = useState(null)
   const [players, setPlayers] = useState([])
   const [filteredPlayers, setFilteredPlayers] = useState([])

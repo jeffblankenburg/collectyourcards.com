@@ -4,11 +4,16 @@ import { useAuth } from '../contexts/AuthContext'
 import axios from 'axios'
 import Icon from '../components/Icon'
 import { TeamCard } from '../components/cards'
+import { createLogger } from '../utils/logger'
 import './TeamsLandingScoped.css'
+
+const log = createLogger('TeamsLanding')
 
 function TeamsLanding() {
   const { isAuthenticated } = useAuth()
   const navigate = useNavigate()
+
+  log.info('TeamsLanding mounted', { isAuthenticated })
   
   const [teams, setTeams] = useState([])
   const [filteredTeams, setFilteredTeams] = useState([])

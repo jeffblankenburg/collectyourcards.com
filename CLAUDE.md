@@ -219,6 +219,190 @@
 
 ---
 
+## 📊 LOGGING & OBSERVABILITY SYSTEM
+
+### Overview
+**Status**: ✅ FULLY IMPLEMENTED (January 2025)
+
+A comprehensive, centralized logging system provides excellent visibility into production behavior, making debugging and monitoring significantly easier.
+
+### Key Features
+- **Centralized logger** with component-level context
+- **Multiple log levels** (debug, info, warn, error) with easy control
+- **Global axios interceptor** for automatic API call logging
+- **Performance timing** built into logger
+- **User context** automatically included with errors
+- **Browser console control** for production debugging
+- **Colored, emoji-tagged output** for easy scanning
+- **No impact when disabled** - efficient and lightweight
+
+### Quick Start
+
+```javascript
+// In any component
+import { createLogger } from '../utils/logger'
+
+const log = createLogger('ComponentName')
+
+// Usage
+log.info('Component mounted', { params })
+log.debug('Fetching data', { id })
+log.error('Failed to load', error)
+log.performance('Data fetch', startTime)
+log.success('Operation completed')
+```
+
+### Log Levels
+
+| Level | When to Use | Production Default |
+|-------|-------------|-------------------|
+| `debug` | Detailed development info, variable dumps | Hidden |
+| `info` | General state changes, successful operations | Shown |
+| `warn` | Concerning but non-fatal issues | Shown |
+| `error` | Errors and exceptions | Shown |
+
+### Browser Console Control
+
+Users can control logging in production via browser console:
+
+```javascript
+// Show all logs (including debug)
+logControl.setLevel('debug')
+
+// Show only info, warnings, and errors (default in production)
+logControl.setLevel('info')
+
+// Show only warnings and errors
+logControl.setLevel('warn')
+
+// Show only errors
+logControl.setLevel('error')
+
+// Disable all logging
+logControl.setLevel('none')
+
+// Check current log level
+logControl.getLevel()
+
+// Reset to default
+logControl.reset()
+
+// Show help
+logControl.help()
+```
+
+### Global API Logging
+
+All HTTP requests/responses are automatically logged via axios interceptor:
+
+- **Request logging**: Method, URL, params shown
+- **Response logging**: Status, duration, data size shown
+- **Error logging**: Full error details with context
+- **Performance tracking**: Automatic timing for all API calls
+
+Example console output:
+```
+ℹ️ [14:23:45.123] [API] ✅ GET /api/cards?series_id=123 - 200 (234ms)
+❌ [14:23:50.456] [API] ❌ POST /api/user/cards - 500 (1205ms)
+```
+
+### Components with Logging
+
+All major page components have comprehensive logging:
+
+- **RainbowView** - Set validation, card fetching, parallel loading
+- **CardDetail** - Card loading, user collection, navigation, user actions
+- **SeriesDetail** - Series data, stats calculation, parallel fetching
+- **SeriesPage** - Set loading, series listing
+- **PlayerDetail** - Player data, card filtering
+- **PlayersLanding** - Player listing, search
+- **TeamDetail** - Team data, roster loading
+- **TeamsLanding** - Team listing, search
+- **CollectionDashboard** - Collection stats, filtering
+
+### Logging Best Practices
+
+1. **Always log component mount** with relevant parameters
+   ```javascript
+   log.info('ComponentName mounted', { id, filters, isAuthenticated })
+   ```
+
+2. **Log data fetching operations** with performance timing
+   ```javascript
+   const startTime = performance.now()
+   // ... fetch operation ...
+   log.performance('Data fetch operation', startTime)
+   ```
+
+3. **Log user actions** for behavior tracking
+   ```javascript
+   log.info('User deleted card', { card_id, user_id })
+   ```
+
+4. **Log errors with full context**
+   ```javascript
+   log.error('Failed to save', {
+     error: err.message,
+     status: err.response?.status,
+     data: err.response?.data
+   })
+   ```
+
+5. **Use appropriate log levels**
+   - `debug`: Variable dumps, detailed flow
+   - `info`: Normal operations, state changes
+   - `warn`: Recoverable issues, fallbacks
+   - `error`: Failures, exceptions
+
+### Production Debugging Workflow
+
+When investigating issues in production:
+
+1. **Open browser console**
+2. **Enable appropriate logging**: `logControl.setLevel('debug')`
+3. **Reproduce the issue**
+4. **Review logs** for:
+   - Component mount parameters
+   - API call sequences and timing
+   - Error messages with context
+   - Performance bottlenecks
+   - State changes and user actions
+5. **Disable verbose logging**: `logControl.setLevel('info')`
+
+### File Locations
+
+- **Logger utility**: `/client/src/utils/logger.js`
+- **Axios interceptor**: `/client/src/utils/axios-interceptor.js`
+- **Initialization**: `/client/src/main.jsx` (axios interceptor setup)
+
+### Example Console Output
+
+```
+ℹ️ [14:23:42.123] [RainbowView] RainbowView mounted {year: "2022", setSlug: "2022-topps-stadium-club-chrome", ...}
+ℹ️ [14:23:42.145] [RainbowView] Starting rainbow card fetch {seriesSlug: "2022-topps-stadium-club-chrome", ...}
+🔍 [14:23:42.150] [RainbowView] Fetching sets list for set validation {year: "2022", setSlug: "2022-topps-stadium-club-chrome"}
+ℹ️ [14:23:42.389] [API] ✅ GET /api/sets-list - 200 (239ms)
+✅ [14:23:42.395] [RainbowView] Found matching set: "2022 Topps Stadium Club Chrome" {set_id: 440, slug: "2022-topps-stadium-club-chrome"}
+ℹ️ [14:23:42.623] [API] ✅ GET /api/card/2022-topps-stadium-club-chrome/2/bobby-witt-jr?set_id=440 - 200 (228ms)
+⚡ [14:23:42.625] [RainbowView] Card fetch completed in 228ms
+✅ [14:23:42.626] [RainbowView] Set validation passed - card is from correct set
+ℹ️ [14:23:42.853] [API] ✅ GET /api/cards/rainbow?set_id=440&card_number=2 - 200 (227ms)
+⚡ [14:23:42.855] [RainbowView] Rainbow fetch completed in 227ms
+✅ [14:23:42.856] [RainbowView] Loaded 15 rainbow parallels
+⚡ [14:23:42.857] [RainbowView] Complete rainbow view load completed in 707ms
+```
+
+### Benefits
+
+- **Faster debugging**: See exactly what's happening in production
+- **Better error diagnosis**: Full context with every error
+- **Performance insights**: Automatic timing for all operations
+- **User behavior tracking**: Understand how users interact with the site
+- **Production troubleshooting**: Debug issues without deployment
+- **No performance impact**: Lightweight and can be disabled completely
+
+---
+
 ## 🔧 TECHNICAL REFERENCE
 
 ### Current Architecture

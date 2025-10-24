@@ -6,6 +6,10 @@ import { ToastProvider } from './contexts/ToastContext.jsx'
 import ProtectedRoute from './components/ProtectedRoute.jsx'
 import Layout from './components/Layout.jsx'
 import App from './App.jsx'
+import { setupAxiosInterceptors } from './utils/axios-interceptor.js'
+
+// Initialize axios interceptors for automatic API logging
+setupAxiosInterceptors()
 // import Status from './pages/Status.jsx' // Commented out for SeriesDetail page independence
 import Auth from './pages/Auth.jsx'
 // import Dashboard from './pages/Dashboard.jsx' // Commented out for SeriesDetail page independence

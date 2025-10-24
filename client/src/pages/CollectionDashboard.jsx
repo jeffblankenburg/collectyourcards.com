@@ -7,11 +7,16 @@ import QuickEditModal from '../components/modals/QuickEditModal'
 import TeamFilterCircles from '../components/TeamFilterCircles'
 import Icon from '../components/Icon'
 import axios from 'axios'
+import { createLogger } from '../utils/logger'
 import './CollectionDashboardScoped.css'
+
+const log = createLogger('CollectionDashboard')
 
 function CollectionDashboard() {
   const { isAuthenticated, user } = useAuth()
   const { success, error } = useToast()
+
+  log.info('CollectionDashboard mounted', { isAuthenticated, userId: user?.user_id })
   
   const [dashboardStats, setDashboardStats] = useState({
     total_cards: 0,

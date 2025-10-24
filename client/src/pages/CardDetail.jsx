@@ -10,7 +10,10 @@ import AddToListDropdown from '../components/AddToListDropdown'
 import CommentsSection from '../components/CommentsSection'
 import { useToast } from '../contexts/ToastContext'
 import SocialShareButton from '../components/SocialShareButton'
+import { createLogger } from '../utils/logger'
 import './CardDetailScoped.css'
+
+const log = createLogger('CardDetail')
 
 function CardDetail() {
   // Handle both URL formats:
@@ -20,6 +23,8 @@ function CardDetail() {
   const navigate = useNavigate()
   const { isAuthenticated, user } = useAuth()
   const { success, error: showError } = useToast()
+
+  log.info('CardDetail mounted', { params, isAuthenticated, userRole: user?.role })
 
   // Extract parameters
   const year = params.year
@@ -88,11 +93,16 @@ function CardDetail() {
   }, [isAuthenticated, card])
 
   const checkUserCards = async () => {
+    const startTime = performance.now()
+    log.debug('Checking user collection for card', { card_id: card.card_id })
+
     try {
       setCheckingUserCards(true)
       const response = await axios.get(`/api/user/cards/${card.card_id}`)
-      setUserCards(response.data.cards || [])
-      
+      const userCardsData = response.data.cards || []
+      setUserCards(userCardsData)
+      log.info(`Found ${userCardsData.length} copies in user collection`)
+
       // Load locations and grading agencies for the edit modal
       const [locationsRes, gradingRes] = await Promise.all([
         axios.get('/api/user/locations'),
@@ -100,8 +110,9 @@ function CardDetail() {
       ])
       setLocations(locationsRes.data.locations || [])
       setGradingAgencies(gradingRes.data.agencies || [])
+      log.performance('User cards check', startTime)
     } catch (err) {
-      console.error('Error checking user cards:', err)
+      log.error('Failed to check user cards', err)
       setUserCards([])
     } finally {
       setCheckingUserCards(false)
@@ -109,36 +120,61 @@ function CardDetail() {
   }
 
   const fetchCardDetails = async () => {
+    const startTime = performance.now()
+    log.info('Fetching card details', {
+      seriesSlug,
+      cardNumber,
+      playerName,
+      urlFormat: isSimpleUrl ? 'simple' : 'canonical'
+    })
+
     try {
       setLoading(true)
       setError(null)
 
       // Always use simple API endpoint - both URL formats have the same card data
       const response = await axios.get(`/api/card/${seriesSlug}/${cardNumber}/${playerName}`)
-      
+
       if (response.data.success) {
-        setCard(response.data.card)
-        
+        const cardData = response.data.card
+        setCard(cardData)
+        log.success('Card details loaded', {
+          card_id: cardData.card_id,
+          card_number: cardData.card_number,
+          series_name: cardData.series_name,
+          set_name: cardData.set_name
+        })
+
         // Fetch all cards in the series for navigation
-        await fetchSeriesCards(response.data.card)
-        
+        await fetchSeriesCards(cardData)
+
         // Fetch parallel series for dropdown
-        if (response.data.card.set_id) {
-          await fetchParallelSeries(response.data.card)
+        if (cardData.set_id) {
+          await fetchParallelSeries(cardData)
         }
+
+        log.performance('Complete card detail load', startTime)
       } else {
+        log.warn('Card not found in API response')
         setError('Card not found')
       }
     } catch (err) {
-      console.error('Error fetching card details:', err)
-      
+      log.error('Failed to fetch card details', {
+        error: err.message,
+        status: err.response?.status,
+        seriesSlug,
+        cardNumber,
+        playerName
+      })
+
       // If card not found and we're using simple URL format, try to redirect to first card in series
       if (err.response?.status === 404 && isSimpleUrl) {
+        log.debug('Card not found, attempting to redirect to first card in series')
         try {
           // Get first card in the series
           const seriesResponse = await axios.get(`/api/cards?series_name=${seriesSlug.replace(/-/g, ' ')}&limit=1`)
           const firstCard = seriesResponse.data.cards?.[0]
-          
+
           if (firstCard) {
             const firstCardPlayerNames = getPlayerNamesFromCard(firstCard) || 'unknown'
             const firstCardPlayerSlug = firstCardPlayerNames
@@ -148,16 +184,20 @@ function CardDetail() {
               .replace(/\s+/g, '-')
               .replace(/-+/g, '-')
               .trim()
-            
+
+            log.navigation(`/card/${seriesSlug}/${cardNumber}/${playerName}`,
+              `/card/${seriesSlug}/${firstCard.card_number}/${firstCardPlayerSlug}`,
+              { reason: 'Card not found, redirecting to first in series' })
+
             // Redirect to first card in series
             navigate(`/card/${seriesSlug}/${firstCard.card_number}/${firstCardPlayerSlug}`, { replace: true })
             return
           }
         } catch (fallbackErr) {
-          console.error('Error fetching first card in series:', fallbackErr)
+          log.error('Failed to find first card in series for fallback', fallbackErr)
         }
       }
-      
+
       setError(err.response?.data?.message || 'Failed to load card details')
     } finally {
       setLoading(false)
@@ -165,67 +205,82 @@ function CardDetail() {
   }
 
   const fetchSeriesCards = async (cardData) => {
+    const startTime = performance.now()
+    log.debug('Fetching series cards for navigation', { series_id: cardData.series_id })
+
     try {
       // Get all cards in the series
       const response = await axios.get(`/api/cards?series_id=${cardData.series_id}&limit=10000`)
       const cards = response.data.cards || []
-      
+
       // Sort by sort_order for proper series navigation order
       const sortedCards = cards.sort((a, b) => {
         // Primary sort: sort_order (this determines the series sequence)
         const aSortOrder = a.sort_order !== null && a.sort_order !== undefined ? Number(a.sort_order) : 999999
         const bSortOrder = b.sort_order !== null && b.sort_order !== undefined ? Number(b.sort_order) : 999999
-        
+
         if (aSortOrder !== bSortOrder) {
           return aSortOrder - bSortOrder
         }
-        
+
         // Fallback to card number sorting if sort_order is the same
         const aNum = parseInt(a.card_number)
         const bNum = parseInt(b.card_number)
-        
+
         if (!isNaN(aNum) && !isNaN(bNum)) {
           return aNum - bNum
         }
-        
+
         // Final fallback to string comparison
         return (a.card_number || '').localeCompare(b.card_number || '')
       })
-      
-      
+
+
       setSeriesCards(sortedCards)
-      
+
       // Find current card index - ensure type matching
       const currentCardId = Number(cardData.card_id)
       const currentIndex = sortedCards.findIndex(c => Number(c.card_id) === currentCardId)
       setCurrentCardIndex(currentIndex)
-      
+
+      log.info('Series cards loaded for navigation', {
+        totalCards: sortedCards.length,
+        currentIndex,
+        currentCardNumber: cardData.card_number
+      })
+      log.performance('Series cards fetch', startTime)
+
     } catch (err) {
-      console.error('Error fetching series cards:', err)
+      log.error('Failed to fetch series cards', err)
       setSeriesCards([])
       setCurrentCardIndex(-1)
     }
   }
 
   const fetchParallelSeries = async (cardData) => {
+    log.debug('Fetching parallel series', { set_id: cardData.set_id, card_number: cardData.card_number })
+
     try {
       // Get all series in the same set that have a card with the same number
       const response = await axios.get(`/api/cards/parallel-series?set_id=${cardData.set_id}&card_number=${encodeURIComponent(cardData.card_number)}`)
       const parallels = response.data.series || []
-      
+
       // Sort by series name, but put base series first
       const sortedParallels = parallels.sort((a, b) => {
         // Base series first
         if (a.is_base && !b.is_base) return -1
         if (!a.is_base && b.is_base) return 1
-        
+
         // Then alphabetical
         return (a.name || '').localeCompare(b.name || '')
       })
-      
+
       setParallelSeries(sortedParallels)
+      log.info(`Found ${sortedParallels.length} parallel series`, {
+        parallels: sortedParallels.map(p => p.name)
+      })
     } catch (err) {
-      console.error('Error fetching parallel series:', err)
+      log.error('Failed to fetch parallel series', err)
       setParallelSeries([])
     }
   }
@@ -343,45 +398,61 @@ function CardDetail() {
 
   const handleDeleteCard = async (cardToDelete) => {
     // Remove confirmation dialog per CLAUDE.md rules - NO JAVASCRIPT ALERTS
+    log.info('Deleting card from collection', {
+      user_card_id: cardToDelete.user_card_id,
+      card_number: card.card_number
+    })
+
     try {
       await axios.delete(`/api/user/cards/${cardToDelete.user_card_id}`)
       success('Card removed from collection')
+      log.success('Card deleted from collection')
       // Reload user cards
       await checkUserCards()
     } catch (err) {
-      console.error('Error deleting card:', err)
+      log.error('Failed to delete card', err)
       showError('Failed to remove card from collection')
     }
   }
 
   const handleFavoriteToggle = async (cardToToggle) => {
+    const isFavoriting = !cardToToggle.is_special
+    log.info(isFavoriting ? 'Adding card to favorites' : 'Removing card from favorites', {
+      user_card_id: cardToToggle.user_card_id
+    })
+
     try {
       await axios.put(`/api/user/cards/${cardToToggle.user_card_id}`, {
-        is_special: !cardToToggle.is_special
+        is_special: isFavoriting
       })
-      success(cardToToggle.is_special ? 'Removed from favorites' : 'Added to favorites')
+      success(isFavoriting ? 'Added to favorites' : 'Removed from favorites')
+      log.success(isFavoriting ? 'Card favorited' : 'Card unfavorited')
       // Reload user cards
       await checkUserCards()
     } catch (err) {
-      console.error('Error toggling favorite:', err)
+      log.error('Failed to toggle favorite status', err)
       showError('Failed to update favorite status')
     }
   }
 
   const handleCardUpdated = async () => {
+    log.debug('Card updated, reloading user collection')
     // Reload user cards after edit
     await checkUserCards()
   }
 
   const handleAddToCollection = () => {
     if (!isAuthenticated) {
+      log.warn('User tried to add card without authentication')
       showError('Please log in to add cards to your collection')
       return
     }
+    log.info('Opening add card modal', { card_id: card.card_id })
     setShowAddCardModal(true)
   }
 
   const handleCardAdded = async () => {
+    log.success('Card added to collection')
     // Reload user cards after adding
     await checkUserCards()
     setShowAddCardModal(false)

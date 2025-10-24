@@ -4,11 +4,16 @@ import { useAuth } from '../contexts/AuthContext'
 import axios from 'axios'
 import Icon from '../components/Icon'
 import { PlayerCard } from '../components/cards'
+import { createLogger } from '../utils/logger'
 import './PlayersLandingScoped.css'
+
+const log = createLogger('PlayersLanding')
 
 function PlayersLanding() {
   const { isAuthenticated } = useAuth()
   const navigate = useNavigate()
+
+  log.info('PlayersLanding mounted', { isAuthenticated })
   
   const [players, setPlayers] = useState([])
   const [searchTerm, setSearchTerm] = useState('')

@@ -10,9 +10,14 @@ import PlayerStats from '../components/PlayerStats'
 import Icon from '../components/Icon'
 import EditPlayerModal from '../components/modals/EditPlayerModal'
 import AddCardModal from '../components/modals/AddCardModal'
+import { createLogger } from '../utils/logger'
 import './PlayerDetailScoped.css'
 
+const log = createLogger('PlayerDetail')
+
 function PlayerDetail() {
+  const params = useParams()
+  log.info('PlayerDetail mounted', params)
   const { playerSlug, teamSlug } = useParams()
   const location = useLocation()
   const navigate = useNavigate()

@@ -10,14 +10,18 @@ import BulkCardModal from '../components/modals/BulkCardModal'
 import CommentsSection from '../components/CommentsSection'
 import ActivityFeed from '../components/ActivityFeed'
 import { generateSlug } from '../utils/slugs'
+import { createLogger } from '../utils/logger'
 import './SeriesDetail.css'
 
+const log = createLogger('SeriesDetail')
 
 function SeriesDetail() {
   const { seriesSlug, year, setSlug } = useParams()
   const navigate = useNavigate()
   const { isAuthenticated, user } = useAuth()
   const [series, setSeries] = useState(null)
+
+  log.info('SeriesDetail mounted', { seriesSlug, year, setSlug, isAuthenticated })
   const [stats, setStats] = useState({})
   const [parallels, setParallels] = useState([])
   const [showParallels, setShowParallels] = useState(false)
@@ -73,12 +77,16 @@ function SeriesDetail() {
   }, [showParallels])
 
   const fetchSeriesData = async () => {
+    const startTime = performance.now()
+    log.info('Fetching series data', { seriesSlug, year, setSlug })
+
     try {
       setLoading(true)
-      
+
       let seriesList = []
-      
+
       if (year && setSlug) {
+        log.debug('Using canonical URL format', { year, setSlug })
         // If we have year and setSlug, get series for that specific set
         // First get the set ID
         const setsResponse = await axios.get('/api/sets-list')
@@ -88,18 +96,24 @@ function SeriesDetail() {
           const slug = generateSlug(set.name)
           return setYear === parseInt(year) && slug === setSlug
         })
-        
+
         if (foundSet) {
+          log.debug('Found set', { set_id: foundSet.set_id, set_name: foundSet.name })
           // Get series for this set
           const seriesResponse = await axios.get(`/api/series-by-set/${foundSet.set_id}`)
           seriesList = seriesResponse.data.series || []
+          log.debug(`Loaded ${seriesList.length} series from set`)
+        } else {
+          log.warn('Set not found', { year, setSlug })
         }
       } else {
+        log.debug('Using fallback /series/:seriesSlug route')
         // Fallback to getting all series (for /series/:seriesSlug route)
         const response = await axios.get('/api/series-list')
         seriesList = response.data.series || []
+        log.debug(`Loaded ${seriesList.length} series from series-list`)
       }
-      
+
       // Find series by slug (using standard slug generation)
       const foundSeries = seriesList.find(s => {
         if (!s.name) return false
@@ -109,9 +123,17 @@ function SeriesDetail() {
 
       if (foundSeries) {
         setSeries(foundSeries)
+        log.success('Series found', {
+          series_id: foundSeries.series_id,
+          name: foundSeries.name,
+          set_name: foundSeries.set_name
+        })
 
         // If we're on the fallback /series/:seriesSlug route, redirect to canonical URL
         if (!year && !setSlug && foundSeries.set_year && foundSeries.set_slug) {
+          log.navigation(`/series/${seriesSlug}`,
+            `/sets/${foundSeries.set_year}/${foundSeries.set_slug}/${seriesSlug}`,
+            { reason: 'Redirecting to canonical URL' })
           navigate(`/sets/${foundSeries.set_year}/${foundSeries.set_slug}/${seriesSlug}`, { replace: true })
           return
         }
@@ -122,14 +144,14 @@ function SeriesDetail() {
         // Get related parallels
         await fetchRelatedParallels(foundSeries, seriesList)
 
-        // Collection completion will be calculated by UniversalCardTable
-
         setError(null)
+        log.performance('Complete series data load', startTime)
       } else {
+        log.error('Series not found', { seriesSlug, availableSlugs: seriesList.map(s => generateSlug(s.name)).slice(0, 10) })
         setError('Series not found')
       }
     } catch (err) {
-      console.error('Error fetching series data:', err)
+      log.error('Failed to fetch series data', err)
       setError('Failed to load series data')
     } finally {
       setLoading(false)
@@ -137,30 +159,33 @@ function SeriesDetail() {
   }
 
   const fetchSeriesStats = async (series) => {
+    log.debug('Fetching series stats', { series_id: series.series_id })
+
     try {
       // Get ALL cards for the series by setting a high limit
       const response = await axios.get(`/api/cards?series_id=${series.series_id}&limit=10000`)
       const cards = response.data.cards || []
-      
+
       // Calculate stats from the actual card data
       const seriesStats = {
         total_cards: cards.length,
-        rookie_cards: cards.filter(card => 
+        rookie_cards: cards.filter(card =>
           card.card_player_teams?.some(cpt => cpt.is_rookie) || card.is_rookie
         ).length,
         autograph_cards: cards.filter(card => card.is_autograph).length,
         relic_cards: cards.filter(card => card.is_relic).length,
         numbered_cards: cards.filter(card => card.print_run && card.print_run > 0).length,
         unique_players: new Set(
-          cards.flatMap(card => 
+          cards.flatMap(card =>
             card.card_player_teams?.map(cpt => cpt.player?.player_id) || []
           )
         ).size
       }
-      
+
       setStats(seriesStats)
+      log.info('Series stats calculated', seriesStats)
     } catch (err) {
-      console.error('Error fetching series stats:', err)
+      log.error('Failed to fetch series stats', err)
       // Fallback to basic stats if API call fails
       const fallbackStats = {
         total_cards: series.card_count || 0,
@@ -171,36 +196,37 @@ function SeriesDetail() {
         unique_players: 0
       }
       setStats(fallbackStats)
+      log.warn('Using fallback stats', fallbackStats)
     }
   }
 
   const fetchRelatedParallels = async (currentSeries, allSeries) => {
+    log.debug('Fetching related parallels', {
+      series_id: currentSeries.series_id,
+      is_parallel: currentSeries.is_parallel
+    })
+
     try {
-      // console.log('Current series:', currentSeries.name, {...})
-      
       const relatedParallels = []
-      
+
       if (currentSeries.is_parallel && currentSeries.parallel_of_series) {
         // If this is a parallel, find the parent and other parallels of the same parent
         const parentId = currentSeries.parallel_of_series
-        // console.log('Looking for parent with ID:', parentId)
-        
+
         // Find the parent series
         const parent = allSeries.find(s => s.series_id === parentId)
         if (parent) {
-          // console.log('Found parent:', parent.name)
           relatedParallels.push({
             ...parent,
             relationship: 'parent'
           })
         }
-        
+
         // Find other parallels of the same parent
-        const siblings = allSeries.filter(s => 
-          s.parallel_of_series === parentId && 
+        const siblings = allSeries.filter(s =>
+          s.parallel_of_series === parentId &&
           s.series_id !== currentSeries.series_id
         )
-        // console.log('Found siblings:', siblings.length, siblings.map(s => s.name))
         siblings.forEach(sibling => {
           relatedParallels.push({
             ...sibling,
@@ -209,11 +235,9 @@ function SeriesDetail() {
         })
       } else {
         // If this is a parent series, find all its parallels
-        // console.log('Looking for children of series ID:', currentSeries.series_id)
-        const children = allSeries.filter(s => 
+        const children = allSeries.filter(s =>
           s.parallel_of_series === currentSeries.series_id
         )
-        // console.log('Found children:', children.length, children.map(s => s.name))
         children.forEach(child => {
           relatedParallels.push({
             ...child,
@@ -221,11 +245,11 @@ function SeriesDetail() {
           })
         })
       }
-      
-      // console.log('Final related parallels:', relatedParallels.length, relatedParallels.map(p => ({ name: p.name, relationship: p.relationship })))
+
       setParallels(relatedParallels)
+      log.info(`Found ${relatedParallels.length} related parallels`)
     } catch (err) {
-      console.error('Error fetching related parallels:', err)
+      log.error('Failed to fetch related parallels', err)
       setParallels([])
     }
   }
@@ -233,17 +257,22 @@ function SeriesDetail() {
   // Table data loading function
   const loadTableData = async () => {
     if (!series) return
-    
+
+    const startTime = performance.now()
+    log.debug('Loading card table data', { series_id: series.series_id })
+
     try {
       setTableLoading(true)
       const url = `/api/cards?series_id=${series.series_id}&limit=10000`
-      
+
       const response = await axios.get(url)
       const { cards: newCards } = response.data
-      
+
       setCards(newCards || [])
+      log.info(`Loaded ${newCards?.length || 0} cards for table`)
+      log.performance('Card table load', startTime)
     } catch (error) {
-      console.error('Error loading cards:', error)
+      log.error('Failed to load card table data', error)
     } finally {
       setTableLoading(false)
     }

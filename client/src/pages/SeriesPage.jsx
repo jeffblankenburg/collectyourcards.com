@@ -8,13 +8,18 @@ import Icon from '../components/Icon'
 import { SeriesCard } from '../components/cards'
 import CommentsSection from '../components/CommentsSection'
 import ActivityFeed from '../components/ActivityFeed'
+import { createLogger } from '../utils/logger'
 import './SeriesPageScoped.css'
+
+const log = createLogger('SeriesPage')
 
 function SeriesPage() {
   const { year, setSlug } = useParams()
   const navigate = useNavigate()
   const { addToast } = useToast()
   const { user } = useAuth()
+
+  log.info('SeriesPage mounted', { year, setSlug })
   
   const [series, setSeries] = useState([])
   const [filteredSeries, setFilteredSeries] = useState([])
