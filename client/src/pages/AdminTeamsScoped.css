@@ -471,6 +471,42 @@
   transform: scale(1.1);
 }
 
+/* Color Input Wrapper with Preview and Picker */
+.admin-teams-page .color-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.admin-teams-page .color-input-wrapper .color-text-input {
+  flex: 1;
+  font-family: monospace;
+}
+
+.admin-teams-page .color-preview-swatch {
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.admin-teams-page .color-preview-swatch:hover {
+  transform: scale(1.1);
+  border-color: rgba(255, 255, 255, 0.5);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
+}
+
+.admin-teams-page .hidden-color-picker {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
 .admin-teams-page .color-text-input {
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.2);

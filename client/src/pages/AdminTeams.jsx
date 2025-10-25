@@ -556,24 +556,54 @@ function AdminTeams() {
 
                   <div className="form-group">
                     <label>Primary Color (darker)</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      value={editForm.primary_color || ''}
-                      onChange={(e) => handleFormChange('primary_color', e.target.value)}
-                      placeholder="#000000"
-                    />
+                    <div className="color-input-wrapper">
+                      <input
+                        type="text"
+                        className="form-input color-text-input"
+                        value={editForm.primary_color || ''}
+                        onChange={(e) => handleFormChange('primary_color', e.target.value)}
+                        placeholder="#000000"
+                      />
+                      <div
+                        className="color-preview-swatch"
+                        style={{ backgroundColor: editForm.primary_color || '#666' }}
+                        onClick={() => document.getElementById('edit-primary-color-picker').click()}
+                        title="Click to pick a color"
+                      />
+                      <input
+                        id="edit-primary-color-picker"
+                        type="color"
+                        className="hidden-color-picker"
+                        value={editForm.primary_color || '#000000'}
+                        onChange={(e) => handleFormChange('primary_color', e.target.value)}
+                      />
+                    </div>
                   </div>
 
                   <div className="form-group">
                     <label>Secondary Color (lighter)</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      value={editForm.secondary_color || ''}
-                      onChange={(e) => handleFormChange('secondary_color', e.target.value)}
-                      placeholder="#000000"
-                    />
+                    <div className="color-input-wrapper">
+                      <input
+                        type="text"
+                        className="form-input color-text-input"
+                        value={editForm.secondary_color || ''}
+                        onChange={(e) => handleFormChange('secondary_color', e.target.value)}
+                        placeholder="#000000"
+                      />
+                      <div
+                        className="color-preview-swatch"
+                        style={{ backgroundColor: editForm.secondary_color || '#999' }}
+                        onClick={() => document.getElementById('edit-secondary-color-picker').click()}
+                        title="Click to pick a color"
+                      />
+                      <input
+                        id="edit-secondary-color-picker"
+                        type="color"
+                        className="hidden-color-picker"
+                        value={editForm.secondary_color || '#000000'}
+                        onChange={(e) => handleFormChange('secondary_color', e.target.value)}
+                      />
+                    </div>
                   </div>
             
               <div className="modal-actions">
@@ -683,24 +713,54 @@ function AdminTeams() {
 
                   <div className="form-group">
                     <label>Primary Color (darker)</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      value={newTeamForm.primary_color || ''}
-                      onChange={(e) => handleNewTeamFormChange('primary_color', e.target.value)}
-                      placeholder="#000000"
-                    />
+                    <div className="color-input-wrapper">
+                      <input
+                        type="text"
+                        className="form-input color-text-input"
+                        value={newTeamForm.primary_color || ''}
+                        onChange={(e) => handleNewTeamFormChange('primary_color', e.target.value)}
+                        placeholder="#000000"
+                      />
+                      <div
+                        className="color-preview-swatch"
+                        style={{ backgroundColor: newTeamForm.primary_color || '#666' }}
+                        onClick={() => document.getElementById('new-primary-color-picker').click()}
+                        title="Click to pick a color"
+                      />
+                      <input
+                        id="new-primary-color-picker"
+                        type="color"
+                        className="hidden-color-picker"
+                        value={newTeamForm.primary_color || '#000000'}
+                        onChange={(e) => handleNewTeamFormChange('primary_color', e.target.value)}
+                      />
+                    </div>
                   </div>
 
                   <div className="form-group">
                     <label>Secondary Color (lighter)</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      value={newTeamForm.secondary_color || ''}
-                      onChange={(e) => handleNewTeamFormChange('secondary_color', e.target.value)}
-                      placeholder="#000000"
-                    />
+                    <div className="color-input-wrapper">
+                      <input
+                        type="text"
+                        className="form-input color-text-input"
+                        value={newTeamForm.secondary_color || ''}
+                        onChange={(e) => handleNewTeamFormChange('secondary_color', e.target.value)}
+                        placeholder="#000000"
+                      />
+                      <div
+                        className="color-preview-swatch"
+                        style={{ backgroundColor: newTeamForm.secondary_color || '#999' }}
+                        onClick={() => document.getElementById('new-secondary-color-picker').click()}
+                        title="Click to pick a color"
+                      />
+                      <input
+                        id="new-secondary-color-picker"
+                        type="color"
+                        className="hidden-color-picker"
+                        value={newTeamForm.secondary_color || '#000000'}
+                        onChange={(e) => handleNewTeamFormChange('secondary_color', e.target.value)}
+                      />
+                    </div>
                   </div>
             
               <div className="modal-actions">
