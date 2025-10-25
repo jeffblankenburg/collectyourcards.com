@@ -526,8 +526,8 @@ router.post('/match-cards', requireAuth, requireAdmin, async (req, res) => {
     const allTeamNames = new Set()
     
     cards.forEach(card => {
-      const playerNamesList = (card.playerNames || '').split(/[,;&]/).map(name => name.trim()).filter(name => name)
-      const teamNamesList = (card.teamNames || '').split(/[,;&]/).map(name => name.trim()).filter(name => name)
+      const playerNamesList = (card.playerNames || '').split(/[,;]/).map(name => name.trim()).filter(name => name)
+      const teamNamesList = (card.teamNames || '').split(/[,;]/).map(name => name.trim()).filter(name => name)
       
       playerNamesList.forEach(name => allPlayerNames.add(name))
       teamNamesList.forEach(name => allTeamNames.add(name))
@@ -556,8 +556,8 @@ router.post('/match-cards', requireAuth, requireAdmin, async (req, res) => {
     const actualCombinations = new Set()
     
     cards.forEach(card => {
-      const playerNamesList = (card.playerNames || '').split(/[,;&]/).map(name => name.trim()).filter(name => name)
-      const teamNamesList = (card.teamNames || '').split(/[,;&]/).map(name => name.trim()).filter(name => name)
+      const playerNamesList = (card.playerNames || '').split(/[,;]/).map(name => name.trim()).filter(name => name)
+      const teamNamesList = (card.teamNames || '').split(/[,;]/).map(name => name.trim()).filter(name => name)
       
       playerNamesList.forEach(playerName => {
         const playerMatches = playerLookup[playerName]
@@ -609,8 +609,8 @@ router.post('/match-cards', requireAuth, requireAdmin, async (req, res) => {
       const cardPlayers = []
 
       // Parse player names (could be comma-separated)
-      const playerNamesList = (card.playerNames || '').split(/[,;&]/).map(name => name.trim()).filter(name => name)
-      const teamNamesList = (card.teamNames || '').split(/[,;&]/).map(name => name.trim()).filter(name => name)
+      const playerNamesList = (card.playerNames || '').split(/[,;]/).map(name => name.trim()).filter(name => name)
+      const teamNamesList = (card.teamNames || '').split(/[,;]/).map(name => name.trim()).filter(name => name)
 
       // Process ALL teams on the card first (for Team(s) column display)
       const allCardTeams = { exact: [], fuzzy: [] }
@@ -1278,8 +1278,15 @@ function normalizeAccents(str) {
 // Helper function to normalize player names for matching
 function normalizePlayerName(name) {
   return normalizeAccents(name.trim().toLowerCase())
-    .replace(/\./g, '') // Remove periods like "J.T." -> "JT"  
+    .replace(/\./g, '') // Remove periods like "J.T." -> "JT"
     .replace(/\s+/g, ' ') // Normalize spaces
+}
+
+// Helper function to normalize team names for matching
+function normalizeTeamName(name) {
+  return normalizeAccents(name.trim().toLowerCase())
+    .replace(/\s+/g, '') // Remove ALL spaces so "Wolf Pack" matches "Wolfpack"
+    .replace(/[.-]/g, '') // Remove periods and hyphens
 }
 
 // Helper function to calculate Levenshtein distance between two strings
@@ -1309,11 +1316,19 @@ async function batchFindPlayers(pool, playerNames, organizationId = null) {
   try {
     console.log(`🔍 Batch lookup for ${playerNames.length} unique players`)
     const playerLookup = {}
-    
+
     if (playerNames.length === 0) return playerLookup
-    
+
     console.log('🔍 Sample player names to search:', playerNames.slice(0, 5))
-    
+
+    // Include NCAA players when searching for professional leagues
+    // Organization IDs: 1=MLB, 2=NFL, 3=NBA, 4=NHL, 5=NCAA
+    const organizationFilter = organizationId ? [parseInt(organizationId)] : null
+    if (organizationFilter && [1, 2, 3, 4].includes(parseInt(organizationId))) {
+      organizationFilter.push(5) // Always include NCAA for pro leagues
+      console.log(`🎓 Including NCAA players in batch search (orgs: ${organizationFilter.join(', ')})`)
+    }
+
     // Get all players WITH their teams for suggestions
     let baseQuery = `
       SELECT DISTINCT
@@ -1331,11 +1346,14 @@ async function batchFindPlayers(pool, playerNames, organizationId = null) {
       LEFT JOIN player_team pt ON p.player_id = pt.player
       LEFT JOIN team t ON pt.team = t.team_id
     `
-    
+
     const request = pool.request()
-    
-    if (organizationId) {
-      request.input('organizationId', sql.Int, organizationId)
+
+    if (organizationFilter) {
+      // Create parameters for each organization ID in the filter
+      organizationFilter.forEach((orgId, index) => {
+        request.input(`org${index}`, sql.Int, orgId)
+      })
       baseQuery += `
         WHERE (
           NOT EXISTS (SELECT 1 FROM player_team pt_check WHERE pt_check.player = p.player_id)
@@ -1344,7 +1362,7 @@ async function batchFindPlayers(pool, playerNames, organizationId = null) {
             SELECT DISTINCT pt2.player
             FROM player_team pt2
             JOIN team t2 ON pt2.team = t2.team_id
-            WHERE t2.organization = @organizationId
+            WHERE t2.organization IN (${organizationFilter.map((_, i) => `@org${i}`).join(', ')})
           )
         )
       `
@@ -1548,13 +1566,17 @@ async function batchFindTeams(pool, teamNames, organizationId = null) {
     // Create parameterized query for all teams using OR conditions
     const request = pool.request()
 
-    // Build OR conditions for name matching (with accent normalization)
+    // Build OR conditions for name matching (with full normalization including spaces)
     const nameConditions = teamNames.map((teamName, index) => {
-      const normalizedName = normalizeAccents(teamName.trim().toLowerCase())
+      const normalizedName = normalizeTeamName(teamName)
       request.input(`team${index}`, sql.NVarChar, normalizedName)
       console.log(`  🔧 Parameter @team${index} = "${normalizedName}" (original: "${teamName}")`)
-      // Use = for exact comparison after normalization
-      return `(LOWER(t.name) = @team${index} OR LOWER(t.abbreviation) = @team${index})`
+      // Need to normalize database values too - remove spaces, periods, hyphens
+      return `(
+        REPLACE(REPLACE(REPLACE(LOWER(t.name), ' ', ''), '.', ''), '-', '') = @team${index}
+        OR
+        REPLACE(REPLACE(REPLACE(LOWER(t.abbreviation), ' ', ''), '.', ''), '-', '') = @team${index}
+      )`
     }).join(' OR ')
 
     if (organizationId) {
@@ -1579,9 +1601,9 @@ async function batchFindTeams(pool, teamNames, organizationId = null) {
     const exactResult = await request.query(exactQuery)
     console.log(`📊 Exact match query returned ${exactResult.recordset.length} results`)
 
-    // Group results by team name (check both name and abbreviation with accent normalization)
+    // Group results by team name (check both name and abbreviation with full normalization)
     teamNames.forEach(teamName => {
-      const normalizedTeamName = normalizeAccents(teamName.trim().toLowerCase())
+      const normalizedTeamName = normalizeTeamName(teamName)
 
       // Debug: show what we're searching for
       console.log(`🔍 Searching for team: "${teamName}"`)
@@ -1589,9 +1611,9 @@ async function batchFindTeams(pool, teamNames, organizationId = null) {
       console.log(`  📊 Comparing against ${exactResult.recordset.length} teams from database`)
 
       const matches = exactResult.recordset.filter(team => {
-        // Normalize both sides for accent-insensitive comparison
-        const normalizedTeamNameFromDB = normalizeAccents(team.teamName.toLowerCase())
-        const normalizedAbbrevFromDB = team.abbreviation ? normalizeAccents(team.abbreviation.toLowerCase()) : ''
+        // Normalize both sides for comparison (removes spaces, accents, periods, hyphens)
+        const normalizedTeamNameFromDB = normalizeTeamName(team.teamName)
+        const normalizedAbbrevFromDB = team.abbreviation ? normalizeTeamName(team.abbreviation) : ''
 
         const nameMatch = normalizedTeamNameFromDB === normalizedTeamName
         const abbrevMatch = normalizedAbbrevFromDB === normalizedTeamName
@@ -1648,7 +1670,8 @@ async function batchFindTeams(pool, teamNames, organizationId = null) {
 
       for (const teamName of teamsWithoutMatches) {
         const fuzzyRequest = pool.request()
-        fuzzyRequest.input('teamName', sql.NVarChar, `%${teamName.trim()}%`)
+        const normalizedSearchTerm = normalizeTeamName(teamName)
+        fuzzyRequest.input('teamName', sql.NVarChar, `%${normalizedSearchTerm}%`)
         if (organizationId) {
           fuzzyRequest.input('organizationId', sql.Int, organizationId)
         }
@@ -1661,9 +1684,13 @@ async function batchFindTeams(pool, teamNames, organizationId = null) {
             t.abbreviation as abbreviation,
             t.primary_color as primaryColor,
             t.secondary_color as secondaryColor,
-            CASE WHEN LOWER(t.name) LIKE LOWER(@teamName) + '%' THEN 0 ELSE 1 END as matchPriority
+            CASE WHEN REPLACE(REPLACE(REPLACE(LOWER(t.name), ' ', ''), '.', ''), '-', '') LIKE @teamName + '%' THEN 0 ELSE 1 END as matchPriority
           FROM team t
-          WHERE (LOWER(t.name) LIKE LOWER(@teamName) OR LOWER(t.abbreviation) LIKE LOWER(@teamName))
+          WHERE (
+            REPLACE(REPLACE(REPLACE(LOWER(t.name), ' ', ''), '.', ''), '-', '') LIKE @teamName
+            OR
+            REPLACE(REPLACE(REPLACE(LOWER(t.abbreviation), ' ', ''), '.', ''), '-', '') LIKE @teamName
+          )
           ${organizationId ? 'AND t.organization = @organizationId' : ''}
           ORDER BY matchPriority, t.name
         `
@@ -1766,22 +1793,33 @@ async function batchFindPlayerTeams(pool, playerLookup, teamLookup) {
 async function findPlayerMatches(pool, playerName, organizationId = null) {
   try {
     console.log(`🔍 Searching for player: "${playerName}"${organizationId ? ` (org filter: ${organizationId})` : ' (no org filter)'}`)
-    
+
     if (!playerName || typeof playerName !== 'string' || !playerName.trim()) {
       console.log('⚠️ No player name provided or invalid player name:', playerName)
       return { exact: [], fuzzy: [] }
     }
-    
+
+    // Include NCAA players when searching for professional leagues
+    // Organization IDs: 1=MLB, 2=NFL, 3=NBA, 4=NHL, 5=NCAA
+    const organizationFilter = organizationId ? [parseInt(organizationId)] : null
+    if (organizationFilter && [1, 2, 3, 4].includes(parseInt(organizationId))) {
+      organizationFilter.push(5) // Always include NCAA for pro leagues
+      console.log(`🎓 Including NCAA players in search (orgs: ${organizationFilter.join(', ')})`)
+    }
+
     // Normalize the player name (remove extra spaces, periods, accents, lowercase)
     const cleanPlayerName = normalizePlayerName(playerName)
-    
+
     console.log(`🔍 Normalized search name: "${cleanPlayerName}"`)
-    
+
     // Exact match search (case-insensitive, normalized spaces, filtered by organization)
     const exactRequest = pool.request()
     exactRequest.input('fullName', sql.NVarChar, cleanPlayerName)
-    if (organizationId) {
-      exactRequest.input('organizationId', sql.Int, organizationId)
+    if (organizationFilter) {
+      // Create parameters for each organization ID in the filter
+      organizationFilter.forEach((orgId, index) => {
+        exactRequest.input(`org${index}`, sql.Int, orgId)
+      })
     }
     
     const exactQuery = `
@@ -1811,16 +1849,16 @@ async function findPlayerMatches(pool, playerName, organizationId = null) {
            p.nick_name + ' ' + p.last_name,
            'á', 'a'), 'é', 'e'), 'í', 'i'), 'ó', 'o'), 'ú', 'u'), 'ñ', 'n'), '.', ''), '  ', ' ')))) = @fullName)
       )
-      ${organizationId ? `AND (
+      ${organizationFilter ? `AND (
         -- Include players with NO teams (zero team associations)
         NOT EXISTS (SELECT 1 FROM player_team pt_check WHERE pt_check.player = p.player_id)
         OR
-        -- Include players with teams in the specified organization
+        -- Include players with teams in the specified organizations (e.g., NFL + NCAA)
         p.player_id IN (
           SELECT DISTINCT pt2.player
           FROM player_team pt2
           JOIN team t2 ON pt2.team = t2.team_id
-          WHERE t2.organization = @organizationId
+          WHERE t2.organization IN (${organizationFilter.map((_, i) => `@org${i}`).join(', ')})
         )
       )` : ''}
       ORDER BY playerName, teamName
@@ -1831,10 +1869,13 @@ async function findPlayerMatches(pool, playerName, organizationId = null) {
     
     // Get all players for close match analysis (filtered by organization)
     const allPlayersRequest = pool.request()
-    if (organizationId) {
-      allPlayersRequest.input('organizationId', sql.Int, organizationId)
+    if (organizationFilter) {
+      // Create parameters for each organization ID in the filter
+      organizationFilter.forEach((orgId, index) => {
+        allPlayersRequest.input(`org${index}`, sql.Int, orgId)
+      })
     }
-    
+
     const allPlayersQuery = `
       SELECT DISTINCT
         p.player_id as playerId,
@@ -1850,16 +1891,16 @@ async function findPlayerMatches(pool, playerName, organizationId = null) {
       FROM player p
       LEFT JOIN player_team pt ON p.player_id = pt.player
       LEFT JOIN team t ON pt.team = t.team_id
-      ${organizationId ? `WHERE (
+      ${organizationFilter ? `WHERE (
         -- Include players with NO teams (zero team associations)
         NOT EXISTS (SELECT 1 FROM player_team pt_check WHERE pt_check.player = p.player_id)
         OR
-        -- Include players with teams in the specified organization
+        -- Include players with teams in the specified organizations (e.g., NFL + NCAA)
         p.player_id IN (
           SELECT DISTINCT pt2.player
           FROM player_team pt2
           JOIN team t2 ON pt2.team = t2.team_id
-          WHERE t2.organization = @organizationId
+          WHERE t2.organization IN (${organizationFilter.map((_, i) => `@org${i}`).join(', ')})
         )
       )` : ''}
       ORDER BY playerName, teamName
@@ -1997,11 +2038,11 @@ async function findTeamMatches(pool, teamNames, organizationId = null) {
     }
 
     for (const teamName of teamNames) {
-      const cleanTeamName = teamName.trim()
+      const normalizedTeamName = normalizeTeamName(teamName)
 
       // First try exact match (filtered by organization)
       const exactRequest = pool.request()
-      exactRequest.input('teamName', sql.NVarChar, cleanTeamName)
+      exactRequest.input('teamName', sql.NVarChar, normalizedTeamName)
       if (organizationId) {
         exactRequest.input('organizationId', sql.Int, organizationId)
       }
@@ -2015,7 +2056,11 @@ async function findTeamMatches(pool, teamNames, organizationId = null) {
           t.primary_color as primaryColor,
           t.secondary_color as secondaryColor
         FROM team t
-        WHERE (LOWER(t.name) = LOWER(@teamName) OR LOWER(t.abbreviation) = LOWER(@teamName))
+        WHERE (
+          REPLACE(REPLACE(REPLACE(LOWER(t.name), ' ', ''), '.', ''), '-', '') = @teamName
+          OR
+          REPLACE(REPLACE(REPLACE(LOWER(t.abbreviation), ' ', ''), '.', ''), '-', '') = @teamName
+        )
         ${organizationId ? 'AND t.organization = @organizationId' : ''}
         ORDER BY t.name
       `
@@ -2040,10 +2085,10 @@ async function findTeamMatches(pool, teamNames, organizationId = null) {
       // If no exact match found, try fuzzy matching (Requirement #3)
       // This helps match "Angels" to "Los Angeles Angels" or "Anaheim Angels"
       if (exactResult.recordset.length === 0) {
-        console.log(`🔍 No exact match for "${cleanTeamName}", trying fuzzy match...`)
+        console.log(`🔍 No exact match for "${teamName}", trying fuzzy match...`)
 
         const fuzzyRequest = pool.request()
-        fuzzyRequest.input('teamName', sql.NVarChar, `%${cleanTeamName}%`)
+        fuzzyRequest.input('teamName', sql.NVarChar, `%${normalizedTeamName}%`)
         if (organizationId) {
           fuzzyRequest.input('organizationId', sql.Int, organizationId)
         }
@@ -2056,9 +2101,13 @@ async function findTeamMatches(pool, teamNames, organizationId = null) {
             t.abbreviation as abbreviation,
             t.primary_color as primaryColor,
             t.secondary_color as secondaryColor,
-            CASE WHEN LOWER(t.name) LIKE LOWER(@teamName) + '%' THEN 0 ELSE 1 END as matchPriority
+            CASE WHEN REPLACE(REPLACE(REPLACE(LOWER(t.name), ' ', ''), '.', ''), '-', '') LIKE @teamName + '%' THEN 0 ELSE 1 END as matchPriority
           FROM team t
-          WHERE (LOWER(t.name) LIKE LOWER(@teamName) OR LOWER(t.abbreviation) LIKE LOWER(@teamName))
+          WHERE (
+            REPLACE(REPLACE(REPLACE(LOWER(t.name), ' ', ''), '.', ''), '-', '') LIKE @teamName
+            OR
+            REPLACE(REPLACE(REPLACE(LOWER(t.abbreviation), ' ', ''), '.', ''), '-', '') LIKE @teamName
+          )
           ${organizationId ? 'AND t.organization = @organizationId' : ''}
           ORDER BY matchPriority, t.name
         `
