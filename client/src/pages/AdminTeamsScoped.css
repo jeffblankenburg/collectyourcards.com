@@ -207,6 +207,34 @@
   text-align: left;
 }
 
+.admin-teams-page .col-team-circle {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.admin-teams-page .admin-teams-team-circle {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  border: 3px solid;
+  color: white;
+  font-weight: bold;
+  font-size: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-transform: uppercase;
+  transition: transform 0.2s ease;
+  cursor: pointer;
+  user-select: none;
+}
+
+.admin-teams-page .admin-teams-team-circle:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2);
+}
+
 .admin-teams-page .col-name {
   font-weight: 500;
   overflow: visible;

@@ -17,6 +17,7 @@ function AdminTeams() {
   const [columnWidths, setColumnWidths] = useState({
     actions: '100px',
     id: '80px',
+    team_circle: '100px',
     name: '2fr',
     city: '1.5fr',
     mascot: '1.5fr',
@@ -374,7 +375,7 @@ function AdminTeams() {
         ) : (
           <div className="teams-table">
             <div className="table-header" style={{
-              gridTemplateColumns: `${columnWidths.actions} ${columnWidths.id} ${columnWidths.name} ${columnWidths.city} ${columnWidths.mascot} ${columnWidths.abbreviation} ${columnWidths.organization} ${columnWidths.colors} ${columnWidths.cards}`
+              gridTemplateColumns: `${columnWidths.actions} ${columnWidths.id} ${columnWidths.team_circle} ${columnWidths.name} ${columnWidths.city} ${columnWidths.mascot} ${columnWidths.abbreviation} ${columnWidths.organization} ${columnWidths.colors} ${columnWidths.cards}`
             }}>
               <div className="col-header center">
                 Actions
@@ -382,6 +383,10 @@ function AdminTeams() {
               <div className="col-header sortable" onClick={() => handleSort('team_id')}>
                 ID
                 <div className="resize-handle" onMouseDown={(e) => handleResizeStart(e, 'id')} />
+              </div>
+              <div className="col-header center">
+                Team Circle
+                <div className="resize-handle" onMouseDown={(e) => handleResizeStart(e, 'team_circle')} />
               </div>
               <div className="col-header sortable" onClick={() => handleSort('name')}>
                 Name
@@ -414,17 +419,17 @@ function AdminTeams() {
             </div>
             
             {filteredTeams.map(team => (
-              <div 
-                key={team.team_id} 
+              <div
+                key={team.team_id}
                 className="team-row"
                 style={{
-                  gridTemplateColumns: `${columnWidths.actions} ${columnWidths.id} ${columnWidths.name} ${columnWidths.city} ${columnWidths.mascot} ${columnWidths.abbreviation} ${columnWidths.organization} ${columnWidths.colors} ${columnWidths.cards}`
+                  gridTemplateColumns: `${columnWidths.actions} ${columnWidths.id} ${columnWidths.team_circle} ${columnWidths.name} ${columnWidths.city} ${columnWidths.mascot} ${columnWidths.abbreviation} ${columnWidths.organization} ${columnWidths.colors} ${columnWidths.cards}`
                 }}
                 onDoubleClick={() => handleEditTeam(team)}
                 title="Double-click to edit team"
               >
                 <div className="col-actions">
-                  <button 
+                  <button
                     className="edit-btn"
                     onClick={(e) => {
                       e.stopPropagation()
@@ -436,6 +441,18 @@ function AdminTeams() {
                   </button>
                 </div>
                 <div className="col-id">{team.team_id}</div>
+                <div className="col-team-circle">
+                  <div
+                    className="admin-teams-team-circle"
+                    style={{
+                      background: team.primary_color || '#666',
+                      borderColor: team.secondary_color || '#999'
+                    }}
+                    title={team.name}
+                  >
+                    {team.abbreviation}
+                  </div>
+                </div>
                 <div className="col-name">
                   <div className="team-name">{team.name}</div>
                 </div>

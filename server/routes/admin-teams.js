@@ -83,6 +83,7 @@ router.put('/teams/:id', async (req, res) => {
         city: true,
         mascot: true,
         abbreviation: true,
+        organization: true,
         primary_color: true,
         secondary_color: true
       }
@@ -126,6 +127,7 @@ router.put('/teams/:id', async (req, res) => {
       city: city?.trim() || null,
       mascot: mascot?.trim() || null,
       abbreviation: abbreviation?.trim() || null,
+      organization: organization_id ? parseInt(organization_id) : null,
       primary_color: primary_color?.trim() || null,
       secondary_color: secondary_color?.trim() || null
     }
@@ -151,6 +153,7 @@ router.put('/teams/:id', async (req, res) => {
       city: existingTeam.city,
       mascot: existingTeam.mascot,
       abbreviation: existingTeam.abbreviation,
+      organization: existingTeam.organization,
       primary_color: existingTeam.primary_color,
       secondary_color: existingTeam.secondary_color
     })
@@ -165,6 +168,7 @@ router.put('/teams/:id', async (req, res) => {
         city: true,
         mascot: true,
         abbreviation: true,
+        organization: true,
         primary_color: true,
         secondary_color: true
       }
