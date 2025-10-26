@@ -485,9 +485,11 @@ router.post('/parse-pasted', requireAuth, requireAdmin, async (req, res) => {
 router.post('/match-cards', requireAuth, requireAdmin, async (req, res) => {
   // Create progress tracking job (declare outside try block for error handling)
   const jobId = `match_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-  
+  let cards = [] // Declare outside try block for error handling
+
   try {
-    const { cards, seriesId } = req.body
+    const { cards: cardsFromBody, seriesId } = req.body
+    cards = cardsFromBody
     
     if (!cards || !Array.isArray(cards)) {
       return res.status(400).json({ message: 'Cards array is required' })
@@ -692,7 +694,7 @@ router.post('/match-cards', requireAuth, requireAdmin, async (req, res) => {
             FROM team
             WHERE (name IS NULL OR name = '' OR LOWER(name) = 'no name')
             ${organizationId ? `AND (organization = ${organizationId} OR organization IS NULL)` : ''}
-            ORDER BY organization DESC NULLS LAST
+            ORDER BY CASE WHEN organization IS NULL THEN 1 ELSE 0 END, organization DESC
           `
 
           console.log(`🔍 Executing query:`, noNameTeamsQuery)

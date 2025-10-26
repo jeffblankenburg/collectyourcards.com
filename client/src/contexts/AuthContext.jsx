@@ -33,8 +33,12 @@ export const AuthProvider = ({ children }) => {
   const checkAuthStatus = async () => {
     try {
       const response = await axios.get('/api/auth/profile')
-      setUser(response.data.user)
+      const userData = response.data.user
+      setUser(userData)
       setIsAuthenticated(true)
+
+      // Store user in localStorage for logging and persistence
+      localStorage.setItem('user', JSON.stringify(userData))
     } catch (error) {
       console.error('Auth check failed:', error)
       logout() // Clear invalid token
@@ -51,15 +55,16 @@ export const AuthProvider = ({ children }) => {
       })
 
       const { token, user: userData } = response.data
-      
-      // Store token
+
+      // Store token and user
       localStorage.setItem('token', token)
+      localStorage.setItem('user', JSON.stringify(userData))
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
-      
+
       // Update state
       setUser(userData)
       setIsAuthenticated(true)
-      
+
       return { success: true, user: userData }
     } catch (error) {
       console.error('Login failed:', error)
@@ -84,14 +89,15 @@ export const AuthProvider = ({ children }) => {
   }
 
   const logout = () => {
-    // Remove token
+    // Remove token and user
     localStorage.removeItem('token')
+    localStorage.removeItem('user')
     delete axios.defaults.headers.common['Authorization']
-    
+
     // Clear state
     setUser(null)
     setIsAuthenticated(false)
-    
+
     // Optional: Call backend logout endpoint
     axios.post('/api/auth/logout').catch(() => {
       // Ignore errors on logout
@@ -168,9 +174,13 @@ export const AuthProvider = ({ children }) => {
 
   const setAuth = (authData) => {
     if (authData && authData.token && authData.user) {
+      // Store token and user
+      localStorage.setItem('token', authData.token)
+      localStorage.setItem('user', JSON.stringify(authData.user))
+
       // Set default authorization header
       axios.defaults.headers.common['Authorization'] = `Bearer ${authData.token}`
-      
+
       // Update state
       setUser(authData.user)
       setIsAuthenticated(true)
