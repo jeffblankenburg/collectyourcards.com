@@ -303,11 +303,13 @@ const CardTable = ({
   const handleDownload = async () => {
     try {
       const dataToExport = sortedCards
-      
+
       // Create headers that match the table columns
       const headers = [
         'Card #',
         'Player(s)',
+        'Team(s)',
+        'RC',
         'Series',
         'Print Run',
         'Color',
@@ -321,10 +323,18 @@ const CardTable = ({
         headers.join(','),
         ...dataToExport.map(card => {
           // Format players
-          const players = card.card_player_teams?.map(cpt => 
+          const players = card.card_player_teams?.map(cpt =>
             `${cpt.player?.first_name || ''} ${cpt.player?.last_name || ''}`.trim()
-          ).join('; ') || ''
-          
+          ).join(' / ') || ''
+
+          // Format teams
+          const teams = card.card_player_teams?.map(cpt =>
+            cpt.team?.name || ''
+          ).filter(name => name).join(' / ') || ''
+
+          // Format RC status
+          const rc = card.is_rookie ? 'RC' : ''
+
           // Format auto and relic separately
           const auto = card.is_autograph ? 'AUTO' : ''
           const relic = card.is_relic ? 'RELIC' : ''
@@ -332,6 +342,8 @@ const CardTable = ({
           const row = [
             `"${card.card_number || ''}"`,
             `"${players}"`,
+            `"${teams}"`,
+            `"${rc}"`,
             `"${card.series_rel?.name || ''}"`,
             `"${card.print_run ? `/${card.print_run}` : ''}"`,
             `"${card.color_rel?.color || ''}"`,
@@ -340,7 +352,7 @@ const CardTable = ({
             `"${card.notes || ''}"`,
             `"${card.series_rel?.production_code || ''}"`
           ]
-          
+
           return row.join(',')
         })
       ].join('\n')
