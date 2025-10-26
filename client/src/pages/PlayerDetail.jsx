@@ -289,16 +289,12 @@ function PlayerDetail() {
     setShowAddCardModal(true)
   }
 
-  const handleCardAdded = (newUserCard) => {
-    // Update the card's user_card_count to reflect it's now owned
-    setCards(prevCards => 
-      prevCards.map(c => 
-        c.card_id === newUserCard.card 
-          ? { ...c, user_card_count: (c.user_card_count || 0) + 1 }
-          : c
-      )
-    )
-    
+  const handleCardAdded = async (newUserCard) => {
+    // Refresh cards from server to show updated ownership
+    if (player) {
+      await fetchCards(player)
+    }
+
     // Close modal
     setShowAddCardModal(false)
     setCardToAdd(null)

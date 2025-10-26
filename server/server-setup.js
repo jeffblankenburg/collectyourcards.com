@@ -30,8 +30,9 @@ app.use(helmet({
     directives: {
       ...helmet.contentSecurityPolicy.getDefaultDirectives(),
       "img-src": [
-        "'self'", 
-        "data:", 
+        "'self'",
+        "data:",
+        "blob:",  // Allow local blob URLs for image previews
         "*.blob.core.windows.net",  // Allow Azure Blob Storage
         "https://cardcheckliststorage.blob.core.windows.net"  // Specific storage account
       ]

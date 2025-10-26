@@ -66,22 +66,22 @@ function EditSetModal({
     }
   }
 
-  const handleThumbnailUpload = async (file) => {
-    if (!file) return null
-    
+  const handleThumbnailUpload = async (file, setId) => {
+    if (!file || !setId) return null
+
     try {
       setUploadingThumbnail(true)
-      
+
       const formData = new FormData()
       formData.append('thumbnail', file)
-      formData.append('setId', set.set_id)
-      
+      formData.append('setId', setId)
+
       const response = await axios.post('/api/admin/sets/upload-thumbnail', formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
       })
-      
+
       if (response.data.success) {
         addToast('Thumbnail uploaded successfully', 'success')
         return response.data.thumbnailUrl
@@ -106,35 +106,58 @@ function EditSetModal({
 
     try {
       setSaving(true)
-      
-      let thumbnailUrl = editForm.thumbnail
-      if (selectedFile) {
-        thumbnailUrl = await handleThumbnailUpload(selectedFile)
-        if (!thumbnailUrl) {
-          return
-        }
-      }
-      
-      const setData = {
-        name: editForm.name.trim(),
-        year: parseInt(editForm.year) || null,
-        organization: editForm.organization || null,
-        manufacturer: editForm.manufacturer || null,
-        is_complete: editForm.is_complete,
-        thumbnail: thumbnailUrl
-      }
 
       let savedSet
+
       if (set) {
         // Edit mode - update existing set
+        // Upload thumbnail first if a new file was selected
+        let thumbnailUrl = editForm.thumbnail
+        if (selectedFile) {
+          thumbnailUrl = await handleThumbnailUpload(selectedFile, set.set_id)
+          if (!thumbnailUrl) {
+            return
+          }
+        }
+
+        const setData = {
+          name: editForm.name.trim(),
+          year: parseInt(editForm.year) || null,
+          organization: editForm.organization || null,
+          manufacturer: editForm.manufacturer || null,
+          is_complete: editForm.is_complete,
+          thumbnail: thumbnailUrl
+        }
+
         const response = await axios.put(`/api/admin/sets/${set.set_id}`, setData)
         savedSet = response.data.set
         addToast('Set updated successfully', 'success')
       } else {
-        // Add mode - create new set
+        // Add mode - create new set first (without thumbnail)
+        const setData = {
+          name: editForm.name.trim(),
+          year: parseInt(editForm.year) || null,
+          organization: editForm.organization || null,
+          manufacturer: editForm.manufacturer || null,
+          is_complete: editForm.is_complete,
+          thumbnail: null
+        }
+
         const response = await axios.post('/api/admin/sets', setData)
         savedSet = response.data.set
         addToast('Set created successfully', 'success')
+
+        // Upload thumbnail after set is created (if file selected)
+        if (selectedFile && savedSet?.set_id) {
+          const thumbnailUrl = await handleThumbnailUpload(selectedFile, savedSet.set_id)
+          if (thumbnailUrl) {
+            // Update set with thumbnail URL
+            await axios.put(`/api/admin/sets/${savedSet.set_id}`, {
+              ...setData,
+              thumbnail: thumbnailUrl
+            })
+          }
+        }
 
         // Auto-create a series with the same name
         try {
@@ -152,11 +175,11 @@ function EditSetModal({
       }
 
       onClose()
-      
+
       if (onSaveSuccess) {
         onSaveSuccess()
       }
-      
+
     } catch (error) {
       console.error('Error updating set:', error)
       addToast(`Failed to update set: ${error.response?.data?.message || error.message}`, 'error')
