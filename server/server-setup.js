@@ -29,12 +29,26 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+      "script-src": [
+        "'self'",
+        "'unsafe-inline'",  // Required for Google Tag Manager inline scripts
+        "https://www.googletagmanager.com",
+        "https://www.google-analytics.com"
+      ],
+      "connect-src": [
+        "'self'",
+        "https://www.google-analytics.com",
+        "https://analytics.google.com",
+        "https://www.googletagmanager.com"
+      ],
       "img-src": [
         "'self'",
         "data:",
         "blob:",  // Allow local blob URLs for image previews
         "*.blob.core.windows.net",  // Allow Azure Blob Storage
-        "https://cardcheckliststorage.blob.core.windows.net"  // Specific storage account
+        "https://cardcheckliststorage.blob.core.windows.net",  // Specific storage account
+        "https://www.google-analytics.com",  // Google Analytics tracking pixels
+        "https://www.googletagmanager.com"  // Google Tag Manager
       ]
     }
   }

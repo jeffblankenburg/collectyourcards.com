@@ -109,7 +109,8 @@ import {
   Copy,
   GitMerge,
   Merge,
-  ArrowLeftRight
+  ArrowLeftRight,
+  Clipboard
 } from 'lucide-react'
 
 // Icon mapping for consistent usage across the app
@@ -187,6 +188,8 @@ const iconMap = {
   'eye': Eye,
   'eye-off': EyeOff,
   'delete': Trash2,
+  'trash-2': Trash2,
+  'clipboard': Clipboard,
   'menu': Menu,
   'close': X,
   'plus': Plus,

@@ -327,18 +327,10 @@ router.post('/parse-pasted', requireAuth, requireAdmin, async (req, res) => {
       return res.status(400).json({ message: 'No data rows found' })
     }
 
-    // Skip first row if it looks like headers
-    const firstRow = rows[0]
-    const hasHeaders = firstRow.some(cell =>
-      cell && (
-        cell.toLowerCase().includes('card') ||
-        cell.toLowerCase().includes('player') ||
-        cell.toLowerCase().includes('team')
-      )
-    )
-
-    const dataRows = hasHeaders ? rows.slice(1) : rows
-    console.log('Processing rows:', dataRows.length, '(skipped header:', hasHeaders, ')')
+    // For paste imports, process all rows - user manually selected what to import
+    // Don't auto-skip potential headers since "Team Logo" cards or other notes may trigger false positives
+    const dataRows = rows
+    console.log('Processing all pasted rows:', dataRows.length)
 
     // Process the data - same format as XLSX: Card Number, Player Name(s), Team Name(s), RC Indicator, Notes
     const cards = dataRows.map((row, index) => {
