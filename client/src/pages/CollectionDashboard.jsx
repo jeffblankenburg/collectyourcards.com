@@ -78,7 +78,7 @@ function CollectionDashboard() {
         uniqueSeries.add(card.series_rel.series_id)
       }
 
-      // Calculate total value
+      // Calculate total value - only use current_value
       if (card.current_value) {
         totalValue += parseFloat(card.current_value)
       }

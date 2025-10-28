@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
+import Icon from '../Icon'
 import './PhotoCountHover.css'
 
-const PhotoCountHover = ({ photoCount, allPhotos = [] }) => {
+const PhotoCountHover = ({ photoCount, allPhotos = [], onUploadClick }) => {
   const [showThumbnails, setShowThumbnails] = useState(false)
   const [hoverTimeout, setHoverTimeout] = useState(null)
   const [position, setPosition] = useState({ top: 0, left: 0 })
@@ -42,21 +43,36 @@ const PhotoCountHover = ({ photoCount, allPhotos = [] }) => {
     setShowThumbnails(false)
   }
 
+  // Show upload button when no photos
   if (photoCount === 0) {
-    return null
+    return (
+      <button
+        className="photo-upload-btn"
+        onClick={(e) => {
+          e.stopPropagation()
+          if (onUploadClick) onUploadClick()
+        }}
+        title="Upload photo"
+      >
+        <Icon name="upload" size={14} />
+        <span>Upload</span>
+      </button>
+    )
   }
 
+  // Show icon + count when photos exist
   return (
     <>
-      <div 
+      <div
         ref={countRef}
         className="photo-count-container"
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
       >
-        <span className="photo-count-tag">
-          {photoCount}
-        </span>
+        <div className="photo-count-display">
+          <Icon name="image" size={14} />
+          <span className="photo-count-number">{photoCount}</span>
+        </div>
       </div>
       
       {showThumbnails && allPhotos.length > 0 && createPortal(
