@@ -82,7 +82,7 @@ function CollectionDashboard() {
       if (card.is_rookie) rookieCount++
       if (card.is_autograph) autoCount++
       if (card.is_relic) relicCount++
-      if (card.grade_value) gradedCount++
+      if (card.grade) gradedCount++
     })
 
     return {
