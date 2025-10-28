@@ -179,7 +179,7 @@ class CardCreatorService {
    * Handle new player creation
    *
    * @private
-   * @param {Object} player - Player object with name
+   * @param {Object} player - Player object with name and optional selectedTeams
    * @param {number} cardId - Card ID
    * @param {Transaction} transaction - Active transaction
    * @param {Map} newPlayerCache - Cache of newly created players
@@ -207,7 +207,25 @@ class CardCreatorService {
       console.log(`    ✅ New player created with ID: ${playerId}`)
     }
 
-    console.log(`    ⚠️ New player created but no team associations - card will have no player_team relationships`)
+    // If teams were selected for this new player, create player_team and card_player_team relationships
+    if (player.selectedTeams && player.selectedTeams.length > 0) {
+      console.log(`    🔗 Creating ${player.selectedTeams.length} team associations for new player`)
+
+      for (const team of player.selectedTeams) {
+        const teamId = parseInt(team.teamId)
+        console.log(`    🔗 Creating player_team: playerId=${playerId}, teamId=${teamId} (${team.teamName})`)
+
+        // Get or create player_team record
+        const playerTeamId = await this._getOrCreatePlayerTeam(playerId, teamId, transaction)
+
+        // Create card_player_team relationship
+        console.log(`    🔗 Creating card_player_team: cardId=${cardId}, playerTeamId=${playerTeamId}`)
+        await this._createCardPlayerTeam(cardId, playerTeamId, transaction)
+        console.log(`    ✅ Card-player-team relationship created`)
+      }
+    } else {
+      console.log(`    ⚠️ New player created but no teams selected - card will have no player_team relationships for this player`)
+    }
   }
 
   /**
