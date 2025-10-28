@@ -121,6 +121,7 @@ router.get('/', async (req, res) => {
         col.name as color, 
         col.hex_value as hex_color,
         ul.location as location_name,
+        p.player_id,
         p.first_name,
         p.last_name,
         t.team_id,
@@ -208,6 +209,7 @@ router.get('/', async (req, res) => {
         const card = cardMap.get(userCardId)
         card.card_player_teams.push({
           player: {
+            player_id: typeof row.player_id === 'bigint' ? Number(row.player_id) : row.player_id,
             name: `${row.first_name} ${row.last_name}`,
             first_name: row.first_name,
             last_name: row.last_name

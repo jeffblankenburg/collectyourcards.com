@@ -34,7 +34,8 @@ const CollectionTable = ({
   onSearchChange = null,
   maxHeight = null, // Custom height for the table wrapper
   showDownload = true,
-  downloadFilename = 'collection'
+  downloadFilename = 'collection',
+  customActions = null // Custom action buttons to display in controls
 }) => {
   const { isAuthenticated } = useAuth()
   const [sortField, setSortField] = useState('series_name')
@@ -394,25 +395,33 @@ const CollectionTable = ({
               />
             </div>
           )}
-          
-          {showGalleryToggle && (
-            <div className="collection-table-view-toggle">
-              <button
-                className={`collection-table-toggle-button ${viewMode === 'table' ? 'collection-table-active' : ''}`}
-                onClick={() => onViewModeChange?.('table')}
-              >
-                <Icon name="list" size={16} />
-                Table
-              </button>
-              <button
-                className={`collection-table-toggle-button ${viewMode === 'gallery' ? 'collection-table-active' : ''}`}
-                onClick={() => onViewModeChange?.('gallery')}
-              >
-                <Icon name="grid" size={16} />
-                Gallery
-              </button>
-            </div>
-          )}
+
+          <div className="collection-table-controls-right">
+            {customActions && (
+              <div className="collection-table-custom-actions">
+                {customActions}
+              </div>
+            )}
+
+            {showGalleryToggle && (
+              <div className="collection-table-view-toggle">
+                <button
+                  className={`collection-table-toggle-button ${viewMode === 'table' ? 'collection-table-active' : ''}`}
+                  onClick={() => onViewModeChange?.('table')}
+                >
+                  <Icon name="list" size={16} />
+                  Table
+                </button>
+                <button
+                  className={`collection-table-toggle-button ${viewMode === 'gallery' ? 'collection-table-active' : ''}`}
+                  onClick={() => onViewModeChange?.('gallery')}
+                >
+                  <Icon name="grid" size={16} />
+                  Gallery
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Gallery Grid using GalleryCard component */}
@@ -470,25 +479,33 @@ const CollectionTable = ({
             />
           </div>
         )}
-        
-        {showGalleryToggle && (
-          <div className="collection-table-view-toggle">
-            <button
-              className={`collection-table-toggle-button ${viewMode === 'table' ? 'collection-table-active' : ''}`}
-              onClick={() => onViewModeChange?.('table')}
-            >
-              <Icon name="list" size={16} />
-              Table
-            </button>
-            <button
-              className={`collection-table-toggle-button ${viewMode === 'gallery' ? 'collection-table-active' : ''}`}
-              onClick={() => onViewModeChange?.('gallery')}
-            >
-              <Icon name="grid" size={16} />
-              Gallery
-            </button>
-          </div>
-        )}
+
+        <div className="collection-table-controls-right">
+          {customActions && (
+            <div className="collection-table-custom-actions">
+              {customActions}
+            </div>
+          )}
+
+          {showGalleryToggle && (
+            <div className="collection-table-view-toggle">
+              <button
+                className={`collection-table-toggle-button ${viewMode === 'table' ? 'collection-table-active' : ''}`}
+                onClick={() => onViewModeChange?.('table')}
+              >
+                <Icon name="list" size={16} />
+                Table
+              </button>
+              <button
+                className={`collection-table-toggle-button ${viewMode === 'gallery' ? 'collection-table-active' : ''}`}
+                onClick={() => onViewModeChange?.('gallery')}
+              >
+                <Icon name="grid" size={16} />
+                Gallery
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Table */}

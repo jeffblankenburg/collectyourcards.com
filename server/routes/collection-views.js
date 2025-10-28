@@ -1,8 +1,7 @@
 const express = require('express')
 const router = express.Router()
-const { connectToDatabase } = require('../config/database')
-const { requireAuth } = require('../middleware/auth')
-const sql = require('mssql')
+const { prisma } = require('../config/prisma-singleton')
+const { authMiddleware: requireAuth, optionalAuthMiddleware } = require('../middleware/auth')
 
 // Helper function to generate unique slug
 function generateSlug(name) {
@@ -29,7 +28,7 @@ function generateSlug(name) {
 router.post('/', requireAuth, async (req, res) => {
   try {
     const { name, description, filter_config, is_public } = req.body
-    const userId = req.user.user_id
+    const userId = req.user.userId
 
     if (!name || !name.trim()) {
       return res.status(400).json({ error: 'Name is required' })
@@ -39,8 +38,6 @@ router.post('/', requireAuth, async (req, res) => {
       return res.status(400).json({ error: 'Filter configuration is required' })
     }
 
-    const pool = await connectToDatabase()
-
     // Generate unique slug
     let slug = generateSlug(name)
     let slugExists = true
@@ -48,11 +45,11 @@ router.post('/', requireAuth, async (req, res) => {
 
     // Try to find a unique slug (max 10 attempts)
     while (slugExists && attempts < 10) {
-      const checkResult = await pool.request()
-        .input('slug', sql.NVarChar, slug)
-        .query('SELECT collection_view_id FROM collection_view WHERE slug = @slug')
+      const checkResult = await prisma.$queryRaw`
+        SELECT collection_view_id FROM collection_view WHERE slug = ${slug}
+      `
 
-      if (checkResult.recordset.length === 0) {
+      if (checkResult.length === 0) {
         slugExists = false
       } else {
         slug = generateSlug(name) // Try again with new random suffix
@@ -65,20 +62,20 @@ router.post('/', requireAuth, async (req, res) => {
     }
 
     // Insert collection view
-    const result = await pool.request()
-      .input('user', sql.BigInt, userId)
-      .input('name', sql.NVarChar, name.trim())
-      .input('slug', sql.NVarChar, slug)
-      .input('description', sql.NVarChar, description || null)
-      .input('filter_config', sql.NVarChar, JSON.stringify(filter_config))
-      .input('is_public', sql.Bit, is_public !== false) // Default to true
-      .query(`
-        INSERT INTO collection_view ([user], name, slug, description, filter_config, is_public)
-        OUTPUT INSERTED.*
-        VALUES (@user, @name, @slug, @description, @filter_config, @is_public)
-      `)
+    const result = await prisma.$queryRaw`
+      INSERT INTO collection_view ([user], name, slug, description, filter_config, is_public)
+      OUTPUT INSERTED.*
+      VALUES (
+        ${BigInt(parseInt(userId))},
+        ${name.trim()},
+        ${slug},
+        ${description || null},
+        ${JSON.stringify(filter_config)},
+        ${is_public !== false ? 1 : 0}
+      )
+    `
 
-    const view = result.recordset[0]
+    const view = result[0]
 
     res.json({
       success: true,
@@ -103,28 +100,25 @@ router.post('/', requireAuth, async (req, res) => {
 // Get all collection views for the authenticated user
 router.get('/', requireAuth, async (req, res) => {
   try {
-    const userId = req.user.user_id
-    const pool = await connectToDatabase()
+    const userId = req.user.userId
 
-    const result = await pool.request()
-      .input('userId', sql.BigInt, userId)
-      .query(`
-        SELECT
-          cv.collection_view_id,
-          cv.name,
-          cv.slug,
-          cv.description,
-          cv.filter_config,
-          cv.is_public,
-          cv.view_count,
-          cv.created_at,
-          cv.updated_at
-        FROM collection_view cv
-        WHERE cv.[user] = @userId
-        ORDER BY cv.created_at DESC
-      `)
+    const result = await prisma.$queryRaw`
+      SELECT
+        cv.collection_view_id,
+        cv.name,
+        cv.slug,
+        cv.description,
+        cv.filter_config,
+        cv.is_public,
+        cv.view_count,
+        cv.created_at,
+        cv.updated_at
+      FROM collection_view cv
+      WHERE cv.[user] = ${BigInt(parseInt(userId))}
+      ORDER BY cv.created_at DESC
+    `
 
-    const views = result.recordset.map(view => ({
+    const views = result.map(view => ({
       collection_view_id: Number(view.collection_view_id),
       name: view.name,
       slug: view.slug,
@@ -144,41 +138,38 @@ router.get('/', requireAuth, async (req, res) => {
   }
 })
 
-// Get a public collection view by slug (no auth required for public views)
-router.get('/shared/:slug', async (req, res) => {
+// Get a public collection view by slug (no auth required, but optional auth for owner detection)
+router.get('/shared/:slug', optionalAuthMiddleware, async (req, res) => {
   try {
     const { slug } = req.params
-    const pool = await connectToDatabase()
 
     // Get the view
-    const viewResult = await pool.request()
-      .input('slug', sql.NVarChar, slug)
-      .query(`
-        SELECT
-          cv.collection_view_id,
-          cv.[user],
-          cv.name,
-          cv.slug,
-          cv.description,
-          cv.filter_config,
-          cv.is_public,
-          cv.view_count,
-          cv.created_at,
-          u.username,
-          u.display_name
-        FROM collection_view cv
-        JOIN [user] u ON cv.[user] = u.user_id
-        WHERE cv.slug = @slug
-      `)
+    const viewResult = await prisma.$queryRaw`
+      SELECT
+        cv.collection_view_id,
+        cv.[user],
+        cv.name,
+        cv.slug,
+        cv.description,
+        cv.filter_config,
+        cv.is_public,
+        cv.view_count,
+        cv.created_at,
+        u.username
+      FROM collection_view cv
+      JOIN [user] u ON cv.[user] = u.user_id
+      WHERE cv.slug = ${slug}
+    `
 
-    if (viewResult.recordset.length === 0) {
+    if (viewResult.length === 0) {
       return res.status(404).json({ error: 'Collection view not found' })
     }
 
-    const view = viewResult.recordset[0]
+    const view = viewResult[0]
 
     // Check if view is public (unless it's the owner requesting)
-    const requestUserId = req.user?.user_id
+    // optionalAuthMiddleware sets req.user.id (not userId)
+    const requestUserId = req.user?.id
     const isOwner = requestUserId && Number(requestUserId) === Number(view.user)
 
     if (!view.is_public && !isOwner) {
@@ -187,93 +178,151 @@ router.get('/shared/:slug', async (req, res) => {
 
     // Increment view count (only for non-owners)
     if (!isOwner) {
-      await pool.request()
-        .input('viewId', sql.BigInt, view.collection_view_id)
-        .query('UPDATE collection_view SET view_count = view_count + 1 WHERE collection_view_id = @viewId')
+      await prisma.$queryRaw`
+        UPDATE collection_view
+        SET view_count = view_count + 1
+        WHERE collection_view_id = ${BigInt(view.collection_view_id)}
+      `
     }
 
     // Parse filter config
     const filterConfig = JSON.parse(view.filter_config)
 
-    // Build query to fetch cards based on filter config
-    const params = []
+    // Fetch cards with player and team data
+    // view.user is already a BigInt from the database query
+    const userId = typeof view.user === 'bigint' ? view.user : BigInt(parseInt(view.user))
+
+    // Build SQL query dynamically based on filters
+    let sqlQuery = `
+      SELECT
+        uc.user_card_id,
+        uc.card,
+        uc.serial_number,
+        uc.grade,
+        c.card_number,
+        c.is_rookie,
+        c.is_autograph,
+        c.is_relic,
+        c.print_run,
+        s.series_id,
+        s.name as series_name,
+        s.production_code,
+        st.set_id,
+        st.name as set_name,
+        st.year as set_year,
+        p.player_id,
+        p.first_name,
+        p.last_name,
+        t.team_id,
+        t.name as team_name,
+        t.abbreviation as team_abbr,
+        t.primary_color,
+        t.secondary_color
+      FROM user_card uc
+      JOIN card c ON uc.card = c.card_id
+      LEFT JOIN series s ON c.series = s.series_id
+      LEFT JOIN [set] st ON s.[set] = st.set_id
+      LEFT JOIN card_player_team cpt ON c.card_id = cpt.card
+      LEFT JOIN player_team pt ON cpt.player_team = pt.player_team_id
+      LEFT JOIN player p ON pt.player = p.player_id
+      LEFT JOIN team t ON pt.team = t.team_id
+      WHERE uc.[user] = ${userId}
+    `
 
     // Add location filters
     if (filterConfig.locationIds && filterConfig.locationIds.length > 0) {
-      const locationParams = filterConfig.locationIds.map(id => `location_id=${id}`).join('&')
-      params.push(locationParams)
-      if (filterConfig.includeUnassigned) {
-        params.push('include_unassigned=true')
-      }
-    } else if (filterConfig.onlyUnassigned) {
-      params.push('only_unassigned=true')
+      const locationBigInts = filterConfig.locationIds.map(id => BigInt(parseInt(id)))
+      sqlQuery += ` AND uc.user_location IN (${locationBigInts.join(',')})`
     }
 
     // Add card type filters
     if (filterConfig.filters) {
-      if (filterConfig.filters.rookies) params.push('is_rookie=true')
-      if (filterConfig.filters.autos) params.push('is_autograph=true')
-      if (filterConfig.filters.relics) params.push('is_relic=true')
-      if (filterConfig.filters.graded) params.push('has_grade=true')
+      if (filterConfig.filters.rookies) sqlQuery += ' AND c.is_rookie = 1'
+      if (filterConfig.filters.autos) sqlQuery += ' AND c.is_autograph = 1'
+      if (filterConfig.filters.relics) sqlQuery += ' AND c.is_relic = 1'
+      if (filterConfig.filters.graded) sqlQuery += ' AND uc.grade IS NOT NULL'
     }
 
-    // Add team filters
+    // Add team filters using EXISTS subquery
     if (filterConfig.teamIds && filterConfig.teamIds.length > 0) {
-      const teamParams = filterConfig.teamIds.map(id => `team_id=${id}`).join('&')
-      params.push(teamParams)
+      const teamIds = filterConfig.teamIds.map(id => parseInt(id))
+      sqlQuery += `
+        AND EXISTS (
+          SELECT 1
+          FROM card_player_team cpt2
+          JOIN player_team pt2 ON cpt2.player_team = pt2.player_team_id
+          WHERE cpt2.card = c.card_id
+            AND pt2.team IN (${teamIds.join(',')})
+        )
+      `
     }
 
-    // Fetch cards using the collection cards endpoint logic
-    // We'll reuse the same query structure from user-collection-cards.js
-    const cardsResult = await pool.request()
-      .input('userId', sql.BigInt, view.user)
-      .query(`
-        SELECT
-          uc.user_card_id,
-          uc.card,
-          uc.serial_number,
-          uc.purchase_price,
-          uc.estimated_value,
-          uc.current_value,
-          uc.is_for_sale,
-          uc.is_wanted,
-          uc.is_special,
-          uc.grade,
-          uc.grade_id,
-          uc.grading_agency,
-          uc.user_location,
-          c.card_number,
-          c.is_rookie,
-          c.is_autograph,
-          c.is_relic,
-          c.print_run,
-          c.notes,
-          s.series_id,
-          s.name as series_name,
-          s.production_code,
-          st.set_id,
-          st.name as set_name,
-          st.year as set_year
-        FROM user_card uc
-        JOIN card c ON uc.card = c.card_id
-        LEFT JOIN series s ON c.series = s.series_id
-        LEFT JOIN [set] st ON s.[set] = st.set_id
-        WHERE uc.[user] = @userId
-      `)
+    const cardsResult = await prisma.$queryRawUnsafe(sqlQuery)
+
+    // Group cards by user_card_id and build card_player_teams arrays
+    const cardMap = new Map()
+
+    cardsResult.forEach(row => {
+      const userCardId = Number(row.user_card_id)
+
+      if (!cardMap.has(userCardId)) {
+        cardMap.set(userCardId, {
+          user_card_id: userCardId,
+          card_id: Number(row.card),
+          card_number: row.card_number,
+          is_rookie: row.is_rookie,
+          is_autograph: row.is_autograph,
+          is_relic: row.is_relic,
+          print_run: row.print_run,
+          serial_number: row.serial_number,
+          grade: row.grade,
+          series_rel: row.series_id ? {
+            series_id: Number(row.series_id),
+            name: row.series_name,
+            production_code: row.production_code,
+            set_name: row.set_name,
+            set_year: row.set_year
+          } : null,
+          card_player_teams: []
+        })
+      }
+
+      // Add player/team data if present
+      if (row.first_name && row.last_name && row.team_name) {
+        const card = cardMap.get(userCardId)
+        card.card_player_teams.push({
+          player: {
+            player_id: typeof row.player_id === 'bigint' ? Number(row.player_id) : row.player_id,
+            name: `${row.first_name} ${row.last_name}`,
+            first_name: row.first_name,
+            last_name: row.last_name
+          },
+          team: {
+            team_id: row.team_id ? Number(row.team_id) : null,
+            name: row.team_name,
+            abbreviation: row.team_abbr,
+            primary_color: row.primary_color,
+            secondary_color: row.secondary_color
+          }
+        })
+      }
+    })
+
+    const cards = Array.from(cardMap.values())
 
     // Calculate stats
-    const cards = cardsResult.recordset
-    let totalValue = 0
     let uniquePlayers = new Set()
     let uniqueSeries = new Set()
 
     cards.forEach(card => {
-      if (card.current_value) {
-        totalValue += parseFloat(card.current_value)
+      if (card.series_rel?.series_id) {
+        uniqueSeries.add(card.series_rel.series_id)
       }
-      if (card.series_id) {
-        uniqueSeries.add(card.series_id)
-      }
+      card.card_player_teams?.forEach(cpt => {
+        if (cpt.player?.player_id) {
+          uniquePlayers.add(cpt.player.player_id)
+        }
+      })
     })
 
     res.json({
@@ -287,35 +336,14 @@ router.get('/shared/:slug', async (req, res) => {
         view_count: view.view_count + (isOwner ? 0 : 1),
         created_at: view.created_at,
         owner: {
-          username: view.username,
-          display_name: view.display_name
+          username: view.username
         },
         is_owner: isOwner
       },
-      cards: cards.map(card => ({
-        user_card_id: Number(card.user_card_id),
-        card_id: Number(card.card),
-        card_number: card.card_number,
-        is_rookie: card.is_rookie,
-        is_autograph: card.is_autograph,
-        is_relic: card.is_relic,
-        print_run: card.print_run,
-        notes: card.notes,
-        serial_number: card.serial_number,
-        current_value: card.current_value ? parseFloat(card.current_value) : null,
-        is_special: card.is_special,
-        grade: card.grade,
-        series_rel: {
-          series_id: Number(card.series_id),
-          name: card.series_name,
-          production_code: card.production_code,
-          set_name: card.set_name,
-          set_year: card.set_year
-        }
-      })),
+      cards: cards,
       stats: {
         total_cards: cards.length,
-        total_value: totalValue,
+        unique_players: uniquePlayers.size,
         unique_series: uniqueSeries.size
       }
     })
@@ -330,40 +358,34 @@ router.put('/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params
     const { name, description, filter_config, is_public } = req.body
-    const userId = req.user.user_id
-
-    const pool = await connectToDatabase()
+    const userId = req.user.userId
 
     // Check ownership
-    const checkResult = await pool.request()
-      .input('viewId', sql.BigInt, id)
-      .input('userId', sql.BigInt, userId)
-      .query('SELECT collection_view_id FROM collection_view WHERE collection_view_id = @viewId AND [user] = @userId')
+    const checkResult = await prisma.$queryRaw`
+      SELECT collection_view_id
+      FROM collection_view
+      WHERE collection_view_id = ${BigInt(parseInt(id))}
+        AND [user] = ${BigInt(parseInt(userId))}
+    `
 
-    if (checkResult.recordset.length === 0) {
+    if (checkResult.length === 0) {
       return res.status(404).json({ error: 'Collection view not found or you do not have permission to edit it' })
     }
 
     // Update the view
-    const result = await pool.request()
-      .input('viewId', sql.BigInt, id)
-      .input('name', sql.NVarChar, name?.trim() || null)
-      .input('description', sql.NVarChar, description || null)
-      .input('filter_config', sql.NVarChar, filter_config ? JSON.stringify(filter_config) : null)
-      .input('is_public', sql.Bit, is_public)
-      .query(`
-        UPDATE collection_view
-        SET
-          name = COALESCE(@name, name),
-          description = COALESCE(@description, description),
-          filter_config = COALESCE(@filter_config, filter_config),
-          is_public = COALESCE(@is_public, is_public),
-          updated_at = GETDATE()
-        OUTPUT INSERTED.*
-        WHERE collection_view_id = @viewId
-      `)
+    const result = await prisma.$queryRaw`
+      UPDATE collection_view
+      SET
+        name = COALESCE(${name?.trim() || null}, name),
+        description = COALESCE(${description || null}, description),
+        filter_config = COALESCE(${filter_config ? JSON.stringify(filter_config) : null}, filter_config),
+        is_public = COALESCE(${is_public !== undefined ? (is_public ? 1 : 0) : null}, is_public),
+        updated_at = GETDATE()
+      OUTPUT INSERTED.*
+      WHERE collection_view_id = ${BigInt(parseInt(id))}
+    `
 
-    const view = result.recordset[0]
+    const view = result[0]
 
     res.json({
       success: true,
@@ -389,17 +411,16 @@ router.put('/:id', requireAuth, async (req, res) => {
 router.delete('/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params
-    const userId = req.user.user_id
-
-    const pool = await connectToDatabase()
+    const userId = req.user.userId
 
     // Check ownership and delete
-    const result = await pool.request()
-      .input('viewId', sql.BigInt, id)
-      .input('userId', sql.BigInt, userId)
-      .query('DELETE FROM collection_view WHERE collection_view_id = @viewId AND [user] = @userId')
+    const result = await prisma.$executeRaw`
+      DELETE FROM collection_view
+      WHERE collection_view_id = ${BigInt(parseInt(id))}
+        AND [user] = ${BigInt(parseInt(userId))}
+    `
 
-    if (result.rowsAffected[0] === 0) {
+    if (result === 0) {
       return res.status(404).json({ error: 'Collection view not found or you do not have permission to delete it' })
     }
 

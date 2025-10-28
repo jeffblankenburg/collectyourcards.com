@@ -57,6 +57,17 @@
   color: rgba(255, 255, 255, 0.5);
 }
 
+.collection-table-container .collection-table-controls-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.collection-table-container .collection-table-custom-actions {
+  display: flex;
+  align-items: center;
+}
+
 .collection-table-container .collection-table-view-toggle {
   display: flex;
   align-items: center;

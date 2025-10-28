@@ -48,6 +48,7 @@ import Lists from './pages/Lists.jsx'
 import ListDetail from './pages/ListDetail.jsx'
 import Blog from './pages/Blog.jsx'
 import BlogPost from './pages/BlogPost.jsx'
+import SharedCollectionView from './pages/SharedCollectionView.jsx'
 import './index.css'
 // import './styles/global-design-system.css' // Temporarily removed to prevent conflicts
 
@@ -122,6 +123,9 @@ createRoot(document.getElementById('root')).render(
               {/* Blog routes - MUST BE BEFORE username route */}
               <Route path="/blog" element={<Blog />} />
               <Route path="/blog/:slug" element={<BlogPost />} />
+
+              {/* Shared collection view route - MUST BE BEFORE username route */}
+              <Route path="/shared/:slug" element={<SharedCollectionView />} />
 
               {/* Public profile route - MUST BE LAST to avoid conflicts with other routes */}
               <Route path="/:username" element={<PublicProfile />} />

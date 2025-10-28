@@ -4,6 +4,8 @@ import { useToast } from '../contexts/ToastContext'
 import { useNavigate } from 'react-router-dom'
 import CollectionTable from '../components/tables/CollectionTable'
 import QuickEditModal from '../components/modals/QuickEditModal'
+import SaveViewModal from '../components/modals/SaveViewModal'
+import SavedViewsDropdown from '../components/SavedViewsDropdown'
 import TeamFilterCircles from '../components/TeamFilterCircles'
 import Icon from '../components/Icon'
 import axios from 'axios'
@@ -45,6 +47,8 @@ function CollectionDashboard() {
   const [selectedCard, setSelectedCard] = useState(null)
   const [gradingAgencies, setGradingAgencies] = useState([])
   const [selectedTeamIds, setSelectedTeamIds] = useState([])
+  const [showSaveViewModal, setShowSaveViewModal] = useState(false)
+  const [allTeams, setAllTeams] = useState([]) // All teams from full collection
 
   const navigate = useNavigate()
 
@@ -195,6 +199,60 @@ function CollectionDashboard() {
       fetchCards(apiEndpoint)
     }
   }, [apiEndpoint, isAuthenticated, hasInitializedLocations])
+
+  // Accumulate all teams from loaded cards for multi-team selection
+  useEffect(() => {
+    if (cards.length === 0) return
+
+    const newTeamMap = new Map()
+
+    // Add existing teams to map with fresh Sets for accumulation
+    allTeams.forEach(team => {
+      newTeamMap.set(team.team_id, {
+        ...team,
+        card_count: 0,
+        player_ids: new Set()
+      })
+    })
+
+    // Extract teams from current cards and merge with existing
+    cards.forEach(card => {
+      card.card_player_teams?.forEach(cpt => {
+        if (cpt.team) {
+          const team = cpt.team
+          const teamId = team.team_id
+
+          if (!newTeamMap.has(teamId)) {
+            newTeamMap.set(teamId, {
+              ...team,
+              card_count: 0,
+              player_ids: new Set()
+            })
+          }
+
+          const teamData = newTeamMap.get(teamId)
+          teamData.card_count++
+          if (cpt.player?.first_name && cpt.player?.last_name) {
+            teamData.player_ids.add(`${cpt.player.first_name} ${cpt.player.last_name}`)
+          }
+        }
+      })
+    })
+
+    // Convert to array
+    const teamsArray = Array.from(newTeamMap.values())
+      .map(team => ({
+        ...team,
+        player_count: team.player_ids.size,
+        player_ids: undefined
+      }))
+      .sort((a, b) => b.card_count - a.card_count)
+
+    // Only update if teams have changed
+    if (JSON.stringify(teamsArray) !== JSON.stringify(allTeams)) {
+      setAllTeams(teamsArray)
+    }
+  }, [cards, allTeams])
 
   const fetchAchievementStats = async () => {
     try {
@@ -483,6 +541,51 @@ function CollectionDashboard() {
     }
   }
 
+  const handleViewSaved = (view) => {
+    log.info('Collection view saved', { view })
+    success('View saved successfully!')
+  }
+
+  const handleLoadView = (view) => {
+    log.info('Loading collection view', { view })
+
+    const config = view.filter_config
+
+    // Apply location filters
+    if (config.locationIds && Array.isArray(config.locationIds)) {
+      setSelectedLocationIds(config.locationIds)
+    }
+
+    // Apply team filters
+    if (config.teamIds && Array.isArray(config.teamIds)) {
+      setSelectedTeamIds(config.teamIds)
+    }
+
+    // Apply card type filters
+    const newFilters = new Set()
+    if (config.filters?.rookies) newFilters.add('rookies')
+    if (config.filters?.autos) newFilters.add('autos')
+    if (config.filters?.relics) newFilters.add('relics')
+    if (config.filters?.graded) newFilters.add('graded')
+    setActiveFilters(newFilters)
+
+    success(`Loaded view: ${view.name}`)
+  }
+
+  // Build filter configuration object for saving
+  const getCurrentFilterConfig = () => {
+    return {
+      locationIds: selectedLocationIds,
+      teamIds: selectedTeamIds,
+      filters: {
+        rookies: activeFilters.has('rookies'),
+        autos: activeFilters.has('autos'),
+        relics: activeFilters.has('relics'),
+        graded: activeFilters.has('graded')
+      }
+    }
+  }
+
   if (!isAuthenticated) {
     return (
       <div className="collection-dashboard">
@@ -522,10 +625,10 @@ function CollectionDashboard() {
               </div>
               
               {/* Team Filter Circles - Below title */}
-              {filteredTeams.length > 0 && (
+              {allTeams.length > 0 && (
                 <div className="collection-team-filters">
                   <TeamFilterCircles
-                    teams={filteredTeams}
+                    teams={allTeams}
                     selectedTeamIds={selectedTeamIds}
                     onTeamFilter={handleTeamFilter}
                     compact={true}
@@ -675,7 +778,7 @@ function CollectionDashboard() {
               </div>
             ))}
             {locations.length > 0 && (
-              <button 
+              <button
                 className="manage-locations-btn icon-only"
                 onClick={() => setShowManageLocationsModal(true)}
                 title="Manage locations"
@@ -694,6 +797,7 @@ function CollectionDashboard() {
               <span>No dashboard locations selected. Click location tags above to view your cards.</span>
             </div>
           )}
+
           <CollectionTable
             cards={cards}
             loading={cardsLoading}
@@ -708,6 +812,15 @@ function CollectionDashboard() {
             onDeleteCard={handleDeleteCard}
             onFavoriteToggle={handleFavoriteToggle}
             onCardClick={handleCardClick}
+            customActions={
+              locations.length > 0 && cards.length > 0 && (
+                <SavedViewsDropdown
+                  onSaveNewView={() => setShowSaveViewModal(true)}
+                  onLoadView={handleLoadView}
+                  currentFilterConfig={getCurrentFilterConfig()}
+                />
+              )
+            }
           />
         </section>
       </div>
@@ -986,6 +1099,14 @@ function CollectionDashboard() {
         onCardUpdated={handleEditModalSave}
         locations={locations}
         gradingAgencies={gradingAgencies}
+      />
+
+      {/* Save View Modal */}
+      <SaveViewModal
+        isOpen={showSaveViewModal}
+        onClose={() => setShowSaveViewModal(false)}
+        filterConfig={getCurrentFilterConfig()}
+        onViewSaved={handleViewSaved}
       />
     </div>
   )
