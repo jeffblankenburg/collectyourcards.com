@@ -1,4 +1,4 @@
-import { StrictMode } from 'react'
+import { StrictMode, lazy, Suspense } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext.jsx'
@@ -7,50 +7,76 @@ import ProtectedRoute from './components/ProtectedRoute.jsx'
 import Layout from './components/Layout.jsx'
 import App from './App.jsx'
 import { setupAxiosInterceptors } from './utils/axios-interceptor.js'
+import './index.css'
+// import './styles/global-design-system.css' // Temporarily removed to prevent conflicts
 
 // Initialize axios interceptors for automatic API logging
 setupAxiosInterceptors()
-// import Status from './pages/Status.jsx' // Commented out for SeriesDetail page independence
-import Auth from './pages/Auth.jsx'
-// import Dashboard from './pages/Dashboard.jsx' // Commented out for SeriesDetail page independence
-// import Profile from './pages/Profile.jsx' // Commented out for SeriesDetail page independence
-// import Attributions from './pages/Attributions.jsx' // Commented out for SeriesDetail page independence
-import PlayerDetail from './pages/PlayerDetail.jsx'
-import PlayersLanding from './pages/PlayersLanding.jsx'
-import TeamsLanding from './pages/TeamsLanding.jsx'
-import TeamDetail from './pages/TeamDetail.jsx'
-import YearsPage from './pages/YearsPage.jsx'
-import SetsPage from './pages/SetsPage.jsx'
-import SeriesPage from './pages/SeriesPage.jsx'
-import SeriesDetail from './pages/SeriesDetail.jsx'
-import SearchResults from './pages/SearchResults.jsx'
-import Admin from './pages/Admin.jsx'
-import AdminUsers from './pages/AdminUsers.jsx'
-import AdminTeams from './pages/AdminTeams.jsx'
-import AdminPlayers from './pages/AdminPlayers.jsx'
-import AdminSets from './pages/AdminSets.jsx'
-import AdminSeries from './pages/AdminSeries.jsx'
-import AdminCards from './pages/AdminCards.jsx'
-import AdminImport from './pages/AdminImport.jsx'
-import CollectionDashboard from './pages/CollectionDashboard.jsx'
-import CardDetail from './pages/CardDetail.jsx'
-import RainbowView from './pages/RainbowView.jsx'
-import PublicProfile from './pages/PublicProfile.jsx'
-import ProfileManagement from './pages/ProfileManagement.jsx'
-import DesignSystemDemo from './pages/DesignSystemDemo.jsx'
-import Achievements from './pages/Achievements.jsx'
-import Notifications from './pages/Notifications.jsx'
-import AdminAchievements from './pages/AdminAchievements.jsx'
-import AdminQueryTester from './pages/AdminQueryTester.jsx'
-import VerifyEmail from './pages/VerifyEmail.jsx'
-import CheckEmail from './pages/CheckEmail.jsx'
-import Lists from './pages/Lists.jsx'
-import ListDetail from './pages/ListDetail.jsx'
-import Blog from './pages/Blog.jsx'
-import BlogPost from './pages/BlogPost.jsx'
-import SharedCollectionView from './pages/SharedCollectionView.jsx'
-import './index.css'
-// import './styles/global-design-system.css' // Temporarily removed to prevent conflicts
+
+// Loading fallback component
+const PageLoader = () => (
+  <div style={{
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: '60vh',
+    flexDirection: 'column',
+    gap: '1rem'
+  }}>
+    <div style={{
+      width: '40px',
+      height: '40px',
+      border: '3px solid #f3f3f3',
+      borderTop: '3px solid #3498db',
+      borderRadius: '50%',
+      animation: 'spin 1s linear infinite'
+    }} />
+    <p style={{ color: '#666', fontSize: '14px' }}>Loading...</p>
+    <style>{`
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    `}</style>
+  </div>
+)
+
+// Lazy load all pages for code splitting
+const Auth = lazy(() => import('./pages/Auth.jsx'))
+const PlayerDetail = lazy(() => import('./pages/PlayerDetail.jsx'))
+const PlayersLanding = lazy(() => import('./pages/PlayersLanding.jsx'))
+const TeamsLanding = lazy(() => import('./pages/TeamsLanding.jsx'))
+const TeamDetail = lazy(() => import('./pages/TeamDetail.jsx'))
+const YearsPage = lazy(() => import('./pages/YearsPage.jsx'))
+const SetsPage = lazy(() => import('./pages/SetsPage.jsx'))
+const SeriesPage = lazy(() => import('./pages/SeriesPage.jsx'))
+const SeriesDetail = lazy(() => import('./pages/SeriesDetail.jsx'))
+const SearchResults = lazy(() => import('./pages/SearchResults.jsx'))
+const Admin = lazy(() => import('./pages/Admin.jsx'))
+const AdminUsers = lazy(() => import('./pages/AdminUsers.jsx'))
+const AdminTeams = lazy(() => import('./pages/AdminTeams.jsx'))
+const AdminPlayers = lazy(() => import('./pages/AdminPlayers.jsx'))
+const AdminSets = lazy(() => import('./pages/AdminSets.jsx'))
+const AdminSeries = lazy(() => import('./pages/AdminSeries.jsx'))
+const AdminCards = lazy(() => import('./pages/AdminCards.jsx'))
+const AdminImport = lazy(() => import('./pages/AdminImport.jsx'))
+const CollectionDashboard = lazy(() => import('./pages/CollectionDashboard.jsx'))
+const CardDetail = lazy(() => import('./pages/CardDetail.jsx'))
+const RainbowView = lazy(() => import('./pages/RainbowView.jsx'))
+const PublicProfile = lazy(() => import('./pages/PublicProfile.jsx'))
+const ProfileManagement = lazy(() => import('./pages/ProfileManagement.jsx'))
+const DesignSystemDemo = lazy(() => import('./pages/DesignSystemDemo.jsx'))
+const Achievements = lazy(() => import('./pages/Achievements.jsx'))
+const Notifications = lazy(() => import('./pages/Notifications.jsx'))
+const AdminAchievements = lazy(() => import('./pages/AdminAchievements.jsx'))
+const AdminQueryTester = lazy(() => import('./pages/AdminQueryTester.jsx'))
+const VerifyEmail = lazy(() => import('./pages/VerifyEmail.jsx'))
+const CheckEmail = lazy(() => import('./pages/CheckEmail.jsx'))
+const Lists = lazy(() => import('./pages/Lists.jsx'))
+const ListDetail = lazy(() => import('./pages/ListDetail.jsx'))
+const Blog = lazy(() => import('./pages/Blog.jsx'))
+const BlogPost = lazy(() => import('./pages/BlogPost.jsx'))
+const SharedCollectionView = lazy(() => import('./pages/SharedCollectionView.jsx'))
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -58,7 +84,8 @@ createRoot(document.getElementById('root')).render(
       <ToastProvider>
         <AuthProvider>
           <Layout>
-            <Routes>
+            <Suspense fallback={<PageLoader />}>
+              <Routes>
               {/* Home page restored with local styles */}
               <Route path="/" element={<App />} />
               {/* Other routes commented out for page independence */}
@@ -132,7 +159,8 @@ createRoot(document.getElementById('root')).render(
 
               {/* Public list route - username-scoped lists */}
               <Route path="/:username/:listSlug" element={<ListDetail />} />
-            </Routes>
+              </Routes>
+            </Suspense>
           </Layout>
         </AuthProvider>
       </ToastProvider>
