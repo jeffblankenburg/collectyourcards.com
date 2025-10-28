@@ -111,7 +111,8 @@ import {
   Merge,
   ArrowLeftRight,
   Clipboard,
-  Bookmark
+  Bookmark,
+  Save
 } from 'lucide-react'
 
 // Icon mapping for consistent usage across the app
@@ -192,6 +193,7 @@ const iconMap = {
   'trash-2': Trash2,
   'clipboard': Clipboard,
   'bookmark': Bookmark,
+  'save': Save,
   'menu': Menu,
   'close': X,
   'plus': Plus,

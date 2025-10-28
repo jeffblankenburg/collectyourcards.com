@@ -73,6 +73,19 @@
   color: white;
 }
 
+.saved-view-action.update-existing {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.8);
+  margin-top: 0.5rem;
+}
+
+.saved-view-action.update-existing:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.25);
+  color: white;
+}
+
 .saved-views-divider {
   height: 1px;
   background: rgba(255, 255, 255, 0.1);

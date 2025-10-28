@@ -49,6 +49,7 @@ function CollectionDashboard() {
   const [selectedTeamIds, setSelectedTeamIds] = useState([])
   const [showSaveViewModal, setShowSaveViewModal] = useState(false)
   const [allTeams, setAllTeams] = useState([]) // All teams from full collection
+  const [loadedView, setLoadedView] = useState(null) // Track currently loaded view for updates
 
   const navigate = useNavigate()
 
@@ -239,14 +240,18 @@ function CollectionDashboard() {
       })
     })
 
-    // Convert to array
+    // Convert to array and sort alphabetically by abbreviation
     const teamsArray = Array.from(newTeamMap.values())
       .map(team => ({
         ...team,
         player_count: team.player_ids.size,
         player_ids: undefined
       }))
-      .sort((a, b) => b.card_count - a.card_count)
+      .sort((a, b) => {
+        const abbrevA = (a.abbreviation || a.name || '').toUpperCase()
+        const abbrevB = (b.abbreviation || b.name || '').toUpperCase()
+        return abbrevA.localeCompare(abbrevB)
+      })
 
     // Only update if teams have changed
     if (JSON.stringify(teamsArray) !== JSON.stringify(allTeams)) {
@@ -569,7 +574,34 @@ function CollectionDashboard() {
     if (config.filters?.graded) newFilters.add('graded')
     setActiveFilters(newFilters)
 
+    // Track this as the currently loaded view for update functionality
+    setLoadedView(view)
+
     success(`Loaded view: ${view.name}`)
+  }
+
+  const handleUpdateView = async () => {
+    if (!loadedView) return
+
+    try {
+      log.info('Updating collection view', { view: loadedView })
+
+      const response = await axios.put(`/api/collection-views/${loadedView.collection_view_id}`, {
+        filter_config: getCurrentFilterConfig()
+      })
+
+      if (response.data.success) {
+        // Update the loadedView with new filter config
+        setLoadedView({
+          ...loadedView,
+          filter_config: response.data.view.filter_config
+        })
+        success(`Updated view: ${loadedView.name}`)
+      }
+    } catch (err) {
+      log.error('Failed to update view', err)
+      error('Failed to update view: ' + (err.response?.data?.error || err.message))
+    }
   }
 
   // Build filter configuration object for saving
@@ -585,6 +617,36 @@ function CollectionDashboard() {
       }
     }
   }
+
+  // Check if current filters differ from loaded view
+  const hasFiltersChanged = useMemo(() => {
+    if (!loadedView) return false
+
+    const currentConfig = getCurrentFilterConfig()
+    const loadedConfig = loadedView.filter_config
+
+    // Compare locationIds
+    const currentLocations = [...currentConfig.locationIds].sort()
+    const loadedLocations = [...(loadedConfig.locationIds || [])].sort()
+    if (JSON.stringify(currentLocations) !== JSON.stringify(loadedLocations)) {
+      return true
+    }
+
+    // Compare teamIds
+    const currentTeams = [...currentConfig.teamIds].sort()
+    const loadedTeams = [...(loadedConfig.teamIds || [])].sort()
+    if (JSON.stringify(currentTeams) !== JSON.stringify(loadedTeams)) {
+      return true
+    }
+
+    // Compare filters
+    if (currentConfig.filters.rookies !== loadedConfig.filters?.rookies) return true
+    if (currentConfig.filters.autos !== loadedConfig.filters?.autos) return true
+    if (currentConfig.filters.relics !== loadedConfig.filters?.relics) return true
+    if (currentConfig.filters.graded !== loadedConfig.filters?.graded) return true
+
+    return false
+  }, [loadedView, selectedLocationIds, selectedTeamIds, activeFilters])
 
   if (!isAuthenticated) {
     return (
@@ -814,11 +876,25 @@ function CollectionDashboard() {
             onCardClick={handleCardClick}
             customActions={
               locations.length > 0 && cards.length > 0 && (
-                <SavedViewsDropdown
-                  onSaveNewView={() => setShowSaveViewModal(true)}
-                  onLoadView={handleLoadView}
-                  currentFilterConfig={getCurrentFilterConfig()}
-                />
+                <>
+                  {/* Update View Button - Only shows when view is loaded AND filters changed */}
+                  {loadedView && hasFiltersChanged && (
+                    <button
+                      className="update-view-btn"
+                      onClick={handleUpdateView}
+                      title={`Update "${loadedView.name}" with current filters`}
+                    >
+                      <Icon name="save" size={16} />
+                      <span>Update "{loadedView.name}"</span>
+                    </button>
+                  )}
+
+                  <SavedViewsDropdown
+                    onSaveNewView={() => setShowSaveViewModal(true)}
+                    onLoadView={handleLoadView}
+                    currentFilterConfig={getCurrentFilterConfig()}
+                  />
+                </>
               )
             }
           />
