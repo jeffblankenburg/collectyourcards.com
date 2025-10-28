@@ -1,6 +1,7 @@
 const express = require('express')
 const { getPrismaClient, runBatchedQueries } = require('../utils/prisma-pool-manager')
 const { authMiddleware } = require('../middleware/auth')
+const { escapeLikePattern, sanitizeSearchTerm, validateNumericArray } = require('../utils/sql-security')
 const router = express.Router()
 
 // Use global Prisma instance
@@ -39,13 +40,14 @@ router.get('/', async (req, res) => {
     // Build where clause for search
     let searchCondition = ''
     if (search && search.trim()) {
-      const searchTerm = search.trim().replace(/'/g, "''")
+      const sanitized = sanitizeSearchTerm(search.trim())
+      const safeSearchTerm = escapeLikePattern(sanitized)
       searchCondition = `
         WHERE (
-          p.first_name LIKE '%${searchTerm}%' COLLATE Latin1_General_CI_AI
-          OR p.last_name LIKE '%${searchTerm}%' COLLATE Latin1_General_CI_AI
-          OR p.nick_name LIKE '%${searchTerm}%' COLLATE Latin1_General_CI_AI
-          OR CONCAT(p.first_name, ' ', p.last_name) LIKE '%${searchTerm}%' COLLATE Latin1_General_CI_AI
+          p.first_name LIKE '%${safeSearchTerm}%' COLLATE Latin1_General_CI_AI
+          OR p.last_name LIKE '%${safeSearchTerm}%' COLLATE Latin1_General_CI_AI
+          OR p.nick_name LIKE '%${safeSearchTerm}%' COLLATE Latin1_General_CI_AI
+          OR CONCAT(p.first_name, ' ', p.last_name) LIKE '%${safeSearchTerm}%' COLLATE Latin1_General_CI_AI
         )
       `
     }
@@ -206,8 +208,9 @@ router.get('/', async (req, res) => {
     
     if (priorityPlayers.length > 0) {
       // Get teams for priority players in a single query
-      const priorityPlayerIds = priorityPlayers.map(p => Number(p.player_id)).join(',')
-      
+      const validPriorityIds = validateNumericArray(priorityPlayers.map(p => p.player_id))
+      const priorityPlayerIds = validPriorityIds.join(',')
+
       const priorityTeamsQuery = `
         SELECT 
           pt.player as player_id,

@@ -236,7 +236,7 @@ if (config.environment === 'test') {
     { path: '/api/database-stats', file: './routes/database-stats', name: 'Database Stats' },
     { path: '/api/cards', file: './routes/cards', name: 'Cards' },
     { path: '/api/collection', file: './routes/collection', name: 'Collection' },
-    { path: '/api/import', file: './routes/import', name: 'Import' },
+    { path: '/api/import', file: './routes/import-workflow', name: 'Import' },
     { path: '/api/ebay', file: './routes/ebay', name: 'eBay' },
     { path: '/api/search', file: './routes/search', name: 'Search' },
     { path: '/api/players', file: './routes/players', name: 'Players' },
@@ -266,7 +266,7 @@ if (config.environment === 'test') {
     { path: '/api/achievements', file: './routes/achievements', name: 'Achievements' },
     { path: '/api/user/achievements', file: './routes/user-achievements', name: 'User Achievements' },
     { path: '/api/admin/achievements', file: './routes/admin-achievements', name: 'Admin Achievements' },
-    { path: '/api/admin/import', file: './routes/import', name: 'Admin Import' },
+    { path: '/api/admin/import', file: './routes/import-workflow', name: 'Admin Import' },
     { path: '/api/admin', file: './routes/admin-query-tester', name: 'Admin Query Tester' },
     { path: '/api/blog', file: './routes/blog', name: 'Blog' }
   ];

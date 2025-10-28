@@ -1,6 +1,7 @@
 const express = require('express')
 const { getPrismaClient, runBatchedQueries } = require('../utils/prisma-pool-manager')
 const { optionalAuthMiddleware } = require('../middleware/auth')
+const { escapeLikePattern, sanitizeSearchTerm, validateNumericId, validateNumericArray } = require('../utils/sql-security')
 const router = express.Router()
 
 // Use global Prisma instance
@@ -33,27 +34,31 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
     let whereConditions = []
     
     if (search && search.trim()) {
-      const searchTerm = search.trim().replace(/'/g, "''")
+      // Sanitize and escape search term for SQL safety
+      const sanitized = sanitizeSearchTerm(search.trim())
+      const safeSearchTerm = escapeLikePattern(sanitized)
       whereConditions.push(`
         (
-          p.first_name LIKE '%${searchTerm}%' COLLATE Latin1_General_CI_AI
-          OR p.last_name LIKE '%${searchTerm}%' COLLATE Latin1_General_CI_AI
-          OR p.nick_name LIKE '%${searchTerm}%' COLLATE Latin1_General_CI_AI
-          OR CONCAT(p.first_name, ' ', p.last_name) LIKE '%${searchTerm}%' COLLATE Latin1_General_CI_AI
+          p.first_name LIKE '%${safeSearchTerm}%' COLLATE Latin1_General_CI_AI
+          OR p.last_name LIKE '%${safeSearchTerm}%' COLLATE Latin1_General_CI_AI
+          OR p.nick_name LIKE '%${safeSearchTerm}%' COLLATE Latin1_General_CI_AI
+          OR CONCAT(p.first_name, ' ', p.last_name) LIKE '%${safeSearchTerm}%' COLLATE Latin1_General_CI_AI
         )
       `)
     }
     
     if (team_id && team_id.trim()) {
-      const teamIdInt = parseInt(team_id)
-      if (!isNaN(teamIdInt)) {
+      try {
+        const teamIdNum = validateNumericId(team_id, 'team_id')
         whereConditions.push(`
           p.player_id IN (
-            SELECT DISTINCT pt.player 
-            FROM player_team pt 
-            WHERE pt.team = ${teamIdInt}
+            SELECT DISTINCT pt.player
+            FROM player_team pt
+            WHERE pt.team = ${teamIdNum}
           )
         `)
+      } catch (err) {
+        // Invalid team_id - skip filter
       }
     }
     
@@ -264,10 +269,12 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
     
     if (priorityPlayers.length > 0) {
       // Get teams for priority players in a single query
-      const priorityPlayerIds = priorityPlayers.map(p => Number(p.player_id)).join(',')
-      
+      // Validate all IDs for security
+      const validPriorityIds = validateNumericArray(priorityPlayers.map(p => p.player_id))
+      const priorityPlayerIds = validPriorityIds.join(',')
+
       const priorityTeamsQuery = `
-        SELECT 
+        SELECT
           pt.player as player_id,
           t.team_id,
           t.name as team_name,

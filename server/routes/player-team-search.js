@@ -1,5 +1,6 @@
 const express = require('express')
 const { prisma } = require('../config/prisma-singleton')
+const { escapeLikePattern, sanitizeSearchTerm } = require('../utils/sql-security')
 
 const router = express.Router()
 
@@ -31,15 +32,17 @@ router.get('/', async (req, res) => {
       })
     }
 
-    const searchTerm = query.trim()
+    // Sanitize and escape search term for SQL safety
+    const sanitized = sanitizeSearchTerm(query.trim())
+    const safeSearchTerm = escapeLikePattern(sanitized)
     const searchLimit = Math.min(parseInt(limit) || 50, 100)
-    
-    console.log(`Searching for player-team combinations with term: "${searchTerm}", limit: ${searchLimit}`)
+
+    console.log(`Searching for player-team combinations with term: "${sanitized}", limit: ${searchLimit}`)
 
     // Search for players and their team relationships
     // This query finds players that match the search term and returns all their team associations
     const playerTeamCombinations = await prisma.$queryRawUnsafe(`
-      SELECT 
+      SELECT
         p.player_id,
         p.first_name,
         p.last_name,
@@ -53,11 +56,11 @@ router.get('/', async (req, res) => {
       JOIN player_team pt ON p.player_id = pt.player
       JOIN team t ON pt.team = t.team_id
       WHERE (
-        p.first_name LIKE '%${searchTerm}%' COLLATE Latin1_General_CI_AI
-        OR p.last_name LIKE '%${searchTerm}%' COLLATE Latin1_General_CI_AI
-        OR p.nick_name LIKE '%${searchTerm}%' COLLATE Latin1_General_CI_AI
-        OR CONCAT(p.first_name, ' ', p.last_name) LIKE '%${searchTerm}%' COLLATE Latin1_General_CI_AI
-        OR CONCAT(p.first_name, ' ', p.nick_name, ' ', p.last_name) LIKE '%${searchTerm}%' COLLATE Latin1_General_CI_AI
+        p.first_name LIKE '%${safeSearchTerm}%' COLLATE Latin1_General_CI_AI
+        OR p.last_name LIKE '%${safeSearchTerm}%' COLLATE Latin1_General_CI_AI
+        OR p.nick_name LIKE '%${safeSearchTerm}%' COLLATE Latin1_General_CI_AI
+        OR CONCAT(p.first_name, ' ', p.last_name) LIKE '%${safeSearchTerm}%' COLLATE Latin1_General_CI_AI
+        OR CONCAT(p.first_name, ' ', p.nick_name, ' ', p.last_name) LIKE '%${safeSearchTerm}%' COLLATE Latin1_General_CI_AI
       )
       ORDER BY p.last_name, p.first_name, t.name
     `)
@@ -87,7 +90,7 @@ router.get('/', async (req, res) => {
 
     res.json({
       playerTeamCombinations: limitedResults,
-      query: searchTerm,
+      query: sanitized,
       totalFound: formattedResults.length,
       returned: limitedResults.length
     })

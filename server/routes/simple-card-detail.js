@@ -1,5 +1,6 @@
 const express = require('express')
 const { prisma } = require('../config/prisma-singleton')
+const { escapeString, escapeLikePattern, validateNumericId } = require('../utils/sql-security')
 
 const router = express.Router()
 
@@ -50,8 +51,21 @@ router.get('/:seriesSlug/:cardNumber/:playerName', async (req, res) => {
 
     console.log(`Searching for card: ${normalizedCardNumber}, player: ${normalizedPlayerName}, series: ${seriesNameFromSlug}${set_id ? `, set_id: ${set_id}` : ''}`)
 
-    // Build set filter clause
-    const setFilter = set_id ? `AND st.set_id = ${parseInt(set_id)}` : ''
+    // Validate and escape user inputs
+    const safeCardNumber = escapeString(normalizedCardNumber)
+    const safeSeriesSlug = escapeString(seriesNameFromSlug)
+    const safePlayerParts = playerNameParts.map(part => escapeString(part))
+
+    // Build set filter clause with validation
+    let setFilter = ''
+    if (set_id) {
+      try {
+        const setIdNum = validateNumericId(set_id, 'set_id')
+        setFilter = `AND st.set_id = ${setIdNum}`
+      } catch (err) {
+        // Invalid set_id - skip filter
+      }
+    }
 
     // Search for the card using comprehensive query with player name matching
     const results = await prisma.$queryRawUnsafe(`
@@ -82,14 +96,14 @@ router.get('/:seriesSlug/:cardNumber/:playerName', async (req, res) => {
       LEFT JOIN player_team pt ON cpt.player_team = pt.player_team_id
       LEFT JOIN player p ON pt.player = p.player_id
       LEFT JOIN team t ON pt.team = t.team_id
-      WHERE c.card_number = '${normalizedCardNumber}'
-        AND REPLACE(REPLACE(REPLACE(REPLACE(LOWER(s.name), '/', ''), ' & ', ''), '-', ''), ' ', '') = '${seriesNameFromSlug.replace(/'/g, "''")}'
+      WHERE c.card_number = '${safeCardNumber}'
+        AND REPLACE(REPLACE(REPLACE(REPLACE(LOWER(s.name), '/', ''), ' & ', ''), '-', ''), ' ', '') = '${safeSeriesSlug}'
         ${setFilter}
       GROUP BY c.card_id, c.card_number, c.is_rookie, c.is_autograph, c.is_relic, c.print_run,
                s.series_id, s.name, st.set_id, st.name, st.year, m.name, s.parallel_of_series, col.name, col.hex_value
-      HAVING ${playerNameParts.length > 0 ?
-        playerNameParts.map(part =>
-          `STRING_AGG(LOWER(CONCAT(p.first_name, ' ', p.last_name)), ', ') LIKE '%${part.replace(/'/g, "''")}%'`
+      HAVING ${safePlayerParts.length > 0 ?
+        safePlayerParts.map(part =>
+          `STRING_AGG(LOWER(CONCAT(p.first_name, ' ', p.last_name)), ', ') LIKE '%${part}%'`
         ).join(' AND ')
         : '1=1'}
     `)
@@ -125,20 +139,20 @@ router.get('/:seriesSlug/:cardNumber/:playerName', async (req, res) => {
         LEFT JOIN player_team pt ON cpt.player_team = pt.player_team_id
         LEFT JOIN player p ON pt.player = p.player_id
         LEFT JOIN team t ON pt.team = t.team_id
-        WHERE (c.card_number LIKE '%${normalizedCardNumber}%' OR '${normalizedCardNumber}' LIKE '%' + c.card_number + '%')
-          AND REPLACE(REPLACE(REPLACE(REPLACE(LOWER(s.name), '/', ''), ' & ', ''), '-', ''), ' ', '') LIKE '${seriesNameFromSlug.replace(/'/g, "''")}%'
+        WHERE (c.card_number LIKE '%${safeCardNumber}%' OR '${safeCardNumber}' LIKE '%' + c.card_number + '%')
+          AND REPLACE(REPLACE(REPLACE(REPLACE(LOWER(s.name), '/', ''), ' & ', ''), '-', ''), ' ', '') LIKE '${safeSeriesSlug}%'
           ${setFilter}
         GROUP BY c.card_id, c.card_number, c.is_rookie, c.is_autograph, c.is_relic, c.print_run,
                  s.series_id, s.name, st.set_id, st.name, st.year, m.name, s.parallel_of_series, col.name, col.hex_value
-        HAVING ${playerNameParts.length > 0 ?
-        playerNameParts.map(part =>
-          `STRING_AGG(LOWER(CONCAT(p.first_name, ' ', p.last_name)), ', ') LIKE '%${part.replace(/'/g, "''")}%'`
+        HAVING ${safePlayerParts.length > 0 ?
+        safePlayerParts.map(part =>
+          `STRING_AGG(LOWER(CONCAT(p.first_name, ' ', p.last_name)), ', ') LIKE '%${part}%'`
         ).join(' AND ')
         : '1=1'}
         ORDER BY
           CASE
-            WHEN c.card_number = '${normalizedCardNumber}' THEN 1
-            WHEN c.card_number LIKE '${normalizedCardNumber}%' THEN 2
+            WHEN c.card_number = '${safeCardNumber}' THEN 1
+            WHEN c.card_number LIKE '${safeCardNumber}%' THEN 2
             ELSE 3
           END
       `)
@@ -156,12 +170,13 @@ router.get('/:seriesSlug/:cardNumber/:playerName', async (req, res) => {
     }
     
     const card = results[0]
-    
+
     // Get CYC Population count from user_card table
+    const cardIdNum = Number(card.card_id)
     const populationResult = await prisma.$queryRawUnsafe(`
       SELECT COUNT(*) as cyc_population
       FROM user_card uc
-      WHERE uc.card = ${card.card_id}
+      WHERE uc.card = ${cardIdNum}
     `)
     
     const cycPopulation = populationResult[0]?.cyc_population || 0

@@ -2,6 +2,13 @@ const express = require('express')
 const router = express.Router()
 const { prisma } = require('../config/prisma-singleton')
 const { authMiddleware } = require('../middleware/auth')
+const { Prisma } = require('@prisma/client')
+const {
+  escapeLikePattern,
+  validateNumericId,
+  validateNumericArray,
+  escapeString
+} = require('../utils/sql-security')
 
 // Optional auth middleware
 const optionalAuthMiddleware = async (req, res, next) => {
@@ -39,17 +46,17 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
     let playerFilterJoin = ''
 
     if (player_name) {
-      // Split player name into parts
+      // Split player name into parts and sanitize
       const nameParts = player_name.trim().split(/\s+/)
       if (nameParts.length >= 2) {
-        const firstName = nameParts[0]
-        const lastName = nameParts.slice(1).join(' ')
-        
+        const firstName = escapeLikePattern(nameParts[0])
+        const lastName = escapeLikePattern(nameParts.slice(1).join(' '))
+
         whereConditions.push(`EXISTS (
           SELECT 1 FROM card_player_team cpt2
           JOIN player_team pt2 ON cpt2.player_team = pt2.player_team_id
           JOIN player p2 ON pt2.player = p2.player_id
-          WHERE cpt2.card = c.card_id 
+          WHERE cpt2.card = c.card_id
           AND LOWER(p2.first_name) LIKE LOWER('%${firstName}%')
           AND LOWER(p2.last_name) LIKE LOWER('%${lastName}%')
         )`)
@@ -57,23 +64,27 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
     }
 
     if (team_id) {
+      const teamIdNum = validateNumericId(team_id, 'team_id')
       whereConditions.push(`EXISTS (
         SELECT 1 FROM card_player_team cpt3
         JOIN player_team pt3 ON cpt3.player_team = pt3.player_team_id
-        WHERE cpt3.card = c.card_id AND pt3.team = ${parseInt(team_id)}
+        WHERE cpt3.card = c.card_id AND pt3.team = ${teamIdNum}
       )`)
     }
 
     if (series_name) {
-      whereConditions.push(`LOWER(s.name) LIKE LOWER('%${series_name}%')`)
+      const safeSeriesName = escapeLikePattern(series_name)
+      whereConditions.push(`LOWER(s.name) LIKE LOWER('%${safeSeriesName}%')`)
     }
 
     if (series_id) {
-      whereConditions.push(`s.series_id = ${parseInt(series_id)}`)
+      const seriesIdNum = validateNumericId(series_id, 'series_id')
+      whereConditions.push(`s.series_id = ${seriesIdNum}`)
     }
 
     if (card_number) {
-      whereConditions.push(`c.card_number = '${card_number.replace(/'/g, "''")}'`)
+      const safeCardNumber = card_number.replace(/'/g, "''")
+      whereConditions.push(`c.card_number = '${safeCardNumber}'`)
     }
 
     const whereClause = whereConditions.length > 0 
@@ -122,14 +133,16 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
     
 
     // Get player-team associations for these cards
-    const cardIds = cardResults.map(card => Number(card.card_id))
-    
+    // Validate all IDs are numbers for security
+    const cardIds = validateNumericArray(cardResults.map(card => card.card_id))
+
     let cardPlayerTeamMap = {}
     if (cardIds.length > 0) {
       // Get ALL player-team associations for the filtered cards
       // This is correct - we want all players on multi-player cards
+      const safeCardIds = cardIds.join(',') // Safe - validated by validateNumericArray
       const playerTeamQuery = `
-        SELECT 
+        SELECT
           cpt.card as card_id,
           p.player_id,
           p.first_name,
@@ -143,7 +156,7 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
         JOIN player_team pt ON cpt.player_team = pt.player_team_id
         JOIN player p ON pt.player = p.player_id
         JOIN team t ON pt.team = t.team_id
-        WHERE cpt.card IN (${cardIds.join(',')})
+        WHERE cpt.card IN (${safeCardIds})
         ORDER BY cpt.card, p.last_name
       `
 
@@ -274,10 +287,12 @@ router.get('/rainbow', optionalAuthMiddleware, async (req, res) => {
     const cardResults = await prisma.$queryRawUnsafe(cardsQuery)
 
     // Get player-team associations for these cards
-    const cardIds = cardResults.map(card => Number(card.card_id))
+    // Validate all IDs are numbers for security
+    const cardIds = validateNumericArray(cardResults.map(card => card.card_id))
 
     let cardPlayerTeamMap = {}
     if (cardIds.length > 0) {
+      const safeCardIds = cardIds.join(',') // Safe - validated by validateNumericArray
       const playerTeamQuery = `
         SELECT
           cpt.card as card_id,
@@ -293,7 +308,7 @@ router.get('/rainbow', optionalAuthMiddleware, async (req, res) => {
         JOIN player_team pt ON cpt.player_team = pt.player_team_id
         JOIN player p ON pt.player = p.player_id
         JOIN team t ON pt.team = t.team_id
-        WHERE cpt.card IN (${cardIds.join(',')})
+        WHERE cpt.card IN (${safeCardIds})
         ORDER BY cpt.card, p.last_name
       `
 

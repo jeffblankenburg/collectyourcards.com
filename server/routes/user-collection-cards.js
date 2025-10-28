@@ -2,6 +2,7 @@ const express = require('express')
 const { authMiddleware, requireAdmin, requireDataAdmin, requireSuperAdmin } = require('../middleware/auth')
 const router = express.Router()
 const { prisma } = require('../config/prisma-singleton')
+const { validateNumericId, validateNumericArray } = require('../utils/sql-security')
 
 // All routes require authentication
 router.use(authMiddleware)
@@ -43,30 +44,41 @@ router.get('/', async (req, res) => {
     
     console.log('Location IDs filter:', locationIds, 'Include unassigned:', includeUnassigned, 'Only unassigned:', onlyUnassigned, 'Series filter:', seriesFilter)
     console.log('Card filters - Rookie:', rookieFilter, 'Auto:', autographFilter, 'Relic:', relicFilter, 'Graded:', gradedFilter, 'Teams:', teamIds)
-    
+
+    // Validate user ID
+    const userIdNum = validateNumericId(userId, 'user_id')
+
     // Build where clause with location and series filters
-    let whereClause = `WHERE uc.[user] = ${parseInt(userId)}`
-    
-    // Add location filter
+    let whereClause = `WHERE uc.[user] = ${userIdNum}`
+
+    // Add location filter with validation
     if (onlyUnassigned) {
       // Show only cards without a location
       whereClause += ` AND uc.user_location IS NULL`
     } else if (locationIds.length > 0) {
-      const locationFilter = locationIds.map(id => parseInt(id)).join(',')
-      if (includeUnassigned) {
-        // Show selected locations AND unassigned cards
-        whereClause += ` AND (uc.user_location IN (${locationFilter}) OR uc.user_location IS NULL)`
-      } else {
-        // Show only selected locations
-        whereClause += ` AND uc.user_location IN (${locationFilter})`
+      const validLocationIds = validateNumericArray(locationIds)
+      if (validLocationIds.length > 0) {
+        const locationFilter = validLocationIds.join(',')
+        if (includeUnassigned) {
+          // Show selected locations AND unassigned cards
+          whereClause += ` AND (uc.user_location IN (${locationFilter}) OR uc.user_location IS NULL)`
+        } else {
+          // Show only selected locations
+          whereClause += ` AND uc.user_location IN (${locationFilter})`
+        }
       }
     }
-    
-    // Add series filter
+
+    // Add series filter with validation
     if (seriesFilter) {
-      whereClause += ` AND c.series = ${seriesFilter}`
+      try {
+        const seriesIdNum = validateNumericId(seriesFilter, 'series_id')
+        whereClause += ` AND c.series = ${seriesIdNum}`
+      } catch (err) {
+        // Invalid series ID - skip filter
+      }
     }
-    
+
     // Add card attribute filters
     if (rookieFilter) {
       whereClause += ` AND c.is_rookie = 1`
@@ -80,11 +92,14 @@ router.get('/', async (req, res) => {
     if (gradedFilter) {
       whereClause += ` AND uc.grade IS NOT NULL`
     }
-    
-    // Add team filtering
+
+    // Add team filtering with validation
     if (teamIds.length > 0) {
-      const teamFilter = teamIds.map(id => parseInt(id)).join(',')
-      whereClause += ` AND t.team_id IN (${teamFilter})`
+      const validTeamIds = validateNumericArray(teamIds)
+      if (validTeamIds.length > 0) {
+        const teamFilter = validTeamIds.join(',')
+        whereClause += ` AND t.team_id IN (${teamFilter})`
+      }
     }
     
     // Single optimized query to get all collection cards with player-team data and primary photo
@@ -230,43 +245,48 @@ router.get('/', async (req, res) => {
     
     // Now fetch all photos for cards that have photos
     const cardIdsWithPhotos = cards.filter(card => card.photo_count > 0).map(card => card.user_card_id)
-    
+
     if (cardIdsWithPhotos.length > 0) {
-      const allPhotosQuery = `
-        SELECT 
-          user_card,
-          user_card_photo_id,
-          photo_url,
-          sort_order
-        FROM user_card_photo
-        WHERE user_card IN (${cardIdsWithPhotos.join(',')})
-        ORDER BY user_card ASC, sort_order ASC
-      `
+      // Validate card IDs (they come from DB, but still good practice)
+      const validCardIds = validateNumericArray(cardIdsWithPhotos)
+
+      if (validCardIds.length > 0) {
+        const allPhotosQuery = `
+          SELECT
+            user_card,
+            user_card_photo_id,
+            photo_url,
+            sort_order
+          FROM user_card_photo
+          WHERE user_card IN (${validCardIds.join(',')})
+          ORDER BY user_card ASC, sort_order ASC
+        `
       
-      const allPhotosResults = await prisma.$queryRawUnsafe(allPhotosQuery)
-      
-      // Group photos by user_card_id
-      const photosByCard = new Map()
-      allPhotosResults.forEach(photo => {
-        const userCardId = Number(photo.user_card)
-        if (!photosByCard.has(userCardId)) {
-          photosByCard.set(userCardId, [])
-        }
-        photosByCard.get(userCardId).push({
-          user_card_photo_id: Number(photo.user_card_photo_id),
-          photo_url: photo.photo_url,
-          sort_order: photo.sort_order
+        const allPhotosResults = await prisma.$queryRawUnsafe(allPhotosQuery)
+
+        // Group photos by user_card_id
+        const photosByCard = new Map()
+        allPhotosResults.forEach(photo => {
+          const userCardId = Number(photo.user_card)
+          if (!photosByCard.has(userCardId)) {
+            photosByCard.set(userCardId, [])
+          }
+          photosByCard.get(userCardId).push({
+            user_card_photo_id: Number(photo.user_card_photo_id),
+            photo_url: photo.photo_url,
+            sort_order: photo.sort_order
+          })
         })
-      })
-      
-      // Add all photos to each card
-      cards.forEach(card => {
-        if (photosByCard.has(card.user_card_id)) {
-          card.all_photos = photosByCard.get(card.user_card_id)
-        } else {
-          card.all_photos = []
-        }
-      })
+
+        // Add all photos to each card
+        cards.forEach(card => {
+          if (photosByCard.has(card.user_card_id)) {
+            card.all_photos = photosByCard.get(card.user_card_id)
+          } else {
+            card.all_photos = []
+          }
+        })
+      }
     } else {
       // No cards have photos, add empty arrays
       cards.forEach(card => {
@@ -320,10 +340,13 @@ router.get('/teams-with-players', async (req, res) => {
     }
 
     console.log('Getting teams with player counts for user:', userId)
-    
+
+    // Validate user ID
+    const userIdNum = validateNumericId(userId, 'user_id')
+
     // Query to get teams with unique player counts from user's collection
     const teamsQuery = `
-      SELECT 
+      SELECT
         t.team_id,
         t.name,
         t.abbreviation,
@@ -336,7 +359,7 @@ router.get('/teams-with-players', async (req, res) => {
       INNER JOIN player_team pt ON cpt.player_team = pt.player_team_id
       INNER JOIN team t ON pt.team = t.team_id
       INNER JOIN player p ON pt.player = p.player_id
-      WHERE uc.[user] = ${parseInt(userId)}
+      WHERE uc.[user] = ${userIdNum}
       GROUP BY t.team_id, t.name, t.abbreviation, t.primary_color, t.secondary_color
       HAVING COUNT(DISTINCT p.player_id) > 0
       ORDER BY COUNT(DISTINCT p.player_id) DESC, t.name ASC

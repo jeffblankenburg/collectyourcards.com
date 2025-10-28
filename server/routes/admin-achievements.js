@@ -2,6 +2,7 @@ const express = require('express')
 const { PrismaClient } = require('@prisma/client')
 const { authMiddleware, requireAdmin } = require('../middleware/auth')
 const rateLimit = require('express-rate-limit')
+const { escapeLikePattern, sanitizeSearchTerm, validateNumericId } = require('../utils/sql-security')
 
 const router = express.Router()
 const prisma = new PrismaClient({ log: ['error'] })
@@ -53,23 +54,38 @@ router.get('/', async (req, res) => {
 
     let whereConditions = []
     if (category) {
-      whereConditions.push(`a.category_id = ${parseInt(category)}`)
+      try {
+        const categoryId = validateNumericId(category, 'category')
+        whereConditions.push(`a.category_id = ${categoryId}`)
+      } catch (err) {
+        // Invalid category - skip filter
+      }
     }
     if (tier) {
-      whereConditions.push(`a.tier = '${tier}'`)
+      // Whitelist allowed tier values for security
+      const validTiers = ['Common', 'Uncommon', 'Rare', 'Epic', 'Legendary', 'Mythic']
+      if (validTiers.includes(tier)) {
+        whereConditions.push(`a.tier = '${tier}'`)
+      }
     }
     if (search) {
-      whereConditions.push(`(a.name LIKE '%${search}%' OR a.description LIKE '%${search}%')`)
+      const sanitized = sanitizeSearchTerm(search)
+      const safeSearch = escapeLikePattern(sanitized)
+      whereConditions.push(`(a.name LIKE '%${safeSearch}%' OR a.description LIKE '%${safeSearch}%')`)
     }
 
     if (whereConditions.length > 0) {
       baseQuery += ` WHERE ${whereConditions.join(' AND ')}`
     }
 
+    // Validate pagination parameters
+    const offsetNum = Math.max(0, parseInt(offset) || 0)
+    const limitNum = Math.min(Math.max(1, parseInt(limit) || 100), 500)
+
     baseQuery += `
-      ORDER BY 
+      ORDER BY
         a.is_active DESC,
-        CASE a.tier 
+        CASE a.tier
           WHEN 'Common' THEN 1
           WHEN 'Uncommon' THEN 2
           WHEN 'Rare' THEN 3
@@ -80,8 +96,8 @@ router.get('/', async (req, res) => {
         END,
         a.points ASC,
         a.name ASC
-      OFFSET ${parseInt(offset)} ROWS
-      FETCH NEXT ${parseInt(limit)} ROWS ONLY
+      OFFSET ${offsetNum} ROWS
+      FETCH NEXT ${limitNum} ROWS ONLY
     `
 
     const achievements = await prisma.$queryRawUnsafe(baseQuery)
@@ -99,9 +115,9 @@ router.get('/', async (req, res) => {
       success: true,
       achievements: serializedAchievements,
       pagination: {
-        offset: parseInt(offset),
-        limit: parseInt(limit),
-        hasMore: serializedAchievements.length === parseInt(limit)
+        offset: offsetNum,
+        limit: limitNum,
+        hasMore: serializedAchievements.length === limitNum
       }
     })
 

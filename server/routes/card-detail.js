@@ -1,5 +1,6 @@
 const express = require('express')
 const { prisma } = require('../config/prisma-singleton')
+const { escapeString, escapeLikePattern, validateNumericId } = require('../utils/sql-security')
 
 const router = express.Router()
 
@@ -110,6 +111,11 @@ router.get('/:year/:setSlug/:seriesSlug/:cardSlug', async (req, res) => {
       }
     }
     
+    // Validate and escape user inputs
+    const safeCardNumber = escapeString(cardNumber)
+    const yearNum = validateNumericId(year, 'year')
+    const safeSeriesSlug = escapeLikePattern(seriesSlug.replace(/-/g, ' '))
+
     // Search for the card using a comprehensive query
     const results = await prisma.$queryRawUnsafe(`
       SELECT TOP 1
@@ -139,9 +145,9 @@ router.get('/:year/:setSlug/:seriesSlug/:cardSlug', async (req, res) => {
       LEFT JOIN player_team pt ON cpt.player_team = pt.player_team_id
       LEFT JOIN player p ON pt.player = p.player_id
       LEFT JOIN team t ON pt.team = t.team_id
-      WHERE c.card_number = '${cardNumber}'
-        AND st.year = ${parseInt(year)}
-        AND s.name LIKE '%${seriesSlug.replace(/-/g, '%')}%'
+      WHERE c.card_number = '${safeCardNumber}'
+        AND st.year = ${yearNum}
+        AND s.name LIKE '%${safeSeriesSlug}%'
       GROUP BY c.card_id, c.card_number, c.is_rookie, c.is_autograph, c.is_relic, c.print_run,
                s.series_id, s.name, st.set_id, st.name, st.year, m.name, s.parallel_of_series, col.name, col.hex_value
     `)
@@ -156,10 +162,11 @@ router.get('/:year/:setSlug/:seriesSlug/:cardSlug', async (req, res) => {
     
     const card = results[0]
     // Get CYC Population count from user_card table
+    const cardIdNum = Number(card.card_id)
     const populationResult = await prisma.$queryRawUnsafe(`
       SELECT COUNT(*) as cyc_population
       FROM user_card uc
-      WHERE uc.card = ${card.card_id}
+      WHERE uc.card = ${cardIdNum}
     `)
     
     const cycPopulation = populationResult[0]?.cyc_population || 0
