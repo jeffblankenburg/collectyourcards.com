@@ -18,9 +18,14 @@ export const ToastProvider = ({ children }) => {
   useEffect(() => {
     const cleanup = setInterval(() => {
       const now = Date.now()
-      setToasts(prev => prev.filter(toast => 
-        (now - toast.timestamp) < (toast.duration + 1000) // Keep for duration + 1 second buffer
-      ))
+      setToasts(prev => {
+        const filtered = prev.filter(toast =>
+          (now - toast.timestamp) < (toast.duration + 1000) // Keep for duration + 1 second buffer
+        )
+        // CRITICAL: Only update state if something actually changed
+        // This prevents re-rendering the entire app every 5 seconds when there are no toasts
+        return filtered.length !== prev.length ? filtered : prev
+      })
     }, 5000) // Run cleanup every 5 seconds
 
     return () => clearInterval(cleanup)

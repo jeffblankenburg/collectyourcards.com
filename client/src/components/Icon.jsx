@@ -112,7 +112,8 @@ import {
   ArrowLeftRight,
   Clipboard,
   Bookmark,
-  Save
+  Save,
+  SlidersHorizontal
 } from 'lucide-react'
 
 // Icon mapping for consistent usage across the app
@@ -153,7 +154,8 @@ const iconMap = {
   'power': Power,
   'target': Target,
   'settings': Settings,
-  
+  'sliders-horizontal': SlidersHorizontal,
+
   // Stats & Values
   'money': DollarSign,
   'value': DollarSign,
@@ -221,7 +223,6 @@ const iconMap = {
   'database': Database,
   'code': Code,
   'image': Image,
-  'monitor': Monitor,
   'refresh': RefreshCw,
   'shopping': ShoppingCart,
   'color': Palette,

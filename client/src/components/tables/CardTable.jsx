@@ -1,7 +1,9 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react'
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import Icon from '../Icon'
 import AddToListDropdown from '../AddToListDropdown'
+import ColumnPicker from '../ColumnPicker'
+import { CARD_TABLE_COLUMNS, getDefaultVisibleColumns } from '../../utils/tableColumnDefinitions'
 import './CardTableScoped.css'
 
 /**
@@ -43,11 +45,24 @@ const CardTable = ({
   onRemoveFromList = null,
   removingCardId = null
 }) => {
+  console.log('🔴 CardTable RENDER - Card count:', cards.length, {
+    cardsIdentity: cards,
+    onAddCard: !!onAddCard,
+    onCardClick: !!onCardClick,
+    searchQuery,
+    bulkSelectionMode,
+    selectedCardsSize: selectedCards.size,
+    loading
+  })
+
   const { isAuthenticated } = useAuth()
   const [sortField, setSortField] = useState(defaultSort)
   const [sortDirection, setSortDirection] = useState('asc')
+  const [visibleColumns, setVisibleColumns] = useState(
+    getDefaultVisibleColumns('card_table')
+  )
 
-  
+
   // Column resizing state
   const [columnWidths, setColumnWidths] = useState({
     checkbox: 56,      // 32px button + 24px padding (12px each side)
@@ -96,6 +111,40 @@ const CardTable = ({
       document.removeEventListener('mousedown', handleClickOutside)
     }
   }, [openMarketplaceDropdown])
+
+  // Fetch user's column preferences
+  useEffect(() => {
+    const fetchPreferences = async () => {
+      if (!isAuthenticated) {
+        // Reset to defaults if not authenticated
+        setVisibleColumns(getDefaultVisibleColumns('card_table'))
+        return
+      }
+
+      try {
+        const token = localStorage.getItem('token')
+        const response = await fetch('/api/user/table-preferences/card_table', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          if (data.visible_columns) {
+            setVisibleColumns(data.visible_columns)
+          } else {
+            // No preferences saved yet, use defaults
+            setVisibleColumns(getDefaultVisibleColumns('card_table'))
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching column preferences:', error)
+        // On error, fall back to defaults
+        setVisibleColumns(getDefaultVisibleColumns('card_table'))
+      }
+    }
+
+    fetchPreferences()
+  }, [isAuthenticated])
 
   // Filter cards based on search query
   const filteredCards = useMemo(() => {
@@ -238,6 +287,16 @@ const CardTable = ({
       setSortDirection('asc')
     }
   }
+
+  // Helper function to check if a column should be visible (memoized for performance)
+  const isColumnVisible = useCallback((columnId) => {
+    return visibleColumns.includes(columnId)
+  }, [visibleColumns])
+
+  // Memoized callback for column changes to prevent ColumnPicker re-renders
+  const handleColumnsChange = useCallback((newColumns) => {
+    setVisibleColumns(newColumns)
+  }, [])
 
   const SortIcon = ({ field }) => {
     if (sortField !== field) {
@@ -386,19 +445,30 @@ const CardTable = ({
       {/* Table Controls */}
       {(showSearch || (isAuthenticated && showBulkActions)) && (
         <div className="card-table-controls">
-          {showSearch && (
-            <div className="card-table-search-container">
-              <input
-                ref={searchInputRef}
-                type="text"
-                placeholder="Search cards..."
-                value={searchQuery}
-                onChange={(e) => onSearchChange?.(e.target.value)}
-                className="card-table-search-input"
-              />
-            </div>
-          )}
-          
+          <div className="card-table-controls-left">
+            {/* Column Customization */}
+            <ColumnPicker
+              tableName="card_table"
+              columns={CARD_TABLE_COLUMNS}
+              visibleColumns={visibleColumns}
+              onColumnsChange={handleColumnsChange}
+              isAuthenticated={isAuthenticated}
+            />
+
+            {showSearch && (
+              <div className="card-table-search-container">
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  placeholder="Search cards..."
+                  value={searchQuery}
+                  onChange={(e) => onSearchChange?.(e.target.value)}
+                  className="card-table-search-input"
+                />
+              </div>
+            )}
+          </div>
+
           {isAuthenticated && showBulkActions && (
             <>
               <div className="card-table-view-toggle">
@@ -419,7 +489,7 @@ const CardTable = ({
                   Multiple
                 </button>
               </div>
-              
+
               {bulkSelectionMode && selectedCards.size > 0 && (
                 <button
                   className="bulk-action-button"
@@ -470,9 +540,11 @@ const CardTable = ({
                       <ResizeHandle columnKey="checkbox" />
                     </div>
                   </th>
-                  <th className="owned-header" style={{ width: columnWidths.owned }}>
-                    OWN
-                  </th>
+                  {isColumnVisible('owned') && (
+                    <th className="owned-header" style={{ width: columnWidths.owned }}>
+                      OWN
+                    </th>
+                  )}
                 </>
               )}
               <th className="sortable card-number-header" style={{ width: columnWidths.card_number }}>
@@ -489,68 +561,84 @@ const CardTable = ({
                   </div>
                 </div>
               </th>
-              <th className="sortable card-table-series-header" style={{ width: columnWidths.series }}>
-                <div className="card-table-header-with-resize">
-                  <div className="card-table-header-content" onClick={() => handleSort('series_name')}>
-                    SERIES <SortIcon field="series_name" />
+              {isColumnVisible('series') && (
+                <th className="sortable card-table-series-header" style={{ width: columnWidths.series }}>
+                  <div className="card-table-header-with-resize">
+                    <div className="card-table-header-content" onClick={() => handleSort('series_name')}>
+                      SERIES <SortIcon field="series_name" />
+                    </div>
                   </div>
-                </div>
-              </th>
-              <th className="color-header" style={{ width: columnWidths.color }}>
+                </th>
+              )}
+              {isColumnVisible('color') && (
+                <th className="color-header" style={{ width: columnWidths.color }}>
                 <div className="card-table-header-with-resize">
                   COLOR
                 </div>
               </th>
-              <th 
-                className="sortable print-run-header"
-                style={{ width: columnWidths.print_run }}
-              >
-                <div className="card-table-header-with-resize">
-                  <div className="card-table-header-content" onClick={() => handleSort('print_run')}>
-                    PRINT RUN <SortIcon field="print_run" />
+              )}
+              {isColumnVisible('print_run') && (
+                <th
+                  className="sortable print-run-header"
+                  style={{ width: columnWidths.print_run }}
+                >
+                  <div className="card-table-header-with-resize">
+                    <div className="card-table-header-content" onClick={() => handleSort('print_run')}>
+                      PRINT RUN <SortIcon field="print_run" />
+                    </div>
+                    <ResizeHandle columnKey="print_run" />
                   </div>
-                  <ResizeHandle columnKey="print_run" />
-                </div>
-              </th>
-              <th 
-                className="sortable auto-header" 
-                style={{ width: columnWidths.auto }}
-              >
-                <div className="card-table-header-with-resize">
-                  <div className="card-table-header-content" onClick={() => handleSort('is_autograph')}>
-                    AUTO <SortIcon field="is_autograph" />
+                </th>
+              )}
+              {isColumnVisible('auto') && (
+                <th
+                  className="sortable auto-header"
+                  style={{ width: columnWidths.auto }}
+                >
+                  <div className="card-table-header-with-resize">
+                    <div className="card-table-header-content" onClick={() => handleSort('is_autograph')}>
+                      AUTO <SortIcon field="is_autograph" />
+                    </div>
+                    <ResizeHandle columnKey="auto" />
                   </div>
-                  <ResizeHandle columnKey="auto" />
-                </div>
-              </th>
-              <th
-                className="sortable relic-header"
-                style={{ width: columnWidths.relic }}
-              >
-                <div className="card-table-header-with-resize">
-                  <div className="card-table-header-content" onClick={() => handleSort('is_relic')}>
-                    RELIC <SortIcon field="is_relic" />
+                </th>
+              )}
+              {isColumnVisible('relic') && (
+                <th
+                  className="sortable relic-header"
+                  style={{ width: columnWidths.relic }}
+                >
+                  <div className="card-table-header-with-resize">
+                    <div className="card-table-header-content" onClick={() => handleSort('is_relic')}>
+                      RELIC <SortIcon field="is_relic" />
+                    </div>
+                    <ResizeHandle columnKey="relic" />
                   </div>
-                  <ResizeHandle columnKey="relic" />
-                </div>
-              </th>
-              <th className="notes-header" style={{ width: columnWidths.notes }}>
-                <div className="card-table-header-with-resize">
-                  NOTES
-                </div>
-              </th>
-              <th className="production-code-header" style={{ width: columnWidths.production_code }}>
-                <div className="card-table-header-with-resize">
+                </th>
+              )}
+              {isColumnVisible('notes') && (
+                <th className="notes-header" style={{ width: columnWidths.notes }}>
+                  <div className="card-table-header-with-resize">
+                    NOTES
+                  </div>
+                </th>
+              )}
+              {isColumnVisible('production_code') && (
+                <th className="production-code-header" style={{ width: columnWidths.production_code }}>
+                  <div className="card-table-header-with-resize">
+                    <div className="card-table-header-content">
+                      PRODUCTION CODE
+                    </div>
+                  </div>
+                </th>
+              )}
+              {isColumnVisible('shop') && (
+                <th className="find-header" style={{ width: columnWidths.find }}>
                   <div className="card-table-header-content">
-                    PRODUCTION CODE
+                    SHOP
                   </div>
-                </div>
-              </th>
-              <th className="find-header" style={{ width: columnWidths.find }}>
-                <div className="card-table-header-content">
-                  SHOP
-                </div>
-              </th>
+                </th>
+              )}
               {showRemoveFromList && (
                 <th className="remove-header" style={{ width: columnWidths.remove }}>
                   <div className="card-table-header-content">
@@ -598,9 +686,11 @@ const CardTable = ({
                           />
                         </td>
                       )}
-                      <td className="owned-cell">
-                        {card.user_card_count || 0}
-                      </td>
+                      {isColumnVisible('owned') && (
+                        <td className="owned-cell">
+                          {card.user_card_count || 0}
+                        </td>
+                      )}
                     </>
                   )}
                   <td 
@@ -647,25 +737,28 @@ const CardTable = ({
                       </div>
                     ))}
                   </td>
-                  <td className="card-table-series-cell">
-                    {onSeriesClick ? (
-                      <button
-                        className="card-table-series-link"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          onSeriesClick(card.series_rel)
-                        }}
-                        title={`View ${card.series_rel?.name} series details`}
-                      >
-                        {card.series_rel?.name}
-                      </button>
-                    ) : (
-                      <span className="card-table-series-name">
-                        {card.series_rel?.name}
-                      </span>
-                    )}
-                  </td>
-                  <td className="color-cell">
+                  {isColumnVisible('series') && (
+                    <td className="card-table-series-cell">
+                      {onSeriesClick ? (
+                        <button
+                          className="card-table-series-link"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            onSeriesClick(card.series_rel)
+                          }}
+                          title={`View ${card.series_rel?.name} series details`}
+                        >
+                          {card.series_rel?.name}
+                        </button>
+                      ) : (
+                        <span className="card-table-series-name">
+                          {card.series_rel?.name}
+                        </span>
+                      )}
+                    </td>
+                  )}
+                  {isColumnVisible('color') && (
+                    <td className="color-cell">
                     {card.color_rel?.color && (
                       <span 
                         className="color-tag"
@@ -683,24 +776,36 @@ const CardTable = ({
                       </span>
                     )}
                   </td>
-                  <td className="print-run-cell">
-                    {card.print_run && (
-                      <span className="print-run-tag">
-                        /{card.print_run}
-                      </span>
-                    )}
-                  </td>
-                  <td className="auto-cell">
-                    {card.is_autograph && <span className="cardcard-tag cardcard-insert">AUTO</span>}
-                  </td>
-                  <td className="relic-cell">
-                    {card.is_relic && <span className="cardcard-tag cardcard-relic">RELIC</span>}
-                  </td>
-                  <td className="notes-cell">
-                    {card.notes}
-                  </td>
-                  <td className="production-code-cell">{card.series_rel?.production_code || ''}</td>
-                  <td className="find-cell">
+                  )}
+                  {isColumnVisible('print_run') && (
+                    <td className="print-run-cell">
+                      {card.print_run && (
+                        <span className="print-run-tag">
+                          /{card.print_run}
+                        </span>
+                      )}
+                    </td>
+                  )}
+                  {isColumnVisible('auto') && (
+                    <td className="auto-cell">
+                      {card.is_autograph && <span className="cardcard-tag cardcard-insert">AUTO</span>}
+                    </td>
+                  )}
+                  {isColumnVisible('relic') && (
+                    <td className="relic-cell">
+                      {card.is_relic && <span className="cardcard-tag cardcard-relic">RELIC</span>}
+                    </td>
+                  )}
+                  {isColumnVisible('notes') && (
+                    <td className="notes-cell">
+                      {card.notes}
+                    </td>
+                  )}
+                  {isColumnVisible('production_code') && (
+                    <td className="production-code-cell">{card.series_rel?.production_code || ''}</td>
+                  )}
+                  {isColumnVisible('shop') && (
+                    <td className="find-cell">
                     <div
                       className="marketplace-dropdown"
                       ref={openMarketplaceDropdown === card.card_id ? marketplaceDropdownRef : null}
@@ -763,6 +868,7 @@ const CardTable = ({
                       )}
                     </div>
                   </td>
+                  )}
                   {showRemoveFromList && (
                     <td className="remove-cell">
                       <button

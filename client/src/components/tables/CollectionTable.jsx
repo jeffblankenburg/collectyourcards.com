@@ -1,8 +1,10 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect, useCallback } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import Icon from '../Icon'
 import { CardCard, GalleryCard } from '../cards'
 import PhotoCountHover from './PhotoCountHover'
+import ColumnPicker from '../ColumnPicker'
+import { COLLECTION_TABLE_COLUMNS, getDefaultVisibleColumns } from '../../utils/tableColumnDefinitions'
 import './CollectionTableScoped.css'
 
 /**
@@ -40,7 +42,10 @@ const CollectionTable = ({
   const { isAuthenticated } = useAuth()
   const [sortField, setSortField] = useState('series_name')
   const [sortDirection, setSortDirection] = useState('asc')
-  
+  const [visibleColumns, setVisibleColumns] = useState(
+    getDefaultVisibleColumns('collection_table')
+  )
+
   // Column resizing state - MATCHES CardTable architecture
   const [columnWidths, setColumnWidths] = useState({
     edit: 56,          // 32px button + 24px padding (matches CardTable ADD)
@@ -73,14 +78,55 @@ const CollectionTable = ({
     if (!dateString) return ''
     const date = new Date(dateString)
     if (isNaN(date.getTime())) return ''
-    
+
     // Format as MM/DD/YY
     const month = (date.getMonth() + 1).toString().padStart(2, '0')
     const day = date.getDate().toString().padStart(2, '0')
     const year = date.getFullYear().toString().slice(-2)
-    
+
     return `${month}/${day}/${year}`
   }
+
+  // Fetch user's column preferences
+  useEffect(() => {
+    const fetchPreferences = async () => {
+      if (!isAuthenticated) {
+        setVisibleColumns(getDefaultVisibleColumns('collection_table'))
+        return
+      }
+
+      try {
+        const token = localStorage.getItem('token')
+        const response = await fetch('/api/user/table-preferences/collection_table', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          if (data.visible_columns) {
+            setVisibleColumns(data.visible_columns)
+          } else {
+            setVisibleColumns(getDefaultVisibleColumns('collection_table'))
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching column preferences:', error)
+        setVisibleColumns(getDefaultVisibleColumns('collection_table'))
+      }
+    }
+
+    fetchPreferences()
+  }, [isAuthenticated])
+
+  // Helper function to check if a column should be visible
+  const isColumnVisible = useCallback((columnId) => {
+    return visibleColumns.includes(columnId)
+  }, [visibleColumns])
+
+  // Memoized callback for column changes
+  const handleColumnsChange = useCallback((newColumns) => {
+    setVisibleColumns(newColumns)
+  }, [])
 
   // Filter cards based on search query
   const filteredCards = useMemo(() => {
@@ -384,17 +430,28 @@ const CollectionTable = ({
       <div className="collection-table-container">
         {/* Gallery Controls */}
         <div className="collection-table-controls">
-          {showSearch && (
-            <div className="collection-table-search-container">
-              <input
-                type="text"
-                placeholder="Search collection..."
-                value={searchQuery}
-                onChange={(e) => onSearchChange?.(e.target.value)}
-                className="collection-table-search-input"
-              />
-            </div>
-          )}
+          <div className="collection-table-controls-left">
+            {/* Column Customization */}
+            <ColumnPicker
+              tableName="collection_table"
+              columns={COLLECTION_TABLE_COLUMNS}
+              visibleColumns={visibleColumns}
+              onColumnsChange={handleColumnsChange}
+              isAuthenticated={isAuthenticated}
+            />
+
+            {showSearch && (
+              <div className="collection-table-search-container">
+                <input
+                  type="text"
+                  placeholder="Search collection..."
+                  value={searchQuery}
+                  onChange={(e) => onSearchChange?.(e.target.value)}
+                  className="collection-table-search-input"
+                />
+              </div>
+            )}
+          </div>
 
           <div className="collection-table-controls-right">
             {customActions && (
@@ -468,17 +525,28 @@ const CollectionTable = ({
     <div className="collection-table-container">
       {/* Table Controls */}
       <div className="collection-table-controls">
-        {showSearch && (
-          <div className="collection-table-search-container">
-            <input
-              type="text"
-              placeholder="Search collection..."
-              value={searchQuery}
-              onChange={(e) => onSearchChange?.(e.target.value)}
-              className="collection-table-search-input"
-            />
-          </div>
-        )}
+        <div className="collection-table-controls-left">
+          {/* Column Customization */}
+          <ColumnPicker
+            tableName="collection_table"
+            columns={COLLECTION_TABLE_COLUMNS}
+            visibleColumns={visibleColumns}
+            onColumnsChange={handleColumnsChange}
+            isAuthenticated={isAuthenticated}
+          />
+
+          {showSearch && (
+            <div className="collection-table-search-container">
+              <input
+                type="text"
+                placeholder="Search collection..."
+                value={searchQuery}
+                onChange={(e) => onSearchChange?.(e.target.value)}
+                className="collection-table-search-input"
+              />
+            </div>
+          )}
+        </div>
 
         <div className="collection-table-controls-right">
           {customActions && (

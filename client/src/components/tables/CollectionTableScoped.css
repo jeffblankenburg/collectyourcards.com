@@ -30,6 +30,14 @@
   flex-wrap: wrap;
 }
 
+.collection-table-container .collection-table-controls-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  max-width: 500px;
+}
+
 .collection-table-container .collection-table-search-container {
   flex: 1;
   max-width: 400px;

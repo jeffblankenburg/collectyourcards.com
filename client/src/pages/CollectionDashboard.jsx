@@ -845,7 +845,7 @@ function CollectionDashboard() {
                 onClick={() => setShowManageLocationsModal(true)}
                 title="Manage locations"
               >
-                <Icon name="settings" size={16} />
+                <Icon name="sliders-horizontal" size={16} />
               </button>
             )}
           </div>

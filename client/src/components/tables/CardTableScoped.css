@@ -29,6 +29,14 @@
   flex-wrap: wrap;
 }
 
+.card-table-container .card-table-controls-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  max-width: 500px;
+}
+
 .card-table-container .card-table-search-container {
   flex: 1;
   max-width: 400px;
