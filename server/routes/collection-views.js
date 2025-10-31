@@ -338,7 +338,8 @@ router.get('/shared/:slug', optionalAuthMiddleware, async (req, res) => {
         owner: {
           username: view.username
         },
-        is_owner: isOwner
+        is_owner: isOwner,
+        visible_columns: filterConfig.visible_columns || null
       },
       cards: cards,
       stats: {

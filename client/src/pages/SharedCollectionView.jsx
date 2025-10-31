@@ -174,6 +174,8 @@ function SharedCollectionView() {
             showGalleryToggle={true}
             downloadFilename={`${view.slug}-shared-collection`}
             maxHeight="800px"
+            visibleColumnsOverride={view.visible_columns}
+            showColumnPicker={view.is_owner}
           />
         </section>
       </div>

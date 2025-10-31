@@ -37,7 +37,9 @@ const CollectionTable = ({
   maxHeight = null, // Custom height for the table wrapper
   showDownload = true,
   downloadFilename = 'collection',
-  customActions = null // Custom action buttons to display in controls
+  customActions = null, // Custom action buttons to display in controls
+  visibleColumnsOverride = null, // Array of column IDs to override normal preferences (for shared views)
+  showColumnPicker = true // Whether to show the column picker (false for non-owners of shared views)
 }) => {
   const { isAuthenticated } = useAuth()
   const [sortField, setSortField] = useState('series_name')
@@ -87,8 +89,15 @@ const CollectionTable = ({
     return `${month}/${day}/${year}`
   }
 
-  // Fetch user's column preferences
+  // Fetch user's column preferences (or use override for shared views)
   useEffect(() => {
+    // If we have an override (from shared view owner settings), use that
+    if (visibleColumnsOverride) {
+      setVisibleColumns(visibleColumnsOverride)
+      return
+    }
+
+    // Otherwise, fetch user's personal preferences
     const fetchPreferences = async () => {
       if (!isAuthenticated) {
         setVisibleColumns(getDefaultVisibleColumns('collection_table'))
@@ -116,7 +125,7 @@ const CollectionTable = ({
     }
 
     fetchPreferences()
-  }, [isAuthenticated])
+  }, [isAuthenticated, visibleColumnsOverride])
 
   // Helper function to check if a column should be visible
   const isColumnVisible = useCallback((columnId) => {
@@ -431,14 +440,16 @@ const CollectionTable = ({
         {/* Gallery Controls */}
         <div className="collection-table-controls">
           <div className="collection-table-controls-left">
-            {/* Column Customization */}
-            <ColumnPicker
-              tableName="collection_table"
-              columns={COLLECTION_TABLE_COLUMNS}
-              visibleColumns={visibleColumns}
-              onColumnsChange={handleColumnsChange}
-              isAuthenticated={isAuthenticated}
-            />
+            {/* Column Customization - Only show if allowed */}
+            {showColumnPicker && (
+              <ColumnPicker
+                tableName="collection_table"
+                columns={COLLECTION_TABLE_COLUMNS}
+                visibleColumns={visibleColumns}
+                onColumnsChange={handleColumnsChange}
+                isAuthenticated={isAuthenticated}
+              />
+            )}
 
             {showSearch && (
               <div className="collection-table-search-container">
@@ -526,14 +537,16 @@ const CollectionTable = ({
       {/* Table Controls */}
       <div className="collection-table-controls">
         <div className="collection-table-controls-left">
-          {/* Column Customization */}
-          <ColumnPicker
-            tableName="collection_table"
-            columns={COLLECTION_TABLE_COLUMNS}
-            visibleColumns={visibleColumns}
-            onColumnsChange={handleColumnsChange}
-            isAuthenticated={isAuthenticated}
-          />
+          {/* Column Customization - Only show if allowed */}
+          {showColumnPicker && (
+            <ColumnPicker
+              tableName="collection_table"
+              columns={COLLECTION_TABLE_COLUMNS}
+              visibleColumns={visibleColumns}
+              onColumnsChange={handleColumnsChange}
+              isAuthenticated={isAuthenticated}
+            />
+          )}
 
           {showSearch && (
             <div className="collection-table-search-container">

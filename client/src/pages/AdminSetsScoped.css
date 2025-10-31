@@ -904,6 +904,7 @@
   padding: 2rem;
 }
 
+.admin-sets-page .modal-content,
 .admin-sets-page .edit-modal {
   background: rgba(15, 23, 42, 0.95);
   backdrop-filter: blur(20px);
@@ -929,8 +930,12 @@
   font-size: 1.5rem;
   font-weight: 600;
   color: white;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
+.admin-sets-page .modal-close-btn,
 .admin-sets-page .close-btn {
   background: transparent;
   border: none;
@@ -939,22 +944,82 @@
   padding: 0.5rem;
   border-radius: 4px;
   transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
+.admin-sets-page .modal-close-btn:hover,
 .admin-sets-page .close-btn:hover {
   background: rgba(255, 255, 255, 0.1);
   color: white;
 }
 
-.admin-sets-page .modal-content {
+.admin-sets-page .modal-body {
   padding: 1.5rem;
 }
 
-/* Form Styles */
-.admin-sets-page .edit-form {
+.admin-sets-page .modal-form {
+  padding: 1.5rem;
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 1.5rem;
+}
+
+/* Form Styles */
+.admin-sets-page .edit-form,
+.admin-sets-page .modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.admin-sets-page .form-group,
+.admin-sets-page .form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.admin-sets-page .form-group label,
+.admin-sets-page .form-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.admin-sets-page .form-input,
+.admin-sets-page .form-select,
+.admin-sets-page select,
+.admin-sets-page input[type="text"] {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  padding: 0.75rem;
+  color: white;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.admin-sets-page .form-input:focus,
+.admin-sets-page .form-select:focus,
+.admin-sets-page select:focus,
+.admin-sets-page input[type="text"]:focus {
+  outline: none;
+  border-color: rgba(59, 130, 246, 0.5);
+  background: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.admin-sets-page .form-input::placeholder,
+.admin-sets-page input[type="text"]::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.admin-sets-page select option {
+  background: #1e293b;
+  color: white;
 }
 
 .admin-sets-page .form-section {
@@ -972,12 +1037,6 @@
   padding-bottom: 0.5rem;
 }
 
-.admin-sets-page .form-row {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
 .admin-sets-page .form-row-inline {
   display: flex;
   gap: 1rem;
@@ -988,35 +1047,6 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-}
-
-.admin-sets-page .form-label {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.9);
-}
-
-.admin-sets-page .form-input,
-.admin-sets-page .form-select {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 6px;
-  padding: 0.75rem;
-  color: white;
-  font-size: 0.875rem;
-  transition: all 0.2s ease;
-}
-
-.admin-sets-page .form-input:focus,
-.admin-sets-page .form-select:focus {
-  outline: none;
-  border-color: rgba(59, 130, 246, 0.5);
-  background: rgba(255, 255, 255, 0.15);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.admin-sets-page .form-input::placeholder {
-  color: rgba(255, 255, 255, 0.5);
 }
 
 .admin-sets-page .form-value {
@@ -1307,6 +1337,66 @@
   cursor: not-allowed;
 }
 
+.admin-sets-page .btn-primary,
+.admin-sets-page .btn-cancel {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid;
+}
+
+.admin-sets-page .btn-cancel {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.3);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.admin-sets-page .btn-cancel:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.admin-sets-page .btn-primary {
+  background: rgba(34, 197, 94, 0.2);
+  border-color: rgba(34, 197, 94, 0.3);
+  color: #86efac;
+}
+
+.admin-sets-page .btn-primary:hover {
+  background: rgba(34, 197, 94, 0.3);
+  border-color: rgba(34, 197, 94, 0.5);
+}
+
+.admin-sets-page .btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.admin-sets-page .spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+.admin-sets-page .card-icon-spinner,
+.admin-sets-page .spinning {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(255, 255, 255, 0.2);
+  border-top-color: rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
 /* Responsive Design */
 @media (max-width: 1024px) {
   .admin-sets-page {
@@ -1346,7 +1436,9 @@
   }
 
   .admin-sets-page .cancel-btn,
-  .admin-sets-page .save-btn {
+  .admin-sets-page .save-btn,
+  .admin-sets-page .btn-cancel,
+  .admin-sets-page .btn-primary {
     width: 100%;
     justify-content: center;
   }

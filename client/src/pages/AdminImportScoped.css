@@ -909,7 +909,7 @@
 }
 
 /* SQL Preview Modal */
-.modal-overlay {
+.admin-import-page .modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -924,7 +924,8 @@
   padding: 2rem;
 }
 
-.sql-preview-modal {
+.admin-import-page .modal-content,
+.admin-import-page .sql-preview-modal {
   background: rgba(15, 23, 42, 0.98);
   backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.2);
@@ -937,7 +938,7 @@
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
 }
 
-.modal-header {
+.admin-import-page .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -945,14 +946,18 @@
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.modal-header h3 {
+.admin-import-page .modal-header h3 {
   margin: 0;
   font-size: 1.5rem;
   font-weight: 600;
   color: white;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
-.close-btn {
+.admin-import-page .modal-close-btn,
+.admin-import-page .close-btn {
   background: transparent;
   border: none;
   color: rgba(255, 255, 255, 0.7);
@@ -960,19 +965,147 @@
   padding: 0.5rem;
   border-radius: 4px;
   transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.close-btn:hover {
+.admin-import-page .modal-close-btn:hover,
+.admin-import-page .close-btn:hover {
   background: rgba(255, 255, 255, 0.1);
   color: white;
 }
 
-.modal-content {
+.admin-import-page .modal-body {
   flex: 1;
   padding: 1.5rem;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+}
+
+.admin-import-page .modal-form {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Form Elements */
+.admin-import-page .form-group,
+.admin-import-page .form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.admin-import-page .form-label {
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.875rem;
+}
+
+.admin-import-page .form-input,
+.admin-import-page .form-select,
+.admin-import-page select,
+.admin-import-page input[type="text"],
+.admin-import-page input[type="number"] {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  padding: 0.75rem;
+  color: white;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.admin-import-page .form-input:focus,
+.admin-import-page .form-select:focus,
+.admin-import-page select:focus,
+.admin-import-page input[type="text"]:focus,
+.admin-import-page input[type="number"]:focus {
+  outline: none;
+  border-color: #3b82f6;
+  background: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+}
+
+.admin-import-page select option {
+  background: #1e293b;
+  color: white;
+}
+
+/* Button Aliases */
+.admin-import-page .btn-primary,
+.admin-import-page .save-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #10b981;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.75rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);
+}
+
+.admin-import-page .btn-primary:hover:not(:disabled),
+.admin-import-page .save-btn:hover:not(:disabled) {
+  background: #059669;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 15px rgba(16, 185, 129, 0.4);
+}
+
+.admin-import-page .btn-primary:disabled,
+.admin-import-page .save-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: 0 2px 5px rgba(16, 185, 129, 0.2);
+}
+
+.admin-import-page .btn-cancel,
+.admin-import-page .cancel-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.9);
+  border-radius: 8px;
+  padding: 0.75rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.admin-import-page .btn-cancel:hover,
+.admin-import-page .cancel-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: white;
+  transform: translateY(-1px);
+}
+
+/* Spinner Styles */
+.admin-import-page .spinner,
+.admin-import-page .card-icon-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+.admin-import-page .spinning {
+  animation: spin 0.6s linear infinite;
 }
 
 .sql-preview-info {
@@ -1160,8 +1293,12 @@
     flex-direction: column;
     gap: 0.75rem;
   }
-  
-  .modal-actions button {
+
+  .modal-actions button,
+  .admin-import-page .btn-primary,
+  .admin-import-page .btn-cancel,
+  .admin-import-page .save-btn,
+  .admin-import-page .cancel-btn {
     width: 100%;
     justify-content: center;
   }

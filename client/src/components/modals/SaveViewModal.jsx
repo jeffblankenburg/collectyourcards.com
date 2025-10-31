@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import axios from 'axios'
 import { useToast } from '../../contexts/ToastContext'
 import Icon from '../Icon'
+import { COLLECTION_TABLE_COLUMNS, getDefaultVisibleColumns } from '../../utils/tableColumnDefinitions'
 import './SaveViewModal.css'
 
 /**
@@ -19,6 +20,25 @@ function SaveViewModal({ isOpen, onClose, filterConfig, onViewSaved }) {
   const [isPublic, setIsPublic] = useState(true)
   const [saving, setSaving] = useState(false)
   const [savedView, setSavedView] = useState(null) // Store saved view to show share link
+  const [visibleColumns, setVisibleColumns] = useState(
+    getDefaultVisibleColumns('collection_table')
+  )
+  const [showColumnPicker, setShowColumnPicker] = useState(false) // Toggle for column picker section
+
+  const handleColumnToggle = (columnId) => {
+    const column = COLLECTION_TABLE_COLUMNS[columnId]
+
+    // Prevent toggling alwaysVisible columns
+    if (column?.alwaysVisible) {
+      return
+    }
+
+    setVisibleColumns(prev =>
+      prev.includes(columnId)
+        ? prev.filter(id => id !== columnId)
+        : [...prev, columnId]
+    )
+  }
 
   const handleSave = async () => {
     if (!name.trim()) {
@@ -29,10 +49,16 @@ function SaveViewModal({ isOpen, onClose, filterConfig, onViewSaved }) {
     try {
       setSaving(true)
 
+      // Include visible_columns in the filter_config
+      const configWithColumns = {
+        ...filterConfig,
+        visible_columns: visibleColumns
+      }
+
       const response = await axios.post('/api/collection-views', {
         name: name.trim(),
         description: description.trim() || null,
-        filter_config: filterConfig,
+        filter_config: configWithColumns,
         is_public: isPublic
       })
 
@@ -58,6 +84,8 @@ function SaveViewModal({ isOpen, onClose, filterConfig, onViewSaved }) {
     setDescription('')
     setIsPublic(true)
     setSavedView(null)
+    setVisibleColumns(getDefaultVisibleColumns('collection_table'))
+    setShowColumnPicker(false)
     onClose()
   }
 
@@ -143,6 +171,51 @@ function SaveViewModal({ isOpen, onClose, filterConfig, onViewSaved }) {
                     <li>All cards (no filters applied)</li>
                   )}
                 </ul>
+              </div>
+
+              {/* Column visibility selection */}
+              <div className="column-picker-section">
+                <button
+                  type="button"
+                  className="column-picker-toggle"
+                  onClick={() => setShowColumnPicker(!showColumnPicker)}
+                >
+                  <Icon name={showColumnPicker ? 'chevron-down' : 'chevron-right'} size={16} />
+                  <span>Visible Columns ({visibleColumns.length}/{Object.keys(COLLECTION_TABLE_COLUMNS).length})</span>
+                </button>
+
+                {showColumnPicker && (
+                  <div className="column-picker-list">
+                    {Object.values(COLLECTION_TABLE_COLUMNS).map(column => {
+                      const isVisible = visibleColumns.includes(column.id)
+                      const isRequired = column.alwaysVisible
+
+                      return (
+                        <label
+                          key={column.id}
+                          className={`column-picker-item ${isRequired ? 'required' : ''}`}
+                          title={column.description}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isVisible}
+                            onChange={() => handleColumnToggle(column.id)}
+                            disabled={isRequired}
+                          />
+                          <span className="column-picker-item-label">
+                            {column.label}
+                            {isRequired && (
+                              <span className="required-badge">Required</span>
+                            )}
+                          </span>
+                        </label>
+                      )
+                    })}
+                  </div>
+                )}
+                <p className="column-picker-help">
+                  Choose which columns viewers will see in the shared view
+                </p>
               </div>
             </>
           ) : (

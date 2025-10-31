@@ -610,6 +610,7 @@
   padding: 1rem;
 }
 
+.admin-series-page .modal-content,
 .admin-series-page .edit-player-modal {
   background: rgba(15, 23, 42, 0.95);
   backdrop-filter: blur(20px);
@@ -635,22 +636,40 @@
   color: white;
   font-size: 1.25rem;
   font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
+.admin-series-page .modal-close-btn,
 .admin-series-page .close-btn {
   background: transparent;
   border: none;
   color: rgba(255, 255, 255, 0.7);
   cursor: pointer;
-  padding: 0.25rem;
+  padding: 0.5rem;
+  border-radius: 4px;
+  transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.2s ease;
 }
 
+.admin-series-page .modal-close-btn:hover,
 .admin-series-page .close-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
   color: white;
+}
+
+.admin-series-page .modal-body {
+  padding: 1.5rem;
+}
+
+.admin-series-page .modal-form {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
 .admin-series-page .edit-player-modal > .form-field-row,
@@ -807,6 +826,54 @@
   background: transparent;
 }
 
+.admin-series-page .form-group,
+.admin-series-page .form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.admin-series-page .form-group label,
+.admin-series-page .form-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.admin-series-page .form-input,
+.admin-series-page .form-select,
+.admin-series-page select,
+.admin-series-page input[type="text"] {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  padding: 0.75rem;
+  color: white;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.admin-series-page .form-input:focus,
+.admin-series-page .form-select:focus,
+.admin-series-page select:focus,
+.admin-series-page input[type="text"]:focus {
+  outline: none;
+  border-color: rgba(59, 130, 246, 0.5);
+  background: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.admin-series-page .form-input::placeholder,
+.admin-series-page input[type="text"]::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.admin-series-page select option {
+  background: #1e293b;
+  color: white;
+}
+
 .admin-series-page .form-field-row {
   display: grid;
   grid-template-columns: 120px 1fr;
@@ -953,6 +1020,66 @@
   cursor: not-allowed;
 }
 
+.admin-series-page .btn-primary,
+.admin-series-page .btn-cancel {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid;
+}
+
+.admin-series-page .btn-cancel {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.3);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.admin-series-page .btn-cancel:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.admin-series-page .btn-primary {
+  background: rgba(34, 197, 94, 0.2);
+  border-color: rgba(34, 197, 94, 0.3);
+  color: #86efac;
+}
+
+.admin-series-page .btn-primary:hover {
+  background: rgba(34, 197, 94, 0.3);
+  border-color: rgba(34, 197, 94, 0.5);
+}
+
+.admin-series-page .btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.admin-series-page .spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+.admin-series-page .card-icon-spinner,
+.admin-series-page .spinning {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(255, 255, 255, 0.2);
+  border-top-color: rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
 /* Delete Button in Footer */
 .admin-series-page .delete-series-btn {
   display: flex;
@@ -1069,7 +1196,9 @@
   }
 
   .admin-series-page .cancel-btn,
-  .admin-series-page .save-btn {
+  .admin-series-page .save-btn,
+  .admin-series-page .btn-cancel,
+  .admin-series-page .btn-primary {
     width: 100%;
     justify-content: center;
   }

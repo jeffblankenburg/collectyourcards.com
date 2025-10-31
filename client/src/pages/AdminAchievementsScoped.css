@@ -470,6 +470,7 @@
   padding: 1rem;
 }
 
+.admin-achievements-page .modal-content,
 .admin-achievements-page .achievement-modal {
   background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
   border-radius: 16px;
@@ -501,6 +502,7 @@
   font-weight: 600;
 }
 
+.admin-achievements-page .modal-close-btn,
 .admin-achievements-page .close-btn {
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.2);
@@ -514,9 +516,21 @@
   justify-content: center;
 }
 
+.admin-achievements-page .modal-close-btn:hover,
 .admin-achievements-page .close-btn:hover {
   background: rgba(255, 255, 255, 0.2);
   color: white;
+}
+
+.admin-achievements-page .modal-body {
+  padding: 1.5rem;
+}
+
+.admin-achievements-page .modal-form {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
 /* Form Styles */
@@ -557,7 +571,9 @@
 
 .admin-achievements-page .form-input,
 .admin-achievements-page .form-select,
-.admin-achievements-page .form-textarea {
+.admin-achievements-page .form-textarea,
+.admin-achievements-page select,
+.admin-achievements-page input[type="text"] {
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 8px;
@@ -570,7 +586,9 @@
 
 .admin-achievements-page .form-input:focus,
 .admin-achievements-page .form-select:focus,
-.admin-achievements-page .form-textarea:focus {
+.admin-achievements-page .form-textarea:focus,
+.admin-achievements-page select:focus,
+.admin-achievements-page input[type="text"]:focus {
   outline: none;
   border-color: rgba(59, 130, 246, 0.5);
   box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25);
@@ -578,11 +596,13 @@
 }
 
 .admin-achievements-page .form-input::placeholder,
-.admin-achievements-page .form-textarea::placeholder {
+.admin-achievements-page .form-textarea::placeholder,
+.admin-achievements-page input[type="text"]::placeholder {
   color: rgba(255, 255, 255, 0.5);
 }
 
-.admin-achievements-page .form-select option {
+.admin-achievements-page .form-select option,
+.admin-achievements-page select option {
   background: #1e293b;
   color: white;
 }
@@ -698,6 +718,75 @@
   border-color: rgba(239, 68, 68, 0.5);
 }
 
+.admin-achievements-page .cancel-btn,
+.admin-achievements-page .save-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.admin-achievements-page .cancel-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.admin-achievements-page .cancel-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.admin-achievements-page .cancel-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.admin-achievements-page .save-btn {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  color: white;
+  font-weight: 600;
+  justify-content: center;
+  min-width: 140px;
+}
+
+.admin-achievements-page .save-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.admin-achievements-page .save-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.admin-achievements-page .spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+.admin-achievements-page .card-icon-spinner,
+.admin-achievements-page .spinning {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(255, 255, 255, 0.2);
+  border-top-color: rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
 /* Delete Confirmation Modal Styles */
 .admin-achievements-page .delete-confirmation {
   text-align: center;
@@ -804,7 +893,9 @@
   }
 
   .admin-achievements-page .btn-cancel,
-  .admin-achievements-page .btn-primary {
+  .admin-achievements-page .btn-primary,
+  .admin-achievements-page .cancel-btn,
+  .admin-achievements-page .save-btn {
     width: 100%;
     justify-content: center;
   }

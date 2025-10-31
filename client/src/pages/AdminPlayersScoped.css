@@ -464,6 +464,7 @@
   padding: 2rem;
 }
 
+.admin-players-page .modal-content,
 .admin-players-page .edit-player-modal,
 .admin-players-page .reassign-modal {
   background: rgba(15, 23, 42, 0.95);
@@ -490,8 +491,12 @@
   font-size: 1.5rem;
   font-weight: 600;
   color: white;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
+.admin-players-page .modal-close-btn,
 .admin-players-page .close-btn {
   background: transparent;
   border: none;
@@ -500,18 +505,80 @@
   padding: 0.5rem;
   border-radius: 4px;
   transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
+.admin-players-page .modal-close-btn:hover,
 .admin-players-page .close-btn:hover {
   background: rgba(255, 255, 255, 0.1);
   color: white;
 }
 
-.admin-players-page .modal-content {
+.admin-players-page .modal-form {
   padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
 /* Form Styles */
+.admin-players-page .edit-form,
+.admin-players-page .modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.admin-players-page .form-group,
+.admin-players-page .form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.admin-players-page .form-group label,
+.admin-players-page .form-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.admin-players-page .form-input,
+.admin-players-page .form-select,
+.admin-players-page select,
+.admin-players-page input[type="text"] {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  padding: 0.75rem;
+  color: white;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.admin-players-page .form-input:focus,
+.admin-players-page .form-select:focus,
+.admin-players-page select:focus,
+.admin-players-page input[type="text"]:focus {
+  outline: none;
+  border-color: rgba(59, 130, 246, 0.5);
+  background: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.admin-players-page .form-input::placeholder,
+.admin-players-page input[type="text"]::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.admin-players-page select option {
+  background: #1e293b;
+  color: white;
+}
+
 .admin-players-page .edit-form {
   display: flex;
   flex-direction: column;
@@ -894,6 +961,25 @@
 .admin-players-page .btn-danger:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.admin-players-page .spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+.admin-players-page .card-icon-spinner,
+.admin-players-page .spinning {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(255, 255, 255, 0.2);
+  border-top-color: rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
 }
 
 /* Delete warning modal styles */
