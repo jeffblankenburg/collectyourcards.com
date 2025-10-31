@@ -177,6 +177,21 @@ function AdminCards() {
     // Remove the initial loading since we'll search on-demand
   }
 
+  const handleAddCard = () => {
+    setEditingCard(null) // null indicates we're adding a new card
+    setEditForm({
+      card_number: '',
+      sort_order: '',
+      is_rookie: false,
+      is_autograph: false,
+      is_relic: false,
+      print_run: '',
+      notes: ''
+    })
+    setCardPlayers([])
+    setShowEditModal(true)
+  }
+
   const handleEditCard = (card) => {
     setEditingCard(card)
     setEditForm({
@@ -217,20 +232,23 @@ function AdminCards() {
   }
 
   const handleSave = async () => {
-    if (!editingCard) return
+    if (!editForm.card_number.trim()) {
+      addToast('Card number is required', 'error')
+      return
+    }
 
     try {
       setSaving(true)
-      
+
       const playersToSave = cardPlayers.map(cp => ({
         player_id: cp.player.player_id,
         team_id: cp.team.team_id
       }))
-      
+
       console.log('Saving card with players:', cardPlayers.map(cp => `${cp.player.name} (${cp.team.name})`))
       console.log('Players data being sent to API:', playersToSave)
-      
-      const updateData = {
+
+      const cardData = {
         card_number: editForm.card_number.trim(),
         sort_order: editForm.sort_order ? parseInt(editForm.sort_order) : null,
         is_rookie: editForm.is_rookie,
@@ -238,22 +256,30 @@ function AdminCards() {
         is_relic: editForm.is_relic,
         print_run: editForm.print_run ? parseInt(editForm.print_run) : null,
         notes: editForm.notes.trim(),
-        // Include player-team relationships
         players: playersToSave
       }
 
-      // Note: You'll need to create this API endpoint
-      await axios.put(`/api/admin/cards/${editingCard.card_id}`, updateData)
-      
+      if (editingCard) {
+        // Update existing card
+        await axios.put(`/api/admin/cards/${editingCard.card_id}`, cardData)
+        addToast('Card updated successfully', 'success')
+      } else {
+        // Create new card
+        await axios.post('/api/admin/cards', {
+          ...cardData,
+          series_id: selectedSeries.series_id
+        })
+        addToast('Card created successfully', 'success')
+      }
+
       // Reload cards
       await loadCardsForSeries(selectedSeries.series_id)
-      
-      addToast('Card updated successfully', 'success')
       handleCloseModal()
-      
+
     } catch (error) {
-      console.error('Error updating card:', error)
-      addToast(`Failed to update card: ${error.response?.data?.message || error.message}`, 'error')
+      console.error('Error saving card:', error)
+      const action = editingCard ? 'update' : 'create'
+      addToast(`Failed to ${action} card: ${error.response?.data?.message || error.message}`, 'error')
     } finally {
       setSaving(false)
     }
@@ -419,7 +445,7 @@ function AdminCards() {
         <div className="admin-controls">
           <button
             className="add-card-btn"
-            onClick={() => {/* Add card functionality would go here */}}
+            onClick={handleAddCard}
             title="Add new card"
           >
             <Icon name="plus" size={20} />
@@ -544,23 +570,25 @@ function AdminCards() {
         )}
       </div>
       
-      {/* Edit Card Modal */}
-      {showEditModal && editingCard && (
+      {/* Edit/Add Card Modal */}
+      {showEditModal && (
         <div className="modal-overlay" onClick={handleCloseModal}>
           <div className="edit-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>Edit Card</h3>
+              <h3>{editingCard ? `Edit Card #${editingCard.card_id}` : 'Add New Card'}</h3>
               <button className="close-btn" onClick={handleCloseModal}>
                 <Icon name="x" size={20} />
               </button>
             </div>
-            
+
             <div className="modal-body">
-                
-              <div className="form-row">
-                <label className="form-label">Card ID</label>
-                <span className="form-value">{editingCard.card_id}</span>
-              </div>
+
+              {editingCard && (
+                <div className="form-row">
+                  <label className="form-label">Card ID</label>
+                  <span className="form-value">{editingCard.card_id}</span>
+                </div>
+              )}
 
                 <div className="form-row">
                   <label className="form-label">Card Number</label>
@@ -571,9 +599,11 @@ function AdminCards() {
                     onChange={(e) => handleFormChange('card_number', e.target.value)}
                     onKeyDown={handleKeyDown}
                     placeholder="Enter card number"
+                    autoFocus
+                    required
                   />
                 </div>
-                
+
                 <div className="form-row">
                   <label className="form-label">Sort Order</label>
                   <input
@@ -609,7 +639,7 @@ function AdminCards() {
                       />
                       <span>Rookie Card</span>
                     </label>
-                    
+
                     <label className="checkbox-item">
                       <input
                         type="checkbox"
@@ -618,7 +648,7 @@ function AdminCards() {
                       />
                       <span>Autograph</span>
                     </label>
-                    
+
                     <label className="checkbox-item">
                       <input
                         type="checkbox"
@@ -629,14 +659,13 @@ function AdminCards() {
                     </label>
                   </div>
                 </div>
-                
+
                 <div className="form-row">
                   <label className="form-label">Notes</label>
                   <textarea
-                    className="form-textarea"
+                    className="form-input"
                     value={editForm.notes}
                     onChange={(e) => handleFormChange('notes', e.target.value)}
-                    onKeyDown={handleKeyDown}
                     placeholder="Enter any notes (optional)"
                     rows="3"
                   />
@@ -655,11 +684,11 @@ function AdminCards() {
                     {cardPlayers.map((cardPlayer, index) => (
                       <div key={index} className="player-item">
                         <div className="player-info">
-                          <div 
+                          <div
                             className="mini-team-circle"
-                            style={{ 
+                            style={{
                               '--primary-color': cardPlayer.team.primary_color,
-                              '--secondary-color': cardPlayer.team.secondary_color 
+                              '--secondary-color': cardPlayer.team.secondary_color
                             }}
                             title={cardPlayer.team.name}
                           >
@@ -689,7 +718,7 @@ function AdminCards() {
                           className="inline-player-search-input"
                         />
                       </div>
-                      
+
                       {filteredPlayers.length > 0 && (
                         <div className="inline-player-search-results">
                           {filteredPlayers.slice(0, 8).map((result, index) => (
@@ -699,11 +728,11 @@ function AdminCards() {
                               onClick={() => handleAddPlayer(result.player, result.team)}
                               onMouseEnter={() => setSelectedResultIndex(index)}
                             >
-                              <div 
+                              <div
                                 className="mini-team-circle"
-                                style={{ 
+                                style={{
                                   '--primary-color': result.team.primary_color,
-                                  '--secondary-color': result.team.secondary_color 
+                                  '--secondary-color': result.team.secondary_color
                                 }}
                                 title={result.team.name}
                               >
@@ -722,27 +751,27 @@ function AdminCards() {
                     </div>
                   </div>
                 </div>
-                
+
             </div>
-            
+
             <div className="modal-actions">
               <button className="cancel-btn" onClick={handleCloseModal} disabled={saving}>
                 Cancel
               </button>
-              <button 
-                className="save-btn" 
+              <button
+                className="save-btn"
                 onClick={handleSave}
                 disabled={saving}
               >
                 {saving ? (
                   <>
                     <div className="card-icon-spinner small"></div>
-                    Saving...
+                    {editingCard ? 'Saving...' : 'Creating...'}
                   </>
                 ) : (
                   <>
                     <Icon name="check" size={16} />
-                    Save Changes
+                    {editingCard ? 'Save Changes' : 'Create Card'}
                   </>
                 )}
               </button>

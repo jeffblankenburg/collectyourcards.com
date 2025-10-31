@@ -67,7 +67,7 @@ const TeamCircles = memo(({ player }) => {
             '--primary-color': team.primary_color || '#666',
             '--secondary-color': team.secondary_color || '#999'
           }}
-          title={team.name || 'Unknown Team'}
+          title={`${team.name || 'Unknown Team'} (player_team_id: ${team.player_team_id || 'N/A'})`}
         >
           {team.abbreviation || '?'}
         </div>
@@ -1111,7 +1111,7 @@ function AdminPlayers() {
                               '--primary-color': team.primary_color || '#666',
                               '--secondary-color': team.secondary_color || '#999'
                             }}
-                            title={team.name}
+                            title={`${team.name} (player_team_id: ${team.player_team_id || 'N/A'})`}
                           >
                             {team.abbreviation}
                           </div>
@@ -1652,7 +1652,7 @@ function AdminPlayers() {
                                     '--primary-color': result.team.primary_color || '#666',
                                     '--secondary-color': result.team.secondary_color || '#999'
                                   }}
-                                  title={result.team.name}
+                                  title={`${result.team.name} (player_team_id: ${result.team.player_team_id || 'N/A'})`}
                                 >
                                   {result.team.abbreviation}
                                 </div>
@@ -1697,7 +1697,7 @@ function AdminPlayers() {
                                 '--primary-color': selectedMergeTarget.team.primary_color || '#666',
                                 '--secondary-color': selectedMergeTarget.team.secondary_color || '#999'
                               }}
-                              title={selectedMergeTarget.team.name}
+                              title={`${selectedMergeTarget.team.name} (player_team_id: ${selectedMergeTarget.team.player_team_id || 'N/A'})`}
                             >
                               {selectedMergeTarget.team.abbreviation}
                             </div>

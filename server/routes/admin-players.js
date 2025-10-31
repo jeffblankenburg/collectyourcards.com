@@ -86,7 +86,7 @@ router.get('/', async (req, res) => {
           p.is_hof,
           p.card_count,
           NULL as last_viewed,
-          STRING_AGG(CAST(t.team_Id as varchar(10)) + '|' + ISNULL(t.abbreviation, '?') + '|' + ISNULL(t.primary_color, '#666') + '|' + ISNULL(t.secondary_color, '#999') + '|' + ISNULL(t.name, 'Unknown'), '~') as teams_data,
+          STRING_AGG(CAST(pt.player_team_id as varchar(20)) + '|' + CAST(t.team_Id as varchar(10)) + '|' + ISNULL(t.abbreviation, '?') + '|' + ISNULL(t.primary_color, '#666') + '|' + ISNULL(t.secondary_color, '#999') + '|' + ISNULL(t.name, 'Unknown'), '~') as teams_data,
           (
             SELECT STRING_AGG(CAST(p2.player_id as varchar(20)) + ':' + ISNULL(p2.first_name, '') + ':' + ISNULL(p2.last_name, '') + ':' + ISNULL(p2.nick_name, ''), '|')
             FROM DuplicatePairs dp
@@ -124,7 +124,7 @@ router.get('/', async (req, res) => {
           p.is_hof,
           p.card_count,
           NULL as last_viewed,
-          STRING_AGG(CAST(t.team_Id as varchar(10)) + '|' + ISNULL(t.abbreviation, '?') + '|' + ISNULL(t.primary_color, '#666') + '|' + ISNULL(t.secondary_color, '#999') + '|' + ISNULL(t.name, 'Unknown'), '~') as teams_data
+          STRING_AGG(CAST(pt.player_team_id as varchar(20)) + '|' + CAST(t.team_Id as varchar(10)) + '|' + ISNULL(t.abbreviation, '?') + '|' + ISNULL(t.primary_color, '#666') + '|' + ISNULL(t.secondary_color, '#999') + '|' + ISNULL(t.name, 'Unknown'), '~') as teams_data
         FROM player p
         LEFT JOIN player_team pt ON p.player_id = pt.player
         LEFT JOIN team t ON pt.team = t.team_Id
@@ -166,7 +166,7 @@ router.get('/', async (req, res) => {
           p.is_hof,
           p.card_count,
           NULL as last_viewed,
-          STRING_AGG(CAST(t.team_Id as varchar(10)) + '|' + ISNULL(t.abbreviation, '?') + '|' + ISNULL(t.primary_color, '#666') + '|' + ISNULL(t.secondary_color, '#999') + '|' + ISNULL(t.name, 'Unknown'), '~') as teams_data
+          STRING_AGG(CAST(pt.player_team_id as varchar(20)) + '|' + CAST(t.team_Id as varchar(10)) + '|' + ISNULL(t.abbreviation, '?') + '|' + ISNULL(t.primary_color, '#666') + '|' + ISNULL(t.secondary_color, '#999') + '|' + ISNULL(t.name, 'Unknown'), '~') as teams_data
         FROM player p
         LEFT JOIN player_team pt ON p.player_id = pt.player
         LEFT JOIN team t ON pt.team = t.team_Id
@@ -199,8 +199,8 @@ router.get('/', async (req, res) => {
           p.is_hof,
           p.card_count,
           MAX(up.created) as last_viewed,
-          STRING_AGG(CAST(t.team_Id as varchar(10)) + '|' + ISNULL(t.abbreviation, '?') + '|' + ISNULL(t.primary_color, '#666') + '|' + ISNULL(t.secondary_color, '#999') + '|' + ISNULL(t.name, 'Unknown'), '~') as teams_data
-        FROM user_player up 
+          STRING_AGG(CAST(pt.player_team_id as varchar(20)) + '|' + CAST(t.team_Id as varchar(10)) + '|' + ISNULL(t.abbreviation, '?') + '|' + ISNULL(t.primary_color, '#666') + '|' + ISNULL(t.secondary_color, '#999') + '|' + ISNULL(t.name, 'Unknown'), '~') as teams_data
+        FROM user_player up
         LEFT JOIN player p ON p.player_id = up.player
         LEFT JOIN player_team pt ON p.player_id = pt.player
         LEFT JOIN team t ON pt.team = t.team_Id
@@ -294,8 +294,9 @@ router.get('/', async (req, res) => {
       if (player.teams_data) {
         const teamStrings = player.teams_data.split('~')
         teams = teamStrings.map(teamStr => {
-          const [team_id, abbreviation, primary_color, secondary_color, name] = teamStr.split('|')
+          const [player_team_id, team_id, abbreviation, primary_color, secondary_color, name] = teamStr.split('|')
           return {
+            player_team_id: Number(player_team_id),
             team_id: Number(team_id),
             abbreviation: abbreviation || '?',
             primary_color: primary_color || '#666',
@@ -402,7 +403,8 @@ router.get('/:id/teams', async (req, res) => {
     }
 
     const teams = await prisma.$queryRawUnsafe(`
-      SELECT 
+      SELECT
+        pt.player_team_id,
         t.team_Id,
         t.name,
         t.abbreviation,
@@ -414,12 +416,13 @@ router.get('/:id/teams', async (req, res) => {
       LEFT JOIN card_player_team cpt ON pt.player_team_id = cpt.player_team
       LEFT JOIN card c ON cpt.card = c.card_id
       WHERE pt.player = ${playerId}
-      GROUP BY t.team_Id, t.name, t.abbreviation, t.primary_color, t.secondary_color
+      GROUP BY pt.player_team_id, t.team_Id, t.name, t.abbreviation, t.primary_color, t.secondary_color
       ORDER BY t.name
     `)
 
     // Serialize BigInt values
     const serializedTeams = teams.map(team => ({
+      player_team_id: Number(team.player_team_id),
       team_id: Number(team.team_Id),
       name: team.name,
       abbreviation: team.abbreviation,
