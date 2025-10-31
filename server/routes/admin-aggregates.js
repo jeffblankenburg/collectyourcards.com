@@ -80,8 +80,19 @@ router.post('/aggregates/update', async (req, res) => {
       }
     }
     
-    const pool = await sql.connect(config)
+    let pool
+    try {
+      pool = await sql.connect(config)
+    } catch (connectionError) {
+      console.error('Failed to connect to database:', connectionError)
+      return res.status(500).json({
+        error: 'Database connection error',
+        message: 'Failed to connect to database',
+        details: connectionError.message
+      })
+    }
 
+    try {
     switch (type) {
       case 'rookie_count':
         // Update rookie count for each series
@@ -216,6 +227,25 @@ router.post('/aggregates/update', async (req, res) => {
       rowsUpdated
     })
 
+    } catch (queryError) {
+      console.error('Error executing aggregate query:', queryError)
+      res.status(500).json({
+        error: 'Database error',
+        message: 'Failed to update aggregates',
+        details: queryError.message
+      })
+    } finally {
+      // Always close the pool connection
+      if (pool) {
+        try {
+          await pool.close()
+          console.log('SQL connection pool closed')
+        } catch (closeError) {
+          console.error('Error closing SQL pool:', closeError)
+        }
+      }
+    }
+
   } catch (error) {
     console.error('Error updating aggregates:', error)
     res.status(500).json({
@@ -228,6 +258,7 @@ router.post('/aggregates/update', async (req, res) => {
 
 // GET /api/admin/aggregates/status - Get current aggregate status
 router.get('/aggregates/status', async (req, res) => {
+  let pool
   try {
     let config;
     if (process.env.NODE_ENV === 'production' && process.env.DATABASE_URL) {
@@ -247,9 +278,9 @@ router.get('/aggregates/status', async (req, res) => {
         }
       }
     }
-    
-    const pool = await sql.connect(config)
-    
+
+    pool = await sql.connect(config)
+
     // Check for series with mismatched counts
     const seriesIssues = await pool.request().query(`
       SELECT 
@@ -304,6 +335,16 @@ router.get('/aggregates/status', async (req, res) => {
       message: 'Failed to check aggregate status',
       details: error.message
     })
+  } finally {
+    // Always close the pool connection
+    if (pool) {
+      try {
+        await pool.close()
+        console.log('SQL connection pool closed (status endpoint)')
+      } catch (closeError) {
+        console.error('Error closing SQL pool:', closeError)
+      }
+    }
   }
 })
 
