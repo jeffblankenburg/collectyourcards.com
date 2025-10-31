@@ -30,6 +30,7 @@ const parseConnectionString = (connectionString) => {
     database: params.database || 'CollectYourCards',
     user: params.user || 'sa',
     password: params.password || '',
+    requestTimeout: 300000, // 5 minutes for large aggregate queries
     pool: {
       max: 10,
       min: 0,
@@ -73,6 +74,7 @@ router.post('/aggregates/update', async (req, res) => {
         database: process.env.DB_NAME || 'CollectYourCards',
         user: process.env.DB_USER || 'sa',
         password: process.env.DB_PASSWORD || 'Password123',
+        requestTimeout: 300000, // 5 minutes for large aggregate queries
         options: {
           encrypt: false,
           trustServerCertificate: true
@@ -272,6 +274,7 @@ router.get('/aggregates/status', async (req, res) => {
         database: process.env.DB_NAME || 'CollectYourCards',
         user: process.env.DB_USER || 'sa',
         password: process.env.DB_PASSWORD || 'Password123',
+        requestTimeout: 300000, // 5 minutes for large aggregate queries
         options: {
           encrypt: false,
           trustServerCertificate: true

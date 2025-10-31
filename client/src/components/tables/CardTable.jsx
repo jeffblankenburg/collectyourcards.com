@@ -82,6 +82,7 @@ const CardTable = ({
   const [isResizing, setIsResizing] = useState(false)
   const [resizingColumn, setResizingColumn] = useState(null)
   const [openMarketplaceDropdown, setOpenMarketplaceDropdown] = useState(null)
+  const [lastSelectedIndex, setLastSelectedIndex] = useState(null)
   const searchInputRef = useRef(null)
   const marketplaceDropdownRef = useRef(null)
 
@@ -94,6 +95,11 @@ const CardTable = ({
       }, 100)
     }
   }, [autoFocusSearch, showSearch])
+
+  // Reset last selected index when bulk selection mode changes
+  useEffect(() => {
+    setLastSelectedIndex(null)
+  }, [bulkSelectionMode])
 
   // Close marketplace dropdown when clicking outside
   useEffect(() => {
@@ -318,6 +324,8 @@ const CardTable = ({
     } else {
       onCardSelection?.(new Set())
     }
+    // Reset last selected index when selecting/deselecting all
+    setLastSelectedIndex(null)
   }
 
   // Column resizing handlers
@@ -666,15 +674,35 @@ const CardTable = ({
                               type="checkbox"
                               checked={selectedCards.has(card.card_id)}
                               onChange={(e) => {
+                                const currentIndex = sortedCards.findIndex(c => c.card_id === card.card_id)
                                 const newSelected = new Set(selectedCards)
-                                if (e.target.checked) {
-                                  newSelected.add(card.card_id)
+
+                                // Handle shift-click range selection
+                                if (e.nativeEvent.shiftKey && lastSelectedIndex !== null) {
+                                  const start = Math.min(lastSelectedIndex, currentIndex)
+                                  const end = Math.max(lastSelectedIndex, currentIndex)
+
+                                  // Select or deselect all cards in range based on the clicked checkbox state
+                                  for (let i = start; i <= end; i++) {
+                                    if (e.target.checked) {
+                                      newSelected.add(sortedCards[i].card_id)
+                                    } else {
+                                      newSelected.delete(sortedCards[i].card_id)
+                                    }
+                                  }
                                 } else {
-                                  newSelected.delete(card.card_id)
+                                  // Normal single checkbox toggle
+                                  if (e.target.checked) {
+                                    newSelected.add(card.card_id)
+                                  } else {
+                                    newSelected.delete(card.card_id)
+                                  }
                                 }
+
+                                setLastSelectedIndex(currentIndex)
                                 onCardSelection?.(newSelected)
                               }}
-                              title="Select for bulk action"
+                              title="Select for bulk action (hold Shift to select range)"
                             />
                           </div>
                         </td>
