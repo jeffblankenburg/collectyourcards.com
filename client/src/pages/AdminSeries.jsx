@@ -152,10 +152,13 @@ function AdminSeries() {
           {(seriesItem.rookie_count || 0).toLocaleString()}
         </div>
         <div className="col-print-run center">
-          {seriesItem.print_run_display || 
-           (seriesItem.min_print_run && seriesItem.max_print_run 
+          {seriesItem.print_run_display ||
+           (seriesItem.min_print_run && seriesItem.max_print_run
              ? `${seriesItem.min_print_run}-${seriesItem.max_print_run}`
              : seriesItem.max_print_run || '-')}
+        </div>
+        <div className="col-production-code center">
+          {seriesItem.production_code || '-'}
         </div>
       </div>
     )
@@ -758,8 +761,9 @@ function AdminSeries() {
               )}
             </div>
             <div className="col-header center">Print Run</div>
+            <div className="col-header center">Production Code</div>
           </div>
-          
+
           {sortedSeries.map(seriesItem => (
             <SeriesRow
               key={seriesItem.series_id}
