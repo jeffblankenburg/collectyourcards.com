@@ -285,6 +285,23 @@ function SeriesDetail() {
     }
   }, [series?.series_id])
 
+  // Calculate collection completion when cards load
+  useEffect(() => {
+    if (isAuthenticated && cards.length > 0) {
+      const ownedCards = cards.filter(card => card.user_card_count > 0).length
+      const totalCards = cards.length
+      const percentage = totalCards > 0 ? Math.round((ownedCards / totalCards) * 100) : 0
+
+      setCollectionCompletion({
+        owned: ownedCards,
+        total: totalCards,
+        percentage: percentage
+      })
+    } else if (!isAuthenticated) {
+      setCollectionCompletion(null)
+    }
+  }, [cards, isAuthenticated])
+
 
   const handleAddCard = (card) => {
     setSelectedCard(card)
