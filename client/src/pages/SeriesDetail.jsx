@@ -549,8 +549,8 @@ function SeriesDetail() {
             }}
             bulkSelectionMode={bulkSelectionMode}
             selectedCards={selectedCards}
-            onBulkSelectionToggle={(mode) => {
-              setBulkSelectionMode(mode)
+            onBulkSelectionToggle={() => {
+              setBulkSelectionMode(!bulkSelectionMode)
               setSelectedCards(new Set()) // Clear selections when switching modes
             }}
             onCardSelection={(cardIds) => setSelectedCards(cardIds)}
