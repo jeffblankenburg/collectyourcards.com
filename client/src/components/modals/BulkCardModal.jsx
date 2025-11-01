@@ -71,18 +71,22 @@ function BulkCardModal({
   const handleAddCardsToCollection = async () => {
     try {
       setIsSubmitting(true)
-      
-      // Add each selected card to collection
-      const promises = selectedCardIds.map(cardId => 
-        axios.post('/api/user/cards', {
+
+      // Add each selected card to collection with a unique random_code
+      const promises = selectedCardIds.map(cardId => {
+        // Generate random 8-character code
+        const randomCode = Math.random().toString(36).substring(2, 10).toUpperCase()
+
+        return axios.post('/api/user/cards', {
           card_id: cardId,
+          random_code: randomCode,
           user_location: selectedLocation ? parseInt(selectedLocation) : null,
           notes: `Added via bulk selection from ${series.name}`
         })
-      )
+      })
 
       await Promise.all(promises)
-      
+
       addToast(`Successfully added ${selectedCardIds.length} cards to your collection`, 'success')
       onComplete?.()
       onClose()
