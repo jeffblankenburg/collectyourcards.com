@@ -10,6 +10,7 @@ import TeamFilterCircles from '../components/TeamFilterCircles'
 import Icon from '../components/Icon'
 import axios from 'axios'
 import { createLogger } from '../utils/logger'
+import { perfMonitor } from '../utils/performanceMonitor'
 import './CollectionDashboardScoped.css'
 
 const log = createLogger('CollectionDashboard')
@@ -141,10 +142,10 @@ function CollectionDashboard() {
       .sort((a, b) => b.card_count - a.card_count) // Sort by card count descending
   }, [cards])
 
-  // Memoize the API endpoint for filtered cards
+  // Memoize the API endpoint for filtered cards - using minimal endpoint for performance
   const apiEndpoint = useMemo(() => {
     const params = []
-    
+
     if (selectedLocationIds.length > 0) {
       // Show selected locations plus unassigned cards
       const locationParams = selectedLocationIds.map(id => `location_id=${id}`).join('&')
@@ -155,20 +156,20 @@ function CollectionDashboard() {
       params.push('include_unassigned=true')
       params.push('only_unassigned=true')
     }
-    
+
     // Add filter parameters
     if (activeFilters.has('rookies')) params.push('is_rookie=true')
     if (activeFilters.has('autos')) params.push('is_autograph=true')
     if (activeFilters.has('relics')) params.push('is_relic=true')
     if (activeFilters.has('graded')) params.push('has_grade=true')
-    
+
     // Add team filtering
     if (selectedTeamIds.length > 0) {
       const teamParams = selectedTeamIds.map(id => `team_id=${id}`).join('&')
       params.push(teamParams)
     }
-    
-    return `/api/user/collection/cards?${params.join('&')}`
+
+    return `/api/user/collection/cards/minimal?${params.join('&')}`
   }, [selectedLocationIds, activeFilters, selectedTeamIds])
 
   useEffect(() => {
@@ -297,16 +298,44 @@ function CollectionDashboard() {
   }
 
   const fetchCards = async (endpoint) => {
+    const perfKey = perfMonitor.start('Collection Load')
+    const apiStartTime = performance.now()
+
     try {
       setCardsLoading(true)
-      console.log('Fetching cards with endpoint:', endpoint) // Debug log
+      log.debug('Fetching cards with endpoint:', endpoint)
+
       const response = await axios.get(endpoint)
-      console.log('Cards received:', response.data.cards?.length || 0) // Debug log
+      const apiEndTime = performance.now()
+      const apiDuration = apiEndTime - apiStartTime
+
+      const cardCount = response.data.cards?.length || 0
+      log.debug('Cards received:', cardCount)
+
+      // Track data processing start
+      const processStartTime = performance.now()
       setCards(response.data.cards || [])
-      
+      const processEndTime = performance.now()
+      const processingDuration = processEndTime - processStartTime
+
       // Refresh location counts whenever collection data changes
       fetchLocations()
+
+      // Log collection stats
+      perfMonitor.logCollectionStats({
+        totalCards: cardCount,
+        apiResponseTime: apiDuration.toFixed(2),
+        processingTime: processingDuration.toFixed(2),
+        totalTime: (apiDuration + processingDuration).toFixed(2)
+      })
+
+      perfMonitor.end(perfKey, {
+        cardCount,
+        apiTime: `${apiDuration.toFixed(2)}ms`,
+        processingTime: `${processingDuration.toFixed(2)}ms`
+      })
     } catch (err) {
+      perfMonitor.end(perfKey, { error: err.message })
       console.error('Error fetching cards:', err)
       error('Failed to load collection cards')
     } finally {
@@ -420,11 +449,18 @@ function CollectionDashboard() {
     setSelectedCard(null)
   }
 
-  const handleEditModalSave = async () => {
-    log.debug('Card updated, refreshing collection')
-    // Refresh the cards list after the modal handles the update (stats will auto-recalculate)
-    const updatedCards = await axios.get(apiEndpoint)
-    setCards(updatedCards.data.cards || [])
+  const handleEditModalSave = async (updatedCardData) => {
+    log.debug('Card updated, updating local state')
+
+    // ✅ Update just the one card in local state (no database refetch!)
+    setCards(prevCards => prevCards.map(card =>
+      card.user_card_id === updatedCardData.user_card_id
+        ? updatedCardData
+        : card
+    ))
+
+    // Refresh location counts (lightweight call)
+    fetchLocations()
 
     setShowEditModal(false)
     setSelectedCard(null)

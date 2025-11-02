@@ -590,11 +590,11 @@ const CollectionTable = ({
       </div>
 
       {/* Table */}
-      <div 
+      <div
         className="collection-table-wrapper"
-        style={{ 
-          maxHeight: maxHeight || 'none',
-          overflowY: maxHeight ? 'auto' : 'hidden'
+        style={{
+          maxHeight: maxHeight || '800px',
+          overflowY: 'auto'
         }}
       >
         <table className="collection-table">
@@ -787,8 +787,8 @@ const CollectionTable = ({
             </tr>
           </thead>
           <tbody>
-            {sortedCards.map(card => (
-              <tr 
+            {sortedCards.map((card) => (
+              <tr
                 key={card.user_card_id}
                 className={`collection-row ${onCardClick ? 'clickable' : ''}`}
               >

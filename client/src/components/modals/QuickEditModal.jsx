@@ -212,18 +212,40 @@ const QuickEditModal = ({
 
     try {
       await axios.put(`/api/user/cards/${card.user_card_id}`, formData)
-      
+
       // Upload photos if any were selected
       if (selectedPhotos.length > 0) {
         await uploadNewPhotos()
       }
-      
+
       success('Card updated successfully')
-      
+
+      // Build complete updated card object for parent component
       if (onCardUpdated) {
-        await onCardUpdated()
+        // Find the selected location name for display
+        const selectedLocation = locations.find(loc =>
+          loc.user_location_id === parseInt(formData.user_location)
+        )
+
+        const updatedCard = {
+          ...card,
+          // Update with form data
+          random_code: formData.random_code || null,
+          serial_number: formData.serial_number ? parseInt(formData.serial_number) : null,
+          user_location: formData.user_location || null,
+          location_name: selectedLocation?.location || null,
+          purchase_price: formData.purchase_price ? parseFloat(formData.purchase_price) : null,
+          estimated_value: formData.estimated_value ? parseFloat(formData.estimated_value) : null,
+          notes: formData.notes || null,
+          aftermarket_autograph: formData.aftermarket_autograph,
+          grading_agency: formData.grading_agency || null,
+          grade: formData.grade || null,
+          grade_id: formData.grade_id || null
+        }
+
+        onCardUpdated(updatedCard)
       }
-      
+
       onClose()
     } catch (err) {
       error('Failed to update card: ' + (err.response?.data?.error || err.message))

@@ -1,17 +1,42 @@
 const { PrismaClient } = require('@prisma/client')
+const sql = require('mssql')
 
 /**
  * Achievement Calculation Engine
- * 
+ *
  * This service handles real-time achievement progress tracking and unlocking.
  * It hooks into user collection actions (card additions, removals, updates)
  * to automatically calculate and update achievement progress.
  */
 class AchievementEngine {
   constructor() {
-    // Use global SQL connection if available, fallback to Prisma
-    this.sql = global.sql
-    this.prisma = global.sql ? null : new PrismaClient()
+    this.prisma = new PrismaClient()
+    this.sqlPool = null
+  }
+
+  /**
+   * Get or create SQL connection pool
+   */
+  async getSqlPool() {
+    if (this.sqlPool && this.sqlPool.connected) {
+      return this.sqlPool
+    }
+
+    const config = {
+      server: process.env.DB_SERVER || 'localhost',
+      port: process.env.DB_PORT ? parseInt(process.env.DB_PORT) : 1433,
+      database: process.env.DB_NAME || 'CollectYourCards',
+      user: process.env.DB_USER || 'sa',
+      password: process.env.DB_PASSWORD || 'Password123',
+      requestTimeout: 60000, // 1 minute for achievement queries
+      options: {
+        encrypt: false,
+        trustServerCertificate: true
+      }
+    }
+
+    this.sqlPool = await sql.connect(config)
+    return this.sqlPool
   }
 
   /**
@@ -121,10 +146,11 @@ class AchievementEngine {
 
       // Replace @user_id parameter in the query
       const query = achievement.requirement_query.replace(/@user_id/g, `${userId}`)
-      
+
       // Execute the query
-      const result = await this.sql.query(query)
-      
+      const pool = await this.getSqlPool()
+      const result = await pool.request().query(query)
+
       if (result.recordset.length === 0) {
         return 0
       }
@@ -132,7 +158,7 @@ class AchievementEngine {
       // Get the first numeric value from the result
       const firstRow = result.recordset[0]
       const firstValue = Object.values(firstRow)[0]
-      
+
       return Number(firstValue) || 0
 
     } catch (error) {
@@ -146,20 +172,21 @@ class AchievementEngine {
    */
   async getCurrentProgress(userId, achievementId) {
     const query = `
-      SELECT 
+      SELECT
         progress,
         progress_percentage,
         is_completed,
         completed_at,
         times_completed
-      FROM user_achievements 
+      FROM user_achievements
       WHERE user_id = @userId AND achievement_id = @achievementId
     `
 
-    const result = await this.sql.query(query, [
-      { name: 'userId', type: 'bigint', value: userId },
-      { name: 'achievementId', type: 'bigint', value: achievementId }
-    ])
+    const pool = await this.getSqlPool()
+    const request = pool.request()
+    request.input('userId', sql.BigInt, userId)
+    request.input('achievementId', sql.BigInt, achievementId)
+    const result = await request.query(query)
 
     if (result.recordset.length === 0) {
       return {
@@ -208,16 +235,17 @@ class AchievementEngine {
                   @now, @now);
       `
 
-      await this.sql.query(upsertQuery, [
-        { name: 'userId', type: 'bigint', value: userId },
-        { name: 'achievementId', type: 'bigint', value: achievementId },
-        { name: 'progress', type: 'int', value: newProgress },
-        { name: 'progressPercentage', type: 'decimal', value: progressPercentage },
-        { name: 'isCompleted', type: 'bit', value: isCompleted },
-        { name: 'wasJustCompleted', type: 'bit', value: wasJustCompleted },
-        { name: 'pointsAwarded', type: 'int', value: pointsAwarded },
-        { name: 'now', type: 'datetime', value: now }
-      ])
+      const pool = await this.getSqlPool()
+      const request = pool.request()
+      request.input('userId', sql.BigInt, userId)
+      request.input('achievementId', sql.BigInt, achievementId)
+      request.input('progress', sql.Int, newProgress)
+      request.input('progressPercentage', sql.Decimal(5, 2), progressPercentage)
+      request.input('isCompleted', sql.Bit, isCompleted)
+      request.input('wasJustCompleted', sql.Bit, wasJustCompleted)
+      request.input('pointsAwarded', sql.Int, pointsAwarded)
+      request.input('now', sql.DateTime, now)
+      await request.query(upsertQuery)
 
       // Log to achievement history
       await this.logAchievementHistory(userId, achievementId, 'progress_update', oldProgress, newProgress, pointsAwarded, triggerEvent)
@@ -239,22 +267,23 @@ class AchievementEngine {
   async logAchievementHistory(userId, achievementId, action, previousProgress, newProgress, pointsChange, triggerEvent) {
     const query = `
       INSERT INTO achievement_history (
-        user_id, achievement_id, action, previous_progress, new_progress, 
+        user_id, achievement_id, action, previous_progress, new_progress,
         points_change, trigger_event, created_at
       )
-      VALUES (@userId, @achievementId, @action, @previousProgress, @newProgress, 
+      VALUES (@userId, @achievementId, @action, @previousProgress, @newProgress,
               @pointsChange, @triggerEvent, GETDATE())
     `
 
-    await this.sql.query(query, [
-      { name: 'userId', type: 'bigint', value: userId },
-      { name: 'achievementId', type: 'bigint', value: achievementId },
-      { name: 'action', type: 'nvarchar', value: action },
-      { name: 'previousProgress', type: 'int', value: previousProgress },
-      { name: 'newProgress', type: 'int', value: newProgress },
-      { name: 'pointsChange', type: 'int', value: pointsChange || 0 },
-      { name: 'triggerEvent', type: 'nvarchar', value: triggerEvent }
-    ])
+    const pool = await this.getSqlPool()
+    const request = pool.request()
+    request.input('userId', sql.BigInt, userId)
+    request.input('achievementId', sql.BigInt, achievementId)
+    request.input('action', sql.NVarChar, action)
+    request.input('previousProgress', sql.Int, previousProgress)
+    request.input('newProgress', sql.Int, newProgress)
+    request.input('pointsChange', sql.Int, pointsChange || 0)
+    request.input('triggerEvent', sql.NVarChar, triggerEvent)
+    await request.query(query)
   }
 
   /**
@@ -264,11 +293,11 @@ class AchievementEngine {
     try {
       const query = `
         INSERT INTO achievement_notifications (
-          user_id, achievement_id, notification_type, title, message, 
+          user_id, achievement_id, notification_type, title, message,
           icon_url, points_awarded, is_sent, is_read, created_at
         )
         VALUES (
-          @userId, @achievementId, 'achievement_unlocked', @title, @message, 
+          @userId, @achievementId, 'achievement_unlocked', @title, @message,
           @iconUrl, @pointsAwarded, 0, 0, GETDATE()
         )
       `
@@ -276,14 +305,15 @@ class AchievementEngine {
       const title = `Achievement Unlocked: ${achievement.name}`
       const message = `Congratulations! You've earned "${achievement.name}" and gained ${pointsAwarded} points!`
 
-      await this.sql.query(query, [
-        { name: 'userId', type: 'bigint', value: userId },
-        { name: 'achievementId', type: 'bigint', value: achievement.achievement_id },
-        { name: 'title', type: 'nvarchar', value: title },
-        { name: 'message', type: 'nvarchar', value: message },
-        { name: 'iconUrl', type: 'nvarchar', value: achievement.icon_url || null },
-        { name: 'pointsAwarded', type: 'int', value: pointsAwarded }
-      ])
+      const pool = await this.getSqlPool()
+      const request = pool.request()
+      request.input('userId', sql.BigInt, userId)
+      request.input('achievementId', sql.BigInt, achievement.achievement_id)
+      request.input('title', sql.NVarChar, title)
+      request.input('message', sql.NVarChar, message)
+      request.input('iconUrl', sql.NVarChar, achievement.icon_url || null)
+      request.input('pointsAwarded', sql.Int, pointsAwarded)
+      await request.query(query)
 
       console.log(`🔔 Created achievement notification for user ${userId}: ${achievement.name}`)
 
@@ -321,7 +351,7 @@ class AchievementEngine {
     }
 
     const query = `
-      SELECT 
+      SELECT
         achievement_id,
         name,
         description,
@@ -338,7 +368,15 @@ class AchievementEngine {
       ORDER BY points ASC
     `
 
-    const result = await this.sql.query(query, queryParams)
+    const pool = await this.getSqlPool()
+    const request = pool.request()
+
+    // Add parameters to request
+    queryParams.forEach(param => {
+      request.input(param.name, sql.NVarChar, param.value)
+    })
+
+    const result = await request.query(query)
     
     return result.recordset.map(achievement => ({
       ...achievement,
@@ -351,9 +389,10 @@ class AchievementEngine {
    */
   async updateUserAchievementStats(userId) {
     try {
-      await this.sql.query('EXEC UpdateUserAchievementStats @userId', [
-        { name: 'userId', type: 'bigint', value: userId }
-      ])
+      const pool = await this.getSqlPool()
+      const request = pool.request()
+      request.input('userId', sql.BigInt, userId)
+      await request.query('EXEC UpdateUserAchievementStats @userId')
     } catch (error) {
       console.error('Error updating user achievement stats:', error)
     }
@@ -377,31 +416,32 @@ class AchievementEngine {
 
       // Check if user already has activity today for this streak type
       const existingQuery = `
-        SELECT current_count, last_activity_date 
-        FROM user_streaks 
+        SELECT current_count, last_activity_date
+        FROM user_streaks
         WHERE user_id = @userId AND streak_type = @streakType
       `
 
-      const existing = await this.sql.query(existingQuery, [
-        { name: 'userId', type: 'bigint', value: userId },
-        { name: 'streakType', type: 'nvarchar', value: streakType }
-      ])
+      const pool = await this.getSqlPool()
+      let request = pool.request()
+      request.input('userId', sql.BigInt, userId)
+      request.input('streakType', sql.NVarChar, streakType)
+      const existing = await request.query(existingQuery)
 
       if (existing.recordset.length === 0) {
         // Create new streak
         const insertQuery = `
           INSERT INTO user_streaks (
-            user_id, streak_type, current_count, longest_count, 
+            user_id, streak_type, current_count, longest_count,
             last_activity_date, streak_start_date, is_active, created_at
           )
           VALUES (@userId, @streakType, 1, 1, @today, @today, 1, GETDATE())
         `
 
-        await this.sql.query(insertQuery, [
-          { name: 'userId', type: 'bigint', value: userId },
-          { name: 'streakType', type: 'nvarchar', value: streakType },
-          { name: 'today', type: 'date', value: today }
-        ])
+        request = pool.request()
+        request.input('userId', sql.BigInt, userId)
+        request.input('streakType', sql.NVarChar, streakType)
+        request.input('today', sql.Date, today)
+        await request.query(insertQuery)
 
       } else {
         const streak = existing.recordset[0]
@@ -420,8 +460,8 @@ class AchievementEngine {
           // Continue streak
           const newCount = streak.current_count + 1
           const updateQuery = `
-            UPDATE user_streaks 
-            SET 
+            UPDATE user_streaks
+            SET
               current_count = @newCount,
               longest_count = CASE WHEN @newCount > longest_count THEN @newCount ELSE longest_count END,
               last_activity_date = @today,
@@ -429,18 +469,18 @@ class AchievementEngine {
             WHERE user_id = @userId AND streak_type = @streakType
           `
 
-          await this.sql.query(updateQuery, [
-            { name: 'userId', type: 'bigint', value: userId },
-            { name: 'streakType', type: 'nvarchar', value: streakType },
-            { name: 'newCount', type: 'int', value: newCount },
-            { name: 'today', type: 'date', value: today }
-          ])
+          request = pool.request()
+          request.input('userId', sql.BigInt, userId)
+          request.input('streakType', sql.NVarChar, streakType)
+          request.input('newCount', sql.Int, newCount)
+          request.input('today', sql.Date, today)
+          await request.query(updateQuery)
 
         } else {
           // Streak broken, start new one
           const resetQuery = `
-            UPDATE user_streaks 
-            SET 
+            UPDATE user_streaks
+            SET
               current_count = 1,
               last_activity_date = @today,
               streak_start_date = @today,
@@ -448,11 +488,11 @@ class AchievementEngine {
             WHERE user_id = @userId AND streak_type = @streakType
           `
 
-          await this.sql.query(resetQuery, [
-            { name: 'userId', type: 'bigint', value: userId },
-            { name: 'streakType', type: 'nvarchar', value: streakType },
-            { name: 'today', type: 'date', value: today }
-          ])
+          request = pool.request()
+          request.input('userId', sql.BigInt, userId)
+          request.input('streakType', sql.NVarChar, streakType)
+          request.input('today', sql.Date, today)
+          await request.query(resetQuery)
         }
       }
 
@@ -474,14 +514,15 @@ class AchievementEngine {
   async getDaysSinceLastCompletion(userId, achievementId) {
     const query = `
       SELECT DATEDIFF(day, MAX(completed_at), GETDATE()) as days_since
-      FROM user_achievements 
+      FROM user_achievements
       WHERE user_id = @userId AND achievement_id = @achievementId AND is_completed = 1
     `
 
-    const result = await this.sql.query(query, [
-      { name: 'userId', type: 'bigint', value: userId },
-      { name: 'achievementId', type: 'bigint', value: achievementId }
-    ])
+    const pool = await this.getSqlPool()
+    const request = pool.request()
+    request.input('userId', sql.BigInt, userId)
+    request.input('achievementId', sql.BigInt, achievementId)
+    const result = await request.query(query)
 
     return result.recordset[0]?.days_since || 999 // Return high number if never completed
   }
