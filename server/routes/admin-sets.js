@@ -675,6 +675,24 @@ router.post('/series', async (req, res) => {
 
     // Log admin action
     try {
+      // Create a serializable version for logging
+      const logData = {
+        name: name.trim(),
+        set_id: parseInt(set_id),
+        card_count: card_count ? parseInt(card_count) : 0,
+        card_entered_count: card_entered_count ? parseInt(card_entered_count) : 0,
+        is_base: is_base || false,
+        parallel_of_series: parallel_of_series ? parallel_of_series.toString() : null,
+        color_id: color_id ? parseInt(color_id) : null,
+        min_print_run: min_print_run ? parseInt(min_print_run) : null,
+        max_print_run: max_print_run ? parseInt(max_print_run) : null,
+        print_run_display: print_run_display?.trim() || null,
+        production_code: production_code?.trim() || null,
+        front_image_path: front_image_path?.trim() || null,
+        back_image_path: back_image_path?.trim() || null,
+        rookie_count: rookie_count ? parseInt(rookie_count) : 0
+      }
+
       await prisma.admin_action_log.create({
         data: {
           user_id: BigInt(req.user.userId),
@@ -682,7 +700,7 @@ router.post('/series', async (req, res) => {
           entity_type: 'series',
           entity_id: newSeries.series_id.toString(),
           old_values: null,
-          new_values: JSON.stringify(createData),
+          new_values: JSON.stringify(logData),
           ip_address: req.ip,
           user_agent: req.get('User-Agent'),
           created: new Date()
