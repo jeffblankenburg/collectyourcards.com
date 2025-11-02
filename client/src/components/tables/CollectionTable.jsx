@@ -880,7 +880,7 @@ const CollectionTable = ({
                 <td className="photos-cell">
                   <PhotoCountHover
                     photoCount={card.photo_count}
-                    allPhotos={card.all_photos || []}
+                    userCardId={card.user_card_id}
                     onUploadClick={() => onEditCard?.(card)}
                   />
                 </td>

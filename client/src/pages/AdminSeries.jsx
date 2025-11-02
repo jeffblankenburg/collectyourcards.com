@@ -66,23 +66,23 @@ function AdminSeries() {
   // Memoized color tag component to prevent forced reflow
   const ColorTag = useCallback(({ colorName, colorHex }) => {
     if (!colorName) return null
-    
+
     // Pre-calculate text color to avoid multiple DOM reflows
     const backgroundColor = colorHex || '#ec4899'
     const textColor = useMemo(() => {
       if (!colorHex) return '#ffffff'
-      
+
+      // Simple RGB sum calculation matching collection table (RGB sum > 400)
       const r = parseInt(colorHex.slice(1, 3), 16)
-      const g = parseInt(colorHex.slice(3, 5), 16) 
+      const g = parseInt(colorHex.slice(3, 5), 16)
       const b = parseInt(colorHex.slice(5, 7), 16)
-      const brightness = (r * 0.299 + g * 0.587 + b * 0.114)
-      
-      return brightness > 128 ? '#000000' : '#ffffff'
+
+      return (r + g + b) > 400 ? '#000000' : '#ffffff'
     }, [colorHex])
-    
+
     return (
-      <span 
-        className="color-tag"
+      <span
+        className="cardcard-tag cardcard-color"
         style={{
           backgroundColor,
           color: textColor

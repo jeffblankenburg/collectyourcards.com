@@ -119,6 +119,33 @@
 }
 
 
+/* Loading State */
+.photo-loading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem 1.5rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.875rem;
+}
+
+.photo-loading .spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* No Results State */
+.photo-no-results {
+  padding: 1rem 1.5rem;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.875rem;
+  font-style: italic;
+}
+
 /* Animation */
 @keyframes fadeInUp {
   from {

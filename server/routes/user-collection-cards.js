@@ -92,7 +92,7 @@ router.get('/minimal', async (req, res) => {
       }
     }
 
-    // Minimal query - only essential fields, no photos, simplified joins
+    // Minimal query - includes primary photo URL for gallery view, but not full photo arrays
     const cardsQuery = `
       SELECT
         uc.user_card_id,
@@ -129,7 +129,9 @@ router.get('/minimal', async (req, res) => {
         t.name as team_name,
         t.abbreviation as team_abbr,
         t.primary_color,
-        t.secondary_color
+        t.secondary_color,
+        ucp.photo_url as primary_photo_url,
+        ISNULL(photo_count.count, 0) as photo_count
       FROM user_card uc
       JOIN card c ON uc.card = c.card_id
       JOIN series s ON c.series = s.series_id
@@ -137,6 +139,12 @@ router.get('/minimal', async (req, res) => {
       LEFT JOIN color col ON c.color = col.color_id
       LEFT JOIN user_location ul ON uc.user_location = ul.user_location_id
       LEFT JOIN grading_agency ga ON uc.grading_agency = ga.grading_agency_id
+      LEFT JOIN user_card_photo ucp ON uc.user_card_id = ucp.user_card AND ucp.sort_order = 1
+      LEFT JOIN (
+        SELECT user_card, COUNT(*) as count
+        FROM user_card_photo
+        GROUP BY user_card
+      ) photo_count ON uc.user_card_id = photo_count.user_card
       LEFT JOIN card_player_team cpt ON cpt.card = c.card_id
       LEFT JOIN player_team pt ON cpt.player_team = pt.player_team_id
       LEFT JOIN player p ON pt.player = p.player_id
@@ -189,10 +197,10 @@ router.get('/minimal', async (req, res) => {
             hex_color: row.hex_color
           } : null,
           card_player_teams: [],
-          // No photos in minimal endpoint - load on demand when needed
-          photo_count: 0,
-          primary_photo_url: null,
-          all_photos: []
+          // Photo info for indicators and gallery view - full photo array loaded on demand
+          primary_photo_url: row.primary_photo_url || null,
+          photo_count: Number(row.photo_count) || 0,
+          has_photos: Number(row.photo_count) > 0
         })
       }
 
