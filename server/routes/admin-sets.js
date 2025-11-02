@@ -624,22 +624,31 @@ router.post('/series', async (req, res) => {
       })
     }
 
-    // Prepare creation data
+    // Prepare creation data - using nested relationship syntax for foreign keys
     const createData = {
       name: name.trim(),
-      set: parseInt(set_id),
       card_count: card_count ? parseInt(card_count) : 0,
       card_entered_count: card_entered_count ? parseInt(card_entered_count) : 0,
       is_base: is_base || false,
       parallel_of_series: parallel_of_series ? BigInt(parallel_of_series) : null,
-      color: color_id ? parseInt(color_id) : null,
       min_print_run: min_print_run ? parseInt(min_print_run) : null,
       max_print_run: max_print_run ? parseInt(max_print_run) : null,
       print_run_display: print_run_display?.trim() || null,
       production_code: production_code?.trim() || null,
       front_image_path: front_image_path?.trim() || null,
       back_image_path: back_image_path?.trim() || null,
-      rookie_count: rookie_count ? parseInt(rookie_count) : 0
+      rookie_count: rookie_count ? parseInt(rookie_count) : 0,
+      // Handle foreign key relationships with nested syntax
+      set_series_setToset: {
+        connect: { set_id: parseInt(set_id) }
+      }
+    }
+
+    // Add color relationship if provided
+    if (color_id) {
+      createData.color_series_colorTocolor = {
+        connect: { color_id: parseInt(color_id) }
+      }
     }
 
     // Create new series
