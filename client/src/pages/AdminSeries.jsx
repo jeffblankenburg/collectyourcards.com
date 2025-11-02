@@ -55,6 +55,9 @@ function AdminSeries() {
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [deletingSeries, setDeletingSeries] = useState(null)
   const [deleting, setDeleting] = useState(false)
+  const [frontImageFile, setFrontImageFile] = useState(null)
+  const [backImageFile, setBackImageFile] = useState(null)
+  const [uploadingImages, setUploadingImages] = useState(false)
   const { addToast } = useToast()
   const searchTimeoutRef = useRef(null)
 
@@ -354,8 +357,14 @@ function AdminSeries() {
       print_run_display: seriesItem.print_run_display || '',
       production_code: seriesItem.production_code || '',
       set_id: setId,
-      parallel_of_series: seriesItem.parallel_of_series ? Number(seriesItem.parallel_of_series) : ''
+      parallel_of_series: seriesItem.parallel_of_series ? Number(seriesItem.parallel_of_series) : '',
+      front_image_path: seriesItem.front_image_path || '',
+      back_image_path: seriesItem.back_image_path || ''
     })
+
+    // Clear any previously selected image files
+    setFrontImageFile(null)
+    setBackImageFile(null)
 
     setShowEditModal(true)
   }, [loadSeriesForSet])
@@ -513,12 +522,50 @@ function AdminSeries() {
     }
   }
 
+  const handleUploadSeriesImages = async (seriesId) => {
+    if (!frontImageFile && !backImageFile) return true
+
+    try {
+      setUploadingImages(true)
+
+      const formData = new FormData()
+      if (frontImageFile) {
+        formData.append('front_image', frontImageFile)
+      }
+      if (backImageFile) {
+        formData.append('back_image', backImageFile)
+      }
+
+      const response = await axios.post(
+        `/api/admin/series/upload-images/${seriesId}`,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        }
+      )
+
+      if (response.data.success) {
+        addToast('Series images uploaded successfully', 'success')
+        return true
+      }
+      return false
+    } catch (error) {
+      console.error('Error uploading series images:', error)
+      addToast(`Failed to upload images: ${error.response?.data?.message || error.message}`, 'error')
+      return false
+    } finally {
+      setUploadingImages(false)
+    }
+  }
+
   const handleSaveSeries = async () => {
     if (!editingSeries) return
 
     try {
       setSaving(true)
-      
+
       // Validate required fields
       if (!editForm.name.trim()) {
         addToast('Series name is required', 'error')
@@ -542,11 +589,16 @@ function AdminSeries() {
       }
 
       const response = await axios.put(`/api/admin/series/${editingSeries.series_id}`, updateData)
-      
+
+      // Upload images if any are selected
+      if (frontImageFile || backImageFile) {
+        await handleUploadSeriesImages(editingSeries.series_id)
+      }
+
       // Update the series list with the new data
-      setSeries(prevSeries => 
-        prevSeries.map(s => 
-          s.series_id === editingSeries.series_id 
+      setSeries(prevSeries =>
+        prevSeries.map(s =>
+          s.series_id === editingSeries.series_id
             ? { ...s, ...response.data.series }
             : s
         )
@@ -555,7 +607,9 @@ function AdminSeries() {
       addToast('Series updated successfully', 'success')
       setShowEditModal(false)
       setEditingSeries(null)
-      
+      setFrontImageFile(null)
+      setBackImageFile(null)
+
     } catch (error) {
       console.error('Error updating series:', error)
       const errorMessage = error.response?.data?.message || error.message
@@ -1007,6 +1061,70 @@ function AdminSeries() {
                       placeholder="e.g., ABC123XYZ"
                       maxLength={12}
                     />
+                  </div>
+
+                  <div className="form-field-row">
+                    <label className="field-label">Front Image</label>
+                    <div className="image-upload-section">
+                      {editForm.front_image_path && !frontImageFile && (
+                        <div className="current-image-preview">
+                          <img
+                            src={editForm.front_image_path}
+                            alt="Current front"
+                            style={{ maxWidth: '200px', maxHeight: '150px', objectFit: 'contain' }}
+                          />
+                          <span className="image-label">Current image</span>
+                        </div>
+                      )}
+                      {frontImageFile && (
+                        <div className="new-image-preview">
+                          <span className="image-label">New: {frontImageFile.name}</span>
+                        </div>
+                      )}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files[0]
+                          if (file) {
+                            setFrontImageFile(file)
+                          }
+                        }}
+                        className="field-input"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-field-row">
+                    <label className="field-label">Back Image</label>
+                    <div className="image-upload-section">
+                      {editForm.back_image_path && !backImageFile && (
+                        <div className="current-image-preview">
+                          <img
+                            src={editForm.back_image_path}
+                            alt="Current back"
+                            style={{ maxWidth: '200px', maxHeight: '150px', objectFit: 'contain' }}
+                          />
+                          <span className="image-label">Current image</span>
+                        </div>
+                      )}
+                      {backImageFile && (
+                        <div className="new-image-preview">
+                          <span className="image-label">New: {backImageFile.name}</span>
+                        </div>
+                      )}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files[0]
+                          if (file) {
+                            setBackImageFile(file)
+                          }
+                        }}
+                        className="field-input"
+                      />
+                    </div>
                   </div>
 
             <div className="modal-actions">
