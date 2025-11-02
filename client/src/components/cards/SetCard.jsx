@@ -32,9 +32,20 @@ function SetCard({ set, showBadge = false, customOnClick = null, onEditClick = n
     if (set.name.length <= 40) return 'small' // ~2 lines = 60px
     return null // No thumbnail for longer titles
   }
-  
+
   const thumbnailSize = getThumbnailSize()
   const showThumbnail = thumbnailSize !== null
+
+  // Get sport icon based on sport or organization
+  const getSportIcon = () => {
+    const sport = set.sport || 'other'
+    if (sport === 'baseball') return 'baseball'
+    if (sport === 'football') return 'football'
+    if (sport === 'basketball') return 'basketball'
+    if (sport === 'hockey') return 'hockey'
+    if (sport === 'soccer') return 'soccer'
+    return 'layers'
+  }
 
   return (
     <div 
@@ -50,6 +61,9 @@ function SetCard({ set, showBadge = false, customOnClick = null, onEditClick = n
       
       <div className="setcard-content">
         <div className="setcard-name-section">
+          <div className="setcard-sport-icon">
+            <Icon name={getSportIcon()} size={22} />
+          </div>
           <h3 className="setcard-name">{set.name}</h3>
         </div>
         

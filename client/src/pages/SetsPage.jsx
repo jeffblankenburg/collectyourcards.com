@@ -18,12 +18,42 @@ function SetsPage() {
   const [filteredSets, setFilteredSets] = useState([])
   const [loading, setLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
+  const [selectedSport, setSelectedSport] = useState('all')
   const [showEditModal, setShowEditModal] = useState(false)
   const [editingSet, setEditingSet] = useState(null)
   const [organizations, setOrganizations] = useState([])
   const [manufacturers, setManufacturers] = useState([])
-  
+
   const isAdmin = user && ['admin', 'superadmin', 'data_admin'].includes(user.role)
+
+  // Helper function to determine sport from organization name or abbreviation
+  const getSportFromOrganization = (orgName, orgAbbrev) => {
+    if (!orgName && !orgAbbrev) return 'other'
+
+    // Check both name and abbreviation (only for sports we have icons for)
+    const name = (orgName || '').toLowerCase()
+    const abbrev = (orgAbbrev || '').toLowerCase()
+
+    if (name.includes('baseball') || abbrev === 'mlb') return 'baseball'
+    if (name.includes('football') || abbrev === 'nfl') return 'football'
+    if (name.includes('basketball') || abbrev === 'nba') return 'basketball'
+    // Hockey and soccer not included - no icons yet
+    return 'other'
+  }
+
+  // Get unique sports from sets
+  const availableSports = React.useMemo(() => {
+    const sports = new Set()
+    sets.forEach(set => {
+      const sport = getSportFromOrganization(set.organization_name, set.organization)
+      if (sport !== 'other') {  // Only add recognized sports
+        sports.add(sport)
+      }
+    })
+    const sportsList = Array.from(sports).sort()
+    console.log('Available sports:', sportsList, 'from', sets.length, 'sets')
+    return sportsList
+  }, [sets])
 
   // Helper function to generate URL slug (matching backend)
   const generateSlug = (name) => {
@@ -47,19 +77,29 @@ function SetsPage() {
     }
   }, [year, isAdmin])
 
-  // Filter sets based on search term
+  // Filter sets based on search term and sport
   useEffect(() => {
-    if (!searchTerm.trim()) {
-      setFilteredSets(sets)
-    } else {
-      const filtered = sets.filter(set => 
+    let filtered = sets
+
+    // Filter by sport
+    if (selectedSport !== 'all') {
+      filtered = filtered.filter(set => {
+        const sport = getSportFromOrganization(set.organization_name, set.organization)
+        return sport === selectedSport
+      })
+    }
+
+    // Filter by search term
+    if (searchTerm.trim()) {
+      filtered = filtered.filter(set =>
         set.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (set.organization && set.organization.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (set.manufacturer && set.manufacturer.toLowerCase().includes(searchTerm.toLowerCase()))
       )
-      setFilteredSets(filtered)
     }
-  }, [sets, searchTerm])
+
+    setFilteredSets(filtered)
+  }, [sets, searchTerm, selectedSport])
 
   const loadSetsForYear = async (yearParam) => {
     try {
@@ -73,12 +113,17 @@ function SetsPage() {
         return setYear === parseInt(yearParam)
       })
       
-      // Add slug to each set
-      const setsWithSlugs = yearSets.map(set => ({
-        ...set,
-        slug: generateSlug(set.name)
-      }))
-      
+      // Add slug and sport to each set
+      const setsWithSlugs = yearSets.map(set => {
+        const sport = getSportFromOrganization(set.organization_name, set.organization)
+        console.log('Set:', set.name, 'Org:', set.organization, 'OrgName:', set.organization_name, 'Sport:', sport)
+        return {
+          ...set,
+          slug: generateSlug(set.name),
+          sport
+        }
+      })
+
       setSets(setsWithSlugs)
       setFilteredSets(setsWithSlugs)
     } catch (error) {
@@ -134,8 +179,8 @@ function SetsPage() {
             <div className="sets-grid-unified">
               {/* Header as grid items */}
               <div className="grid-header-title-with-back">
-                <Link 
-                  to="/sets" 
+                <Link
+                  to="/sets"
                   className="back-button"
                   title="Go back"
                 >
@@ -144,6 +189,41 @@ function SetsPage() {
                 <Icon name="layers" size={32} />
                 <h1>{year} Sets</h1>
               </div>
+
+              {/* Sport Filter Panel - between title and search */}
+              {availableSports.length >= 1 && (
+                <div className="grid-header-sport-filters">
+                  <button
+                    className={`sport-filter-btn ${selectedSport === 'all' ? 'active' : ''}`}
+                    onClick={() => setSelectedSport('all')}
+                    title="All Sports"
+                  >
+                    <Icon name="layers" size={18} />
+                  </button>
+                  {availableSports.map(sport => {
+                    // Map sport to icon name
+                    const iconName = sport === 'baseball' ? 'baseball' :
+                                     sport === 'football' ? 'football' :
+                                     sport === 'basketball' ? 'basketball' :
+                                     'layers'
+
+                    // Map sport to display name
+                    const displayName = sport.charAt(0).toUpperCase() + sport.slice(1)
+
+                    return (
+                      <button
+                        key={sport}
+                        className={`sport-filter-btn ${selectedSport === sport ? 'active' : ''}`}
+                        onClick={() => setSelectedSport(sport)}
+                        title={displayName}
+                      >
+                        <Icon name={iconName} size={18} />
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+
               <div className="grid-header-search-sets">
                 <div className="search-box">
                   <Icon name="search" size={20} />
@@ -160,7 +240,7 @@ function SetsPage() {
               <div className="grid-row-break"></div>
               {/* Set cards */}
               {filteredSets.map(set => (
-                <SetCard 
+                <SetCard
                   key={set.set_id}
                   set={{
                     ...set,
@@ -171,7 +251,8 @@ function SetsPage() {
                     manufacturer: set.manufacturer_name,
                     organization: set.organization,
                     thumbnail: set.thumbnail,
-                    slug: set.slug
+                    slug: set.slug,
+                    sport: set.sport
                   }}
                   onEditClick={isAdmin ? handleEditSet : null}
                 />

@@ -102,6 +102,44 @@
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
 }
 
+/* Card Images Section */
+.series-detail-page .card-images-section {
+  margin-top: 1.5rem;
+}
+
+.series-detail-page .card-images-container {
+  display: flex;
+  gap: 1.5rem;
+  align-items: flex-start;
+}
+
+.series-detail-page .card-image-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.series-detail-page .card-image {
+  max-width: 250px;
+  max-height: 150px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 8px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.series-detail-page .image-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
 /* Card Table Styles - Consolidated from SeriesDetailTable.css */
 .series-detail-page .table-wrapper {
   width: 100%;
@@ -626,47 +664,62 @@
   .series-detail-page {
     padding: 1rem;
   }
-  
+
   .series-detail-page .series-name {
     font-size: 2rem !important;
   }
-  
+
   .series-detail-page .series-header-content {
     padding: 1rem;
   }
-  
+
   .series-detail-page .series-header-top {
     grid-template-columns: 1fr;
     gap: 1rem;
   }
-  
+
+  .series-detail-page .card-images-container {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .series-detail-page .card-image {
+    max-width: 200px;
+    max-height: 130px;
+  }
+
   .series-detail-page .table-footer {
     flex-direction: column;
     align-items: stretch;
     gap: 1rem;
   }
-  
+
   .series-detail-page .table-actions {
     justify-content: center;
   }
-  
+
   .series-detail-page .table-info {
     text-align: center;
   }
-  
+
 }
 
 @media (max-width: 480px) {
   .series-detail-page {
     padding: 0.5rem;
   }
-  
+
   .series-detail-page .series-name {
     font-size: 1.75rem !important;
   }
-  
+
   .series-detail-page .series-header-content {
     padding: 0.75rem;
+  }
+
+  .series-detail-page .card-image {
+    max-width: 160px;
+    max-height: 110px;
   }
 }
 
