@@ -163,7 +163,7 @@ function EditSetModal({
         try {
           const seriesData = {
             name: setData.name,
-            set: savedSet.set_id,
+            set_id: Number(savedSet.set_id), // Convert BigInt to Number and use correct field name
             is_base: true
           }
           await axios.post('/api/admin/series', seriesData)
