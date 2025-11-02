@@ -592,8 +592,8 @@ router.put('/sets/:id', async (req, res) => {
 // POST /api/admin/series - Create new series
 router.post('/series', async (req, res) => {
   try {
-    const { 
-      name, 
+    const {
+      name,
       set_id,
       card_count,
       card_entered_count,
@@ -604,6 +604,7 @@ router.post('/series', async (req, res) => {
       min_print_run,
       max_print_run,
       print_run_display,
+      production_code,
       front_image_path,
       back_image_path
     } = req.body
@@ -635,6 +636,7 @@ router.post('/series', async (req, res) => {
       min_print_run: min_print_run ? parseInt(min_print_run) : null,
       max_print_run: max_print_run ? parseInt(max_print_run) : null,
       print_run_display: print_run_display?.trim() || null,
+      production_code: production_code?.trim() || null,
       front_image_path: front_image_path?.trim() || null,
       back_image_path: back_image_path?.trim() || null,
       rookie_count: rookie_count ? parseInt(rookie_count) : 0
@@ -655,6 +657,7 @@ router.post('/series', async (req, res) => {
         min_print_run: true,
         max_print_run: true,
         print_run_display: true,
+        production_code: true,
         front_image_path: true,
         back_image_path: true,
         rookie_count: true
@@ -703,8 +706,8 @@ router.post('/series', async (req, res) => {
 router.put('/series/:id', async (req, res) => {
   try {
     const { id } = req.params
-    const { 
-      name, 
+    const {
+      name,
       set,
       card_count,
       card_entered_count,
@@ -714,6 +717,7 @@ router.put('/series/:id', async (req, res) => {
       min_print_run,
       max_print_run,
       print_run_display,
+      production_code,
       primary_color_name,
       primary_color_hex,
       photo_url,
@@ -745,6 +749,7 @@ router.put('/series/:id', async (req, res) => {
         min_print_run: true,
         max_print_run: true,
         print_run_display: true,
+        production_code: true,
         front_image_path: true,
         back_image_path: true
       }
@@ -767,6 +772,7 @@ router.put('/series/:id', async (req, res) => {
       min_print_run: min_print_run !== undefined ? (min_print_run ? parseInt(min_print_run) : null) : existingSeries.min_print_run,
       max_print_run: max_print_run !== undefined ? (max_print_run ? parseInt(max_print_run) : null) : existingSeries.max_print_run,
       print_run_display: print_run_display?.trim() || null,
+      production_code: production_code !== undefined ? (production_code?.trim() || null) : existingSeries.production_code,
       front_image_path: front_image_path?.trim() || null,
       back_image_path: back_image_path?.trim() || null
     }
@@ -802,6 +808,7 @@ router.put('/series/:id', async (req, res) => {
       min_print_run: existingSeries.min_print_run,
       max_print_run: existingSeries.max_print_run,
       print_run_display: existingSeries.print_run_display,
+      production_code: existingSeries.production_code,
       front_image_path: existingSeries.front_image_path,
       back_image_path: existingSeries.back_image_path
     })
@@ -822,6 +829,7 @@ router.put('/series/:id', async (req, res) => {
         min_print_run: true,
         max_print_run: true,
         print_run_display: true,
+        production_code: true,
         front_image_path: true,
         back_image_path: true
       }
