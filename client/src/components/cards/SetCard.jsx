@@ -48,10 +48,17 @@ function SetCard({ set, showBadge = false, customOnClick = null, onEditClick = n
   }
 
   return (
-    <div 
+    <div
       className="setcard-container"
       onClick={handleSetClick}
     >
+      {/* Coming Soon Ribbon for sets with 0 cards */}
+      {set.card_count === 0 && (
+        <div className="setcard-coming-soon-ribbon">
+          <span>Coming Soon</span>
+        </div>
+      )}
+
       {showBadge && (
         <div className="setcard-result-type-badge setcard-result-type-badge-set">
           <Icon name="layers" size={14} />

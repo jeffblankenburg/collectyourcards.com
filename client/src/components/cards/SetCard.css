@@ -13,6 +13,7 @@
   height: 210px;
   display: flex;
   flex-direction: column;
+  overflow: hidden; /* Required for ribbon */
 }
 
 .setcard-container:hover {
@@ -20,6 +21,31 @@
   border-color: rgba(229, 231, 235, 0.3);
   transform: translateY(-2px);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+/* Coming Soon Ribbon */
+.setcard-coming-soon-ribbon {
+  position: absolute;
+  top: 22px;
+  right: -45px;
+  width: 180px;
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: white;
+  text-align: center;
+  transform: rotate(45deg);
+  padding: 0.4rem 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.4);
+  z-index: 5;
+}
+
+.setcard-coming-soon-ribbon span {
+  display: block;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  transform: translateX(8px);
 }
 
 /* Badge */
