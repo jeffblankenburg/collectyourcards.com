@@ -352,6 +352,7 @@ model series {
   max_print_run             Int?
   print_run_variations      Int?
   print_run_display         String?  @db.NVarChar(50)
+  production_code           String?  @db.NVarChar(50)
   rookie_count              Int?     @default(0)
   color                     Int?
   color_series_colorTocolor color?   @relation("series_colorTocolor", fields: [color], references: [color_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_series_color")
