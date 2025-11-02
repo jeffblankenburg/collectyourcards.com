@@ -62,10 +62,15 @@ function SeriesCard({ series, showBadge = false, customOnClick = null, hideSetNa
           Series
         </div>
       )}
-      
+
       <div className="seriescard-content">
         <div className="seriescard-name-section">
-          <h3 className="seriescard-name">{series.name}</h3>
+          <h3 className="seriescard-name">
+            {series.name}
+            {series.is_complete && (
+              <Icon name="check-circle" size={16} className="seriescard-completion-icon" title="Series Complete!" />
+            )}
+          </h3>
           {!hideSetName && (
             <div className="seriescard-set-header">
               <p className="seriescard-set-text">{series.set_name}</p>

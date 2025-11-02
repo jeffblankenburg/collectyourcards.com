@@ -1,17 +1,20 @@
 const express = require('express')
 const router = express.Router()
 const { prisma } = require('../config/prisma-singleton')
+const { optionalAuthMiddleware } = require('../middleware/auth')
 
 // GET /api/series-list - Get top series by card count
-router.get('/', async (req, res) => {
+router.get('/', optionalAuthMiddleware, async (req, res) => {
   try {
     const { limit } = req.query
     const useLimit = limit && parseInt(limit) > 0
     const limitNum = useLimit ? parseInt(limit) : null
+    const userId = req.user?.id
 
-    console.log('Getting series list', useLimit ? `with limit: ${limitNum}` : 'without limit')
+    console.log('Getting series list', useLimit ? `with limit: ${limitNum}` : 'without limit', userId ? `for user ${userId}` : '(no user)')
 
     // Get ALL series with pre-calculated metadata (including series with 0 cards)
+    // If user is authenticated, also include their completion data
     const topSeriesQuery = `
       SELECT ${useLimit ? `TOP ${limitNum}` : ''}
         s.series_id,
@@ -27,9 +30,14 @@ router.get('/', async (req, res) => {
         c.hex_value as color_hex_value,
         s.front_image_path,
         s.back_image_path
+        ${userId ? `,
+        usc.is_complete,
+        usc.completion_percentage,
+        usc.owned_cards` : ''}
       FROM series s
       LEFT JOIN series parent_s ON s.parallel_of_series = parent_s.series_id
       LEFT JOIN color c ON s.color = c.color_id
+      ${userId ? `LEFT JOIN user_series_completion usc ON s.series_id = usc.series_id AND usc.user_id = ${parseInt(userId)}` : ''}
       ORDER BY s.name DESC
     `
 
@@ -55,7 +63,7 @@ router.get('/', async (req, res) => {
         }
       }
       
-      return {
+      const result = {
         series_id: Number(series.series_id),
         name: series.name,
         year: year,
@@ -72,6 +80,15 @@ router.get('/', async (req, res) => {
         front_image_path: series.front_image_path,
         back_image_path: series.back_image_path
       }
+
+      // Add completion data if user is authenticated
+      if (userId) {
+        result.is_complete = series.is_complete || false
+        result.completion_percentage = series.completion_percentage ? Number(series.completion_percentage) : 0
+        result.owned_cards = series.owned_cards ? Number(series.owned_cards) : 0
+      }
+
+      return result
     })
 
     res.json({

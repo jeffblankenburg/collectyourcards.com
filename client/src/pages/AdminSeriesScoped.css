@@ -1189,6 +1189,90 @@
   cursor: not-allowed;
 }
 
+/* Color Tags - Styled badges for color column */
+.admin-series-page .color-tag {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  white-space: nowrap;
+}
+
+/* Image Upload Section - Better preview styling */
+.admin-series-page .image-upload-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.admin-series-page .current-image-preview,
+.admin-series-page .new-image-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+}
+
+.admin-series-page .current-image-preview img {
+  max-width: 200px;
+  max-height: 280px;
+  object-fit: contain;
+  border-radius: 6px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.03);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.admin-series-page .image-label {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+.admin-series-page .new-image-preview {
+  background: rgba(34, 197, 94, 0.1);
+  border-color: rgba(34, 197, 94, 0.2);
+}
+
+.admin-series-page .new-image-preview .image-label {
+  color: #86efac;
+}
+
+/* File input styling */
+.admin-series-page .field-input[type="file"] {
+  cursor: pointer;
+  padding: 0.5rem;
+}
+
+.admin-series-page .field-input[type="file"]::file-selector-button {
+  background: rgba(59, 130, 246, 0.2);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 4px;
+  padding: 0.375rem 0.75rem;
+  color: #93c5fd;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-right: 0.75rem;
+}
+
+.admin-series-page .field-input[type="file"]::file-selector-button:hover {
+  background: rgba(59, 130, 246, 0.3);
+  border-color: rgba(59, 130, 246, 0.5);
+}
+
 /* Modal Responsive Styles */
 @media (max-width: 768px) {
   .admin-series-page .form-field-row {

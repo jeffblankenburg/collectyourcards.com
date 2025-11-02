@@ -51,6 +51,14 @@
   color: white;
 }
 
+/* Completion Icon - Small checkmark inline with series name */
+.seriescard-completion-icon {
+  color: #22c55e;
+  margin-left: 0.5rem;
+  flex-shrink: 0;
+  opacity: 0.9;
+}
+
 /* Card Content */
 .seriescard-content {
   display: flex;

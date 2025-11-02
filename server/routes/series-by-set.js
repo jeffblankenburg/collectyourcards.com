@@ -1,17 +1,20 @@
 const express = require('express')
 const router = express.Router()
 const { prisma } = require('../config/prisma-singleton')
+const { optionalAuthMiddleware } = require('../middleware/auth')
 
 // GET /api/series-by-set/:setId - Get series for a specific set
-router.get('/:setId', async (req, res) => {
+router.get('/:setId', optionalAuthMiddleware, async (req, res) => {
   try {
     const { setId } = req.params
+    const userId = req.user?.id
 
-    console.log('Getting series for set:', setId)
+    console.log('Getting series for set:', setId, userId ? `for user ${userId}` : '(no user)')
 
     // Get series for the specified set
+    // If user is authenticated, also include their completion data
     const seriesBySetQuery = `
-      SELECT 
+      SELECT
         s.series_id,
         s.name,
         s.card_count,
@@ -29,9 +32,14 @@ router.get('/:setId', async (req, res) => {
         c.hex_value as color_hex_value,
         s.front_image_path,
         s.back_image_path
+        ${userId ? `,
+        usc.is_complete,
+        usc.completion_percentage,
+        usc.owned_cards` : ''}
       FROM series s
       LEFT JOIN series parent_s ON s.parallel_of_series = parent_s.series_id
       LEFT JOIN color c ON s.color = c.color_id
+      ${userId ? `LEFT JOIN user_series_completion usc ON s.series_id = usc.series_id AND usc.user_id = ${parseInt(userId)}` : ''}
       WHERE s.[set] = ${parseInt(setId)} AND s.card_count > 0
       ORDER BY s.is_base DESC, s.name ASC
     `
@@ -61,7 +69,7 @@ router.get('/:setId', async (req, res) => {
         }
       }
       
-      return {
+      const result = {
         series_id: Number(serie.series_id),
         name: serie.name,
         year: year,
@@ -81,6 +89,15 @@ router.get('/:setId', async (req, res) => {
         front_image_path: serie.front_image_path,
         back_image_path: serie.back_image_path
       }
+
+      // Add completion data if user is authenticated
+      if (userId) {
+        result.is_complete = serie.is_complete || false
+        result.completion_percentage = serie.completion_percentage ? Number(serie.completion_percentage) : 0
+        result.owned_cards = serie.owned_cards ? Number(serie.owned_cards) : 0
+      }
+
+      return result
     })
 
     res.json({

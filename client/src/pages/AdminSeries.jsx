@@ -57,6 +57,8 @@ function AdminSeries() {
   const [deleting, setDeleting] = useState(false)
   const [frontImageFile, setFrontImageFile] = useState(null)
   const [backImageFile, setBackImageFile] = useState(null)
+  const [frontImagePreview, setFrontImagePreview] = useState(null)
+  const [backImagePreview, setBackImagePreview] = useState(null)
   const [uploadingImages, setUploadingImages] = useState(false)
   const { addToast } = useToast()
   const searchTimeoutRef = useRef(null)
@@ -362,9 +364,11 @@ function AdminSeries() {
       back_image_path: seriesItem.back_image_path || ''
     })
 
-    // Clear any previously selected image files
+    // Clear any previously selected image files and previews
     setFrontImageFile(null)
     setBackImageFile(null)
+    setFrontImagePreview(null)
+    setBackImagePreview(null)
 
     setShowEditModal(true)
   }, [loadSeriesForSet])
@@ -1071,14 +1075,17 @@ function AdminSeries() {
                           <img
                             src={editForm.front_image_path}
                             alt="Current front"
-                            style={{ maxWidth: '200px', maxHeight: '150px', objectFit: 'contain' }}
                           />
                           <span className="image-label">Current image</span>
                         </div>
                       )}
-                      {frontImageFile && (
+                      {frontImagePreview && (
                         <div className="new-image-preview">
-                          <span className="image-label">New: {frontImageFile.name}</span>
+                          <img
+                            src={frontImagePreview}
+                            alt="New front preview"
+                          />
+                          <span className="image-label">New: {frontImageFile?.name}</span>
                         </div>
                       )}
                       <input
@@ -1088,6 +1095,12 @@ function AdminSeries() {
                           const file = e.target.files[0]
                           if (file) {
                             setFrontImageFile(file)
+                            // Create preview URL
+                            const reader = new FileReader()
+                            reader.onloadend = () => {
+                              setFrontImagePreview(reader.result)
+                            }
+                            reader.readAsDataURL(file)
                           }
                         }}
                         className="field-input"
@@ -1103,14 +1116,17 @@ function AdminSeries() {
                           <img
                             src={editForm.back_image_path}
                             alt="Current back"
-                            style={{ maxWidth: '200px', maxHeight: '150px', objectFit: 'contain' }}
                           />
                           <span className="image-label">Current image</span>
                         </div>
                       )}
-                      {backImageFile && (
+                      {backImagePreview && (
                         <div className="new-image-preview">
-                          <span className="image-label">New: {backImageFile.name}</span>
+                          <img
+                            src={backImagePreview}
+                            alt="New back preview"
+                          />
+                          <span className="image-label">New: {backImageFile?.name}</span>
                         </div>
                       )}
                       <input
@@ -1120,6 +1136,12 @@ function AdminSeries() {
                           const file = e.target.files[0]
                           if (file) {
                             setBackImageFile(file)
+                            // Create preview URL
+                            const reader = new FileReader()
+                            reader.onloadend = () => {
+                              setBackImagePreview(reader.result)
+                            }
+                            reader.readAsDataURL(file)
                           }
                         }}
                         className="field-input"

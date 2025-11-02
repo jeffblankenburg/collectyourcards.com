@@ -4,6 +4,7 @@ const { authMiddleware } = require('../middleware/auth')
 const { sanitizeInput, sanitizeParams } = require('../middleware/inputSanitization')
 const { BlobServiceClient } = require('@azure/storage-blob')
 const { onCardAdded, onCardUpdated, onCardRemoved } = require('../middleware/achievementHooks')
+const { updateUserSeriesCompletion } = require('../utils/updateSeriesCompletion')
 const router = express.Router()
 const prisma = new PrismaClient({ log: ['error'] }) // Only log errors, not queries
 
@@ -262,17 +263,17 @@ router.post('/', async (req, res, next) => {
     // Insert user card
     await prisma.$queryRaw`
       INSERT INTO user_card (
-        [user], 
-        card, 
+        [user],
+        card,
         random_code,
-        serial_number, 
-        purchase_price, 
-        estimated_value, 
-        grading_agency, 
-        grade, 
+        serial_number,
+        purchase_price,
+        estimated_value,
+        grading_agency,
+        grade,
         grade_id,
         aftermarket_autograph,
-        user_location, 
+        user_location,
         notes,
         created
       )
@@ -292,6 +293,18 @@ router.post('/', async (req, res, next) => {
         GETDATE()
       )
     `
+
+    // Get series_id for the card to update series completion
+    const cardSeries = await prisma.$queryRaw`
+      SELECT series FROM card WHERE card_id = ${card_id}
+    `
+    const seriesId = cardSeries[0]?.series
+
+    // Update series completion asynchronously (don't block response)
+    if (seriesId) {
+      updateUserSeriesCompletion(userId, Number(seriesId))
+        .catch(err => console.error('Error updating series completion:', err))
+    }
 
     // Store card data for achievement hook
     req.cardId = card_id
@@ -566,6 +579,16 @@ router.delete('/:userCardId', async (req, res, next) => {
       })
     }
 
+    // Get the series_id for this card before deletion (for series completion update)
+    const cardInfo = await prisma.$queryRaw`
+      SELECT c.series
+      FROM user_card uc
+      JOIN card c ON uc.card = c.card_id
+      WHERE uc.user_card_id = ${parseInt(userCardId)}
+      AND uc.[user] = ${BigInt(parseInt(userId))}
+    `
+    const seriesId = cardInfo[0]?.series
+
     // First, get all photos for this user card so we can delete them from Azure Blob Storage
     const photos = await prisma.$queryRaw`
       SELECT user_card_photo_id, photo_url
@@ -614,10 +637,16 @@ router.delete('/:userCardId', async (req, res, next) => {
 
     // Finally, delete the user card record
     const deleteResult = await prisma.$queryRaw`
-      DELETE FROM user_card 
-      WHERE user_card_id = ${parseInt(userCardId)} 
+      DELETE FROM user_card
+      WHERE user_card_id = ${parseInt(userCardId)}
       AND [user] = ${BigInt(parseInt(userId))}
     `
+
+    // Update series completion asynchronously (don't block response)
+    if (seriesId) {
+      updateUserSeriesCompletion(userId, Number(seriesId))
+        .catch(err => console.error('Error updating series completion:', err))
+    }
 
     res.json({
       message: 'Card and associated photos removed from collection successfully'

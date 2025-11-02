@@ -385,7 +385,7 @@ function SeriesPage() {
               {filteredSeries.map(s => {
                 const parallelCount = getParallelCount(s)
                 return (
-                  <SeriesCard 
+                  <SeriesCard
                     key={s.series_id}
                     hideSetName={true}
                     series={{
@@ -403,7 +403,11 @@ function SeriesPage() {
                       parallel_count: parallelCount,
                       slug: generateSlug(s.name),
                       set_slug: setSlug,
-                      year: year
+                      year: year,
+                      // Completion data - only present if user is authenticated
+                      is_complete: s.is_complete || false,
+                      completion_percentage: s.completion_percentage || 0,
+                      owned_cards: s.owned_cards || 0
                     }}
                   />
                 )
