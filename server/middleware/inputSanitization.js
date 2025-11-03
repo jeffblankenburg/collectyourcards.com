@@ -192,7 +192,8 @@ function sanitizeInput(req, res, next) {
             break
 
           case 'serial_number':
-            req.sanitized[key] = sanitizeNumber(value, key, { integer: true, min: 1, max: 999999999 })
+            // Allow negative serial numbers for special cards like Topps FrozenFractors (-1 to -5 out of 0)
+            req.sanitized[key] = sanitizeNumber(value, key, { integer: true, min: -999, max: 999999999 })
             break
 
           case 'purchase_price':
