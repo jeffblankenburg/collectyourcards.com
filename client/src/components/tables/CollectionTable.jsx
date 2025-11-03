@@ -834,12 +834,13 @@ const CollectionTable = ({
                   {card.card_player_teams?.map((cpt, index) => (
                     <div key={index} className="player-info">
                       {cpt.team && (
-                        <div 
+                        <div
                           className="team-circle-base team-circle-sm"
                           style={{
                             '--primary-color': cpt.team.primary_color || '#333',
                             '--secondary-color': cpt.team.secondary_color || '#666'
                           }}
+                          title={cpt.team.name}
                         >
                           {cpt.team.abbreviation}
                         </div>

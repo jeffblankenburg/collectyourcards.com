@@ -81,12 +81,13 @@ const GalleryCard = ({
         <div className="gallery-card-header">
           <span className="gallery-card-number">#{card.card_number}</span>
           {primaryTeam && (
-            <div 
+            <div
               className="team-circle-base team-circle-sm"
               style={{
                 '--primary-color': primaryTeam.primary_color || '#333',
                 '--secondary-color': primaryTeam.secondary_color || '#666'
               }}
+              title={primaryTeam.name}
             >
               {primaryTeam.abbreviation}
             </div>

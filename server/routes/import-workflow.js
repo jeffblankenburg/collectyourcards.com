@@ -79,9 +79,11 @@ function parseConnectionString(connectionString) {
     password: params.password || '',
     pool: {
       max: 10,
-      min: 0,
-      idleTimeoutMillis: 30000
+      min: 2, // Keep 2 connections alive for import operations
+      idleTimeoutMillis: 300000 // 5 minutes for large batch imports
     },
+    connectionTimeout: 60000, // 60 seconds to establish connection
+    requestTimeout: 300000, // 5 minutes for long-running queries
     options: {
       encrypt: params.encrypt === 'true',
       trustServerCertificate: params.trustServerCertificate === 'true'
