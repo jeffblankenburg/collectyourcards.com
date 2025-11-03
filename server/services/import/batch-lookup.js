@@ -336,16 +336,25 @@ class BatchLookupService {
       const isRegularMatch = normalizedPlayerName === normalizedSearchName
 
       // Also check nickname + last_name (e.g., "Minnie Minoso")
-      let isNicknameMatch = false
+      let isNicknameLastMatch = false
       if (player.nickName && player.lastName) {
         const nickNameVariation = normalizePlayerName(`${player.nickName} ${player.lastName}`)
-        isNicknameMatch = nickNameVariation === normalizedSearchName
+        isNicknameLastMatch = nickNameVariation === normalizedSearchName
       }
 
-      const isMatch = isRegularMatch || isNicknameMatch
+      // Also check first_name + nickname + last_name (e.g., Ed "Too Tall" Jones)
+      let isFullNicknameMatch = false
+      if (player.firstName && player.nickName && player.lastName) {
+        const fullNicknameVariation = normalizePlayerName(`${player.firstName} ${player.nickName} ${player.lastName}`)
+        isFullNicknameMatch = fullNicknameVariation === normalizedSearchName
+      }
+
+      const isMatch = isRegularMatch || isNicknameLastMatch || isFullNicknameMatch
 
       if (isMatch) {
-        if (isNicknameMatch) {
+        if (isFullNicknameMatch) {
+          console.log(`✅ EXACT FULL NICKNAME MATCH: "${searchName}" matches "${player.firstName} ${player.nickName} ${player.lastName}" (${player.playerName}) with ${player.teams.length} teams`)
+        } else if (isNicknameLastMatch) {
           console.log(`✅ EXACT NICKNAME MATCH: "${searchName}" matches "${player.nickName} ${player.lastName}" (${player.playerName}) with ${player.teams.length} teams`)
         } else {
           console.log(`✅ EXACT MATCH: "${searchName}" matches "${player.playerName}" with ${player.teams.length} teams`)

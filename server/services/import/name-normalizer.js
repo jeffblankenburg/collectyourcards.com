@@ -32,6 +32,7 @@ function normalizeAccents(str) {
  * - Removes accents
  * - Converts to lowercase
  * - Removes periods (for initials like "J.T.")
+ * - Removes quotation marks (for nicknames like Ed "Too Tall" Jones)
  * - Normalizes whitespace
  *
  * @param {string} name - Player name to normalize
@@ -40,12 +41,14 @@ function normalizeAccents(str) {
  * @example
  * normalizePlayerName('J.T. Realmuto') // Returns 'jt realmuto'
  * normalizePlayerName('José  Altuve') // Returns 'jose altuve'
+ * normalizePlayerName('Ed "Too Tall" Jones') // Returns 'ed too tall jones'
  */
 function normalizePlayerName(name) {
   if (!name) return ''
 
   return normalizeAccents(name.trim().toLowerCase())
     .replace(/\./g, '') // Remove periods like "J.T." -> "JT"
+    .replace(/["']/g, '') // Remove quotes like Ed "Too Tall" Jones
     .replace(/\s+/g, ' ') // Normalize multiple spaces to single space
 }
 
