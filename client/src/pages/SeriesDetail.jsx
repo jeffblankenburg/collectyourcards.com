@@ -93,8 +93,7 @@ function SeriesDetail() {
         const allSets = setsResponse.data.sets || []
         const foundSet = allSets.find(set => {
           const setYear = set.year || parseInt(set.name.split(' ')[0])
-          const slug = generateSlug(set.name)
-          return setYear === parseInt(year) && slug === setSlug
+          return setYear === parseInt(year) && set.slug === setSlug
         })
 
         if (foundSet) {
@@ -114,12 +113,8 @@ function SeriesDetail() {
         log.debug(`Loaded ${seriesList.length} series from series-list`)
       }
 
-      // Find series by slug (using standard slug generation)
-      const foundSeries = seriesList.find(s => {
-        if (!s.name) return false
-        const slug = generateSlug(s.name)
-        return slug === seriesSlug
-      })
+      // Find series by stored slug
+      const foundSeries = seriesList.find(s => s.slug === seriesSlug)
 
       if (foundSeries) {
         setSeries(foundSeries)

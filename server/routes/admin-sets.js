@@ -36,15 +36,76 @@ function generateSlug(name) {
     .replace(/^-|-$/g, '') // Remove leading/trailing hyphens
 }
 
+// Helper function to generate unique set slug with sport disambiguation
+async function generateUniqueSetSlug(name, organizationId) {
+  let slug = generateSlug(name)
+
+  // Check if slug already exists
+  const existing = await prisma.set.findFirst({
+    where: { slug }
+  })
+
+  // If slug doesn't exist, use it
+  if (!existing) {
+    return slug
+  }
+
+  // If slug exists, append sport name (or abbreviation as fallback)
+  if (organizationId) {
+    const org = await prisma.organization.findUnique({
+      where: { organization_id: parseInt(organizationId) },
+      select: { sport: true, abbreviation: true }
+    })
+
+    if (org?.sport) {
+      return `${slug}-${org.sport.toLowerCase()}`
+    } else if (org?.abbreviation) {
+      // Fallback to abbreviation if sport not set
+      return `${slug}-${org.abbreviation.toLowerCase()}`
+    }
+  }
+
+  // Last resort: append timestamp
+  return `${slug}-${Date.now()}`
+}
+
+// Helper function to generate unique player slug with birth year disambiguation
+async function generateUniquePlayerSlug(firstName, lastName, birthdate) {
+  const fullName = `${firstName} ${lastName}`
+  let slug = generateSlug(fullName)
+
+  // Check if slug already exists
+  const existing = await prisma.player.findFirst({
+    where: { slug }
+  })
+
+  // If slug doesn't exist, use it
+  if (!existing) {
+    return slug
+  }
+
+  // If slug exists and we have birthdate, append birth year
+  if (birthdate) {
+    const birthYear = new Date(birthdate).getFullYear()
+    return `${slug}-${birthYear}`
+  }
+
+  // Last resort: append timestamp
+  return `${slug}-${Date.now()}`
+}
+
 // Helper function to find series by slug, year, and set
 async function findSeriesBySlug(year, setSlug, seriesSlug) {
   // First find the set
   const set = await findSetBySlug(year, setSlug)
   if (!set) return null
-  
-  // Then find series in that set
-  const series = await prisma.series.findMany({
-    where: { set: set.set_id },
+
+  // Then find series in that set by slug
+  return await prisma.series.findFirst({
+    where: {
+      set: set.set_id,
+      slug: seriesSlug
+    },
     include: {
       set_series_setToset: {
         select: {
@@ -53,14 +114,15 @@ async function findSeriesBySlug(year, setSlug, seriesSlug) {
       }
     }
   })
-  
-  return series.find(s => generateSlug(s.name) === seriesSlug)
 }
 
 // Helper function to find set by slug and year
 async function findSetBySlug(year, slug) {
-  const sets = await prisma.set.findMany({
-    where: { year: parseInt(year) },
+  return await prisma.set.findFirst({
+    where: {
+      year: parseInt(year),
+      slug: slug
+    },
     include: {
       organization_set_organizationToorganization: {
         select: {
@@ -75,8 +137,6 @@ async function findSetBySlug(year, slug) {
       }
     }
   })
-  
-  return sets.find(set => generateSlug(set.name) === slug)
 }
 
 // All routes require admin authentication
@@ -414,8 +474,11 @@ router.post('/sets', async (req, res) => {
     }
 
     // Prepare creation data
+    const trimmedName = name.trim()
+    const slug = await generateUniqueSetSlug(trimmedName, organization) // Generate unique slug with organization disambiguation
     const createData = {
-      name: name.trim(),
+      name: trimmedName,
+      slug: slug,
       year: year ? parseInt(year) : null,
       organization: organization ? parseInt(organization) : null,
       manufacturer: manufacturer ? parseInt(manufacturer) : null,
@@ -527,8 +590,10 @@ router.put('/sets/:id', async (req, res) => {
     }
 
     // Prepare update data
+    const trimmedName = name?.trim()
     const updateData = {
-      name: name?.trim() || null,
+      name: trimmedName || null,
+      slug: trimmedName ? generateSlug(trimmedName) : existingSet.slug, // Regenerate slug if name changed
       year: year ? parseInt(year) : null,
       organization: organization ? parseInt(organization) : null,
       manufacturer: manufacturer ? parseInt(manufacturer) : null,
@@ -626,8 +691,10 @@ router.post('/series', async (req, res) => {
     }
 
     // Prepare creation data - using nested relationship syntax for foreign keys
+    const trimmedName = name.trim()
     const createData = {
-      name: name.trim(),
+      name: trimmedName,
+      slug: generateSlug(trimmedName), // Generate and save slug
       card_count: card_count ? parseInt(card_count) : 0,
       card_entered_count: card_entered_count ? parseInt(card_entered_count) : 0,
       is_base: is_base || false,
@@ -791,8 +858,10 @@ router.put('/series/:id', async (req, res) => {
     }
 
     // Prepare update data - excluding fields that need special handling
+    const trimmedName = name?.trim()
     const updateData = {
-      name: name?.trim() || null,
+      name: trimmedName || null,
+      slug: trimmedName ? generateSlug(trimmedName) : existingSeries.slug, // Regenerate slug if name changed
       card_count: card_count !== undefined ? parseInt(card_count) : existingSeries.card_count,
       card_entered_count: card_entered_count !== undefined ? parseInt(card_entered_count) : existingSeries.card_entered_count,
       is_base: is_base !== undefined ? is_base : existingSeries.is_base,

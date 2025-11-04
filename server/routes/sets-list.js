@@ -16,6 +16,7 @@ router.get('/', async (req, res) => {
       SELECT ${useLimit ? `TOP ${limitNum}` : ''}
         st.set_id,
         st.name,
+        st.slug,
         st.manufacturer as manufacturer_id,
         st.organization as organization_id,
         st.year,
@@ -30,7 +31,7 @@ router.get('/', async (req, res) => {
       LEFT JOIN manufacturer m ON st.manufacturer = m.manufacturer_id
       LEFT JOIN organization o ON st.organization = o.organization_id
       LEFT JOIN series s ON st.set_id = s.[set]
-      GROUP BY st.set_id, st.name, st.manufacturer, st.organization, st.year, st.thumbnail, st.is_complete, m.name, o.abbreviation, o.name
+      GROUP BY st.set_id, st.name, st.slug, st.manufacturer, st.organization, st.year, st.thumbnail, st.is_complete, m.name, o.abbreviation, o.name
       ORDER BY ISNULL(SUM(s.card_count), 0) DESC, st.name ASC
     `
 
@@ -40,6 +41,7 @@ router.get('/', async (req, res) => {
     const serializedSets = topSets.map(set => ({
       set_id: Number(set.set_id),
       name: set.name,
+      slug: set.slug, // Include stored slug
       year: Number(set.year || 0),
       manufacturer_id: Number(set.manufacturer_id || 0),
       manufacturer_name: set.manufacturer_name,

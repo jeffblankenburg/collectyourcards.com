@@ -17,6 +17,7 @@ router.get('/:setId', optionalAuthMiddleware, async (req, res) => {
       SELECT
         s.series_id,
         s.name,
+        s.slug,
         s.card_count,
         s.card_entered_count,
         s.rookie_count,
@@ -72,6 +73,7 @@ router.get('/:setId', optionalAuthMiddleware, async (req, res) => {
       const result = {
         series_id: Number(serie.series_id),
         name: serie.name,
+        slug: serie.slug, // Include stored slug
         year: year,
         card_count: Number(serie.card_count),
         card_entered_count: Number(serie.card_entered_count || 0),
