@@ -868,6 +868,57 @@ async function performFastMatching(cards, playerLookup, teamLookup, playerTeamLo
             }
             playerTeamCheckTeams.exact.push(teamObj)
           })
+
+          // Check if player_team records exist for these no-team combinations
+          // This wasn't done in Phase 3 because these teams weren't in the import data
+          if (playerMatches.exact.length > 0) {
+            const noTeamConditions = []
+            playerMatches.exact.forEach((player, pIdx) => {
+              noNameTeamsResult.recordset.forEach((team, tIdx) => {
+                const key = `${player.playerId}_${team.teamId}`
+                // Only check if not already in lookup from Phase 3
+                if (!playerTeamLookup[key]) {
+                  noTeamConditions.push(`(pt.player = @noTeamPlayer${pIdx}_${tIdx} AND pt.team = @noTeamTeam${pIdx}_${tIdx})`)
+                }
+              })
+            })
+
+            if (noTeamConditions.length > 0) {
+              const noTeamRequest = pool.request()
+              let conditionIdx = 0
+              playerMatches.exact.forEach((player, pIdx) => {
+                noNameTeamsResult.recordset.forEach((team, tIdx) => {
+                  const key = `${player.playerId}_${team.teamId}`
+                  if (!playerTeamLookup[key]) {
+                    noTeamRequest.input(`noTeamPlayer${pIdx}_${tIdx}`, sql.BigInt, player.playerId)
+                    noTeamRequest.input(`noTeamTeam${pIdx}_${tIdx}`, sql.Int, team.teamId)
+                  }
+                })
+              })
+
+              const noTeamQuery = `
+                SELECT
+                  pt.player_team_id as playerTeamId,
+                  pt.player as playerId,
+                  pt.team as teamId
+                FROM player_team pt
+                WHERE ${noTeamConditions.join(' OR ')}
+              `
+
+              const noTeamResult = await noTeamRequest.query(noTeamQuery)
+              console.log(`🔍 Found ${noTeamResult.recordset.length} existing player_team records for no-team combinations`)
+
+              // Add to lookup for use below
+              noTeamResult.recordset.forEach(row => {
+                const key = `${row.playerId}_${row.teamId}`
+                playerTeamLookup[key] = {
+                  playerTeamId: String(row.playerTeamId),
+                  playerId: String(row.playerId),
+                  teamId: String(row.teamId)
+                }
+              })
+            }
+          }
         }
       } else {
         // Normal team matching
