@@ -823,7 +823,8 @@ async function performFastMatching(cards, playerLookup, teamLookup, playerTeamLo
         console.log(`⚠️ No team specified for "${playerName}" - recommending no-team placeholder teams`)
 
         // Get placeholder teams for non-team subjects (mascots, stadiums, etc.)
-        // Looks for: "No Name", "No Team", "No Team Assigned", or organization-agnostic teams
+        // Specific match for: NULL, empty string, "No Name", "No Team", "No Team Assigned"
+        // Must have NULL organization to ensure it's truly a placeholder team
         const noNameTeamsQuery = `
           SELECT
             team_id as teamId,
@@ -833,18 +834,15 @@ async function performFastMatching(cards, playerLookup, teamLookup, playerTeamLo
             secondary_color as secondaryColor,
             abbreviation
           FROM team
-          WHERE (
+          WHERE organization IS NULL
+          AND (
             name IS NULL
             OR name = ''
-            OR LOWER(name) LIKE '%no name%'
-            OR LOWER(name) LIKE '%no team%'
-            OR organization IS NULL
+            OR LOWER(LTRIM(RTRIM(name))) IN ('no name', 'no team', 'no team assigned', 'none')
           )
-          ${organizationId ? `AND (organization = ${organizationId} OR organization IS NULL)` : ''}
           ORDER BY
-            CASE WHEN LOWER(name) LIKE '%no team%' THEN 0 ELSE 1 END,
-            CASE WHEN organization IS NULL THEN 0 ELSE 1 END,
-            organization DESC
+            CASE WHEN LOWER(name) LIKE 'no team%' THEN 0 ELSE 1 END,
+            team_id
         `
 
         const noNameTeamsResult = await pool.request().query(noNameTeamsQuery)
