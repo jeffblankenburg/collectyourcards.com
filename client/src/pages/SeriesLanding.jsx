@@ -130,8 +130,7 @@ function SeriesLanding() {
       const allSets = setsResponse.data.sets || []
       const foundSet = allSets.find(set => {
         const setYear = parseInt(set.name.split(' ')[0])
-        const slug = generateSlug(set.name)
-        return setYear === parseInt(selectedYear) && slug === selectedSetSlug
+        return setYear === parseInt(selectedYear) && set.slug === selectedSetSlug
       })
       
       if (foundSet) {

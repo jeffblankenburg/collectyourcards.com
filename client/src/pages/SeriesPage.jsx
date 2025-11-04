@@ -171,8 +171,7 @@ function SeriesPage() {
       const allSets = setsResponse.data.sets || []
       const foundSet = allSets.find(set => {
         const setYear = set.year || parseInt(set.name.split(' ')[0])
-        const slug = generateSlug(set.name)
-        return setYear === parseInt(yearParam) && slug === setSlugParam
+        return setYear === parseInt(yearParam) && set.slug === setSlugParam
       })
       
       if (foundSet) {
