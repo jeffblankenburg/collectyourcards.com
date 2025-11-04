@@ -79,7 +79,10 @@ class BatchLookupService {
               SELECT DISTINCT pt2.player
               FROM player_team pt2
               JOIN team t2 ON pt2.team = t2.team_id
-              WHERE t2.organization IN (${organizationFilter.map((_, i) => `@org${i}`).join(', ')})
+              WHERE (
+                t2.organization IN (${organizationFilter.map((_, i) => `@org${i}`).join(', ')})
+                OR t2.organization IS NULL
+              )
             )
           )
         `
