@@ -412,6 +412,7 @@ router.get('/parallel-series', async (req, res) => {
       if (!name) return 'unknown'
       return name
         .toLowerCase()
+        .replace(/&/g, 'and') // Convert ampersands to "and" to preserve semantic meaning
         .replace(/'/g, '') // Remove apostrophes completely
         .replace(/[^a-z0-9]+/g, '-') // Replace other special chars with hyphens
         .replace(/^-|-$/g, '') // Remove leading/trailing hyphens
