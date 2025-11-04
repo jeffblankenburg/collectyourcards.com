@@ -177,7 +177,7 @@ class BatchLookupService {
           t.secondary_color as secondaryColor
         FROM team t
         WHERE (${nameConditions})
-        ${organizationId ? 'AND t.organization = @organizationId' : ''}
+        ${organizationId ? 'AND (t.organization = @organizationId OR t.organization IS NULL)' : ''}
         ORDER BY t.name
       `
 
@@ -523,7 +523,7 @@ class BatchLookupService {
           OR
           REPLACE(REPLACE(REPLACE(LOWER(t.abbreviation), ' ', ''), '.', ''), '-', '') LIKE @teamName
         )
-        ${organizationId ? 'AND t.organization = @organizationId' : ''}
+        ${organizationId ? 'AND (t.organization = @organizationId OR t.organization IS NULL)' : ''}
         ORDER BY matchPriority, t.name
       `
 
