@@ -588,15 +588,18 @@ router.post('/create-player', requireAuth, requireAdmin, async (req, res) => {
   try {
     const { firstName, lastName } = req.body
 
-    if (!firstName || !lastName) {
-      return res.status(400).json({ message: 'First name and last name are required' })
+    if (!firstName) {
+      return res.status(400).json({ message: 'First name is required' })
     }
 
     const pool = await connectToDatabase()
 
+    // Allow null/empty lastName for single-name subjects (mascots, fruits, etc.)
+    const lastNameValue = lastName?.trim() || null
+
     const result = await pool.request()
       .input('firstName', sql.NVarChar, firstName.trim())
-      .input('lastName', sql.NVarChar, lastName.trim())
+      .input('lastName', sql.NVarChar, lastNameValue)
       .query(`
         INSERT INTO player (first_name, last_name)
         VALUES (@firstName, @lastName);
@@ -605,11 +608,16 @@ router.post('/create-player', requireAuth, requireAdmin, async (req, res) => {
 
     const newPlayer = result.recordset[0]
 
+    // Construct playerName properly for single-name players
+    const playerName = newPlayer.last_name
+      ? `${newPlayer.first_name} ${newPlayer.last_name}`.trim()
+      : newPlayer.first_name
+
     res.json({
       success: true,
       player: {
         playerId: String(newPlayer.player_id),
-        playerName: `${newPlayer.first_name} ${newPlayer.last_name}`,
+        playerName: playerName,
         firstName: newPlayer.first_name,
         lastName: newPlayer.last_name
       }

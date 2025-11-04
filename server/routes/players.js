@@ -7,7 +7,8 @@ const { authMiddleware } = require('../middleware/auth')
 router.get('/by-slug/:slug', async (req, res) => {
   try {
     const { slug } = req.params
-    const nameParts = slug.toLowerCase().split('-')
+    // Filter out empty parts to handle trailing hyphens (e.g., "pickle-" -> ["pickle"])
+    const nameParts = slug.toLowerCase().split('-').filter(part => part.length > 0)
 
     if (nameParts.length === 0) {
       return res.status(400).json({
@@ -16,7 +17,7 @@ router.get('/by-slug/:slug', async (req, res) => {
       })
     }
 
-    // Handle single-name players (e.g., "Rhino", "Ichiro")
+    // Handle single-name players (e.g., "Rhino", "Ichiro", "Pickle")
     let results
     if (nameParts.length === 1) {
       // Search by first name only for single-name players - use exact match

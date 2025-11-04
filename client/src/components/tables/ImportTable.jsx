@@ -473,11 +473,11 @@ const ImportTable = ({
   const createNewPlayer = async (cardSortOrder, playerIndex, playerName) => {
     try {
       console.log('🔄 Creating new player:', playerName, 'cardSortOrder:', cardSortOrder, 'playerIndex:', playerIndex)
-      
+
       const nameParts = playerName.split(' ')
       const firstName = nameParts[0] || ''
-      const lastName = nameParts.slice(1).join(' ') || nameParts[0] || 'Unknown'
-      
+      const lastName = nameParts.slice(1).join(' ') || '' // Allow empty lastName for single-name subjects
+
       console.log('📤 Sending create player request:', { firstName, lastName })
       
       const response = await axios.post('/api/admin/import/create-player', {
