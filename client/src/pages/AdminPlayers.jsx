@@ -425,10 +425,10 @@ function AdminPlayers() {
       }
       
       addToast('Player created successfully', 'success')
-      
-      // Refresh the players list
-      await loadPlayers(searchTerm)
-      
+
+      // Refresh the players list - preserve current filter state
+      await loadPlayers(searchTerm, showZeroCardsOnly, showDuplicatesOnly)
+
       // Close modal
       handleCloseModal()
     } catch (error) {
@@ -468,9 +468,9 @@ function AdminPlayers() {
       setShowReassignModal(false)
       setTeamToRemove(null)
       setReassignToTeam('')
-      
-      // Reload main players list to keep it in sync
-      await loadPlayers()
+
+      // Reload main players list to keep it in sync - preserve current filter state
+      await loadPlayers(searchTerm, showZeroCardsOnly, showDuplicatesOnly)
       
     } catch (error) {
       console.error('Error reassigning cards:', error)
@@ -496,7 +496,7 @@ function AdminPlayers() {
       })
       
       addToast('Team added successfully', 'success')
-      
+
       // Reload detailed team data with card counts
       const response = await axios.get(`/api/admin/players/${editingPlayer.player_id}/teams`)
       const updatedPlayer = {
@@ -504,10 +504,10 @@ function AdminPlayers() {
         teams: response.data.teams || []
       }
       setEditingPlayer(updatedPlayer)
-      
-      // Reload main players list to keep it in sync
-      await loadPlayers()
-      
+
+      // Reload main players list to keep it in sync - preserve current filter state
+      await loadPlayers(searchTerm, showZeroCardsOnly, showDuplicatesOnly)
+
       // Clear search term and close dropdown
       setTeamSearchTerm('')
       setShowTeamDropdown(false)
@@ -543,7 +543,7 @@ function AdminPlayers() {
       await axios.delete(`/api/admin/players/${editingPlayer.player_id}/teams/${teamId}`)
       
       addToast('Team removed successfully', 'success')
-      
+
       // Reload detailed team data with card counts
       const response = await axios.get(`/api/admin/players/${editingPlayer.player_id}/teams`)
       const updatedPlayer = {
@@ -551,9 +551,9 @@ function AdminPlayers() {
         teams: response.data.teams || []
       }
       setEditingPlayer(updatedPlayer)
-      
-      // Reload main players list to keep it in sync
-      await loadPlayers()
+
+      // Reload main players list to keep it in sync - preserve current filter state
+      await loadPlayers(searchTerm, showZeroCardsOnly, showDuplicatesOnly)
     } catch (error) {
       console.error('Error removing team:', error)
       const errorMessage = error.response?.data?.message || 'Failed to remove team'
@@ -577,9 +577,9 @@ function AdminPlayers() {
       
       addToast('Player updated successfully', 'success')
       handleCloseModal()
-      
-      // Reload players to get updated data
-      loadPlayers()
+
+      // Reload players to get updated data - preserve current filter state
+      loadPlayers(searchTerm, showZeroCardsOnly, showDuplicatesOnly)
     } catch (error) {
       console.error('Error updating player:', error)
       addToast(error.response?.data?.message || 'Failed to update player', 'error')

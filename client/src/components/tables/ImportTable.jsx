@@ -258,34 +258,37 @@ const ImportTable = ({
                            player.playerMatches?.fuzzy?.find(p => p.playerId === playerId)
       
       updatedCards[cardIndex].players[playerIndex].selectedPlayer = selectedPlayer
-      
-      // If player is selected and teams exist, automatically create missing player_team records
-      if (selectedPlayer && player.teamMatches?.exact?.length > 0) {
-        console.log(`🔗 Player selected: ${selectedPlayer.playerName}, checking for missing player_team records...`)
-        
+
+      // If player is selected and teams exist, check for existing player_team records
+      // Use playerTeamCheckTeams (position-matched) which includes dynamically found teams like "No Team Assigned"
+      const teamsToCheck = player.playerTeamCheckTeams?.exact || player.teamMatches?.exact || []
+
+      if (selectedPlayer && teamsToCheck.length > 0) {
+        console.log(`🔗 Player selected: ${selectedPlayer.playerName}, checking player_team records for ${teamsToCheck.length} teams...`)
+
         const playerTeamPromises = []
-        
-        // Find all teams that this player should be associated with
-        const playerTeamNames = player.teamNames || []
-        const matchedTeams = playerTeamNames.map(teamName => 
-          player.teamMatches.exact.find(match => 
-            match.teamName.toLowerCase().includes(teamName.toLowerCase())
-          )
-        ).filter(team => team)
+
+        // Check all position-matched teams (includes "No Team Assigned" if no team was in import data)
+        const matchedTeams = teamsToCheck
         
         for (const team of matchedTeams) {
-          // Check if player already has this team (from their existing teams)
-          const playerAlreadyHasTeam = selectedPlayer.teams?.some(existingTeam => 
-            existingTeam.teamId === team.teamId
-          )
-          
-          // Also check if player_team combination already exists in our matches
-          const playerTeamExists = player.playerTeamMatches?.some(pt => 
+          // Check if player_team combination already exists in our cached matches
+          const playerTeamExists = player.playerTeamMatches?.some(pt =>
             pt.playerId === selectedPlayer.playerId && pt.teamId === team.teamId
           )
-          
+
+          // Also check if player already has this team from their database lookup
+          const playerAlreadyHasTeam = selectedPlayer.teams?.some(existingTeam =>
+            existingTeam.teamId === team.teamId
+          )
+
+          if (playerTeamExists) {
+            console.log(`✅ Player_team already exists in cache: ${selectedPlayer.playerName} - ${team.teamName}`)
+            continue
+          }
+
           if (playerAlreadyHasTeam) {
-            console.log(`⚠️ Player ${selectedPlayer.playerName} already has team ${team.teamName} - skipping creation`)
+            console.log(`✅ Player ${selectedPlayer.playerName} already has team ${team.teamName} - adding to cache`)
 
             // Find the existing player_team record from the player's teams
             const existingTeam = selectedPlayer.teams?.find(t => t.teamId === team.teamId)
@@ -298,7 +301,54 @@ const ImportTable = ({
             }
 
             // Add to BOTH arrays for UI and backend import
-            if (!playerTeamExists) {
+            if (!player.playerTeamMatches) {
+              player.playerTeamMatches = []
+            }
+            if (!player.selectedPlayerTeams) {
+              player.selectedPlayerTeams = []
+            }
+            player.playerTeamMatches.push(existingPlayerTeam)
+            player.selectedPlayerTeams.push(existingPlayerTeam)
+            continue
+          }
+
+          // Check database to see if player_team exists (for dynamically found teams like "No Team Assigned")
+          console.log(`🔍 Checking database for player_team: ${selectedPlayer.playerName} + ${team.teamName}`)
+
+          const checkPromise = axios.post('/api/admin/import/create-player-team', {
+            playerId: selectedPlayer.playerId,
+            teamId: team.teamId
+          }).then(ptResponse => {
+            if (ptResponse.data.success) {
+              // Ensure playerTeamMatches structure exists
+              if (!player.playerTeamMatches) {
+                player.playerTeamMatches = []
+              }
+              // Ensure selectedPlayerTeams structure exists (for backend import)
+              if (!player.selectedPlayerTeams) {
+                player.selectedPlayerTeams = []
+              }
+
+              // Add the player-team combination to BOTH arrays
+              player.playerTeamMatches.push(ptResponse.data.playerTeam)
+              player.selectedPlayerTeams.push(ptResponse.data.playerTeam)
+
+              console.log(`✅ Created player_team: ${ptResponse.data.playerTeam.playerName} - ${ptResponse.data.playerTeam.teamName}`)
+              return ptResponse.data.playerTeam
+            }
+          }).catch(ptError => {
+            // If error is "already exists", that's fine - fetch it
+            if (ptError.response?.data?.message?.includes('already exists')) {
+              console.log(`✅ Player_team already exists in database: ${selectedPlayer.playerName} - ${team.teamName}`)
+              // Create placeholder record for UI
+              const existingPlayerTeam = {
+                playerTeamId: `existing_${selectedPlayer.playerId}_${team.teamId}`,
+                playerId: selectedPlayer.playerId,
+                teamId: team.teamId,
+                playerName: selectedPlayer.playerName,
+                teamName: team.teamName
+              }
+
               if (!player.playerTeamMatches) {
                 player.playerTeamMatches = []
               }
@@ -307,42 +357,14 @@ const ImportTable = ({
               }
               player.playerTeamMatches.push(existingPlayerTeam)
               player.selectedPlayerTeams.push(existingPlayerTeam)
-            }
-            continue
-          }
-          
-          if (!playerTeamExists) {
-            console.log(`🔗 Creating missing player_team: ${selectedPlayer.playerName} + ${team.teamName}`)
-            console.log(`📊 Request data: playerId=${selectedPlayer.playerId} (${typeof selectedPlayer.playerId}), teamId=${team.teamId} (${typeof team.teamId})`)
-            
-            const playerTeamPromise = axios.post('/api/admin/import/create-player-team', {
-              playerId: selectedPlayer.playerId,
-              teamId: team.teamId
-            }).then(ptResponse => {
-              if (ptResponse.data.success) {
-                // Ensure playerTeamMatches structure exists
-                if (!player.playerTeamMatches) {
-                  player.playerTeamMatches = []
-                }
-                // Ensure selectedPlayerTeams structure exists (for backend import)
-                if (!player.selectedPlayerTeams) {
-                  player.selectedPlayerTeams = []
-                }
-
-                // Add the new player-team combination to BOTH arrays
-                player.playerTeamMatches.push(ptResponse.data.playerTeam)
-                player.selectedPlayerTeams.push(ptResponse.data.playerTeam)
-                
-                console.log(`✅ Created player_team: ${ptResponse.data.playerTeam.playerName} - ${ptResponse.data.playerTeam.teamName}`)
-                return ptResponse.data.playerTeam
-              }
-            }).catch(ptError => {
-              console.error('Error auto-creating player_team:', ptError)
+              return existingPlayerTeam
+            } else {
+              console.error('Error checking/creating player_team:', ptError)
               return null
-            })
-            
-            playerTeamPromises.push(playerTeamPromise)
-          }
+            }
+          })
+
+          playerTeamPromises.push(checkPromise)
         }
         
         // Wait for all player_team creations, then update UI

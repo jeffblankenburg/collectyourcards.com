@@ -297,7 +297,7 @@ function AdminSets() {
   }
 
   const handleSetSaveSuccess = () => {
-    loadSets()
+    loadSets(searchTerm) // Preserve search state
   }
 
   const handleEditSeries = (seriesData) => {

@@ -635,7 +635,7 @@ function AdminSeries() {
         setShowDeleteModal(false)
         setShowEditModal(false)
         setDeletingSeries(null)
-        loadSeries() // Refresh the list
+        loadSeries(searchTerm) // Refresh the list - preserve search state
       }
     } catch (error) {
       console.error('Error deleting series:', error)
