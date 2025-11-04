@@ -19,6 +19,7 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
       SELECT ${useLimit ? `TOP ${limitNum}` : ''}
         s.series_id,
         s.name,
+        s.slug,
         s.card_count,
         s.parallel_of_series,
         parent_s.name as parent_series_name,
@@ -66,6 +67,7 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
       const result = {
         series_id: Number(series.series_id),
         name: series.name,
+        slug: series.slug,
         year: year,
         card_count: Number(series.card_count),
         is_parallel: !!series.parallel_of_series,

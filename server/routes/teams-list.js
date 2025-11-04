@@ -25,6 +25,7 @@ router.get('/', async (req, res) => {
           SELECT TOP 20
             t.team_id,
             t.name,
+            t.slug,
             t.city,
             t.abbreviation,
             t.primary_color,
@@ -53,6 +54,7 @@ router.get('/', async (req, res) => {
       SELECT TOP ${limitNum}
         t.team_id,
         t.name,
+        t.slug,
         t.city,
         t.abbreviation,
         t.primary_color,
@@ -73,6 +75,7 @@ router.get('/', async (req, res) => {
     const serializedTeams = topTeams.map(team => ({
       team_id: Number(team.team_id),
       name: team.name,
+      slug: team.slug,
       city: team.city,
       abbreviation: team.abbreviation,
       primary_color: team.primary_color,
@@ -91,6 +94,7 @@ router.get('/', async (req, res) => {
       const recentlyViewedSerialized = recentlyViewedTeams.map(team => ({
         team_id: Number(team.team_id),
         name: team.name,
+        slug: team.slug,
         city: team.city,
         abbreviation: team.abbreviation,
         primary_color: team.primary_color,

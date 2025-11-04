@@ -117,6 +117,7 @@ router.get('/minimal', async (req, res) => {
         c.sort_order,
         s.name as series_name,
         s.series_id,
+        s.slug as series_slug,
         st.name as set_name,
         st.year as set_year,
         col.name as color,
@@ -125,9 +126,11 @@ router.get('/minimal', async (req, res) => {
         p.player_id,
         p.first_name,
         p.last_name,
+        p.slug as player_slug,
         t.team_id,
         t.name as team_name,
         t.abbreviation as team_abbr,
+        t.slug as team_slug,
         t.primary_color,
         t.secondary_color,
         ucp.photo_url as primary_photo_url,
@@ -189,6 +192,7 @@ router.get('/minimal', async (req, res) => {
           series_rel: {
             series_id: typeof row.series_id === 'bigint' ? Number(row.series_id) : row.series_id,
             name: row.series_name,
+            slug: row.series_slug,
             set_name: row.set_name,
             set_year: row.set_year
           },
@@ -217,12 +221,14 @@ router.get('/minimal', async (req, res) => {
               player_id: typeof row.player_id === 'bigint' ? Number(row.player_id) : row.player_id,
               name: `${row.first_name} ${row.last_name}`,
               first_name: row.first_name,
-              last_name: row.last_name
+              last_name: row.last_name,
+              slug: row.player_slug
             },
             team: {
               team_id: row.team_id ? Number(row.team_id) : null,
               name: row.team_name,
               abbreviation: row.team_abbr,
+              slug: row.team_slug,
               primary_color: row.primary_color,
               secondary_color: row.secondary_color
             }
@@ -371,24 +377,27 @@ router.get('/', async (req, res) => {
         c.is_rookie, 
         c.is_autograph, 
         c.is_relic,
-        c.print_run, 
-        c.sort_order, 
+        c.print_run,
+        c.sort_order,
         c.notes as card_notes,
-        s.name as series_name, 
+        s.name as series_name,
         s.series_id,
+        s.slug as series_slug,
         -- Add set information for proper URL construction
         st.name as set_name,
         LOWER(REPLACE(REPLACE(REPLACE(st.name, ' ', '-'), '''', ''), '/', '-')) as set_slug,
         st.year as set_year,
-        col.name as color, 
+        col.name as color,
         col.hex_value as hex_color,
         ul.location as location_name,
         p.player_id,
         p.first_name,
         p.last_name,
+        p.slug as player_slug,
         t.team_id,
         t.name as team_name,
         t.abbreviation as team_abbr,
+        t.slug as team_slug,
         t.primary_color,
         t.secondary_color,
         ucp.photo_url as primary_photo_url,
@@ -454,7 +463,8 @@ router.get('/', async (req, res) => {
           series_rel: {
             series_id: typeof row.series_id === 'bigint' ? Number(row.series_id) : row.series_id,
             name: row.series_name,
-            slug: row.set_slug,
+            slug: row.series_slug,
+            set_slug: row.set_slug,
             set_name: row.set_name,
             set_year: row.set_year
           },
@@ -474,12 +484,14 @@ router.get('/', async (req, res) => {
             player_id: typeof row.player_id === 'bigint' ? Number(row.player_id) : row.player_id,
             name: `${row.first_name} ${row.last_name}`,
             first_name: row.first_name,
-            last_name: row.last_name
+            last_name: row.last_name,
+            slug: row.player_slug
           },
           team: {
             team_id: row.team_id ? Number(row.team_id) : null,
             name: row.team_name,
             abbreviation: row.team_abbr,
+            slug: row.team_slug,
             primary_color: row.primary_color,
             secondary_color: row.secondary_color
           }

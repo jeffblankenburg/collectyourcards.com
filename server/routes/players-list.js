@@ -79,17 +79,18 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
             p.first_name,
             p.last_name,
             p.nick_name,
+            p.slug,
             p.is_hof,
             p.card_count,
             (
-              SELECT COUNT(DISTINCT c.card_id) 
+              SELECT COUNT(DISTINCT c.card_id)
               FROM card c
               JOIN card_player_team cpt ON c.card_id = cpt.card
               JOIN player_team pt ON cpt.player_team = pt.player_team_id
               WHERE pt.player = p.player_id AND c.is_rookie = 1
             ) as rookie_count,
             (
-              SELECT COUNT(DISTINCT uc.card) 
+              SELECT COUNT(DISTINCT uc.card)
               FROM user_card uc
               JOIN card c ON uc.card = c.card_id
               JOIN card_player_team cpt ON c.card_id = cpt.card
@@ -101,7 +102,7 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
           JOIN player p ON pv.player_id = p.player_id
           WHERE pv.user_id = ${userId}
             AND pv.viewed_at >= DATEADD(day, -30, GETDATE())
-          GROUP BY p.player_id, p.first_name, p.last_name, p.nick_name, p.is_hof, p.card_count
+          GROUP BY p.player_id, p.first_name, p.last_name, p.nick_name, p.slug, p.is_hof, p.card_count
           ORDER BY MAX(pv.viewed_at) DESC
         )
         SELECT * FROM RecentPlayers
@@ -121,17 +122,18 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
             p.first_name,
             p.last_name,
             p.nick_name,
+            p.slug,
             p.is_hof,
             p.card_count,
             (
-              SELECT COUNT(DISTINCT c.card_id) 
+              SELECT COUNT(DISTINCT c.card_id)
               FROM card c
               JOIN card_player_team cpt ON c.card_id = cpt.card
               JOIN player_team pt ON cpt.player_team = pt.player_team_id
               WHERE pt.player = p.player_id AND c.is_rookie = 1
             ) as rookie_count,
             (
-              SELECT COUNT(DISTINCT uc.card) 
+              SELECT COUNT(DISTINCT uc.card)
               FROM user_card uc
               JOIN card c ON uc.card = c.card_id
               JOIN card_player_team cpt ON c.card_id = cpt.card
@@ -142,7 +144,7 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
           FROM player_views pv
           JOIN player p ON pv.player_id = p.player_id
           WHERE pv.viewed_at >= DATEADD(day, -7, GETDATE())
-          GROUP BY p.player_id, p.first_name, p.last_name, p.nick_name, p.is_hof, p.card_count
+          GROUP BY p.player_id, p.first_name, p.last_name, p.nick_name, p.slug, p.is_hof, p.card_count
           ORDER BY COUNT(pv.view_id) DESC
         )
         SELECT * FROM PopularPlayers
@@ -168,22 +170,23 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
     // Get top players with team information in a SINGLE OPTIMIZED QUERY
     const playersQuery = `
       WITH PlayerData AS (
-        SELECT 
+        SELECT
           p.player_id,
           p.first_name,
           p.last_name,
           p.nick_name,
+          p.slug,
           p.is_hof,
           p.card_count,
           (
-            SELECT COUNT(DISTINCT c.card_id) 
+            SELECT COUNT(DISTINCT c.card_id)
             FROM card c
             JOIN card_player_team cpt ON c.card_id = cpt.card
             JOIN player_team pt ON cpt.player_team = pt.player_team_id
             WHERE pt.player = p.player_id AND c.is_rookie = 1
           ) as rookie_count${userId ? `,
           (
-            SELECT COUNT(DISTINCT uc.card) 
+            SELECT COUNT(DISTINCT uc.card)
             FROM user_card uc
             JOIN card c ON uc.card = c.card_id
             JOIN card_player_team cpt ON c.card_id = cpt.card
@@ -212,7 +215,7 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
         JOIN team t ON pt.team = t.team_id
         GROUP BY pd.player_id, t.team_id, t.name, t.abbreviation, t.primary_color, t.secondary_color
       )
-      SELECT 
+      SELECT
         pd.*,
         STRING_AGG(
           CONCAT(
@@ -229,7 +232,7 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
         ) WITHIN GROUP (ORDER BY pt.team_card_count DESC) as teams_json
       FROM PlayerData pd
       LEFT JOIN PlayerTeams pt ON pd.player_id = pt.player_id
-      GROUP BY pd.player_id, pd.first_name, pd.last_name, pd.nick_name, pd.is_hof, pd.card_count, pd.rookie_count${userId ? ', pd.user_card_count' : ''}
+      GROUP BY pd.player_id, pd.first_name, pd.last_name, pd.nick_name, pd.slug, pd.is_hof, pd.card_count, pd.rookie_count${userId ? ', pd.user_card_count' : ''}
       ORDER BY ${sortColumn} ${sortDirection}
     `
 
@@ -241,6 +244,7 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
       first_name: player.first_name,
       last_name: player.last_name,
       nick_name: player.nick_name,
+      slug: player.slug,
       is_hof: player.is_hof,
       card_count: Number(player.card_count),
       rookie_count: Number(player.rookie_count || 0),
@@ -315,6 +319,7 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
         first_name: player.first_name,
         last_name: player.last_name,
         nick_name: player.nick_name,
+        slug: player.slug,
         is_hof: player.is_hof,
         card_count: Number(player.card_count),
         rookie_count: Number(player.rookie_count || 0),

@@ -289,14 +289,17 @@ async function searchCardsByNumberAndPlayer(cardNumber, playerName, limit) {
         c.is_relic,
         c.print_run,
         s.name as series_name,
+        s.slug as series_slug,
         st.name as set_name,
+        st.slug as set_slug,
         st.year as set_year,
         m.name as manufacturer_name,
         s.parallel_of_series,
         col.name as color_name,
         col.hex_value as color_hex,
         STRING_AGG(CONCAT(p.first_name, ' ', p.last_name), ', ') as player_names,
-        STRING_AGG(CONVERT(varchar(max), CONCAT(t.team_id, '|', t.name, '|', t.abbreviation, '|', ISNULL(t.primary_color, ''), '|', ISNULL(t.secondary_color, ''))), '~') as teams_data
+        STRING_AGG(CONVERT(varchar(max), CONCAT(p.slug, '|', p.first_name, ' ', p.last_name)), '~') as players_slugs_data,
+        STRING_AGG(CONVERT(varchar(max), CONCAT(t.team_id, '|', t.name, '|', t.abbreviation, '|', ISNULL(t.primary_color, ''), '|', ISNULL(t.secondary_color, ''), '|', ISNULL(t.slug, ''))), '~') as teams_data
       FROM card c
       JOIN series s ON c.series = s.series_id
       JOIN [set] st ON s.[set] = st.set_id
@@ -317,7 +320,7 @@ async function searchCardsByNumberAndPlayer(cardNumber, playerName, limit) {
           OR (p.first_name LIKE '%${firstName}%' COLLATE Latin1_General_CI_AI AND p.last_name LIKE '%${lastName}%' COLLATE Latin1_General_CI_AI)
         )
       GROUP BY c.card_id, c.card_number, c.is_rookie, c.is_autograph, c.is_relic, c.print_run,
-               s.name, st.name, st.year, m.name, s.parallel_of_series, col.name, col.hex_value
+               s.name, s.slug, st.name, st.slug, st.year, m.name, s.parallel_of_series, col.name, col.hex_value
       ORDER BY 
         CASE WHEN c.card_number = '${cardNumber}' THEN 0 ELSE 1 END,  -- Exact matches first
         s.name,  -- Then series name
@@ -380,16 +383,26 @@ function formatCardResult(card, relevanceScore) {
     const teamStrings = card.teams_data.split('~')
     const firstTeam = teamStrings[0]
     if (firstTeam) {
-      const [team_id, name, abbreviation, primary_color, secondary_color] = firstTeam.split('|')
+      const [team_id, name, abbreviation, primary_color, secondary_color, slug] = firstTeam.split('|')
       if (team_id) {
         primaryTeam = {
           team_id: Number(team_id),
           name: name || null,
           abbreviation: abbreviation || null,
           primary_color: primary_color || null,
-          secondary_color: secondary_color || null
+          secondary_color: secondary_color || null,
+          slug: slug || null  // Use stored slug from database
         }
       }
+    }
+  }
+
+  // Parse player slugs data
+  let playerSlug = null
+  if (card.players_slugs_data) {
+    const firstPlayerSlug = card.players_slugs_data.split('~')[0]
+    if (firstPlayerSlug) {
+      playerSlug = firstPlayerSlug.split('|')[0]
     }
   }
 
@@ -423,12 +436,12 @@ function formatCardResult(card, relevanceScore) {
       // Convert BigInt fields to numbers
       print_run: card.print_run ? Number(card.print_run) : null,
       serial_number: null, // Not available in database
-      // Add navigation slugs for URLs
-      set_slug: generateSlug(card.set_name),
-      series_slug: generateSlug(card.series_name),
-      player_slug: generateSlug(card.player_names),
+      // Add navigation slugs for URLs (using stored database slugs)
+      set_slug: card.set_slug,
+      series_slug: card.series_slug,
+      player_slug: playerSlug || 'unknown',
       card_number_slug: card.card_number ? card.card_number.toLowerCase().replace(/[^a-z0-9-]/g, '') : 'unknown',
-      card_slug: `${card.card_number ? card.card_number.toLowerCase().replace(/[^a-z0-9-]/g, '') : 'unknown'}-${generateSlug(card.player_names)}`
+      card_slug: `${card.card_number ? card.card_number.toLowerCase().replace(/[^a-z0-9-]/g, '') : 'unknown'}-${playerSlug || 'unknown'}`
     }
   }
 }
@@ -449,14 +462,17 @@ async function searchCardsByNumber(cardNumber, limit) {
         c.is_relic,
         c.print_run,
         s.name as series_name,
+        s.slug as series_slug,
         st.name as set_name,
+        st.slug as set_slug,
         st.year as set_year,
         m.name as manufacturer_name,
         s.parallel_of_series,
         col.name as color_name,
         col.hex_value as color_hex,
         STRING_AGG(CONCAT(p.first_name, ' ', p.last_name), ', ') as player_names,
-        STRING_AGG(CONVERT(varchar(max), CONCAT(t.team_id, '|', t.name, '|', t.abbreviation, '|', ISNULL(t.primary_color, ''), '|', ISNULL(t.secondary_color, ''))), '~') as teams_data
+        STRING_AGG(CONVERT(varchar(max), CONCAT(p.slug, '|', p.first_name, ' ', p.last_name)), '~') as players_slugs_data,
+        STRING_AGG(CONVERT(varchar(max), CONCAT(t.team_id, '|', t.name, '|', t.abbreviation, '|', ISNULL(t.primary_color, ''), '|', ISNULL(t.secondary_color, ''), '|', ISNULL(t.slug, ''))), '~') as teams_data
       FROM card c
       JOIN series s ON c.series = s.series_id
       JOIN [set] st ON s.[set] = st.set_id
@@ -468,7 +484,7 @@ async function searchCardsByNumber(cardNumber, limit) {
       LEFT JOIN team t ON pt.team = t.team_id
       WHERE c.card_number LIKE '${cardPattern}'
       GROUP BY c.card_id, c.card_number, c.is_rookie, c.is_autograph, c.is_relic, c.print_run,
-               s.name, st.name, st.year, m.name, s.parallel_of_series, col.name, col.hex_value
+               s.name, s.slug, st.name, st.slug, st.year, m.name, s.parallel_of_series, col.name, col.hex_value
       ORDER BY 
         CASE WHEN c.card_number = '${cardNumber}' THEN 0 ELSE 1 END,  -- Exact matches first
         s.name,  -- Then series name
@@ -512,14 +528,17 @@ async function searchCardsByType(cardTypes, playerName, limit) {
         c.is_relic,
         c.print_run,
         s.name as series_name,
+        s.slug as series_slug,
         st.name as set_name,
+        st.slug as set_slug,
         st.year as set_year,
         m.name as manufacturer_name,
         s.parallel_of_series,
         col.name as color_name,
         col.hex_value as color_hex,
         STRING_AGG(CONCAT(p.first_name, ' ', p.last_name), ', ') as player_names,
-        STRING_AGG(CONVERT(varchar(max), CONCAT(t.team_id, '|', t.name, '|', t.abbreviation, '|', ISNULL(t.primary_color, ''), '|', ISNULL(t.secondary_color, ''))), '~') as teams_data
+        STRING_AGG(CONVERT(varchar(max), CONCAT(p.slug, '|', p.first_name, ' ', p.last_name)), '~') as players_slugs_data,
+        STRING_AGG(CONVERT(varchar(max), CONCAT(t.team_id, '|', t.name, '|', t.abbreviation, '|', ISNULL(t.primary_color, ''), '|', ISNULL(t.secondary_color, ''), '|', ISNULL(t.slug, ''))), '~') as teams_data
       FROM card c
       JOIN series s ON c.series = s.series_id
       JOIN [set] st ON s.[set] = st.set_id
@@ -531,7 +550,7 @@ async function searchCardsByType(cardTypes, playerName, limit) {
       LEFT JOIN team t ON pt.team = t.team_id
       WHERE (${typeConditionsSql}) ${playerCondition}
       GROUP BY c.card_id, c.card_number, c.is_rookie, c.is_autograph, c.is_relic, c.print_run,
-               s.name, st.name, st.year, m.name, s.parallel_of_series, col.name, col.hex_value
+               s.name, s.slug, st.name, st.slug, st.year, m.name, s.parallel_of_series, col.name, col.hex_value
     `)
     
     console.log(`Found ${results.length} cards for types ${cardTypes.join(', ')}`)
@@ -599,14 +618,15 @@ async function searchPlayers(query, limit) {
         p.first_name,
         p.last_name,
         p.nick_name,
+        p.slug as player_slug,
         p.card_count,
         p.is_hof,
-        STRING_AGG(CONVERT(varchar(max), CONCAT(t.team_Id, '|', t.name, '|', t.abbreviation, '|', ISNULL(t.primary_color, ''), '|', ISNULL(t.secondary_color, ''))), '~') as teams_data
+        STRING_AGG(CONVERT(varchar(max), CONCAT(t.team_Id, '|', t.name, '|', t.abbreviation, '|', ISNULL(t.primary_color, ''), '|', ISNULL(t.secondary_color, ''), '|', ISNULL(t.slug, ''))), '~') as teams_data
       FROM player p
       LEFT JOIN player_team pt ON p.player_id = pt.player
       LEFT JOIN team t ON pt.team = t.team_Id
       WHERE ${whereClause}
-      GROUP BY p.player_id, p.first_name, p.last_name, p.nick_name, p.card_count, p.is_hof
+      GROUP BY p.player_id, p.first_name, p.last_name, p.nick_name, p.slug, p.card_count, p.is_hof
       ORDER BY p.card_count DESC
     `)
     
@@ -618,21 +638,24 @@ async function searchPlayers(query, limit) {
       if (player.teams_data) {
         const teamStrings = player.teams_data.split('~')
         teams = teamStrings.map(teamStr => {
-          const [team_id, name, abbreviation, primary_color, secondary_color] = teamStr.split('|')
+          const [team_id, name, abbreviation, primary_color, secondary_color, slug] = teamStr.split('|')
           return {
             team_id: Number(team_id),
             name: name || null,
             abbreviation: abbreviation || null,
             primary_color: primary_color || null,
-            secondary_color: secondary_color || null
+            secondary_color: secondary_color || null,
+            slug: slug || null  // Use stored slug from database
           }
         }).filter(team => team.team_id) // Filter out any malformed entries
       }
 
+      const fullName = `${player.first_name}${player.nick_name ? ` "${player.nick_name}"` : ''} ${player.last_name}`
+
       return {
         type: 'player',
         id: player.player_id.toString(),
-        title: `${player.first_name}${player.nick_name ? ` "${player.nick_name}"` : ''} ${player.last_name}`,
+        title: fullName,
         subtitle: null,
         description: null,
         relevanceScore: calculatePlayerRelevance(player, query),
@@ -640,7 +663,8 @@ async function searchPlayers(query, limit) {
           ...player,
           player_id: player.player_id.toString(), // Convert BigInt to string
           card_count: Number(player.card_count || 0),
-          teams: teams
+          teams: teams,
+          slug: player.player_slug  // Use stored slug from database
         }
       }
     })
@@ -661,6 +685,7 @@ async function searchTeams(query, limit) {
       SELECT TOP ${limit}
         t.team_id,
         t.name,
+        t.slug,
         t.city,
         t.mascot,
         t.abbreviation,
@@ -678,7 +703,7 @@ async function searchTeams(query, limit) {
          OR t.city LIKE '${searchPattern}'
          OR t.mascot LIKE '${searchPattern}'
          OR t.abbreviation LIKE '${searchPattern}'
-      GROUP BY t.team_id, t.name, t.city, t.mascot, t.abbreviation, t.primary_color, t.secondary_color, o.name
+      GROUP BY t.team_id, t.name, t.slug, t.city, t.mascot, t.abbreviation, t.primary_color, t.secondary_color, o.name
       ORDER BY card_count DESC
     `)
     
@@ -695,7 +720,8 @@ async function searchTeams(query, limit) {
         ...team,
         team_id: team.team_id.toString(), // Convert BigInt to string
         card_count: Number(team.card_count || 0),
-        player_count: Number(team.player_count || 0)
+        player_count: Number(team.player_count || 0),
+        slug: team.slug  // Use stored slug from database
       }
     }))
   } catch (error) {
@@ -715,6 +741,7 @@ async function searchSeries(query, limit) {
       SELECT TOP ${limit}
         s.series_id,
         s.name as series_name,
+        s.slug as series_slug,
         s.card_count,
         s.rookie_count,
         s.is_base,
@@ -722,6 +749,7 @@ async function searchSeries(query, limit) {
         s.print_run_display,
         parent_s.name as parallel_parent_name,
         st.name as set_name,
+        st.slug as set_slug,
         st.year as set_year,
         m.name as manufacturer_name,
         col.name as color_name,
@@ -772,10 +800,10 @@ async function searchSeries(query, limit) {
         color_hex: series.color_hex_value, // Alternative field name
         print_run_display: series.print_run_display,
         print_run: series.print_run_display ? Number(series.print_run_display) : null,
-        // Add navigation slugs
-        slug: generateSlug(series.series_name),
-        series_slug: generateSlug(series.series_name),
-        set_slug: generateSlug(series.set_name)
+        // Add navigation slugs from database
+        slug: series.series_slug,
+        series_slug: series.series_slug,
+        set_slug: series.set_slug
       }
     }))
     

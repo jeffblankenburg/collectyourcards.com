@@ -520,12 +520,14 @@ function formatSearchResult(row) {
         color_hex: row.color_hex,
         // Add navigation slugs
         series_slug: generateSlug(row.secondary_text),
-        player_slug: generateSlug(row.tertiary_text)
+        player_slug: generateSlug(row.tertiary_text),
+        card_number_slug: row.primary_text ? row.primary_text.toLowerCase().replace(/[^a-z0-9-]/g, '') : 'unknown',
+        card_slug: `${row.primary_text ? row.primary_text.toLowerCase().replace(/[^a-z0-9-]/g, '') : 'unknown'}-${generateSlug(row.tertiary_text)}`
       }
       break
       
     case 'player':
-      // Format player title like original: "First Last" or "First 'Nick' Last"  
+      // Format player title like original: "First Last" or "First 'Nick' Last"
       const playerName = row.primary_text
       const nickname = row.secondary_text
       baseResult.title = nickname ? `${playerName.split(' ')[0]} "${nickname}" ${playerName.split(' ').slice(1).join(' ')}` : playerName
@@ -535,7 +537,8 @@ function formatSearchResult(row) {
         last_name: playerName.split(' ').slice(1).join(' '),
         nick_name: nickname || null,
         card_count: Number(row.tertiary_text.replace(' cards', '')) || 0,
-        teams: []
+        teams: [],
+        slug: generateSlug(playerName)
       }
       break
       
@@ -548,7 +551,8 @@ function formatSearchResult(row) {
         organization_name: row.tertiary_text,
         primary_color: row.color_hex,
         card_count: 0,
-        player_count: 0
+        player_count: 0,
+        slug: generateSlug(row.primary_text)
       }
       break
       

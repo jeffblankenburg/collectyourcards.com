@@ -111,10 +111,10 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
     ` : ''
     
     const cardsQuery = `
-      SELECT 
-        c.card_id, c.card_number, c.is_rookie, c.is_autograph, c.is_relic, 
+      SELECT
+        c.card_id, c.card_number, c.is_rookie, c.is_autograph, c.is_relic,
         c.print_run, c.sort_order, c.notes,
-        s.name as series_name, s.series_id,
+        s.name as series_name, s.series_id, s.slug as series_slug,
         col.name as color, col.hex_value as hex_color,
         ${userIdNumber ? 'ISNULL(COUNT(uc.user_card_id), 0) as user_card_count' : '0 as user_card_count'}
       FROM card c
@@ -122,8 +122,8 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
       LEFT JOIN color col ON c.color = col.color_id
       ${userCollectionJoin}
       ${whereClause}
-      GROUP BY c.card_id, c.card_number, c.is_rookie, c.is_autograph, c.is_relic, 
-               c.print_run, c.sort_order, c.notes, s.name, s.series_id, 
+      GROUP BY c.card_id, c.card_number, c.is_rookie, c.is_autograph, c.is_relic,
+               c.print_run, c.sort_order, c.notes, s.name, s.series_id, s.slug,
                col.name, col.hex_value
       ORDER BY s.name ASC, c.sort_order ASC
       OFFSET ${offsetNum} ROWS FETCH NEXT ${limitNum} ROWS ONLY
@@ -209,7 +209,8 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
         card_player_teams: cardPlayerTeamMap[cardId] || [],
         series_rel: {
           series_id: serialized.series_id,
-          name: serialized.series_name
+          name: serialized.series_name,
+          slug: serialized.series_slug
         },
         color_rel: serialized.color ? {
           color: serialized.color,
@@ -269,7 +270,7 @@ router.get('/rainbow', optionalAuthMiddleware, async (req, res) => {
       SELECT
         c.card_id, c.card_number, c.is_rookie, c.is_autograph, c.is_relic,
         c.print_run, c.sort_order, c.notes,
-        s.series_id, s.name as series_name, s.is_base,
+        s.series_id, s.name as series_name, s.slug as series_slug, s.is_base,
         col.name as color, col.hex_value as hex_color,
         ${userIdNumber ? 'ISNULL(COUNT(uc.user_card_id), 0) as user_card_count' : '0 as user_card_count'}
       FROM card c
@@ -279,7 +280,7 @@ router.get('/rainbow', optionalAuthMiddleware, async (req, res) => {
       WHERE s.[set] = ${setIdNum}
         AND c.card_number = '${card_number.replace(/'/g, "''")}'
       GROUP BY c.card_id, c.card_number, c.is_rookie, c.is_autograph, c.is_relic,
-               c.print_run, c.sort_order, c.notes, s.series_id, s.name, s.is_base,
+               c.print_run, c.sort_order, c.notes, s.series_id, s.name, s.slug, s.is_base,
                col.name, col.hex_value
       ORDER BY s.is_base DESC, s.name ASC
     `
@@ -362,6 +363,7 @@ router.get('/rainbow', optionalAuthMiddleware, async (req, res) => {
         series_rel: {
           series_id: serialized.series_id,
           name: serialized.series_name,
+          slug: serialized.series_slug,
           is_base: Boolean(serialized.is_base)
         },
         color_rel: serialized.color ? {
@@ -420,9 +422,10 @@ router.get('/parallel-series', async (req, res) => {
 
     // Get all series in the set that have a card with the specified card number
     const query = `
-      SELECT DISTINCT 
+      SELECT DISTINCT
         s.series_id,
         s.name,
+        s.slug,
         s.is_base,
         s.min_print_run,
         s.max_print_run,
@@ -435,7 +438,7 @@ router.get('/parallel-series', async (req, res) => {
       LEFT JOIN color col ON s.color = col.color_id
       WHERE s.[set] = ${setIdNum}
         AND c.card_number = '${card_number.replace(/'/g, "''")}'
-      ORDER BY 
+      ORDER BY
         sort_order,
         s.name
     `
@@ -446,8 +449,9 @@ router.get('/parallel-series', async (req, res) => {
     const series = result.map(row => ({
       series_id: Number(row.series_id),
       name: row.name,
+      slug: row.slug, // Use stored slug
       is_base: Boolean(row.is_base),
-      series_slug: generateSlug(row.name),
+      series_slug: row.slug, // Alternative field name for compatibility
       min_print_run: row.min_print_run ? Number(row.min_print_run) : null,
       max_print_run: row.max_print_run ? Number(row.max_print_run) : null,
       print_run_display: row.print_run_display,
