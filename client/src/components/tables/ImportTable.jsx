@@ -446,18 +446,51 @@ const ImportTable = ({
 
         updatedCards[cardIndex].players[playerIndex].selectedTeams[teamIndex] = selectedTeam
 
-        // If player is already selected, try to auto-create player_team record
+        // If player is already selected, check/create player_team record
         if (player.selectedPlayer) {
           const playerId = player.selectedPlayer.playerId
           const teamId = selectedTeam.teamId
 
-          // Check if player_team combination already exists
+          // Check if player_team combination already exists in cache
           const playerTeamExists = player.playerTeamMatches?.some(pt =>
             pt.playerId === playerId && pt.teamId === teamId
           )
 
-          if (!playerTeamExists) {
-            console.log(`🔗 Creating player_team for selected fuzzy match: ${player.selectedPlayer.playerName} + ${selectedTeam.teamName}`)
+          // Also check if player already has this team from their database lookup
+          const playerAlreadyHasTeam = player.selectedPlayer.teams?.some(existingTeam =>
+            existingTeam.teamId === teamId
+          )
+
+          if (playerTeamExists) {
+            console.log(`✅ Player_team already exists in cache: ${player.selectedPlayer.playerName} - ${selectedTeam.teamName}`)
+          } else if (playerAlreadyHasTeam) {
+            console.log(`✅ Player ${player.selectedPlayer.playerName} already has team ${selectedTeam.teamName} - adding to cache`)
+
+            // Find the existing player_team record from the player's teams
+            const existingTeam = player.selectedPlayer.teams?.find(t => t.teamId === teamId)
+            const existingPlayerTeam = {
+              playerTeamId: existingTeam?.playerTeamId || `existing_${playerId}_${teamId}`,
+              playerId: playerId,
+              teamId: teamId,
+              playerName: player.selectedPlayer.playerName,
+              teamName: selectedTeam.teamName
+            }
+
+            // Add to BOTH arrays for UI and backend import
+            if (!player.playerTeamMatches) {
+              player.playerTeamMatches = []
+            }
+            if (!player.selectedPlayerTeams) {
+              player.selectedPlayerTeams = []
+            }
+            player.playerTeamMatches.push(existingPlayerTeam)
+            player.selectedPlayerTeams.push(existingPlayerTeam)
+
+            // Force re-render to show green status
+            onCardUpdate([...updatedCards])
+          } else {
+            // Try to create the player_team record
+            console.log(`🔗 Creating player_team for selected team: ${player.selectedPlayer.playerName} + ${selectedTeam.teamName}`)
 
             axios.post('/api/admin/import/create-player-team', {
               playerId: playerId,
@@ -482,7 +515,32 @@ const ImportTable = ({
                 onCardUpdate([...updatedCards])
               }
             }).catch(ptError => {
-              console.error('Error creating player_team:', ptError)
+              // If error is "already exists", that's fine - add to cache
+              if (ptError.response?.data?.message?.includes('already exists')) {
+                console.log(`✅ Player_team already exists in database: ${player.selectedPlayer.playerName} - ${selectedTeam.teamName}`)
+                // Create placeholder record for UI
+                const existingPlayerTeam = {
+                  playerTeamId: `existing_${playerId}_${teamId}`,
+                  playerId: playerId,
+                  teamId: teamId,
+                  playerName: player.selectedPlayer.playerName,
+                  teamName: selectedTeam.teamName
+                }
+
+                if (!player.playerTeamMatches) {
+                  player.playerTeamMatches = []
+                }
+                if (!player.selectedPlayerTeams) {
+                  player.selectedPlayerTeams = []
+                }
+                player.playerTeamMatches.push(existingPlayerTeam)
+                player.selectedPlayerTeams.push(existingPlayerTeam)
+
+                // Force re-render to show green status
+                onCardUpdate([...updatedCards])
+              } else {
+                console.error('Error creating player_team:', ptError)
+              }
             })
           }
         }
