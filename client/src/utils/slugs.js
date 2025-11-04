@@ -11,6 +11,7 @@ export function generateSlug(name) {
 
   return name
     .toLowerCase()
+    .replace(/&/g, 'and') // Convert ampersands to "and" to preserve semantic meaning
     .replace(/'/g, '') // Remove apostrophes completely
     .replace(/[^a-z0-9]+/g, '-') // Replace ALL other special chars (including spaces, slashes, etc.) with hyphens
     .replace(/^-|-$/g, '') // Remove leading/trailing hyphens
