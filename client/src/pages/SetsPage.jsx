@@ -113,13 +113,13 @@ function SetsPage() {
         return setYear === parseInt(yearParam)
       })
       
-      // Add slug and sport to each set
+      // Add sport to each set (slug already comes from database)
       const setsWithSlugs = yearSets.map(set => {
         const sport = getSportFromOrganization(set.organization_name, set.organization)
-        console.log('Set:', set.name, 'Org:', set.organization, 'OrgName:', set.organization_name, 'Sport:', sport)
+        console.log('Set:', set.name, 'Org:', set.organization, 'OrgName:', set.organization_name, 'Sport:', sport, 'Slug:', set.slug)
         return {
           ...set,
-          slug: generateSlug(set.name),
+          // Don't override slug - use the one from database
           sport
         }
       })

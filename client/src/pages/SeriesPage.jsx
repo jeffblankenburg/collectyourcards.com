@@ -146,11 +146,10 @@ function SeriesPage() {
       const response = await axios.get('/api/sets-list')
       const allSets = response.data.sets || []
       
-      // Find the set by year and slug
+      // Find the set by year and slug (using stored slug from database)
       const foundSet = allSets.find(set => {
         const setYear = set.year || parseInt(set.name.split(' ')[0])
-        const slug = generateSlug(set.name)
-        return setYear === parseInt(yearParam) && slug === setSlugParam
+        return setYear === parseInt(yearParam) && set.slug === setSlugParam
       })
       
       if (foundSet) {
@@ -401,7 +400,7 @@ function SeriesPage() {
                       parallel_of: (s.color_name && s.color_hex_value) || s.parallel_of_series ? true : false,
                       parallel_parent_name: s.parent_series_name,
                       parallel_count: parallelCount,
-                      slug: generateSlug(s.name),
+                      slug: s.slug,  // Use stored slug from database
                       set_slug: setSlug,
                       year: year,
                       // Completion data - only present if user is authenticated
@@ -442,8 +441,8 @@ function SeriesPage() {
               className="parallel-item-compact"
               onClick={(e) => {
                 e.stopPropagation()
-                // Use canonical URL with year/setSlug
-                navigate(`/sets/${year}/${setSlug}/${generateSlug(parallel.name)}`)
+                // Use canonical URL with year/setSlug and stored slug
+                navigate(`/sets/${year}/${setSlug}/${parallel.slug}`)
                 setOpenDropdownSeriesId(null)
                 activeParallelsBoxRef.current = null
               }}

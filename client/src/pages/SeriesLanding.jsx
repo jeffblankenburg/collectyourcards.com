@@ -107,11 +107,10 @@ function SeriesLanding() {
       const response = await axios.get('/api/sets-list')
       const allSets = response.data.sets || []
       
-      // Find the set by year and slug
+      // Find the set by year and slug (using stored slug from database)
       const foundSet = allSets.find(set => {
         const setYear = parseInt(set.name.split(' ')[0])
-        const slug = generateSlug(set.name)
-        return setYear === parseInt(selectedYear) && slug === selectedSetSlug
+        return setYear === parseInt(selectedYear) && set.slug === selectedSetSlug
       })
       
       if (foundSet) {
@@ -351,10 +350,10 @@ function SeriesLanding() {
             {year && !setSlug && (
               <div className="sets-grid">
                 {filteredSets.map(set => (
-                  <div 
-                    key={set.set_id} 
+                  <div
+                    key={set.set_id}
                     className="set-card"
-                    onClick={() => navigate(`/sets/${year}/${generateSlug(set.name)}`)}
+                    onClick={() => navigate(`/sets/${year}/${set.slug}`)}
                     style={{ cursor: 'pointer' }}
                   >
                     <div className="set-thumbnail">
