@@ -1,6 +1,6 @@
 const express = require('express')
 const { getPrismaClient, runBatchedQueries } = require('../utils/prisma-pool-manager')
-const { authMiddleware } = require('../middleware/auth')
+const { optionalAuthMiddleware } = require('../middleware/auth')
 const { escapeLikePattern, sanitizeSearchTerm, validateNumericArray } = require('../utils/sql-security')
 const router = express.Router()
 
@@ -8,7 +8,8 @@ const router = express.Router()
 const prisma = getPrismaClient()
 
 // GET /api/players-list - Get paginated list of all players with their teams
-router.get('/', async (req, res) => {
+// Optional auth - works for both authenticated and non-authenticated users
+router.get('/', optionalAuthMiddleware, async (req, res) => {
   const startTime = Date.now()
   const timings = {}
 
@@ -20,23 +21,15 @@ router.get('/', async (req, res) => {
       sortBy = 'card_count',
       sortOrder = 'desc'
     } = req.query
-    
+
     const currentPage = Math.max(1, parseInt(page))
     const pageSize = Math.min(Math.max(1, parseInt(limit)), 100)
     const offset = (currentPage - 1) * pageSize
 
-    // Get user ID if authenticated
-    const authStart = Date.now()
-    let userId = null
-    if (req.headers.authorization) {
-      try {
-        const authResult = await authMiddleware(req, res, () => {})
-        userId = req.user?.user_id
-      } catch (err) {
-        // User not authenticated, continue without user ID
-      }
-    }
-    timings.auth = Date.now() - authStart
+    // Get user ID from optional auth middleware (set by optionalAuthMiddleware)
+    // optionalAuthMiddleware sets req.user.id (not user_id)
+    const userId = req.user?.id || null
+    timings.auth = 0 // Auth handled by middleware
 
     // Build sort clause
     const sortColumn = ['first_name', 'last_name', 'card_count', 'is_hof'].includes(sortBy) ? sortBy : 'card_count'
@@ -60,6 +53,16 @@ router.get('/', async (req, res) => {
     // For authenticated users with no search, sort by their collection count
     // For non-authenticated users or with search, sort by card count (default)
     const isAuthUserDefaultView = userId && currentPage === 1 && !search
+
+    // Debug logging
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[Players List] Auth check:', {
+        userId,
+        currentPage,
+        search: !!search,
+        isAuthUserDefaultView
+      })
+    }
 
     timings.priorityPlayers = 0 // Not using priority queries anymore
 
