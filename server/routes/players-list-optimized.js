@@ -52,17 +52,18 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
 
     // For authenticated users with no search, sort by their collection count
     // For non-authenticated users or with search, sort by card count (default)
-    const isAuthUserDefaultView = userId && currentPage === 1 && !search
+    // TEMPORARILY DISABLED: This query is too slow (20+ seconds for users with large collections)
+    // TODO: Re-enable after adding database indexes or implementing caching
+    const isAuthUserDefaultView = false  // Disabled - was: userId && currentPage === 1 && !search
 
     // Debug logging
-    if (process.env.NODE_ENV !== 'production') {
-      console.log('[Players List] Auth check:', {
-        userId,
-        currentPage,
-        search: !!search,
-        isAuthUserDefaultView
-      })
-    }
+    console.log('[Players List] Request details:', {
+      userId,
+      currentPage,
+      search: !!search,
+      isAuthUserDefaultView,
+      limit: pageSize
+    })
 
     timings.priorityPlayers = 0 // Not using priority queries anymore
 
@@ -73,6 +74,9 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
       FROM player p
       ${searchCondition}
     `
+
+    console.log('[Players List] Starting count query...')
+    const countStart = Date.now()
 
     // Get top players with team information in a SINGLE OPTIMIZED QUERY
     // For authenticated users (default view, no search), sort by their collection count
@@ -146,10 +150,20 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
 
     // Run queries sequentially to avoid SQL Server contention issues
     const countResult = await prisma.$queryRawUnsafe(countQuery)
+    const countDuration = Date.now() - countStart
+    console.log(`[Players List] Count query completed in ${countDuration}ms`)
     const totalCount = Number(countResult[0].total)
 
+    console.log('[Players List] Starting main players query...')
+    console.log('[Players List] Query uses UserPlayerCounts CTE:', isAuthUserDefaultView)
+    const playersStart = Date.now()
     const playersWithTeams = await prisma.$queryRawUnsafe(playersQuery)
+    const playersDuration = Date.now() - playersStart
+    console.log(`[Players List] Main players query completed in ${playersDuration}ms`)
+
     timings.mainQueries = Date.now() - mainQueriesStart
+    timings.countQuery = countDuration
+    timings.playersQuery = playersDuration
 
     // Parse the aggregated team data
     const finalPlayersList = playersWithTeams.map(player => {
@@ -191,14 +205,21 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
     // Calculate total time
     timings.total = Date.now() - startTime
 
-    // Log timing info in development
-    if (process.env.NODE_ENV !== 'production') {
-      console.log('[Players List API] Timing breakdown:', timings)
-    }
+    // Log timing info
+    console.log('[Players List API] Timing breakdown:', {
+      auth: timings.auth,
+      countQuery: timings.countQuery,
+      playersQuery: timings.playersQuery,
+      mainQueries: timings.mainQueries,
+      total: timings.total,
+      isAuthUserQuery: isAuthUserDefaultView
+    })
 
     // Add timing header for debugging
     res.setHeader('X-Response-Time', `${timings.total}ms`)
-    res.setHeader('X-DB-Time', `${(timings.priorityPlayers || 0) + timings.mainQueries + (timings.priorityTeams || 0)}ms`)
+    res.setHeader('X-DB-Time', `${timings.mainQueries}ms`)
+    res.setHeader('X-Count-Query-Time', `${timings.countQuery}ms`)
+    res.setHeader('X-Players-Query-Time', `${timings.playersQuery}ms`)
 
     res.json({
       players: finalPlayersList,
