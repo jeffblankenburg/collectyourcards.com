@@ -7,6 +7,16 @@ const router = express.Router()
 router.use(authMiddleware)
 router.use(requireAdmin)
 
+// Helper function to generate URL slug from series name
+function generateSlug(name) {
+  return name
+    .toLowerCase()
+    .replace(/&/g, 'and') // Convert ampersands to "and" to preserve semantic meaning
+    .replace(/'/g, '') // Remove apostrophes completely
+    .replace(/[^a-z0-9]+/g, '-') // Replace other special chars with hyphens
+    .replace(/^-|-$/g, '') // Remove leading/trailing hyphens
+}
+
 // GET /api/admin/series - Get list of series with search and filter
 router.get('/series', async (req, res) => {
   try {
@@ -385,9 +395,11 @@ router.post('/series/:id/duplicate', async (req, res) => {
 
     // Create the new parallel series
     console.log('[Duplicate Series] Creating new series...')
+    const trimmedName = name.trim()
     const newSeries = await prisma.series.create({
       data: {
-        name: name.trim(),
+        name: trimmedName,
+        slug: generateSlug(trimmedName),
         set: originalSeries.set,
         card_count: originalSeries.card_count,
         card_entered_count: originalSeries.card_entered_count,

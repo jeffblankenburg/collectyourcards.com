@@ -7,6 +7,17 @@ const { prisma } = require('../config/prisma-singleton')
 router.use(authMiddleware)
 router.use(requireAdmin)
 
+// Helper function to generate URL slug from team name
+function generateSlug(name) {
+  if (!name) return 'unknown'
+  return name
+    .toLowerCase()
+    .replace(/&/g, 'and') // Convert ampersands to "and" to preserve semantic meaning
+    .replace(/'/g, '') // Remove apostrophes completely
+    .replace(/[^a-z0-9]+/g, '-') // Replace other special chars with hyphens
+    .replace(/^-|-$/g, '') // Remove leading/trailing hyphens
+}
+
 // GET /api/admin/teams - Get list of all teams
 router.get('/teams', async (req, res) => {
   try {
@@ -122,8 +133,10 @@ router.put('/teams/:id', async (req, res) => {
     }
 
     // Prepare update data
+    const trimmedName = name.trim()
     const updateData = {
-      name: name.trim(),
+      name: trimmedName,
+      slug: generateSlug(trimmedName),
       city: city?.trim() || null,
       mascot: mascot?.trim() || null,
       abbreviation: abbreviation?.trim() || null,
@@ -306,8 +319,10 @@ router.post('/teams', async (req, res) => {
     }
 
     // Prepare team data
+    const trimmedName = name.trim()
     const teamData = {
-      name: name.trim(),
+      name: trimmedName,
+      slug: generateSlug(trimmedName),
       city: city ? city.trim() : null,
       mascot: mascot ? mascot.trim() : null,
       abbreviation: abbreviation.trim(),

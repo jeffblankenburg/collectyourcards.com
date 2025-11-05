@@ -7,6 +7,17 @@ const { prisma } = require('../config/prisma-singleton')
 router.use(authMiddleware)
 router.use(requireDataAdmin)
 
+// Helper function to generate URL slug from player name
+function generateSlug(name) {
+  if (!name) return 'unknown'
+  return name
+    .toLowerCase()
+    .replace(/&/g, 'and') // Convert ampersands to "and" to preserve semantic meaning
+    .replace(/'/g, '') // Remove apostrophes completely
+    .replace(/[^a-z0-9]+/g, '-') // Replace other special chars with hyphens
+    .replace(/^-|-$/g, '') // Remove leading/trailing hyphens
+}
+
 // GET /api/admin/players - Get players list with stats
 router.get('/', async (req, res) => {
   try {
@@ -451,9 +462,9 @@ router.post('/', async (req, res) => {
     const { first_name, last_name, nick_name, birthdate, is_hof } = req.body
 
     if (!first_name?.trim() && !last_name?.trim() && !nick_name?.trim()) {
-      return res.status(400).json({ 
-        error: 'Validation failed', 
-        message: 'At least one name field (first name, last name, or nickname) is required' 
+      return res.status(400).json({
+        error: 'Validation failed',
+        message: 'At least one name field (first name, last name, or nickname) is required'
       })
     }
 
@@ -461,11 +472,30 @@ router.post('/', async (req, res) => {
     // teams, and eras can have the same name (e.g., Mike Johnson in baseball and football)
     // Any true duplicates can be cleaned up manually later
 
+    // Generate slug from full name or nickname
+    const trimmedFirstName = first_name?.trim() || ''
+    const trimmedLastName = last_name?.trim() || ''
+    const trimmedNickName = nick_name?.trim() || ''
+
+    let fullName = ''
+    if (trimmedFirstName && trimmedLastName) {
+      fullName = `${trimmedFirstName} ${trimmedLastName}`
+    } else if (trimmedNickName) {
+      fullName = trimmedNickName
+    } else if (trimmedFirstName) {
+      fullName = trimmedFirstName
+    } else if (trimmedLastName) {
+      fullName = trimmedLastName
+    }
+
+    const slug = generateSlug(fullName)
+
     const newPlayer = await prisma.player.create({
       data: {
-        first_name: first_name?.trim() || null,
-        last_name: last_name?.trim() || null,
-        nick_name: nick_name?.trim() || null,
+        first_name: trimmedFirstName || null,
+        last_name: trimmedLastName || null,
+        nick_name: trimmedNickName || null,
+        slug: slug,
         birthdate: birthdate ? new Date(birthdate) : null,
         is_hof: Boolean(is_hof),
         card_count: 0 // Start with 0 cards
@@ -508,9 +538,9 @@ router.put('/:id', async (req, res) => {
     }
 
     if (!first_name?.trim() && !last_name?.trim() && !nick_name?.trim()) {
-      return res.status(400).json({ 
-        error: 'Validation failed', 
-        message: 'At least one name field (first name, last name, or nickname) is required' 
+      return res.status(400).json({
+        error: 'Validation failed',
+        message: 'At least one name field (first name, last name, or nickname) is required'
       })
     }
 
@@ -527,12 +557,31 @@ router.put('/:id', async (req, res) => {
     // teams, and eras can have the same name (e.g., Mike Johnson in baseball and football)
     // Any true duplicates can be cleaned up manually later
 
+    // Regenerate slug from updated name
+    const trimmedFirstName = first_name?.trim() || ''
+    const trimmedLastName = last_name?.trim() || ''
+    const trimmedNickName = nick_name?.trim() || ''
+
+    let fullName = ''
+    if (trimmedFirstName && trimmedLastName) {
+      fullName = `${trimmedFirstName} ${trimmedLastName}`
+    } else if (trimmedNickName) {
+      fullName = trimmedNickName
+    } else if (trimmedFirstName) {
+      fullName = trimmedFirstName
+    } else if (trimmedLastName) {
+      fullName = trimmedLastName
+    }
+
+    const slug = generateSlug(fullName)
+
     const updatedPlayer = await prisma.player.update({
       where: { player_id: playerId },
       data: {
-        first_name: first_name?.trim() || null,
-        last_name: last_name?.trim() || null,
-        nick_name: nick_name?.trim() || null,
+        first_name: trimmedFirstName || null,
+        last_name: trimmedLastName || null,
+        nick_name: trimmedNickName || null,
+        slug: slug,
         birthdate: birthdate ? new Date(birthdate) : null,
         is_hof: Boolean(is_hof)
       }
