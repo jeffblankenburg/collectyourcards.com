@@ -22,9 +22,7 @@ function PlayersLanding() {
   const [error, setError] = useState(null)
   const [hasMore, setHasMore] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
-  const [loadingMore, setLoadingMore] = useState(false)
   const searchTimeoutRef = useRef(null)
-  const hasLoadedInitialBatch = useRef(false)
 
   useEffect(() => {
     document.title = 'All Players - Collect Your Cards'
@@ -33,7 +31,7 @@ function PlayersLanding() {
   // Initial load
   useEffect(() => {
     if (!searchTerm) {
-      loadPlayersData('', true)
+      loadPlayersData()
     }
   }, [isAuthenticated])
 
@@ -67,19 +65,19 @@ function PlayersLanding() {
     }
   }, [searchTerm])
 
-  const loadPlayersData = async (search = '', initialLoad = false) => {
+  const loadPlayersData = async (search = '') => {
     try {
       // Set appropriate loading state
       if (search) {
         setSearching(true)
-      } else if (initialLoad) {
-        setLoading(true)
       } else {
-        setLoadingMore(true)
+        setLoading(true)
       }
 
-      // Progressive loading: Load 30 first, then 100 total
-      const limit = initialLoad ? 30 : 100
+      // Load 50 players
+      // Non-auth: Top 50 by card count
+      // Auth: Top 50 by user's collection count
+      const limit = 50
 
       // Build API URL with search parameter
       let apiUrl = `/api/players-list?limit=${limit}`
@@ -98,7 +96,7 @@ function PlayersLanding() {
         }
       }
 
-      log.info(`Loading players: ${initialLoad ? 'initial 30' : 'full 100'}`, { search, limit })
+      log.info(`Loading players`, { search, limit })
       const startTime = performance.now()
 
       const response = await axios.get(apiUrl, config)
@@ -114,23 +112,12 @@ function PlayersLanding() {
       setHasMore(pagination.has_more || false)
       setCurrentPage(pagination.current_page || 1)
       setError(null)
-
-      // After initial load, fetch remaining players in background
-      if (initialLoad && !hasLoadedInitialBatch.current && !search) {
-        hasLoadedInitialBatch.current = true
-        log.info('Scheduling background load of remaining players')
-        // Load remaining players after a short delay to let initial render complete
-        setTimeout(() => {
-          loadPlayersData('', false)
-        }, 100)
-      }
     } catch (err) {
       console.error('Error loading players:', err)
       setError('Failed to load players data')
     } finally {
       setLoading(false)
       setSearching(false)
-      setLoadingMore(false)
     }
   }
 

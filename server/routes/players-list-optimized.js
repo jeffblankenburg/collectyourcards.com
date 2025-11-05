@@ -57,70 +57,11 @@ router.get('/', async (req, res) => {
       `
     }
 
-    // First, get recently viewed or most visited players if user is logged in
-    let recentlyViewedPlayers = []
-    let mostVisitedPlayers = []
+    // For authenticated users with no search, sort by their collection count
+    // For non-authenticated users or with search, sort by card count (default)
+    const isAuthUserDefaultView = userId && currentPage === 1 && !search
 
-    const priorityStart = Date.now()
-    if (userId && currentPage === 1 && !search) {
-      // Get recently viewed players - OPTIMIZED SINGLE QUERY
-      const recentQuery = `
-        WITH RecentPlayers AS (
-          SELECT TOP 5
-            p.player_id,
-            p.first_name,
-            p.last_name,
-            p.nick_name,
-            p.is_hof,
-            p.card_count,
-            MAX(pv.viewed_at) as last_viewed
-          FROM player_views pv
-          JOIN player p ON pv.player_id = p.player_id
-          WHERE pv.user_id = ${userId}
-            AND pv.viewed_at >= DATEADD(day, -30, GETDATE())
-          GROUP BY p.player_id, p.first_name, p.last_name, p.nick_name, p.is_hof, p.card_count
-          ORDER BY MAX(pv.viewed_at) DESC
-        )
-        SELECT * FROM RecentPlayers
-      `
-
-      // Get most visited players - OPTIMIZED SINGLE QUERY
-      const popularQuery = `
-        WITH PopularPlayers AS (
-          SELECT TOP 10
-            p.player_id,
-            p.first_name,
-            p.last_name,
-            p.nick_name,
-            p.is_hof,
-            p.card_count,
-            COUNT(pv.view_id) as view_count
-          FROM player_views pv
-          JOIN player p ON pv.player_id = p.player_id
-          WHERE pv.viewed_at >= DATEADD(day, -7, GETDATE())
-          GROUP BY p.player_id, p.first_name, p.last_name, p.nick_name, p.is_hof, p.card_count
-          ORDER BY COUNT(pv.view_id) DESC
-        )
-        SELECT * FROM PopularPlayers
-      `
-
-      // PARALLEL EXECUTION: Run both queries simultaneously
-      try {
-        [recentlyViewedPlayers, mostVisitedPlayers] = await Promise.all([
-          prisma.$queryRawUnsafe(recentQuery).catch(err => {
-            console.error('Error fetching recently viewed players:', err)
-            return []
-          }),
-          prisma.$queryRawUnsafe(popularQuery).catch(err => {
-            console.error('Error fetching most visited players:', err)
-            return []
-          })
-        ])
-      } catch (err) {
-        console.error('Error fetching priority players:', err)
-      }
-    }
-    timings.priorityPlayers = Date.now() - priorityStart
+    timings.priorityPlayers = 0 // Not using priority queries anymore
 
     // Get total count - OPTIMIZED
     const mainQueriesStart = Date.now()
@@ -131,8 +72,23 @@ router.get('/', async (req, res) => {
     `
 
     // Get top players with team information in a SINGLE OPTIMIZED QUERY
+    // For authenticated users (default view, no search), sort by their collection count
+    // For everyone else, sort by card count in database
     const playersQuery = `
-      WITH PlayerData AS (
+      WITH ${isAuthUserDefaultView ? `
+      UserPlayerCounts AS (
+        SELECT
+          pt.player as player_id,
+          COUNT(DISTINCT uc.user_card_id) as user_collection_count
+        FROM user_card uc
+        JOIN card c ON uc.card = c.card_id
+        JOIN card_player_team cpt ON c.card_id = cpt.card
+        JOIN player_team pt ON cpt.player_team = pt.player_team_id
+        WHERE uc.[user] = ${userId}
+        GROUP BY pt.player
+      ),
+      ` : ''}
+      PlayerData AS (
         SELECT
           p.player_id,
           p.first_name,
@@ -140,9 +96,11 @@ router.get('/', async (req, res) => {
           p.nick_name,
           p.is_hof,
           p.card_count
+          ${isAuthUserDefaultView ? ', ISNULL(upc.user_collection_count, 0) as user_collection_count' : ''}
         FROM player p
+        ${isAuthUserDefaultView ? 'LEFT JOIN UserPlayerCounts upc ON p.player_id = upc.player_id' : ''}
         ${searchCondition}
-        ORDER BY ${sortColumn} ${sortDirection}
+        ORDER BY ${isAuthUserDefaultView ? 'ISNULL(upc.user_collection_count, 0) DESC, p.card_count DESC' : sortColumn + ' ' + sortDirection}
         OFFSET ${offset} ROWS
         FETCH NEXT ${pageSize} ROWS ONLY
       ),
@@ -179,113 +137,53 @@ router.get('/', async (req, res) => {
         ) WITHIN GROUP (ORDER BY pt.team_card_count DESC) as teams_json
       FROM PlayerData pd
       LEFT JOIN PlayerTeams pt ON pd.player_id = pt.player_id
-      GROUP BY pd.player_id, pd.first_name, pd.last_name, pd.nick_name, pd.is_hof, pd.card_count
-      ORDER BY ${sortColumn} ${sortDirection}
+      GROUP BY pd.player_id, pd.first_name, pd.last_name, pd.nick_name, pd.is_hof, pd.card_count${isAuthUserDefaultView ? ', pd.user_collection_count' : ''}
+      ORDER BY ${isAuthUserDefaultView ? 'pd.user_collection_count DESC, pd.card_count DESC' : sortColumn + ' ' + sortDirection}
     `
 
-    // PARALLEL EXECUTION: Run count and players queries simultaneously
-    const [countResult, playersWithTeams] = await Promise.all([
-      prisma.$queryRawUnsafe(countQuery),
-      prisma.$queryRawUnsafe(playersQuery)
-    ])
-    timings.mainQueries = Date.now() - mainQueriesStart
-
+    // Run queries sequentially to avoid SQL Server contention issues
+    const countResult = await prisma.$queryRawUnsafe(countQuery)
     const totalCount = Number(countResult[0].total)
 
+    const playersWithTeams = await prisma.$queryRawUnsafe(playersQuery)
+    timings.mainQueries = Date.now() - mainQueriesStart
+
     // Parse the aggregated team data
-    const formattedPlayers = playersWithTeams.map(player => ({
-      player_id: Number(player.player_id),
-      first_name: player.first_name,
-      last_name: player.last_name,
-      nick_name: player.nick_name,
-      is_hof: player.is_hof,
-      card_count: Number(player.card_count),
-      teams: player.teams_json ? 
-        player.teams_json.split('|||').map(teamStr => {
-          try {
-            const team = JSON.parse(teamStr)
-            return {
-              team_id: Number(team.team_id),
-              name: team.name,
-              abbreviation: team.abbreviation,
-              primary_color: team.primary_color,
-              secondary_color: team.secondary_color,
-              card_count: Number(team.card_count)
-            }
-          } catch (e) {
-            return null
-          }
-        }).filter(Boolean) : []
-    }))
-
-    // If we have recently viewed or most visited players, get their teams and merge
-    const priorityTeamsStart = Date.now()
-    let finalPlayersList = formattedPlayers
-    let priorityPlayers = recentlyViewedPlayers.length > 0 ? recentlyViewedPlayers : mostVisitedPlayers
-
-    if (priorityPlayers.length > 0) {
-      // Get teams for priority players in a single query
-      const validPriorityIds = validateNumericArray(priorityPlayers.map(p => p.player_id))
-      const priorityPlayerIds = validPriorityIds.join(',')
-
-      const priorityTeamsQuery = `
-        SELECT 
-          pt.player as player_id,
-          t.team_id,
-          t.name as team_name,
-          t.abbreviation,
-          t.primary_color,
-          t.secondary_color,
-          COUNT(DISTINCT c.card_id) as team_card_count
-        FROM player_team pt
-        JOIN card_player_team cpt ON pt.player_team_id = cpt.player_team
-        JOIN card c ON cpt.card = c.card_id
-        JOIN team t ON pt.team = t.team_id
-        WHERE pt.player IN (${priorityPlayerIds})
-        GROUP BY pt.player, t.team_id, t.name, t.abbreviation, t.primary_color, t.secondary_color
-        ORDER BY pt.player, COUNT(DISTINCT c.card_id) DESC
-      `
-
-      const priorityTeams = await prisma.$queryRawUnsafe(priorityTeamsQuery)
-      
-      // Map teams to players
-      const teamsMap = {}
-      priorityTeams.forEach(team => {
-        const playerId = Number(team.player_id)
-        if (!teamsMap[playerId]) {
-          teamsMap[playerId] = []
-        }
-        teamsMap[playerId].push({
-          team_id: Number(team.team_id),
-          name: team.team_name,
-          abbreviation: team.abbreviation,
-          primary_color: team.primary_color,
-          secondary_color: team.secondary_color,
-          card_count: Number(team.team_card_count)
-        })
-      })
-
-      const priorityPlayersWithTeams = priorityPlayers.map(player => ({
+    const finalPlayersList = playersWithTeams.map(player => {
+      const playerObj = {
         player_id: Number(player.player_id),
         first_name: player.first_name,
         last_name: player.last_name,
         nick_name: player.nick_name,
         is_hof: player.is_hof,
         card_count: Number(player.card_count),
-        teams: teamsMap[Number(player.player_id)] || [],
-        is_priority: true
-      }))
+        teams: player.teams_json ?
+          player.teams_json.split('|||').map(teamStr => {
+            try {
+              const team = JSON.parse(teamStr)
+              return {
+                team_id: Number(team.team_id),
+                name: team.name,
+                abbreviation: team.abbreviation,
+                primary_color: team.primary_color,
+                secondary_color: team.secondary_color,
+                card_count: Number(team.card_count)
+              }
+            } catch (e) {
+              return null
+            }
+          }).filter(Boolean) : []
+      }
 
-      // Remove priority players from regular list to avoid duplicates
-      const priorityPlayerIdSet = new Set(priorityPlayers.map(p => Number(p.player_id)))
-      const filteredRegularPlayers = formattedPlayers.filter(
-        p => !priorityPlayerIdSet.has(p.player_id)
-      )
+      // Include user collection count for authenticated users
+      if (isAuthUserDefaultView && player.user_collection_count !== undefined) {
+        playerObj.user_card_count = Number(player.user_collection_count)
+      }
 
-      // Combine priority and regular players
-      finalPlayersList = [...priorityPlayersWithTeams, ...filteredRegularPlayers]
-    }
-    timings.priorityTeams = Date.now() - priorityTeamsStart
+      return playerObj
+    })
+
+    timings.priorityTeams = 0 // No longer using separate priority teams query
 
     // Calculate total time
     timings.total = Date.now() - startTime
@@ -308,8 +206,7 @@ router.get('/', async (req, res) => {
         page_size: pageSize,
         has_more: currentPage * pageSize < totalCount
       },
-      priority_type: recentlyViewedPlayers.length > 0 ? 'recently_viewed' : 
-                      mostVisitedPlayers.length > 0 ? 'most_visited' : null
+      sort_type: isAuthUserDefaultView ? 'user_collection' : 'card_count'
     })
   } catch (error) {
     console.error('Error fetching players list:', error)
