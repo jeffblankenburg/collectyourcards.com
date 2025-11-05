@@ -99,7 +99,7 @@ router.get('/:seriesSlug/:cardNumber/:playerName', async (req, res) => {
       LEFT JOIN player p ON pt.player = p.player_id
       LEFT JOIN team t ON pt.team = t.team_id
       WHERE c.card_number = '${safeCardNumber}'
-        AND REPLACE(REPLACE(REPLACE(REPLACE(LOWER(s.name), '/', ''), ' & ', ''), '-', ''), ' ', '') = '${safeSeriesSlug}'
+        AND REPLACE(REPLACE(REPLACE(LOWER(s.name), '&', 'and'), '-', ''), ' ', '') = '${safeSeriesSlug}'
         ${setFilter}
       GROUP BY c.card_id, c.card_number, c.is_rookie, c.is_autograph, c.is_relic, c.print_run,
                s.series_id, s.name, s.slug, st.set_id, st.name, st.slug, st.year, m.name, s.parallel_of_series, col.name, col.hex_value
@@ -144,7 +144,7 @@ router.get('/:seriesSlug/:cardNumber/:playerName', async (req, res) => {
         LEFT JOIN player p ON pt.player = p.player_id
         LEFT JOIN team t ON pt.team = t.team_id
         WHERE (c.card_number LIKE '%${safeCardNumber}%' OR '${safeCardNumber}' LIKE '%' + c.card_number + '%')
-          AND REPLACE(REPLACE(REPLACE(REPLACE(LOWER(s.name), '/', ''), ' & ', ''), '-', ''), ' ', '') LIKE '${safeSeriesSlug}%'
+          AND REPLACE(REPLACE(REPLACE(LOWER(s.name), '&', 'and'), '-', ''), ' ', '') LIKE '${safeSeriesSlug}%'
           ${setFilter}
         GROUP BY c.card_id, c.card_number, c.is_rookie, c.is_autograph, c.is_relic, c.print_run,
                  s.series_id, s.name, s.slug, st.set_id, st.name, st.slug, st.year, m.name, s.parallel_of_series, col.name, col.hex_value
