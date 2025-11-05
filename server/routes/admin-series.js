@@ -349,17 +349,23 @@ router.get('/series/colors', async (req, res) => {
 // POST /api/admin/series/:id/duplicate - Create a parallel series by duplicating all cards
 router.post('/series/:id/duplicate', async (req, res) => {
   try {
+    console.log('[Duplicate Series] Starting duplication for series:', req.params.id)
+    console.log('[Duplicate Series] Request body:', req.body)
+    console.log('[Duplicate Series] User:', req.user)
+
     const seriesId = BigInt(req.params.id)
     const { name, color_id, print_run } = req.body
 
     if (!name || !name.trim()) {
-      return res.status(400).json({ 
-        error: 'Invalid input', 
-        message: 'Series name is required' 
+      console.log('[Duplicate Series] Validation failed: name is required')
+      return res.status(400).json({
+        error: 'Invalid input',
+        message: 'Series name is required'
       })
     }
 
     // Get the original series
+    console.log('[Duplicate Series] Fetching original series...')
     const originalSeries = await prisma.series.findUnique({
       where: { series_id: seriesId },
       include: {
@@ -368,13 +374,17 @@ router.post('/series/:id/duplicate', async (req, res) => {
     })
 
     if (!originalSeries) {
-      return res.status(404).json({ 
-        error: 'Not found', 
-        message: 'Series not found' 
+      console.log('[Duplicate Series] Series not found:', req.params.id)
+      return res.status(404).json({
+        error: 'Not found',
+        message: 'Series not found'
       })
     }
 
+    console.log('[Duplicate Series] Found original series:', originalSeries.name)
+
     // Create the new parallel series
+    console.log('[Duplicate Series] Creating new series...')
     const newSeries = await prisma.series.create({
       data: {
         name: name.trim(),
@@ -389,11 +399,14 @@ router.post('/series/:id/duplicate', async (req, res) => {
         print_run_display: print_run ? print_run.toString() : null,
         rookie_count: originalSeries.rookie_count,
         front_image_path: originalSeries.front_image_path,
-        back_image_path: originalSeries.back_image_path
+        back_image_path: originalSeries.back_image_path,
+        created: new Date()
       }
     })
+    console.log('[Duplicate Series] New series created with ID:', newSeries.series_id.toString())
 
     // Get all cards from original series
+    console.log('[Duplicate Series] Fetching original cards...')
     const originalCards = await prisma.card.findMany({
       where: { series: seriesId },
       include: {
@@ -404,6 +417,7 @@ router.post('/series/:id/duplicate', async (req, res) => {
         }
       }
     })
+    console.log('[Duplicate Series] Found', originalCards.length, 'cards to duplicate')
 
     // Duplicate all cards for the new series
     let cardsCreated = 0
@@ -470,11 +484,17 @@ router.post('/series/:id/duplicate', async (req, res) => {
     })
 
   } catch (error) {
-    console.error('Error duplicating series:', error)
+    console.error('[Duplicate Series] Error details:', {
+      message: error.message,
+      code: error.code,
+      meta: error.meta,
+      stack: error.stack
+    })
     res.status(500).json({
       error: 'Database error',
       message: 'Failed to duplicate series',
-      details: error.message
+      details: error.message,
+      code: error.code
     })
   }
 })
