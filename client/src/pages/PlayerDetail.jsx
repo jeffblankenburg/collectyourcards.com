@@ -198,8 +198,9 @@ function PlayerDetail() {
   }
 
   const handleSeriesClick = (series) => {
-    if (series?.name) {
-      const slug = series.name
+    if (series) {
+      // Use stored slug from database instead of generating dynamically
+      const slug = series.slug || series.name
         .toLowerCase()
         .replace(/[^a-z0-9\s-]/g, '')
         .replace(/\s+/g, '-')
@@ -258,22 +259,23 @@ function PlayerDetail() {
 
   const handleCardClick = (card) => {
     // Navigate to card detail page
-    if (card.series_rel?.name && card.card_number) {
-      const seriesSlug = card.series_rel.name
+    if (card.series_rel && card.card_number) {
+      // Use stored slug from database instead of generating dynamically
+      const seriesSlug = card.series_rel.slug || card.series_rel.name
         .toLowerCase()
         .replace(/[^a-z0-9\s-]/g, '')
         .replace(/\s+/g, '-')
         .replace(/-+/g, '-')
         .trim()
-      
-      const playerSlug = card.card_player_teams?.[0]?.player ? 
+
+      const playerSlug = card.card_player_teams?.[0]?.player ?
         `${card.card_player_teams[0].player.first_name}-${card.card_player_teams[0].player.last_name}`
           .toLowerCase()
           .replace(/[^a-z0-9\s-]/g, '')
           .replace(/\s+/g, '-')
           .replace(/-+/g, '-')
           .trim() : 'unknown'
-      
+
       navigate(`/card/${seriesSlug}/${card.card_number}/${playerSlug}`)
     }
   }

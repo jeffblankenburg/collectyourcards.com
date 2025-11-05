@@ -245,7 +245,7 @@ const UniversalCardTable = ({
   const getCardShareUrl = (card) => {
     const playerNames = card.card_player_teams?.map((cpt, i) => cpt.player?.name).join(', ') || card.player_name || 'unknown'
     const playerSlug = generateSlug(playerNames)
-    const seriesSlug = card.series_rel?.name ? generateSlug(card.series_rel.name) : 'unknown'
+    const seriesSlug = card.series_rel?.slug || card.series_slug || 'unknown'
 
     return `${window.location.origin}/card/${seriesSlug}/${card.card_number}/${playerSlug}`
   }
@@ -379,14 +379,16 @@ const UniversalCardTable = ({
   const handleCardNumberClick = (card) => {
     // Navigate to card detail page using simple URL format
     if (card.card_number) {
-      // Get series slug from available data
+      // Get series slug from available data - prioritize stored slugs
       let seriesSlug = ''
       if (card.series_slug) {
         seriesSlug = card.series_slug
+      } else if (card.series_rel?.slug) {
+        seriesSlug = card.series_rel.slug
       } else if (card.series_rel?.name) {
-        seriesSlug = generateSlug(card.series_rel.name)
+        seriesSlug = generateSlug(card.series_rel.name) // Fallback only if no slug available
       } else if (card.series_name) {
-        seriesSlug = generateSlug(card.series_name)
+        seriesSlug = generateSlug(card.series_name) // Fallback only if no slug available
       }
 
       if (!seriesSlug) {
