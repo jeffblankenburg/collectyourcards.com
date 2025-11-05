@@ -78,12 +78,6 @@ router.get('/', async (req, res) => {
         SELECT * FROM RecentPlayers
       `
 
-      try {
-        recentlyViewedPlayers = await prisma.$queryRawUnsafe(recentQuery)
-      } catch (err) {
-        console.error('Error fetching recently viewed players:', err)
-      }
-
       // Get most visited players - OPTIMIZED SINGLE QUERY
       const popularQuery = `
         WITH PopularPlayers AS (
@@ -104,10 +98,20 @@ router.get('/', async (req, res) => {
         SELECT * FROM PopularPlayers
       `
 
+      // PARALLEL EXECUTION: Run both queries simultaneously
       try {
-        mostVisitedPlayers = await prisma.$queryRawUnsafe(popularQuery)
+        [recentlyViewedPlayers, mostVisitedPlayers] = await Promise.all([
+          prisma.$queryRawUnsafe(recentQuery).catch(err => {
+            console.error('Error fetching recently viewed players:', err)
+            return []
+          }),
+          prisma.$queryRawUnsafe(popularQuery).catch(err => {
+            console.error('Error fetching most visited players:', err)
+            return []
+          })
+        ])
       } catch (err) {
-        console.error('Error fetching most visited players:', err)
+        console.error('Error fetching priority players:', err)
       }
     }
 
@@ -117,14 +121,11 @@ router.get('/', async (req, res) => {
       FROM player p
       ${searchCondition}
     `
-    
-    const countResult = await prisma.$queryRawUnsafe(countQuery)
-    const totalCount = Number(countResult[0].total)
 
     // Get top players with team information in a SINGLE OPTIMIZED QUERY
     const playersQuery = `
       WITH PlayerData AS (
-        SELECT 
+        SELECT
           p.player_id,
           p.first_name,
           p.last_name,
@@ -138,7 +139,7 @@ router.get('/', async (req, res) => {
         FETCH NEXT ${pageSize} ROWS ONLY
       ),
       PlayerTeams AS (
-        SELECT 
+        SELECT
           pd.player_id,
           t.team_id,
           t.name as team_name,
@@ -153,7 +154,7 @@ router.get('/', async (req, res) => {
         JOIN team t ON pt.team = t.team_id
         GROUP BY pd.player_id, t.team_id, t.name, t.abbreviation, t.primary_color, t.secondary_color
       )
-      SELECT 
+      SELECT
         pd.*,
         STRING_AGG(
           CONCAT(
@@ -174,7 +175,13 @@ router.get('/', async (req, res) => {
       ORDER BY ${sortColumn} ${sortDirection}
     `
 
-    const playersWithTeams = await prisma.$queryRawUnsafe(playersQuery)
+    // PARALLEL EXECUTION: Run count and players queries simultaneously
+    const [countResult, playersWithTeams] = await Promise.all([
+      prisma.$queryRawUnsafe(countQuery),
+      prisma.$queryRawUnsafe(playersQuery)
+    ])
+
+    const totalCount = Number(countResult[0].total)
 
     // Parse the aggregated team data
     const formattedPlayers = playersWithTeams.map(player => ({

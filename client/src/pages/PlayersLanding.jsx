@@ -22,7 +22,9 @@ function PlayersLanding() {
   const [error, setError] = useState(null)
   const [hasMore, setHasMore] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
+  const [loadingMore, setLoadingMore] = useState(false)
   const searchTimeoutRef = useRef(null)
+  const hasLoadedInitialBatch = useRef(false)
 
   useEffect(() => {
     document.title = 'All Players - Collect Your Cards'
@@ -31,7 +33,7 @@ function PlayersLanding() {
   // Initial load
   useEffect(() => {
     if (!searchTerm) {
-      loadPlayersData()
+      loadPlayersData('', true)
     }
   }, [isAuthenticated])
 
@@ -65,21 +67,26 @@ function PlayersLanding() {
     }
   }, [searchTerm])
 
-  const loadPlayersData = async (search = '') => {
+  const loadPlayersData = async (search = '', initialLoad = false) => {
     try {
       // Set appropriate loading state
       if (search) {
         setSearching(true)
-      } else {
+      } else if (initialLoad) {
         setLoading(true)
+      } else {
+        setLoadingMore(true)
       }
-      
+
+      // Progressive loading: Load 30 first, then 100 total
+      const limit = initialLoad ? 30 : 100
+
       // Build API URL with search parameter
-      let apiUrl = '/api/players-list?limit=100'
+      let apiUrl = `/api/players-list?limit=${limit}`
       if (search && search.trim()) {
         apiUrl += `&search=${encodeURIComponent(search.trim())}`
       }
-      
+
       // Include auth header if authenticated - backend will automatically include recently viewed
       const config = {}
       if (isAuthenticated) {
@@ -90,24 +97,40 @@ function PlayersLanding() {
           }
         }
       }
-      
+
+      log.info(`Loading players: ${initialLoad ? 'initial 30' : 'full 100'}`, { search, limit })
+      const startTime = performance.now()
+
       const response = await axios.get(apiUrl, config)
       let playersList = response.data.players || []
       const pagination = response.data.pagination || {}
-      
+
+      log.performance(`Players loaded (${playersList.length} players)`, startTime)
+
       // Backend automatically includes recently viewed players at the top for authenticated users
       // Non-authenticated users see players sorted by card count (default)
-      
+
       setPlayers(playersList)
       setHasMore(pagination.has_more || false)
       setCurrentPage(pagination.current_page || 1)
       setError(null)
+
+      // After initial load, fetch remaining players in background
+      if (initialLoad && !hasLoadedInitialBatch.current && !search) {
+        hasLoadedInitialBatch.current = true
+        log.info('Scheduling background load of remaining players')
+        // Load remaining players after a short delay to let initial render complete
+        setTimeout(() => {
+          loadPlayersData('', false)
+        }, 100)
+      }
     } catch (err) {
       console.error('Error loading players:', err)
       setError('Failed to load players data')
     } finally {
       setLoading(false)
       setSearching(false)
+      setLoadingMore(false)
     }
   }
 
