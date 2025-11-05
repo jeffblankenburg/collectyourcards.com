@@ -109,7 +109,18 @@ function parseConnectionString(connectionString) {
  * @returns {Promise<ConnectionPool>} - MSSQL connection pool
  */
 async function connectToDatabase() {
-  if (!pool) {
+  if (!pool || !pool.connected) {
+    // Close existing pool if it's in a bad state
+    if (pool && !pool.connected) {
+      try {
+        await pool.close()
+        console.log('🔄 Closed stale connection pool')
+      } catch (err) {
+        console.warn('⚠️ Error closing stale pool:', err.message)
+      }
+      pool = null
+    }
+
     try {
       let config
 
@@ -141,6 +152,56 @@ async function connectToDatabase() {
     }
   }
   return pool
+}
+
+/**
+ * Execute a query with automatic retry on connection errors
+ *
+ * @param {Function} queryFn - Async function that performs the query
+ * @param {number} maxRetries - Maximum number of retry attempts
+ * @returns {Promise} - Query result
+ */
+async function executeWithRetry(queryFn, maxRetries = 2) {
+  let lastError
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await queryFn()
+    } catch (error) {
+      lastError = error
+
+      // Only retry on connection errors
+      if (error.code === 'ECONNCLOSED' || error.code === 'ESOCKET' || error.code === 'ENOTOPEN') {
+        console.warn(`⚠️ Connection error (attempt ${attempt}/${maxRetries}): ${error.code} - ${error.message}`)
+
+        if (attempt < maxRetries) {
+          // Force reconnection by clearing the pool
+          if (pool) {
+            try {
+              await pool.close()
+            } catch (closeErr) {
+              console.warn('⚠️ Error closing pool during retry:', closeErr.message)
+            }
+            pool = null
+          }
+
+          // Wait briefly before retry (exponential backoff)
+          const delayMs = Math.min(1000 * Math.pow(2, attempt - 1), 5000)
+          console.log(`🔄 Retrying in ${delayMs}ms...`)
+          await new Promise(resolve => setTimeout(resolve, delayMs))
+
+          // Reconnect
+          await connectToDatabase()
+          continue
+        }
+      }
+
+      // Non-connection error or max retries reached
+      throw error
+    }
+  }
+
+  throw lastError
 }
 
 // ============================================================================
@@ -271,16 +332,19 @@ router.post('/match-cards', requireAuth, requireAdmin, async (req, res) => {
     const pool = await connectToDatabase()
     const batchLookupService = new BatchLookupService(pool)
 
-    // Get the organization for this series to filter player matches
-    const orgResult = await pool.request()
-      .input('seriesId', sql.BigInt, seriesId)
-      .query(`
-        SELECT o.organization_id, o.name as organization_name
-        FROM series s
-        JOIN [set] st ON s.[set] = st.set_id
-        JOIN organization o ON st.organization = o.organization_id
-        WHERE s.series_id = @seriesId
-      `)
+    // Get the organization for this series to filter player matches (with retry on connection errors)
+    const orgResult = await executeWithRetry(async () => {
+      const currentPool = await connectToDatabase()
+      return await currentPool.request()
+        .input('seriesId', sql.BigInt, seriesId)
+        .query(`
+          SELECT o.organization_id, o.name as organization_name
+          FROM series s
+          JOIN [set] st ON s.[set] = st.set_id
+          JOIN organization o ON st.organization = o.organization_id
+          WHERE s.series_id = @seriesId
+        `)
+    })
 
     const organizationId = orgResult.recordset.length > 0 ? orgResult.recordset[0].organization_id : null
     const organizationName = orgResult.recordset.length > 0 ? orgResult.recordset[0].organization_name : null
