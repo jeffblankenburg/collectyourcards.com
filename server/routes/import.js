@@ -8,6 +8,17 @@ const { authMiddleware: requireAuth, requireAdmin } = require('../middleware/aut
 // Progress tracking store (in production, use Redis or database)
 const matchingProgress = new Map()
 
+// Helper function to generate URL slug
+function generateSlug(name) {
+  if (!name) return 'unknown'
+  return name
+    .toLowerCase()
+    .replace(/&/g, 'and') // Convert ampersands to "and" to preserve semantic meaning
+    .replace(/'/g, '') // Remove apostrophes completely
+    .replace(/[^a-z0-9]+/g, '-') // Replace other special chars with hyphens
+    .replace(/^-|-$/g, '') // Remove leading/trailing hyphens
+}
+
 // Configure multer for file uploads
 const storage = multer.memoryStorage()
 const upload = multer({ 
@@ -1196,12 +1207,20 @@ router.post('/create-cards', requireAuth, requireAdmin, async (req, res) => {
             } else {
               // Create new player
               console.log(`    ➕ Creating new player in database`)
+
+              // Generate slug for player
+              const trimmedFirstName = firstName || ''
+              const trimmedLastName = lastName || ''
+              const fullName = trimmedLastName ? `${trimmedFirstName} ${trimmedLastName}`.trim() : trimmedFirstName
+              const playerSlug = generateSlug(fullName || 'unknown')
+
               const playerResult = await transaction.request()
                 .input('firstName', sql.NVarChar, firstName || null)
                 .input('lastName', sql.NVarChar, lastName || null)
+                .input('slug', sql.NVarChar, playerSlug)
                 .query(`
-                  INSERT INTO player (first_name, last_name)
-                  VALUES (@firstName, @lastName);
+                  INSERT INTO player (first_name, last_name, slug)
+                  VALUES (@firstName, @lastName, @slug);
                   SELECT SCOPE_IDENTITY() AS player_id;
                 `)
 
@@ -2197,24 +2216,31 @@ async function findPlayerTeamMatches(pool, playerMatches, teamMatches) {
 router.post('/create-player', requireAuth, requireAdmin, async (req, res) => {
   try {
     const { firstName, lastName } = req.body
-    
+
     if (!firstName || !lastName) {
       return res.status(400).json({ message: 'First name and last name are required' })
     }
-    
+
     const pool = await connectToDatabase()
-    
+
+    // Generate slug for player
+    const trimmedFirstName = firstName.trim()
+    const trimmedLastName = lastName.trim()
+    const fullName = `${trimmedFirstName} ${trimmedLastName}`
+    const slug = generateSlug(fullName)
+
     const result = await pool.request()
-      .input('firstName', sql.NVarChar, firstName.trim())
-      .input('lastName', sql.NVarChar, lastName.trim())
+      .input('firstName', sql.NVarChar, trimmedFirstName)
+      .input('lastName', sql.NVarChar, trimmedLastName)
+      .input('slug', sql.NVarChar, slug)
       .query(`
-        INSERT INTO player (first_name, last_name)
-        VALUES (@firstName, @lastName);
+        INSERT INTO player (first_name, last_name, slug)
+        VALUES (@firstName, @lastName, @slug);
         SELECT SCOPE_IDENTITY() AS player_id, @firstName AS first_name, @lastName AS last_name;
       `)
-    
+
     const newPlayer = result.recordset[0]
-    
+
     res.json({
       success: true,
       player: {
@@ -2224,12 +2250,12 @@ router.post('/create-player', requireAuth, requireAdmin, async (req, res) => {
         lastName: newPlayer.last_name
       }
     })
-    
+
   } catch (error) {
     console.error('Error creating player:', error)
-    res.status(500).json({ 
+    res.status(500).json({
       message: 'Failed to create player',
-      error: error.message 
+      error: error.message
     })
   }
 })
@@ -2238,31 +2264,36 @@ router.post('/create-player', requireAuth, requireAdmin, async (req, res) => {
 router.post('/create-team', requireAuth, requireAdmin, async (req, res) => {
   try {
     const { teamName, city, abbreviation, organizationId } = req.body
-    
+
     if (!teamName) {
       return res.status(400).json({ message: 'Team name is required' })
     }
-    
+
     if (!organizationId) {
       return res.status(400).json({ message: 'Organization ID is required' })
     }
-    
+
     const pool = await connectToDatabase()
-    
+
+    // Generate slug for team
+    const trimmedTeamName = teamName.trim()
+    const slug = generateSlug(trimmedTeamName)
+
     const result = await pool.request()
-      .input('teamName', sql.NVarChar, teamName.trim())
+      .input('teamName', sql.NVarChar, trimmedTeamName)
+      .input('slug', sql.NVarChar, slug)
       .input('city', sql.NVarChar, city?.trim() || null)
       .input('abbreviation', sql.NVarChar, abbreviation?.trim() || null)
       .input('organizationId', sql.Int, organizationId)
       .query(`
-        INSERT INTO team (name, city, abbreviation, organization)
-        VALUES (@teamName, @city, @abbreviation, @organizationId);
-        SELECT SCOPE_IDENTITY() AS team_id, @teamName AS name, @city AS city, @abbreviation AS abbreviation, 
+        INSERT INTO team (name, slug, city, abbreviation, organization)
+        VALUES (@teamName, @slug, @city, @abbreviation, @organizationId);
+        SELECT SCOPE_IDENTITY() AS team_id, @teamName AS name, @city AS city, @abbreviation AS abbreviation,
                NULL AS primary_color, NULL AS secondary_color;
       `)
-    
+
     const newTeam = result.recordset[0]
-    
+
     res.json({
       success: true,
       team: {

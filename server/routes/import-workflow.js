@@ -21,6 +21,17 @@ const progressTracker = require('../services/import/progress-tracker')
 const BatchLookupService = require('../services/import/batch-lookup')
 const CardCreatorService = require('../services/import/card-creator')
 
+// Helper function to generate URL slug
+function generateSlug(name) {
+  if (!name) return 'unknown'
+  return name
+    .toLowerCase()
+    .replace(/&/g, 'and') // Convert ampersands to "and" to preserve semantic meaning
+    .replace(/'/g, '') // Remove apostrophes completely
+    .replace(/[^a-z0-9]+/g, '-') // Replace other special chars with hyphens
+    .replace(/^-|-$/g, '') // Remove leading/trailing hyphens
+}
+
 // ============================================================================
 // MULTER CONFIGURATION
 // ============================================================================
@@ -597,12 +608,18 @@ router.post('/create-player', requireAuth, requireAdmin, async (req, res) => {
     // Allow null/empty lastName for single-name subjects (mascots, fruits, etc.)
     const lastNameValue = lastName?.trim() || null
 
+    // Generate slug from full name or first name only
+    const trimmedFirstName = firstName.trim()
+    const fullName = lastNameValue ? `${trimmedFirstName} ${lastNameValue}` : trimmedFirstName
+    const slug = generateSlug(fullName)
+
     const result = await pool.request()
-      .input('firstName', sql.NVarChar, firstName.trim())
+      .input('firstName', sql.NVarChar, trimmedFirstName)
       .input('lastName', sql.NVarChar, lastNameValue)
+      .input('slug', sql.NVarChar, slug)
       .query(`
-        INSERT INTO player (first_name, last_name)
-        VALUES (@firstName, @lastName);
+        INSERT INTO player (first_name, last_name, slug)
+        VALUES (@firstName, @lastName, @slug);
         SELECT SCOPE_IDENTITY() AS player_id, @firstName AS first_name, @lastName AS last_name;
       `)
 
@@ -650,14 +667,19 @@ router.post('/create-team', requireAuth, requireAdmin, async (req, res) => {
 
     const pool = await connectToDatabase()
 
+    // Generate slug from team name
+    const trimmedTeamName = teamName.trim()
+    const slug = generateSlug(trimmedTeamName)
+
     const result = await pool.request()
-      .input('teamName', sql.NVarChar, teamName.trim())
+      .input('teamName', sql.NVarChar, trimmedTeamName)
+      .input('slug', sql.NVarChar, slug)
       .input('city', sql.NVarChar, city?.trim() || null)
       .input('abbreviation', sql.NVarChar, abbreviation?.trim() || null)
       .input('organizationId', sql.Int, organizationId)
       .query(`
-        INSERT INTO team (name, city, abbreviation, organization)
-        VALUES (@teamName, @city, @abbreviation, @organizationId);
+        INSERT INTO team (name, slug, city, abbreviation, organization)
+        VALUES (@teamName, @slug, @city, @abbreviation, @organizationId);
         SELECT SCOPE_IDENTITY() AS team_id, @teamName AS name, @city AS city, @abbreviation AS abbreviation,
                NULL AS primary_color, NULL AS secondary_color;
       `)
