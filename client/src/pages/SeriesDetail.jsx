@@ -511,14 +511,13 @@ function SeriesDetail() {
                               key={parallel.series_id}
                               className={`parallel-item-compact ${parallel.relationship}`}
                               onClick={() => {
-                                const slug = generateSlug(parallel.name)
                                 // Use canonical URL with year/setSlug if available
                                 if (year && setSlug) {
-                                  navigate(`/sets/${year}/${setSlug}/${slug}`)
+                                  navigate(`/sets/${year}/${setSlug}/${parallel.slug}`)
                                 } else if (parallel.set_year && parallel.set_slug) {
-                                  navigate(`/sets/${parallel.set_year}/${parallel.set_slug}/${slug}`)
+                                  navigate(`/sets/${parallel.set_year}/${parallel.set_slug}/${parallel.slug}`)
                                 } else {
-                                  navigate(`/series/${slug}`)
+                                  navigate(`/series/${parallel.slug}`)
                                 }
                               }}
                             >

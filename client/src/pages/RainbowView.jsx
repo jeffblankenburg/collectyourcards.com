@@ -79,8 +79,7 @@ function RainbowView() {
 
         const foundSet = allSets.find(set => {
           const setYear = set.year || parseInt(set.name.split(' ')[0])
-          const slug = generateSlug(set.name)
-          return setYear === parseInt(year) && slug === setSlug
+          return setYear === parseInt(year) && set.slug === setSlug
         })
 
         if (foundSet) {
@@ -190,7 +189,7 @@ function RainbowView() {
       `${cpt.player?.first_name || ''} ${cpt.player?.last_name || ''}`.trim()
     ).filter(name => name).join(', ') || 'unknown'
 
-    const clickedSeriesSlug = generateSlug(card.series_rel?.name || '')
+    const clickedSeriesSlug = card.series_rel?.slug || 'unknown'
     const playerSlug = generateSlug(playerNames)
 
     // Navigate to the specific card detail page

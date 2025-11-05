@@ -144,10 +144,10 @@ function AdminCards() {
 
   const loadSeriesBySlug = async (yearParam, setSlugParam, seriesSlugParam) => {
     try {
-      // Find the series from the set's series list
+      // Find the series from the set's series list using stored slug
       const response = await axios.get(`/api/admin/series/by-set/${yearParam}/${setSlugParam}`)
       const allSeries = response.data.series || []
-      const foundSeries = allSeries.find(s => generateSlug(s.name) === seriesSlugParam)
+      const foundSeries = allSeries.find(s => s.slug === seriesSlugParam)
       if (foundSeries) {
         setSelectedSeries(foundSeries)
       }

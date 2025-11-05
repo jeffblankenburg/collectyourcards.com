@@ -843,12 +843,12 @@ function AdminSets() {
           }}
         >
           {getParallelsForSeries(openDropdownSeriesId).map(parallel => (
-            <div 
+            <div
               key={parallel.series_id}
               className="parallel-item-compact"
               onClick={(e) => {
                 e.stopPropagation()
-                navigate(`/admin/cards/${year}/${setSlug}/${generateSlug(parallel.name)}`)
+                navigate(`/admin/cards/${year}/${setSlug}/${parallel.slug}`)
                 setOpenDropdownSeriesId(null)
                 activeParallelsBoxRef.current = null
               }}

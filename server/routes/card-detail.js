@@ -8,16 +8,7 @@ const router = express.Router()
 const databaseAvailable = true
 console.log('Card Detail API: Database connection established')
 
-// Helper function to generate URL slug from name
-function generateSlug(name) {
-  if (!name) return 'unknown'
-  return name
-    .toLowerCase()
-    .replace(/&/g, 'and') // Convert ampersands to "and" to preserve semantic meaning
-    .replace(/'/g, '') // Remove apostrophes completely
-    .replace(/[^a-z0-9]+/g, '-') // Replace other special chars with hyphens
-    .replace(/^-|-$/g, '') // Remove leading/trailing hyphens
-}
+// No longer need generateSlug function - using stored slugs from database
 
 // GET /api/card-detail/:year/:setSlug/:seriesSlug/:cardSlug - Get card details
 router.get('/:year/:setSlug/:seriesSlug/:cardSlug', async (req, res) => {
@@ -128,8 +119,10 @@ router.get('/:year/:setSlug/:seriesSlug/:cardSlug', async (req, res) => {
         c.print_run,
         s.series_id,
         s.name as series_name,
+        s.slug as series_slug,
         st.set_id,
         st.name as set_name,
+        st.slug as set_slug,
         st.year as set_year,
         m.name as manufacturer_name,
         s.parallel_of_series,
@@ -150,7 +143,7 @@ router.get('/:year/:setSlug/:seriesSlug/:cardSlug', async (req, res) => {
         AND st.year = ${yearNum}
         AND s.name LIKE '%${safeSeriesSlug}%'
       GROUP BY c.card_id, c.card_number, c.is_rookie, c.is_autograph, c.is_relic, c.print_run,
-               s.series_id, s.name, st.set_id, st.name, st.year, m.name, s.parallel_of_series, col.name, col.hex_value
+               s.series_id, s.name, s.slug, st.set_id, st.name, st.slug, st.year, m.name, s.parallel_of_series, col.name, col.hex_value
     `)
     
     if (results.length === 0) {
@@ -209,9 +202,9 @@ router.get('/:year/:setSlug/:seriesSlug/:cardSlug', async (req, res) => {
       cyc_population: Number(cycPopulation),
       teams: teams,
       primary_team: teams[0] || null,
-      // Add navigation slugs
-      set_slug: generateSlug(card.set_name),
-      series_slug: generateSlug(card.series_name),
+      // Use stored slugs from database
+      set_slug: card.set_slug,
+      series_slug: card.series_slug,
       card_slug: cardSlug
     }
     

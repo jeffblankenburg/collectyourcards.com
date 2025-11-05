@@ -78,8 +78,10 @@ router.get('/:seriesSlug/:cardNumber/:playerName', async (req, res) => {
         c.print_run,
         s.series_id,
         s.name as series_name,
+        s.slug as series_slug,
         st.set_id,
         st.name as set_name,
+        st.slug as set_slug,
         st.year as set_year,
         m.name as manufacturer_name,
         s.parallel_of_series,
@@ -100,7 +102,7 @@ router.get('/:seriesSlug/:cardNumber/:playerName', async (req, res) => {
         AND REPLACE(REPLACE(REPLACE(REPLACE(LOWER(s.name), '/', ''), ' & ', ''), '-', ''), ' ', '') = '${safeSeriesSlug}'
         ${setFilter}
       GROUP BY c.card_id, c.card_number, c.is_rookie, c.is_autograph, c.is_relic, c.print_run,
-               s.series_id, s.name, st.set_id, st.name, st.year, m.name, s.parallel_of_series, col.name, col.hex_value
+               s.series_id, s.name, s.slug, st.set_id, st.name, st.slug, st.year, m.name, s.parallel_of_series, col.name, col.hex_value
       HAVING ${safePlayerParts.length > 0 ?
         safePlayerParts.map(part =>
           `STRING_AGG(LOWER(CONCAT(p.first_name, ' ', p.last_name)), ', ') LIKE '%${part}%'`
@@ -121,8 +123,10 @@ router.get('/:seriesSlug/:cardNumber/:playerName', async (req, res) => {
           c.print_run,
           s.series_id,
           s.name as series_name,
+          s.slug as series_slug,
           st.set_id,
           st.name as set_name,
+          st.slug as set_slug,
           st.year as set_year,
           m.name as manufacturer_name,
           s.parallel_of_series,
@@ -143,7 +147,7 @@ router.get('/:seriesSlug/:cardNumber/:playerName', async (req, res) => {
           AND REPLACE(REPLACE(REPLACE(REPLACE(LOWER(s.name), '/', ''), ' & ', ''), '-', ''), ' ', '') LIKE '${safeSeriesSlug}%'
           ${setFilter}
         GROUP BY c.card_id, c.card_number, c.is_rookie, c.is_autograph, c.is_relic, c.print_run,
-                 s.series_id, s.name, st.set_id, st.name, st.year, m.name, s.parallel_of_series, col.name, col.hex_value
+                 s.series_id, s.name, s.slug, st.set_id, st.name, st.slug, st.year, m.name, s.parallel_of_series, col.name, col.hex_value
         HAVING ${safePlayerParts.length > 0 ?
         safePlayerParts.map(part =>
           `STRING_AGG(LOWER(CONCAT(p.first_name, ' ', p.last_name)), ', ') LIKE '%${part}%'`
@@ -197,17 +201,6 @@ router.get('/:seriesSlug/:cardNumber/:playerName', async (req, res) => {
       }).filter(team => team.team_id)
     }
     
-    // Helper function to generate URL slug from name
-    function generateSlug(name) {
-      if (!name) return 'unknown'
-      return name
-        .toLowerCase()
-        .replace(/&/g, 'and') // Convert ampersands to "and" to preserve semantic meaning
-        .replace(/'/g, '') // Remove apostrophes completely
-        .replace(/[^a-z0-9]+/g, '-') // Replace other special chars with hyphens
-        .replace(/^-|-$/g, '') // Remove leading/trailing hyphens
-    }
-    
     // Format the response
     const cardDetail = {
       card_id: card.card_id.toString(),
@@ -229,9 +222,9 @@ router.get('/:seriesSlug/:cardNumber/:playerName', async (req, res) => {
       cyc_population: Number(cycPopulation),
       teams: teams,
       primary_team: teams[0] || null,
-      // Add navigation slugs for fallback to complex URLs
-      set_slug: generateSlug(card.set_name),
-      series_slug: generateSlug(card.series_name),
+      // Use stored slugs from database
+      set_slug: card.set_slug,
+      series_slug: card.series_slug,
       // Create card slug for the complex URL format
       card_slug: `${card.card_number.toLowerCase().replace(/[^a-z0-9-]/g, '')}-${card.player_names ? card.player_names.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-') : 'unknown'}`
     }
