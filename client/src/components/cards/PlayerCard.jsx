@@ -53,7 +53,12 @@ function PlayerCard({ player, showBadge = false, onTeamClick = null, customOnCli
       
       <div className="playercard-content">
         <div className="playercard-name-section">
-          <h3 className="playercard-name">{player.first_name} {player.last_name}</h3>
+          <h3 className="playercard-name">
+            {player.first_name} {player.last_name}
+            {player.is_hof && (
+              <Icon name="crown" size={16} className="playercard-hof-icon" title="Hall of Fame" />
+            )}
+          </h3>
           <div className="playercard-nickname-header">
             {player.nick_name ? (
               <p className="playercard-nickname-text">"{player.nick_name}"</p>
@@ -93,12 +98,6 @@ function PlayerCard({ player, showBadge = false, onTeamClick = null, customOnCli
             <div className="playercard-user-collection">
               <span className="playercard-user-collection-number">{(player.user_card_count || 0).toLocaleString()}</span>
               <span className="playercard-user-collection-label">Owned</span>
-            </div>
-          )}
-          {player.is_hof && (
-            <div className="playercard-hof-box">
-              <Icon name="crown" size={14} className="playercard-hof-box-icon" />
-              <span className="playercard-hof-label">HOF</span>
             </div>
           )}
         </div>

@@ -9,9 +9,12 @@ const prisma = getPrismaClient()
 
 // GET /api/players-list - Get paginated list of all players with their teams
 router.get('/', async (req, res) => {
+  const startTime = Date.now()
+  const timings = {}
+
   try {
-    const { 
-      page = 1, 
+    const {
+      page = 1,
       limit = 50,
       search,
       sortBy = 'card_count',
@@ -23,6 +26,7 @@ router.get('/', async (req, res) => {
     const offset = (currentPage - 1) * pageSize
 
     // Get user ID if authenticated
+    const authStart = Date.now()
     let userId = null
     if (req.headers.authorization) {
       try {
@@ -32,6 +36,7 @@ router.get('/', async (req, res) => {
         // User not authenticated, continue without user ID
       }
     }
+    timings.auth = Date.now() - authStart
 
     // Build sort clause
     const sortColumn = ['first_name', 'last_name', 'card_count', 'is_hof'].includes(sortBy) ? sortBy : 'card_count'
@@ -56,6 +61,7 @@ router.get('/', async (req, res) => {
     let recentlyViewedPlayers = []
     let mostVisitedPlayers = []
 
+    const priorityStart = Date.now()
     if (userId && currentPage === 1 && !search) {
       // Get recently viewed players - OPTIMIZED SINGLE QUERY
       const recentQuery = `
@@ -114,8 +120,10 @@ router.get('/', async (req, res) => {
         console.error('Error fetching priority players:', err)
       }
     }
+    timings.priorityPlayers = Date.now() - priorityStart
 
     // Get total count - OPTIMIZED
+    const mainQueriesStart = Date.now()
     const countQuery = `
       SELECT COUNT(DISTINCT p.player_id) as total
       FROM player p
@@ -180,6 +188,7 @@ router.get('/', async (req, res) => {
       prisma.$queryRawUnsafe(countQuery),
       prisma.$queryRawUnsafe(playersQuery)
     ])
+    timings.mainQueries = Date.now() - mainQueriesStart
 
     const totalCount = Number(countResult[0].total)
 
@@ -210,9 +219,10 @@ router.get('/', async (req, res) => {
     }))
 
     // If we have recently viewed or most visited players, get their teams and merge
+    const priorityTeamsStart = Date.now()
     let finalPlayersList = formattedPlayers
     let priorityPlayers = recentlyViewedPlayers.length > 0 ? recentlyViewedPlayers : mostVisitedPlayers
-    
+
     if (priorityPlayers.length > 0) {
       // Get teams for priority players in a single query
       const validPriorityIds = validateNumericArray(priorityPlayers.map(p => p.player_id))
@@ -275,6 +285,19 @@ router.get('/', async (req, res) => {
       // Combine priority and regular players
       finalPlayersList = [...priorityPlayersWithTeams, ...filteredRegularPlayers]
     }
+    timings.priorityTeams = Date.now() - priorityTeamsStart
+
+    // Calculate total time
+    timings.total = Date.now() - startTime
+
+    // Log timing info in development
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[Players List API] Timing breakdown:', timings)
+    }
+
+    // Add timing header for debugging
+    res.setHeader('X-Response-Time', `${timings.total}ms`)
+    res.setHeader('X-DB-Time', `${(timings.priorityPlayers || 0) + timings.mainQueries + (timings.priorityTeams || 0)}ms`)
 
     res.json({
       players: finalPlayersList,
