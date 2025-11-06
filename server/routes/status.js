@@ -1,7 +1,7 @@
 const express = require('express')
 const { prisma } = require('../config/prisma-singleton')
 const router = express.Router()
-const dynatraceService = require('../services/dynatraceService')
+const telemetryService = require('../services/telemetryService')
 
 // Initialize Prisma with error handling (don't fail route loading if Prisma fails)
 try {
@@ -19,7 +19,7 @@ router.get('/health', async (req, res) => {
       uptime: process.uptime(),
       memory: process.memoryUsage(),
       version: process.version,
-      monitoring: dynatraceService.getStatus()
+      monitoring: telemetryService.getStatus()
     }
     res.json(healthData)
   } catch (error) {
@@ -194,49 +194,45 @@ router.get('/environment', async (req, res) => {
   }
 })
 
-// Dynatrace monitoring status endpoint
-router.get('/dynatrace/status', async (req, res) => {
+// OpenTelemetry monitoring status endpoint
+router.get('/telemetry/status', async (req, res) => {
   try {
-    const dynatraceStatus = dynatraceService.getStatus()
-    
+    const telemetryStatus = telemetryService.getStatus()
+
     // Get environment variables (without sensitive data)
     const envConfig = {
-      DYNATRACE_ENVIRONMENT_ID: process.env.DYNATRACE_ENVIRONMENT_ID || 'Not configured',
-      DYNATRACE_ENDPOINT: process.env.DYNATRACE_ENDPOINT || 'Not configured',
-      DYNATRACE_API_TOKEN: process.env.DYNATRACE_API_TOKEN ? 'Configured (hidden)' : 'Not configured',
-      DYNATRACE_PAAS_TOKEN: process.env.DYNATRACE_PAAS_TOKEN ? 'Configured (hidden)' : 'Not configured'
+      APPLICATIONINSIGHTS_CONNECTION_STRING: process.env.APPLICATIONINSIGHTS_CONNECTION_STRING ? 'Configured (hidden)' : 'Not configured',
+      SERVICE_NAME: process.env.SERVICE_NAME || 'collect-your-cards-api',
+      NODE_ENV: process.env.NODE_ENV || 'development'
     }
 
-    // Get recent business events from console logs (last 10)
+    // Get recent business events info
     const recentEvents = [
-      'Note: In development, events are logged to console',
-      'Check server logs for real-time event tracking',
-      'Events should appear in Dynatrace within 5-10 minutes'
+      'Note: In development (without connection string), events are logged to console',
+      'With Application Insights connection string: Events export to Azure',
+      'With Dynatrace endpoint: Events export to Dynatrace',
+      'Check server logs for real-time event tracking'
     ]
 
-    // Check if this is likely a real Dynatrace environment
-    const isRealEnvironment = process.env.DYNATRACE_ENVIRONMENT_ID && 
-                             process.env.DYNATRACE_API_TOKEN &&
-                             process.env.DYNATRACE_ENDPOINT &&
-                             process.env.DYNATRACE_ENVIRONMENT_ID !== 'your-environment-id'
+    // Check if telemetry is properly configured
+    const isConfigured = process.env.APPLICATIONINSIGHTS_CONNECTION_STRING
 
     const troubleshooting = []
-    if (!isRealEnvironment) {
-      troubleshooting.push('Dynatrace environment variables may not be properly configured')
+    if (!isConfigured) {
+      troubleshooting.push('APPLICATIONINSIGHTS_CONNECTION_STRING not configured - telemetry will log to console only')
     }
-    if (!dynatraceStatus.dynatrace_enabled) {
-      troubleshooting.push('Dynatrace SDK failed to initialize')
+    if (!telemetryStatus.telemetry_enabled) {
+      troubleshooting.push('OpenTelemetry SDK failed to initialize')
     }
 
     res.json({
-      ...dynatraceStatus,
+      ...telemetryStatus,
       environment_config: envConfig,
-      real_environment_detected: isRealEnvironment,
+      telemetry_configured: !!isConfigured,
       recent_events: recentEvents,
       troubleshooting: troubleshooting,
-      setup_guide: '/DYNATRACE_SETUP_GUIDE.md',
-      expected_data_delay: '5-10 minutes for first data to appear',
-      dashboard_url: process.env.DYNATRACE_ENDPOINT ? `${process.env.DYNATRACE_ENDPOINT}/ui/apps/dynatrace.classic.technologies` : null
+      setup_guide: '/OPENTELEMETRY_MIGRATION.md',
+      expected_data_delay: '2-3 minutes for data to appear in dashboard'
     })
   } catch (error) {
     res.status(500).json({

@@ -7,7 +7,7 @@ const { body, validationResult } = require('express-validator')
 const emailService = require('../services/emailService')
 const { authMiddleware } = require('../middleware/auth')
 const rateLimiter = require('../middleware/rateLimiter')
-const dynatraceService = require('../services/dynatraceService')
+const telemetryService = require('../services/telemetryService')
 const { onUserLogin } = require('../middleware/achievementHooks')
 
 const router = express.Router()
@@ -81,8 +81,8 @@ const logAuthEvent = async (email, eventType, success, errorMessage = null, user
       }
     })
 
-    // Track in Dynatrace
-    dynatraceService.trackAuthEvent(eventType, userId, email, success, {
+    // Track in OpenTelemetry
+    telemetryService.trackAuthEvent(eventType, userId, email, success, {
       ip: req?.ip || req?.connection?.remoteAddress || 'unknown',
       userAgent: req?.get('User-Agent') || 'unknown',
       error: errorMessage

@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
-const dynatraceService = require('./services/dynatraceService');
+const telemetryService = require('./services/telemetryService');
 require('dotenv').config();
 
 // Create Express app
@@ -120,8 +120,8 @@ const limiter = rateLimit({
 });
 app.use('/api/', limiter);
 
-// Dynatrace monitoring middleware (must be early in the stack)
-app.use(dynatraceService.expressMiddleware());
+// OpenTelemetry monitoring middleware (must be early in the stack)
+app.use(telemetryService.expressMiddleware());
 
 // Body parsing middleware with error handling
 app.use(express.json({ 
