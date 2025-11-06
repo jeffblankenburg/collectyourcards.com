@@ -9,6 +9,21 @@
 
 const sql = require('mssql')
 
+/**
+ * Helper function to generate URL slug
+ * @param {string} name - Name to convert to slug
+ * @returns {string} - URL-safe slug
+ */
+function generateSlug(name) {
+  if (!name) return 'unknown'
+  return name
+    .toLowerCase()
+    .replace(/&/g, 'and') // Convert ampersands to "and" to preserve semantic meaning
+    .replace(/'/g, '') // Remove apostrophes completely
+    .replace(/[^a-z0-9]+/g, '-') // Replace other special chars with hyphens
+    .replace(/^-|-$/g, '') // Remove leading/trailing hyphens
+}
+
 class CardCreatorService {
   /**
    * Create multiple cards with their player-team relationships
@@ -335,12 +350,19 @@ class CardCreatorService {
    * @returns {Promise<number>} - Newly created player ID
    */
   async _createPlayer(firstName, lastName, transaction) {
+    // Generate slug for player
+    const trimmedFirstName = firstName || ''
+    const trimmedLastName = lastName || ''
+    const fullName = trimmedLastName ? `${trimmedFirstName} ${trimmedLastName}`.trim() : trimmedFirstName
+    const playerSlug = generateSlug(fullName || 'unknown')
+
     const result = await transaction.request()
       .input('firstName', sql.NVarChar, firstName || null)
       .input('lastName', sql.NVarChar, lastName || null)
+      .input('slug', sql.NVarChar, playerSlug)
       .query(`
-        INSERT INTO player (first_name, last_name)
-        VALUES (@firstName, @lastName);
+        INSERT INTO player (first_name, last_name, slug)
+        VALUES (@firstName, @lastName, @slug);
         SELECT SCOPE_IDENTITY() AS player_id;
       `)
 
