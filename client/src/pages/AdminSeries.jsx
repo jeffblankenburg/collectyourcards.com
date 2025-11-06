@@ -82,7 +82,7 @@ function AdminSeries() {
 
     return (
       <span
-        className="cardcard-tag cardcard-color"
+        className="color-tag"
         style={{
           backgroundColor,
           color: textColor
