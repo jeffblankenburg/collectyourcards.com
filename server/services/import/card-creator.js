@@ -341,13 +341,13 @@ class CardCreatorService {
   }
 
   /**
-   * Create new player in database
+   * Get existing or create new player in database
    *
    * @private
    * @param {string} firstName - Player first name
    * @param {string} lastName - Player last name
    * @param {Transaction} transaction - Active transaction
-   * @returns {Promise<number>} - Newly created player ID
+   * @returns {Promise<number>} - Player ID (existing or newly created)
    */
   async _createPlayer(firstName, lastName, transaction) {
     // Generate slug for player
@@ -356,6 +356,22 @@ class CardCreatorService {
     const fullName = trimmedLastName ? `${trimmedFirstName} ${trimmedLastName}`.trim() : trimmedFirstName
     const playerSlug = generateSlug(fullName || 'unknown')
 
+    // First check if player with this slug already exists
+    const existingCheck = await transaction.request()
+      .input('slug', sql.NVarChar, playerSlug)
+      .query(`
+        SELECT player_id
+        FROM player
+        WHERE slug = @slug
+      `)
+
+    if (existingCheck.recordset.length > 0) {
+      const existingPlayerId = existingCheck.recordset[0].player_id
+      console.log(`    ♻️ Player with slug "${playerSlug}" already exists with ID: ${existingPlayerId}`)
+      return existingPlayerId
+    }
+
+    // Player doesn't exist, create new one
     const result = await transaction.request()
       .input('firstName', sql.NVarChar, firstName || null)
       .input('lastName', sql.NVarChar, lastName || null)
