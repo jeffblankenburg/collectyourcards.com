@@ -348,7 +348,7 @@
   position: relative;
   padding: 1.5rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  background: transparent;
+  background: transparent !important;
   border-radius: 0;
   margin-bottom: 0;
 }
@@ -462,7 +462,7 @@
 .btn-cancel {
   padding: 0.625rem 1.25rem;
   border: 1px solid rgba(148, 163, 184, 0.2);
-  background: transparent;
+  background: transparent !important;
   color: #94a3b8;
   border-radius: 8px;
   font-size: 0.9rem;
@@ -518,7 +518,7 @@
   position: relative;
   padding: 1.5rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  background: transparent;
+  background: transparent !important;
   border-radius: 0;
   margin-bottom: 0;
 }
@@ -685,7 +685,7 @@
   position: relative;
   padding: 1.5rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  background: transparent;
+  background: transparent !important;
   border-radius: 0;
   margin-bottom: 0;
 }

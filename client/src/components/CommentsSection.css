@@ -72,7 +72,7 @@
   line-height: 1.5;
   resize: vertical;
   min-height: 100px;
-  background: transparent;
+  background: transparent !important;
   color: white;
 }
 
@@ -338,7 +338,7 @@
   line-height: 1.5;
   resize: vertical;
   min-height: 100px;
-  background: transparent;
+  background: transparent !important;
   color: white;
 }
 
@@ -417,7 +417,7 @@
   align-items: center;
   gap: 0.25rem;
   padding: 0.5rem 0.75rem;
-  background: transparent;
+  background: transparent !important;
   border: 1px solid transparent;
   border-radius: 6px;
   font-size: 0.75rem;

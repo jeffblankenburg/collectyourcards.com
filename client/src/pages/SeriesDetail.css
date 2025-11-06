@@ -203,7 +203,7 @@
 }
 
 .series-detail-page .table-container::-webkit-scrollbar-track {
-  background: transparent;
+  background: transparent !important;
 }
 
 .series-detail-page .table-container::-webkit-scrollbar-thumb {
@@ -378,7 +378,7 @@
   transition: background-color 0.2s ease;
   height: 18px;
   margin: 0;
-  background: transparent;
+  background: transparent !important;
 }
 
 .series-detail-page .cards-table tbody tr:hover {
@@ -408,7 +408,7 @@
   font-size: 0.85rem;
   height: auto;
   margin: 0;
-  background: transparent;
+  background: transparent !important;
 }
 
 /* Cell Styles */

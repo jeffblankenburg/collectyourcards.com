@@ -42,7 +42,7 @@
 
 .auth-page .mode-button {
   flex: 1;
-  background: transparent;
+  background: transparent !important;
   border: none;
   color: rgba(255, 255, 255, 0.7);
   padding: 0.75rem 1rem;
@@ -148,7 +148,7 @@
   right: 0.75rem;
   top: 50%;
   transform: translateY(-50%);
-  background: transparent;
+  background: transparent !important;
   border: none;
   color: rgba(255, 255, 255, 0.7);
   cursor: pointer;
@@ -309,7 +309,7 @@
 }
 
 .auth-page .forgot-password-link {
-  background: transparent;
+  background: transparent !important;
   border: none;
   color: #fbbf24;
   cursor: pointer;

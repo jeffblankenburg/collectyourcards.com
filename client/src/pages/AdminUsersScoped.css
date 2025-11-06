@@ -76,16 +76,18 @@
 }
 
 .admin-users-page .search-box input {
-  background: transparent;
-  border: none;
+  background: transparent !important;
+  border: none !important;
   color: white;
-  outline: none;
+  outline: none !important;
+  box-shadow: none !important;
   flex: 1;
   font-size: 0.875rem;
 }
 
 .admin-users-page .search-box input:focus-visible {
-  outline: none;
+  outline: none !important;
+  box-shadow: none !important;
 }
 
 .admin-users-page .search-box input::placeholder {
@@ -391,8 +393,8 @@
 
 .admin-users-page .modal-close-btn,
 .admin-users-page .close-btn {
-  background: transparent;
-  border: none;
+  background: transparent !important;
+  border: none !important;
   color: rgba(255, 255, 255, 0.7);
   cursor: pointer;
   padding: 0.5rem;
@@ -480,7 +482,8 @@
 .admin-users-page .form-select:focus,
 .admin-users-page select:focus,
 .admin-users-page input[type="text"]:focus {
-  outline: none;
+  outline: none !important;
+  box-shadow: none !important;
   border-color: rgba(59, 130, 246, 0.5);
   background: rgba(255, 255, 255, 0.15);
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
@@ -548,7 +551,7 @@
 }
 
 .admin-users-page .cancel-btn {
-  background: transparent;
+  background: transparent !important;
   border-color: rgba(255, 255, 255, 0.3);
   color: rgba(255, 255, 255, 0.8);
 }
@@ -600,7 +603,7 @@
 }
 
 .admin-users-page .btn-cancel {
-  background: transparent;
+  background: transparent !important;
   border-color: rgba(255, 255, 255, 0.3);
   color: rgba(255, 255, 255, 0.8);
 }

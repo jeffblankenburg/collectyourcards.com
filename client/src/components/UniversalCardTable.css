@@ -100,7 +100,7 @@
 }
 
 .table-container::-webkit-scrollbar-track {
-  background: transparent;
+  background: transparent !important;
 }
 
 .table-container::-webkit-scrollbar-thumb {
@@ -211,7 +211,7 @@
 
 
 .cards-table tbody tr:hover .player-row {
-  background: transparent;
+  background: transparent !important;
   border-bottom: none !important; /* Ensure no border on hover */
 }
 
@@ -635,7 +635,7 @@ td.user-card-count-cell {
   right: 0;
   width: 4px;
   height: 100%;
-  background: transparent;
+  background: transparent !important;
   cursor: col-resize;
   user-select: none;
   z-index: 5;
@@ -1182,7 +1182,7 @@ td.user-card-count-cell {
   width: 100%;
   padding: 12px 16px;
   border: none;
-  background: transparent;
+  background: transparent !important;
   color: #1a1a1a;
   cursor: pointer;
   transition: all 0.2s ease;

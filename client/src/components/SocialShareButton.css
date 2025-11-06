@@ -68,7 +68,7 @@
   width: 100%;
   padding: 10px 16px;
   border: none;
-  background: transparent;
+  background: transparent !important;
   color: var(--text-primary, #1a1a1a);
   cursor: pointer;
   transition: all 0.2s ease;

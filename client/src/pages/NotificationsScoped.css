@@ -84,7 +84,7 @@
 .notifications-page .filter-tab {
   padding: 0.5rem 1rem;
   border: none;
-  background: transparent;
+  background: transparent !important;
   color: rgba(255, 255, 255, 0.7);
   border-radius: 6px;
   cursor: pointer;
@@ -282,7 +282,7 @@
 }
 
 .notifications-page .delete-btn {
-  background: transparent;
+  background: transparent !important;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 6px;
   padding: 0.5rem;

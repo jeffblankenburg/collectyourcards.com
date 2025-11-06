@@ -33,7 +33,7 @@
 .search-input {
   flex: 1;
   padding: 0.75rem 1rem;
-  background: transparent;
+  background: transparent !important;
   border: none;
   outline: none;
   color: white;
@@ -109,7 +109,7 @@
 }
 
 .search-dropdown::-webkit-scrollbar-track {
-  background: transparent;
+  background: transparent !important;
 }
 
 .search-dropdown::-webkit-scrollbar-thumb {

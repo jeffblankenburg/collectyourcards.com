@@ -467,7 +467,7 @@
 }
 
 .expand-button {
-  background: transparent;
+  background: transparent !important;
   border: none;
   color: rgba(255, 255, 255, 0.6);
   cursor: pointer;
@@ -1344,7 +1344,7 @@
 }
 
 .modal-close-btn {
-  background: transparent;
+  background: transparent !important;
   border: none;
   color: rgba(255, 255, 255, 0.6);
   cursor: pointer;

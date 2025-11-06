@@ -44,7 +44,7 @@
 }
 
 .close-btn {
-  background: transparent;
+  background: transparent !important;
   border: none;
   color: rgba(255, 255, 255, 0.7);
   cursor: pointer;
@@ -257,7 +257,7 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem;
-  background: transparent;
+  background: transparent !important;
   border: none;
   color: rgba(255, 255, 255, 0.9);
   font-size: 0.8rem;
@@ -403,7 +403,7 @@
 }
 
 .cancel-btn {
-  background: transparent;
+  background: transparent !important;
   border-color: rgba(255, 255, 255, 0.3);
   color: rgba(255, 255, 255, 0.8);
 }

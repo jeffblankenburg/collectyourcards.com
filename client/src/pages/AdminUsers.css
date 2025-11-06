@@ -739,7 +739,7 @@
   height: 18px;
   border: 2px solid rgba(255, 255, 255, 0.3);
   border-radius: 4px;
-  background: transparent;
+  background: transparent !important;
   position: relative;
   cursor: pointer;
   transition: all 0.2s ease;

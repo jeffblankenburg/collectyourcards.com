@@ -103,13 +103,14 @@
   color: white;
   font-size: 0.875rem;
   transition: all 0.2s ease;
-  outline: none;
+  outline: none !important;
+  box-shadow: none !important;
 }
 
 .search-input:focus {
   border-color: rgba(59, 130, 246, 0.5);
   background: rgba(255, 255, 255, 0.15);
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1) !important;
 }
 
 .search-input::placeholder {

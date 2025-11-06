@@ -155,10 +155,11 @@
 }
 
 .admin-sets-page .search-box input {
-  background: transparent;
-  border: none;
+  background: transparent !important;
+  border: none !important;
   color: white;
-  outline: none;
+  outline: none !important;
+  box-shadow: none !important;
   flex: 1;
   font-size: 0.875rem;
 }
@@ -785,7 +786,7 @@
 }
 
 .admin-sets-page .series-parallel-stripe.empty {
-  background: transparent;
+  background: transparent !important;
   border-top: none;
 }
 
@@ -937,8 +938,8 @@
 
 .admin-sets-page .modal-close-btn,
 .admin-sets-page .close-btn {
-  background: transparent;
-  border: none;
+  background: transparent !important;
+  border: none !important;
   color: rgba(255, 255, 255, 0.7);
   cursor: pointer;
   padding: 0.5rem;
@@ -1006,7 +1007,8 @@
 .admin-sets-page .form-select:focus,
 .admin-sets-page select:focus,
 .admin-sets-page input[type="text"]:focus {
-  outline: none;
+  outline: none !important;
+  box-shadow: none !important;
   border-color: rgba(59, 130, 246, 0.5);
   background: rgba(255, 255, 255, 0.15);
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
@@ -1311,7 +1313,7 @@
 }
 
 .admin-sets-page .cancel-btn {
-  background: transparent;
+  background: transparent !important;
   border-color: rgba(255, 255, 255, 0.3);
   color: rgba(255, 255, 255, 0.8);
 }
@@ -1352,7 +1354,7 @@
 }
 
 .admin-sets-page .btn-cancel {
-  background: transparent;
+  background: transparent !important;
   border-color: rgba(255, 255, 255, 0.3);
   color: rgba(255, 255, 255, 0.8);
 }

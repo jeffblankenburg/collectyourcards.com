@@ -96,16 +96,18 @@
 }
 
 .admin-achievements-page .search-box input {
-  background: transparent;
-  border: none;
+  background: transparent !important;
+  border: none !important;
   color: white;
-  outline: none;
+  outline: none !important;
+  box-shadow: none !important;
   flex: 1;
   font-size: 0.875rem;
 }
 
 .admin-achievements-page .search-box input:focus-visible {
-  outline: none;
+  outline: none !important;
+  box-shadow: none !important;
 }
 
 .admin-achievements-page .search-box input::placeholder {
@@ -258,7 +260,7 @@
 
 .admin-achievements-page .status-toggle {
   background: none;
-  border: none;
+  border: none !important;
   color: rgba(255, 255, 255, 0.6);
   cursor: pointer;
   padding: 0.25rem;
@@ -589,7 +591,8 @@
 .admin-achievements-page .form-textarea:focus,
 .admin-achievements-page select:focus,
 .admin-achievements-page input[type="text"]:focus {
-  outline: none;
+  outline: none !important;
+  box-shadow: none !important;
   border-color: rgba(59, 130, 246, 0.5);
   box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25);
   background: rgba(255, 255, 255, 0.1);

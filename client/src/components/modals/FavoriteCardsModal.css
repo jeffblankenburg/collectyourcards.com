@@ -48,7 +48,7 @@
 }
 
 .close-button {
-  background: transparent;
+  background: transparent !important;
   border: none;
   color: rgba(255, 255, 255, 0.7);
   cursor: pointer;

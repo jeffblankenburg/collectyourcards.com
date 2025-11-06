@@ -77,10 +77,11 @@
 }
 
 .admin-series-page .search-box input {
-  background: transparent;
-  border: none;
+  background: transparent !important;
+  border: none !important;
   color: white;
-  outline: none;
+  outline: none !important;
+  box-shadow: none !important;
   flex: 1;
   font-size: 0.875rem;
 }
@@ -652,7 +653,7 @@
 
 .admin-series-page .modal-close-btn,
 .admin-series-page .close-btn {
-  background: transparent;
+  background: transparent !important;
   border: none;
   color: rgba(255, 255, 255, 0.7);
   cursor: pointer;
@@ -744,7 +745,7 @@
 
 .admin-series-page .color-input-field {
   flex: 1;
-  background: transparent;
+  background: transparent !important;
   border: none;
   outline: none;
   padding: 0.625rem 0.75rem;
@@ -832,7 +833,7 @@
 }
 
 .admin-series-page .color-dropdown-item.no-results:hover {
-  background: transparent;
+  background: transparent !important;
 }
 
 .admin-series-page .form-group,
@@ -1003,7 +1004,7 @@
 }
 
 .admin-series-page .cancel-btn {
-  background: transparent;
+  background: transparent !important;
   border-color: rgba(255, 255, 255, 0.3);
   color: rgba(255, 255, 255, 0.8);
 }
@@ -1044,7 +1045,7 @@
 }
 
 .admin-series-page .btn-cancel {
-  background: transparent;
+  background: transparent !important;
   border-color: rgba(255, 255, 255, 0.3);
   color: rgba(255, 255, 255, 0.8);
 }

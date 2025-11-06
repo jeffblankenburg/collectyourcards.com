@@ -573,7 +573,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 1.5rem;
-  background: transparent;
+  background: transparent !important;
   border-top: none;
   border-radius: 0;
   width: 100%;
