@@ -36,6 +36,19 @@ class CardCreatorService {
   async createCards(matchedCards, seriesId, transaction) {
     console.log(`🔄 Processing ${matchedCards.length} cards for creation...`)
 
+    // Get the highest existing sort_order for this series to maintain continuity
+    const maxSortOrderResult = await transaction.request()
+      .input('seriesId', sql.BigInt, seriesId)
+      .query(`
+        SELECT ISNULL(MAX(sort_order), 0) as max_order
+        FROM card
+        WHERE series = @seriesId
+      `)
+
+    const sortOrderOffset = maxSortOrderResult.recordset[0].max_order
+    console.log(`📊 Existing cards in series: highest sort_order = ${sortOrderOffset}`)
+    console.log(`📊 New cards will start at sort_order ${sortOrderOffset + 1}`)
+
     const newPlayerCache = new Map() // Cache for newly created players
     let createdCount = 0
 
@@ -43,12 +56,18 @@ class CardCreatorService {
       const card = matchedCards[i]
       console.log(`📋 Processing card ${i + 1}/${matchedCards.length}: ${card.cardNumber}`)
 
+      // Apply sort_order offset to maintain continuity with existing cards
+      const adjustedCard = {
+        ...card,
+        sortOrder: (card.sortOrder || 0) + sortOrderOffset
+      }
+
       // Create the card record
-      const cardId = await this._createCardRecord(card, seriesId, transaction)
-      console.log(`  ✅ Card created with ID: ${cardId}`)
+      const cardId = await this._createCardRecord(adjustedCard, seriesId, transaction)
+      console.log(`  ✅ Card created with ID: ${cardId}, sort_order: ${adjustedCard.sortOrder}`)
 
       // Process players for this card
-      await this._processPlayersForCard(card, cardId, transaction, newPlayerCache)
+      await this._processPlayersForCard(adjustedCard, cardId, transaction, newPlayerCache)
 
       createdCount++
     }

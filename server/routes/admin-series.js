@@ -364,7 +364,7 @@ router.post('/series/:id/duplicate', async (req, res) => {
     console.log('[Duplicate Series] User:', req.user)
 
     const seriesId = BigInt(req.params.id)
-    const { name, color_id, print_run } = req.body
+    const { name, color_id, print_run, card_range } = req.body
 
     if (!name || !name.trim()) {
       console.log('[Duplicate Series] Validation failed: name is required')
@@ -372,6 +372,42 @@ router.post('/series/:id/duplicate', async (req, res) => {
         error: 'Invalid input',
         message: 'Series name is required'
       })
+    }
+
+    // Parse card range if provided (format: "1-100" or "1-50,75-100")
+    let cardNumberFilter = null
+    if (card_range && card_range.trim()) {
+      try {
+        const ranges = card_range.split(',').map(r => r.trim())
+        const sortOrders = []
+
+        for (const range of ranges) {
+          if (range.includes('-')) {
+            const [start, end] = range.split('-').map(n => parseInt(n.trim()))
+            if (isNaN(start) || isNaN(end) || start < 1 || end < start) {
+              throw new Error(`Invalid range: ${range}`)
+            }
+            for (let i = start; i <= end; i++) {
+              sortOrders.push(i)
+            }
+          } else {
+            const num = parseInt(range.trim())
+            if (isNaN(num) || num < 1) {
+              throw new Error(`Invalid card number: ${range}`)
+            }
+            sortOrders.push(num)
+          }
+        }
+
+        cardNumberFilter = sortOrders
+        console.log('[Duplicate Series] Card range filter:', card_range, '→', sortOrders.length, 'cards')
+      } catch (rangeError) {
+        console.log('[Duplicate Series] Invalid card range:', rangeError.message)
+        return res.status(400).json({
+          error: 'Invalid input',
+          message: `Invalid card range format: ${rangeError.message}. Use format like "1-100" or "1-50,75-100"`
+        })
+      }
     }
 
     // Get the original series
@@ -417,19 +453,27 @@ router.post('/series/:id/duplicate', async (req, res) => {
     })
     console.log('[Duplicate Series] New series created with ID:', newSeries.series_id.toString())
 
-    // Get all cards from original series
+    // Get cards from original series (filtered by card range if specified)
     console.log('[Duplicate Series] Fetching original cards...')
+    const whereClause = { series: seriesId }
+
+    // Apply card range filter if specified
+    if (cardNumberFilter) {
+      whereClause.sort_order = { in: cardNumberFilter }
+    }
+
     const originalCards = await prisma.card.findMany({
-      where: { series: seriesId },
+      where: whereClause,
       include: {
         card_player_team_card_player_team_cardTocard: {
           include: {
             player_team_card_player_team_player_teamToplayer_team: true
           }
         }
-      }
+      },
+      orderBy: { sort_order: 'asc' }
     })
-    console.log('[Duplicate Series] Found', originalCards.length, 'cards to duplicate')
+    console.log('[Duplicate Series] Found', originalCards.length, 'cards to duplicate', cardNumberFilter ? `(filtered to ${cardNumberFilter.length} specified cards)` : '(all cards)')
 
     // Duplicate all cards for the new series
     let cardsCreated = 0
@@ -473,11 +517,12 @@ router.post('/series/:id/duplicate', async (req, res) => {
           entity_type: 'series',
           entity_id: newSeries.series_id.toString(),
           old_values: JSON.stringify({ original_series_id: Number(seriesId) }),
-          new_values: JSON.stringify({ 
-            name, 
-            color_id, 
-            print_run, 
-            cards_created: cardsCreated 
+          new_values: JSON.stringify({
+            name,
+            color_id,
+            print_run,
+            card_range: card_range || 'all',
+            cards_created: cardsCreated
           }),
           ip_address: req.ip,
           user_agent: req.get('User-Agent'),
