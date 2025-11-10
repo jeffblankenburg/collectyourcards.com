@@ -96,6 +96,7 @@ router.get('/', async (req, res) => {
           p.birthdate,
           p.is_hof,
           p.card_count,
+          p.display_card,
           NULL as last_viewed,
           STRING_AGG(CAST(pt.player_team_id as varchar(20)) + '|' + CAST(t.team_Id as varchar(10)) + '|' + ISNULL(t.abbreviation, '?') + '|' + ISNULL(t.primary_color, '#666') + '|' + ISNULL(t.secondary_color, '#999') + '|' + ISNULL(t.name, 'Unknown'), '~') as teams_data,
           (
@@ -114,7 +115,7 @@ router.get('/', async (req, res) => {
           OR p.nick_name LIKE '%${search.trim()}%' COLLATE Latin1_General_CI_AI
           OR CONCAT(p.first_name, ' ', p.last_name) LIKE '%${search.trim()}%' COLLATE Latin1_General_CI_AI
         )` : ''}
-        GROUP BY p.player_id, p.first_name, p.last_name, p.nick_name, p.birthdate, p.is_hof, p.card_count
+        GROUP BY p.player_id, p.first_name, p.last_name, p.nick_name, p.birthdate, p.is_hof, p.card_count, p.display_card
         ORDER BY p.last_name, p.first_name
         OFFSET ${offsetNum} ROWS
         FETCH NEXT ${limitNum} ROWS ONLY
@@ -134,6 +135,7 @@ router.get('/', async (req, res) => {
           p.birthdate,
           p.is_hof,
           p.card_count,
+          p.display_card,
           NULL as last_viewed,
           STRING_AGG(CAST(pt.player_team_id as varchar(20)) + '|' + CAST(t.team_Id as varchar(10)) + '|' + ISNULL(t.abbreviation, '?') + '|' + ISNULL(t.primary_color, '#666') + '|' + ISNULL(t.secondary_color, '#999') + '|' + ISNULL(t.name, 'Unknown'), '~') as teams_data
         FROM player p
@@ -152,7 +154,7 @@ router.get('/', async (req, res) => {
           OR REPLACE(REPLACE(REPLACE(CONCAT(p.first_name, ' ', p.last_name), '.', ''), CHAR(39), ''), '-', '') LIKE N'%${escapedNormalized}%' COLLATE Latin1_General_CI_AI
           OR REPLACE(REPLACE(REPLACE(CONCAT(p.nick_name, ' ', p.last_name), '.', ''), CHAR(39), ''), '-', '') LIKE N'%${escapedNormalized}%' COLLATE Latin1_General_CI_AI
         )` : ''}
-        GROUP BY p.player_id, p.first_name, p.last_name, p.nick_name, p.birthdate, p.is_hof, p.card_count
+        GROUP BY p.player_id, p.first_name, p.last_name, p.nick_name, p.birthdate, p.is_hof, p.card_count, p.display_card
         ORDER BY p.last_name, p.first_name
         OFFSET ${offsetNum} ROWS
         FETCH NEXT ${limitNum} ROWS ONLY
@@ -176,6 +178,7 @@ router.get('/', async (req, res) => {
           p.birthdate,
           p.is_hof,
           p.card_count,
+          p.display_card,
           NULL as last_viewed,
           STRING_AGG(CAST(pt.player_team_id as varchar(20)) + '|' + CAST(t.team_Id as varchar(10)) + '|' + ISNULL(t.abbreviation, '?') + '|' + ISNULL(t.primary_color, '#666') + '|' + ISNULL(t.secondary_color, '#999') + '|' + ISNULL(t.name, 'Unknown'), '~') as teams_data
         FROM player p
@@ -193,7 +196,7 @@ router.get('/', async (req, res) => {
           OR REPLACE(REPLACE(REPLACE(CONCAT(p.first_name, ' ', p.last_name), '.', ''), CHAR(39), ''), '-', '') LIKE N'%${escapedNormalized}%' COLLATE Latin1_General_CI_AI
           OR REPLACE(REPLACE(REPLACE(CONCAT(p.nick_name, ' ', p.last_name), '.', ''), CHAR(39), ''), '-', '') LIKE N'%${escapedNormalized}%' COLLATE Latin1_General_CI_AI
         )
-        GROUP BY p.player_id, p.first_name, p.last_name, p.nick_name, p.birthdate, p.is_hof, p.card_count
+        GROUP BY p.player_id, p.first_name, p.last_name, p.nick_name, p.birthdate, p.is_hof, p.card_count, p.display_card
         ORDER BY p.last_name, p.first_name
         OFFSET ${offsetNum} ROWS
         FETCH NEXT ${limitNum} ROWS ONLY
@@ -201,7 +204,7 @@ router.get('/', async (req, res) => {
     } else {
       // Default mode: most recently viewed players with team data optimized
       players = await prisma.$queryRawUnsafe(`
-        SELECT 
+        SELECT
           p.player_id,
           p.first_name,
           p.last_name,
@@ -209,6 +212,7 @@ router.get('/', async (req, res) => {
           p.birthdate,
           p.is_hof,
           p.card_count,
+          p.display_card,
           MAX(up.created) as last_viewed,
           STRING_AGG(CAST(pt.player_team_id as varchar(20)) + '|' + CAST(t.team_Id as varchar(10)) + '|' + ISNULL(t.abbreviation, '?') + '|' + ISNULL(t.primary_color, '#666') + '|' + ISNULL(t.secondary_color, '#999') + '|' + ISNULL(t.name, 'Unknown'), '~') as teams_data
         FROM user_player up
@@ -216,7 +220,7 @@ router.get('/', async (req, res) => {
         LEFT JOIN player_team pt ON p.player_id = pt.player
         LEFT JOIN team t ON pt.team = t.team_Id
         WHERE p.player_id IS NOT NULL
-        GROUP BY p.player_id, p.first_name, p.last_name, p.nick_name, p.birthdate, p.is_hof, p.card_count
+        GROUP BY p.player_id, p.first_name, p.last_name, p.nick_name, p.birthdate, p.is_hof, p.card_count, p.display_card
         ORDER BY last_viewed DESC
         OFFSET ${offsetNum} ROWS
         FETCH NEXT ${limitNum} ROWS ONLY
@@ -340,6 +344,7 @@ router.get('/', async (req, res) => {
         birthdate: player.birthdate,
         is_hof: Boolean(player.is_hof),
         card_count: Number(player.card_count || 0),
+        display_card: player.display_card ? Number(player.display_card) : null,
         teams: teams,
         team_count: teams.length,
         last_viewed: player.last_viewed,
@@ -464,7 +469,8 @@ router.get('/:id', async (req, res) => {
         nick_name: player.nick_name,
         birthdate: player.birthdate,
         is_hof: Boolean(player.is_hof),
-        card_count: Number(player.card_count || 0)
+        card_count: Number(player.card_count || 0),
+        display_card: player.display_card ? Number(player.display_card) : null
       }
     })
 
@@ -1273,13 +1279,18 @@ router.get('/:id/cards', async (req, res) => {
         t.name as team_name,
         t.abbreviation as team_abbreviation,
         t.primary_color,
-        t.secondary_color
+        t.secondary_color,
+        front_photo.photo_url as front_image_url,
+        back_photo.photo_url as back_image_url
       FROM card c
       INNER JOIN card_player_team cpt ON c.card_id = cpt.card
       INNER JOIN player_team pt ON cpt.player_team = pt.player_team_id
       INNER JOIN team t ON pt.team = t.team_Id
       LEFT JOIN series s ON c.series = s.series_id
       LEFT JOIN [set] st ON s.[set] = st.set_id
+      LEFT JOIN user_card uc ON c.reference_user_card = uc.user_card_id
+      LEFT JOIN user_card_photo front_photo ON uc.user_card_id = front_photo.user_card AND front_photo.sort_order = 1
+      LEFT JOIN user_card_photo back_photo ON uc.user_card_id = back_photo.user_card AND back_photo.sort_order = 2
       WHERE pt.player = ${playerId}
       ORDER BY t.name, st.year DESC, s.name, c.card_number
     `)
@@ -1299,7 +1310,9 @@ router.get('/:id/cards', async (req, res) => {
       team_name: card.team_name,
       team_abbreviation: card.team_abbreviation,
       primary_color: card.primary_color,
-      secondary_color: card.secondary_color
+      secondary_color: card.secondary_color,
+      front_image_url: card.front_image_url,
+      back_image_url: card.back_image_url
     }))
 
     res.json({
@@ -1311,6 +1324,86 @@ router.get('/:id/cards', async (req, res) => {
     res.status(500).json({
       error: 'Database error',
       message: 'Failed to fetch player cards',
+      details: error.message
+    })
+  }
+})
+
+// PUT /api/admin/players/:id/display-card - Update player's display card
+router.put('/:id/display-card', async (req, res) => {
+  try {
+    const playerId = parseInt(req.params.id)
+    const { card_id } = req.body
+
+    if (isNaN(playerId)) {
+      return res.status(400).json({ error: 'Invalid player ID' })
+    }
+
+    // Verify player exists
+    const player = await prisma.player.findUnique({
+      where: { player_id: playerId }
+    })
+
+    if (!player) {
+      return res.status(404).json({
+        error: 'Not found',
+        message: 'Player not found'
+      })
+    }
+
+    // If card_id is provided, verify it belongs to this player
+    if (card_id) {
+      const cardIdBigInt = BigInt(card_id)
+
+      const cardCheck = await prisma.$queryRawUnsafe(`
+        SELECT COUNT(*) as count
+        FROM card c
+        INNER JOIN card_player_team cpt ON c.card_id = cpt.card
+        INNER JOIN player_team pt ON cpt.player_team = pt.player_team_id
+        WHERE c.card_id = ${cardIdBigInt} AND pt.player = ${playerId}
+      `)
+
+      if (Number(cardCheck[0].count) === 0) {
+        return res.status(400).json({
+          error: 'Invalid card',
+          message: 'The specified card does not belong to this player'
+        })
+      }
+
+      // Update player with display card
+      await prisma.player.update({
+        where: { player_id: playerId },
+        data: { display_card: cardIdBigInt }
+      })
+
+      console.log(`Admin: Set display card ${card_id} for player ${playerId}`)
+
+      res.json({
+        message: 'Display card updated successfully',
+        player_id: playerId,
+        display_card: Number(cardIdBigInt)
+      })
+    } else {
+      // Remove display card (set to null)
+      await prisma.player.update({
+        where: { player_id: playerId },
+        data: { display_card: null }
+      })
+
+      console.log(`Admin: Removed display card for player ${playerId}`)
+
+      res.json({
+        message: 'Display card removed successfully',
+        player_id: playerId,
+        display_card: null
+      })
+    }
+
+  } catch (error) {
+    console.error('Error updating display card:', error)
+    res.status(500).json({
+      error: 'Database error',
+      message: 'Failed to update display card',
       details: error.message
     })
   }

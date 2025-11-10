@@ -38,15 +38,19 @@ model card {
   created                                      DateTime           @default(now(), map: "DEFAULT_card_created") @db.DateTime
   created_month                                DateTime?          @db.Date
   card_number_indexed                          String?            @db.NVarChar(100)
+  reference_user_card                          BigInt?
   color_card_colorTocolor                      color?             @relation("card_colorTocolor", fields: [color], references: [color_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_card_color")
+  user_card_card_reference_user_cardTouser_card user_card?       @relation("card_reference_user_cardTouser_card", fields: [reference_user_card], references: [user_card_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_card_reference_user_card")
   card_player_team_card_player_team_cardTocard card_player_team[] @relation("card_player_team_cardTocard")
   card_variation_card_variation_cardTocard     card_variation[]   @relation("card_variation_cardTocard")
+  player_player_display_cardTocard             player[]           @relation("player_display_cardTocard")
   user_card_user_card_cardTocard               user_card[]        @relation("user_card_cardTocard")
 
   @@index([created_month], map: "idx_card_created_month")
   @@index([series], map: "IX_card_series_optimized")
   @@index([is_rookie, is_autograph, is_relic], map: "IX_card_attributes")
   @@index([card_number_indexed], map: "IX_card_number")
+  @@index([reference_user_card], map: "IX_card_reference_user_card")
 }
 
 model card_player_team {
@@ -322,12 +326,15 @@ model player {
   last_name_indexed                      String?       @db.NVarChar(255)
   nick_name_indexed                      String?       @db.NVarChar(255)
   slug                                   String        @unique(map: "idx_player_slug") @db.NVarChar(255)
+  display_card                           BigInt?
+  card_player_display_cardTocard         card?         @relation("player_display_cardTocard", fields: [display_card], references: [card_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_player_display_card")
   player_team_player_team_playerToplayer player_team[] @relation("player_team_playerToplayer")
   user_player_user_player_playerToplayer user_player[] @relation("user_player_playerToplayer")
 
   @@index([card_count(sort: Desc)], map: "IX_player_card_count")
   @@index([first_name_indexed], map: "IX_player_first_name")
   @@index([last_name_indexed], map: "IX_player_last_name")
+  @@index([display_card], map: "IX_player_display_card")
 }
 
 model player_alias {
@@ -556,6 +563,7 @@ model user_card {
   card_variation_user_card_card_variationTocard_variation      card_variation?       @relation("user_card_card_variationTocard_variation", fields: [card_variation], references: [card_variation_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_user_card_card_variation")
   user_user_card_userTouser                                    user?                 @relation("user_card_userTouser", fields: [user], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_user_card_user")
   user_location_user_card_user_locationTouser_location         user_location?        @relation("user_card_user_locationTouser_location", fields: [user_location], references: [user_location_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_user_card_user_location")
+  card_card_reference_user_cardTouser_card                     card[]                @relation("card_reference_user_cardTouser_card")
   user_card_photo_user_card_photo_user_cardTouser_card         user_card_photo[]     @relation("user_card_photo_user_cardTouser_card")
   user_favorite_cards_user_favorite_cards_user_cardTouser_card user_favorite_cards[] @relation("user_favorite_cards_user_cardTouser_card")
 

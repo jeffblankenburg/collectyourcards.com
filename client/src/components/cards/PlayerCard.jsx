@@ -51,56 +51,70 @@ function PlayerCard({ player, showBadge = false, onTeamClick = null, customOnCli
         </div>
       )}
       
-      <div className="playercard-content">
-        <div className="playercard-name-section">
-          <h3 className="playercard-name">
-            {player.first_name} {player.last_name}
-            {player.is_hof && (
-              <Icon name="crown" size={16} className="playercard-hof-icon" title="Hall of Fame" />
-            )}
-          </h3>
-          <div className="playercard-nickname-header">
-            {player.nick_name ? (
-              <p className="playercard-nickname-text">"{player.nick_name}"</p>
-            ) : (
-              <p className="playercard-nickname-placeholder">&nbsp;</p>
-            )}
-          </div>
-        </div>
-        
-        <div className="playercard-teams">
-          {player.teams?.map(team => (
-            <div
-              key={team.team_id}
-              className="playercard-team-circle"
-              style={{
-                '--primary-color': team.primary_color || '#666',
-                '--secondary-color': team.secondary_color || '#999'
-              }}
-              title={`${team.name} (${team.card_count || 0} cards)`}
-              onClick={(e) => handleTeamClick(e, team.team_id)}
-            >
-              {team.abbreviation}
+      <div className="playercard-header-row">
+        <div className="playercard-header-content">
+          <div className="playercard-name-section">
+            <h3 className="playercard-name">
+              {player.first_name} {player.last_name}
+              {player.is_hof && (
+                <Icon name="crown" size={16} className="playercard-hof-icon" title="Hall of Fame" />
+              )}
+            </h3>
+            <div className="playercard-nickname-header">
+              {player.nick_name ? (
+                <p className="playercard-nickname-text">"{player.nick_name}"</p>
+              ) : (
+                <p className="playercard-nickname-placeholder">&nbsp;</p>
+              )}
             </div>
-          ))}
-        </div>
-        <div className="playercard-stats">
-          <div className="playercard-count">
-            <span className="playercard-count-number">{(player.card_count || 0).toLocaleString()}</span>
-            <span className="playercard-count-label">Cards</span>
           </div>
-          <div className="playercard-rc-count">
-            <span className="playercard-rc-count-number">{(player.rookie_count || 0).toLocaleString()}</span>
-            <span className="playercard-rc-count-label">Rookies</span>
+
+          <div className="playercard-teams">
+            {player.teams?.map(team => (
+              <div
+                key={team.team_id}
+                className="playercard-team-circle"
+                style={{
+                  '--primary-color': team.primary_color || '#666',
+                  '--secondary-color': team.secondary_color || '#999'
+                }}
+                title={`${team.name} (${team.card_count || 0} cards)`}
+                onClick={(e) => handleTeamClick(e, team.team_id)}
+              >
+                {team.abbreviation}
+              </div>
+            ))}
           </div>
-          {/* User Collection Stats for Authenticated Users */}
-          {user && player.user_card_count !== undefined && (
-            <div className="playercard-user-collection">
-              <span className="playercard-user-collection-number">{(player.user_card_count || 0).toLocaleString()}</span>
-              <span className="playercard-user-collection-label">Owned</span>
-            </div>
-          )}
         </div>
+
+        {/* Display Card Image */}
+        {player.display_card_front_image && (
+          <div className="playercard-image-inline">
+            <img
+              src={player.display_card_front_image}
+              alt={`${player.first_name} ${player.last_name}`}
+              className="playercard-display-image"
+            />
+          </div>
+        )}
+      </div>
+
+      <div className="playercard-stats">
+        <div className="playercard-count">
+          <span className="playercard-count-number">{(player.card_count || 0).toLocaleString()}</span>
+          <span className="playercard-count-label">Cards</span>
+        </div>
+        <div className="playercard-rc-count">
+          <span className="playercard-rc-count-number">{(player.rookie_count || 0).toLocaleString()}</span>
+          <span className="playercard-rc-count-label">Rookies</span>
+        </div>
+        {/* User Collection Stats for Authenticated Users */}
+        {user && player.user_card_count !== undefined && (
+          <div className="playercard-user-collection">
+            <span className="playercard-user-collection-number">{(player.user_card_count || 0).toLocaleString()}</span>
+            <span className="playercard-user-collection-label">Owned</span>
+          </div>
+        )}
       </div>
       
       {isAdmin && (

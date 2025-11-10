@@ -27,6 +27,8 @@ function RainbowView() {
   const [showAddCardModal, setShowAddCardModal] = useState(false)
   const [selectedCard, setSelectedCard] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
+  const [showImageViewer, setShowImageViewer] = useState(false)
+  const [currentImageView, setCurrentImageView] = useState('front') // 'front' or 'back'
 
   useEffect(() => {
     fetchRainbowCards()
@@ -40,6 +42,26 @@ function RainbowView() {
       document.title = 'Loading Rainbow View... - Collect Your Cards'
     }
   }, [cardInfo, loading])
+
+  // Keyboard navigation for image viewer
+  useEffect(() => {
+    if (!showImageViewer) return
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        setShowImageViewer(false)
+      } else if (event.key === 'ArrowLeft') {
+        setCurrentImageView('front')
+      } else if (event.key === 'ArrowRight') {
+        setCurrentImageView('back')
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [showImageViewer])
 
   const fetchRainbowCards = async () => {
     const startTime = performance.now()
@@ -208,6 +230,11 @@ function RainbowView() {
     setShowAddCardModal(false)
   }
 
+  const handleImageClick = (side) => {
+    setCurrentImageView(side)
+    setShowImageViewer(true)
+  }
+
   // Function to determine if a color is light or dark for text contrast
   const isLightColor = (hex) => {
     if (!hex) return false
@@ -361,16 +388,36 @@ function RainbowView() {
           <div className="card-header-right-section">
             {/* Card Images */}
             <div className="card-images-header">
-              <div className="card-image-placeholder front-card">
-                <Icon name="image" size={24} />
-                <p>Front</p>
-                <small>No Image</small>
-              </div>
-              <div className="card-image-placeholder back-card">
-                <Icon name="image" size={24} />
-                <p>Back</p>
-                <small>No Image</small>
-              </div>
+              {cardInfo.front_image_url ? (
+                <img
+                  src={cardInfo.front_image_url}
+                  alt={`${cardInfo.player_names} #${cardInfo.card_number} - Front`}
+                  className="card-image front-card card-image-clickable"
+                  onClick={() => handleImageClick('front')}
+                  title="Click to view full size"
+                />
+              ) : (
+                <div className="card-image-placeholder front-card">
+                  <Icon name="image" size={24} />
+                  <p>Front</p>
+                  <small>No Image</small>
+                </div>
+              )}
+              {cardInfo.back_image_url ? (
+                <img
+                  src={cardInfo.back_image_url}
+                  alt={`${cardInfo.player_names} #${cardInfo.card_number} - Back`}
+                  className="card-image back-card card-image-clickable"
+                  onClick={() => handleImageClick('back')}
+                  title="Click to view full size"
+                />
+              ) : (
+                <div className="card-image-placeholder back-card">
+                  <Icon name="image" size={24} />
+                  <p>Back</p>
+                  <small>No Image</small>
+                </div>
+              )}
             </div>
 
             {/* Stats Boxes */}
@@ -466,6 +513,67 @@ function RainbowView() {
           card={selectedCard}
           onCardAdded={handleCardAdded}
         />
+      )}
+
+      {/* Full-Screen Image Viewer */}
+      {showImageViewer && (cardInfo.front_image_url || cardInfo.back_image_url) && (
+        <div className="card-image-viewer-overlay" onClick={() => setShowImageViewer(false)}>
+          <div className="card-image-viewer-container" onClick={(e) => e.stopPropagation()}>
+            {/* Close Button */}
+            <button
+              className="card-image-viewer-close"
+              onClick={() => setShowImageViewer(false)}
+              title="Close (Esc)"
+            >
+              <Icon name="x" size={24} />
+            </button>
+
+            {/* Image Display */}
+            <div className="card-image-viewer-image-container">
+              {currentImageView === 'front' && cardInfo.front_image_url && (
+                <img
+                  src={cardInfo.front_image_url}
+                  alt={`${cardInfo.player_names} #${cardInfo.card_number} - Front`}
+                  className="card-image-viewer-image"
+                />
+              )}
+              {currentImageView === 'back' && cardInfo.back_image_url && (
+                <img
+                  src={cardInfo.back_image_url}
+                  alt={`${cardInfo.player_names} #${cardInfo.card_number} - Back`}
+                  className="card-image-viewer-image"
+                />
+              )}
+            </div>
+
+            {/* Navigation - Only show if both images exist */}
+            {cardInfo.front_image_url && cardInfo.back_image_url && (
+              <div className="card-image-viewer-nav">
+                <button
+                  className={`card-image-viewer-nav-btn ${currentImageView === 'front' ? 'active' : ''}`}
+                  onClick={() => setCurrentImageView('front')}
+                  title="Front (Left Arrow)"
+                >
+                  <Icon name="chevron-left" size={32} />
+                  <span>Front</span>
+                </button>
+                <button
+                  className={`card-image-viewer-nav-btn ${currentImageView === 'back' ? 'active' : ''}`}
+                  onClick={() => setCurrentImageView('back')}
+                  title="Back (Right Arrow)"
+                >
+                  <span>Back</span>
+                  <Icon name="chevron-right" size={32} />
+                </button>
+              </div>
+            )}
+
+            {/* Label */}
+            <div className="card-image-viewer-label">
+              {currentImageView === 'front' ? 'Front' : 'Back'} - {cardInfo.player_names} #{cardInfo.card_number}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

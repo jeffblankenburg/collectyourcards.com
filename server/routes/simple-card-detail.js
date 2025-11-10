@@ -76,6 +76,7 @@ router.get('/:seriesSlug/:cardNumber/:playerName', async (req, res) => {
         c.is_autograph,
         c.is_relic,
         c.print_run,
+        c.reference_user_card,
         s.series_id,
         s.name as series_name,
         s.slug as series_slug,
@@ -87,6 +88,8 @@ router.get('/:seriesSlug/:cardNumber/:playerName', async (req, res) => {
         s.parallel_of_series,
         col.name as color_name,
         col.hex_value as color_hex,
+        front_photo.photo_url as front_image_url,
+        back_photo.photo_url as back_image_url,
         STRING_AGG(CONCAT(p.first_name, ' ', p.last_name), ', ') as player_names,
         STRING_AGG(CONVERT(varchar(max), CONCAT(t.team_id, '|', t.name, '|', t.abbreviation, '|', ISNULL(t.primary_color, ''), '|', ISNULL(t.secondary_color, ''))), '~') as teams_data
       FROM card c
@@ -94,6 +97,9 @@ router.get('/:seriesSlug/:cardNumber/:playerName', async (req, res) => {
       JOIN [set] st ON s.[set] = st.set_id
       LEFT JOIN manufacturer m ON st.manufacturer = m.manufacturer_id
       LEFT JOIN color col ON s.color = col.color_id
+      LEFT JOIN user_card ref_uc ON c.reference_user_card = ref_uc.user_card_id
+      LEFT JOIN user_card_photo front_photo ON ref_uc.user_card_id = front_photo.user_card AND front_photo.sort_order = 1
+      LEFT JOIN user_card_photo back_photo ON ref_uc.user_card_id = back_photo.user_card AND back_photo.sort_order = 2
       LEFT JOIN card_player_team cpt ON c.card_id = cpt.card
       LEFT JOIN player_team pt ON cpt.player_team = pt.player_team_id
       LEFT JOIN player p ON pt.player = p.player_id
@@ -101,8 +107,9 @@ router.get('/:seriesSlug/:cardNumber/:playerName', async (req, res) => {
       WHERE c.card_number = '${safeCardNumber}'
         AND REPLACE(REPLACE(REPLACE(LOWER(s.name), '&', 'and'), '-', ''), ' ', '') = '${safeSeriesSlug}'
         ${setFilter}
-      GROUP BY c.card_id, c.card_number, c.is_rookie, c.is_autograph, c.is_relic, c.print_run,
-               s.series_id, s.name, s.slug, st.set_id, st.name, st.slug, st.year, m.name, s.parallel_of_series, col.name, col.hex_value
+      GROUP BY c.card_id, c.card_number, c.is_rookie, c.is_autograph, c.is_relic, c.print_run, c.reference_user_card,
+               s.series_id, s.name, s.slug, st.set_id, st.name, st.slug, st.year, m.name, s.parallel_of_series, col.name, col.hex_value,
+               front_photo.photo_url, back_photo.photo_url
       HAVING ${safePlayerParts.length > 0 ?
         safePlayerParts.map(part =>
           `STRING_AGG(LOWER(CONCAT(p.first_name, ' ', p.last_name)), ', ') LIKE '%${part}%'`
@@ -121,6 +128,7 @@ router.get('/:seriesSlug/:cardNumber/:playerName', async (req, res) => {
           c.is_autograph,
           c.is_relic,
           c.print_run,
+          c.reference_user_card,
           s.series_id,
           s.name as series_name,
           s.slug as series_slug,
@@ -132,6 +140,8 @@ router.get('/:seriesSlug/:cardNumber/:playerName', async (req, res) => {
           s.parallel_of_series,
           col.name as color_name,
           col.hex_value as color_hex,
+          front_photo.photo_url as front_image_url,
+          back_photo.photo_url as back_image_url,
           STRING_AGG(CONCAT(p.first_name, ' ', p.last_name), ', ') as player_names,
           STRING_AGG(CONVERT(varchar(max), CONCAT(t.team_id, '|', t.name, '|', t.abbreviation, '|', ISNULL(t.primary_color, ''), '|', ISNULL(t.secondary_color, ''))), '~') as teams_data
         FROM card c
@@ -139,6 +149,9 @@ router.get('/:seriesSlug/:cardNumber/:playerName', async (req, res) => {
         JOIN [set] st ON s.[set] = st.set_id
         LEFT JOIN manufacturer m ON st.manufacturer = m.manufacturer_id
         LEFT JOIN color col ON s.color = col.color_id
+        LEFT JOIN user_card ref_uc ON c.reference_user_card = ref_uc.user_card_id
+        LEFT JOIN user_card_photo front_photo ON ref_uc.user_card_id = front_photo.user_card AND front_photo.sort_order = 1
+        LEFT JOIN user_card_photo back_photo ON ref_uc.user_card_id = back_photo.user_card AND back_photo.sort_order = 2
         LEFT JOIN card_player_team cpt ON c.card_id = cpt.card
         LEFT JOIN player_team pt ON cpt.player_team = pt.player_team_id
         LEFT JOIN player p ON pt.player = p.player_id
@@ -146,8 +159,9 @@ router.get('/:seriesSlug/:cardNumber/:playerName', async (req, res) => {
         WHERE (c.card_number LIKE '%${safeCardNumber}%' OR '${safeCardNumber}' LIKE '%' + c.card_number + '%')
           AND REPLACE(REPLACE(REPLACE(LOWER(s.name), '&', 'and'), '-', ''), ' ', '') LIKE '${safeSeriesSlug}%'
           ${setFilter}
-        GROUP BY c.card_id, c.card_number, c.is_rookie, c.is_autograph, c.is_relic, c.print_run,
-                 s.series_id, s.name, s.slug, st.set_id, st.name, st.slug, st.year, m.name, s.parallel_of_series, col.name, col.hex_value
+        GROUP BY c.card_id, c.card_number, c.is_rookie, c.is_autograph, c.is_relic, c.print_run, c.reference_user_card,
+                 s.series_id, s.name, s.slug, st.set_id, st.name, st.slug, st.year, m.name, s.parallel_of_series, col.name, col.hex_value,
+                 front_photo.photo_url, back_photo.photo_url
         HAVING ${safePlayerParts.length > 0 ?
         safePlayerParts.map(part =>
           `STRING_AGG(LOWER(CONCAT(p.first_name, ' ', p.last_name)), ', ') LIKE '%${part}%'`
@@ -226,7 +240,10 @@ router.get('/:seriesSlug/:cardNumber/:playerName', async (req, res) => {
       set_slug: card.set_slug,
       series_slug: card.series_slug,
       // Create card slug for the complex URL format
-      card_slug: `${card.card_number.toLowerCase().replace(/[^a-z0-9-]/g, '')}-${card.player_names ? card.player_names.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-') : 'unknown'}`
+      card_slug: `${card.card_number.toLowerCase().replace(/[^a-z0-9-]/g, '')}-${card.player_names ? card.player_names.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-') : 'unknown'}`,
+      // Reference card images
+      front_image_url: card.front_image_url || null,
+      back_image_url: card.back_image_url || null
     }
     
     res.json({

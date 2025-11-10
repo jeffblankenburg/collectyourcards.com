@@ -1,16 +1,17 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import Icon from './Icon'
 import TeamFilterCircles from './TeamFilterCircles'
 import './PlayerDetailHeader.css'
 
 /**
  * PlayerDetailHeader - Reusable header component for player detail pages
- * 
+ *
  * Features:
  * - Player name with HOF icon
  * - Nickname and birthdate
  * - Team filter circles
- * - Placeholder card photos
+ * - Display card photo with zoom
  * - Interactive stats with filtering
  */
 const PlayerDetailHeader = ({
@@ -22,9 +23,26 @@ const PlayerDetailHeader = ({
   activeStatFilter = null,
   onStatFilter = null
 }) => {
+  const [showImageViewer, setShowImageViewer] = useState(false)
+
+  // Keyboard navigation for image viewer
+  useEffect(() => {
+    if (!showImageViewer) return
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        setShowImageViewer(false)
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [showImageViewer])
+
   if (!player) return null
 
   return (
+    <>
     <header className="player-header-combined">
       <div className="player-header-layout">
         {/* Left side - Player Info */}
@@ -55,20 +73,25 @@ const PlayerDetailHeader = ({
           )}
         </div>
 
-        {/* Card Photos */}
-        <div className="card-photo-placeholder">
-          <div className="card-placeholder">
-            <Icon name="layers" size={48} className="card-icon" />
-            <span>Card Photo 1</span>
+        {/* Display Card Photo */}
+        {player.display_card_front_image ? (
+          <div className="card-photo-display">
+            <img
+              src={player.display_card_front_image}
+              alt={`${player.first_name} ${player.last_name}`}
+              className="display-card-image clickable"
+              onClick={() => setShowImageViewer(true)}
+              title="Click to view full size"
+            />
           </div>
-        </div>
-
-        <div className="card-photo-placeholder">
-          <div className="card-placeholder">
-            <Icon name="layers" size={48} className="card-icon" />
-            <span>Card Photo 2</span>
+        ) : (
+          <div className="card-photo-placeholder">
+            <div className="card-placeholder">
+              <Icon name="layers" size={48} className="card-icon" />
+              <span>No Card Image</span>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Right side - Stats */}
         <div className="player-stats-inline">
@@ -133,7 +156,33 @@ const PlayerDetailHeader = ({
           </div>
         </div>
       </div>
+
     </header>
+
+    {/* Full-screen Image Viewer - Rendered as Portal */}
+    {showImageViewer && player.display_card_front_image && createPortal(
+      <div
+        className="player-image-viewer-overlay"
+        onClick={() => setShowImageViewer(false)}
+      >
+        <div className="player-image-viewer-content" onClick={(e) => e.stopPropagation()}>
+          <button
+            className="player-image-viewer-close"
+            onClick={() => setShowImageViewer(false)}
+            title="Close (Esc)"
+          >
+            <Icon name="x" size={24} />
+          </button>
+          <img
+            src={player.display_card_front_image}
+            alt={`${player.first_name} ${player.last_name}`}
+            className="player-image-viewer-image"
+          />
+        </div>
+      </div>,
+      document.body
+    )}
+  </>
   )
 }
 

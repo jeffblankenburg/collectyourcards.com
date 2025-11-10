@@ -46,12 +46,39 @@
   color: white;
 }
 
-/* Card Content */
-.playercard-content {
-  display: flex;
-  flex-direction: column;
+/* Header Row - Contains image and name/teams */
+.playercard-header-row {
+  position: relative;
   flex: 1;
   min-height: 0;
+  padding-right: 90px; /* Make room for the image */
+}
+
+/* Inline Card Image - Fixed position on right */
+.playercard-image-inline {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.playercard-display-image {
+  max-width: 80px;
+  max-height: 120px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Header Content - Name and Teams */
+.playercard-header-content {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
 }
 
 /* Player Name Section - At the very top */
@@ -102,7 +129,7 @@
   column-gap: 0.15rem;
   row-gap: 0.05rem;
   flex-wrap: wrap;
-  margin: 0;
+  margin: 0.25rem 0 0 0;
   flex: 1;
   line-height: 0;
 }

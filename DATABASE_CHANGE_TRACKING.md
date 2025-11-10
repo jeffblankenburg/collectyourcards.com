@@ -54,6 +54,66 @@ Each entry should include:
   ```
 - **Expected Result**: `([comment_type]='blog_post' OR [comment_type]='set' OR [comment_type]='series' OR [comment_type]='card')`
 
+### 2025-01-10: Player Display Card Feature
+- **Date**: 2025-01-10
+- **Change Type**: Schema (Column Addition + Foreign Key + Index)
+- **Description**:
+  - Added `display_card` column to `player` table to support GitHub Issue #11
+  - Allows admins to assign a specific card as the player's display image
+  - Used on player cards and player detail pages to show card images
+  - Column is nullable BIGINT that references `card.card_id`
+  - Includes foreign key constraint and index for performance
+- **Tables Affected**: `player`
+- **SQL File Reference**: DATABASE_CHANGES_FOR_PRODUCTION.sql (lines 62-101)
+- **Status**: ✅ Applied to Dev, ⏳ Pending Production
+- **Related Features**:
+  - Admin interface for selecting display cards from player's cards
+  - Filters to only cards with reference images
+  - PlayerCard component updated to show card image on right 30%
+- **Verification Query**:
+  ```sql
+  SELECT
+      c.name as column_name,
+      t.name as data_type,
+      c.is_nullable,
+      c.max_length
+  FROM sys.columns c
+  JOIN sys.types t ON c.user_type_id = t.user_type_id
+  WHERE c.object_id = OBJECT_ID('player')
+  AND c.name = 'display_card'
+  ```
+- **Expected Result**: One row showing `display_card` as BIGINT, nullable
+
+### 2025-01-10: Card Reference Images Feature
+- **Date**: 2025-01-10
+- **Change Type**: Schema (Column Addition + Foreign Key + Index)
+- **Description**:
+  - Added `reference_user_card` column to `card` table
+  - Points to a `user_card` record that contains canonical/official images for the card
+  - Allows cards to reference existing community-uploaded photos without duplication
+  - Column is nullable BIGINT that references `user_card.user_card_id`
+  - Includes foreign key constraint and index for performance
+- **Tables Affected**: `card`
+- **SQL File Reference**: DATABASE_CHANGES_FOR_PRODUCTION.sql (lines 104-144)
+- **Status**: ✅ Applied to Dev, ⏳ Pending Production
+- **Related Features**:
+  - Admin interface for viewing community images and selecting reference card
+  - API endpoints updated to include front_image_url and back_image_url from reference card
+  - Card detail pages show reference images
+- **Verification Query**:
+  ```sql
+  SELECT
+      c.name as column_name,
+      t.name as data_type,
+      c.is_nullable,
+      c.max_length
+  FROM sys.columns c
+  JOIN sys.types t ON c.user_type_id = t.user_type_id
+  WHERE c.object_id = OBJECT_ID('card')
+  AND c.name = 'reference_user_card'
+  ```
+- **Expected Result**: One row showing `reference_user_card` as BIGINT, nullable
+
 ---
 
 ## Notes

@@ -4,6 +4,7 @@ import axios from 'axios'
 import { useToast } from '../contexts/ToastContext'
 import Icon from '../components/Icon'
 import './AdminSets.css'
+import './AdminCardsScoped.css'
 import '../components/UniversalCardTable.css'
 
 function AdminCards() {
@@ -28,6 +29,9 @@ function AdminCards() {
   const [playerSearchTerm, setPlayerSearchTerm] = useState('')
   const [filteredPlayers, setFilteredPlayers] = useState([])
   const [selectedResultIndex, setSelectedResultIndex] = useState(-1)
+  const [communityImages, setCommunityImages] = useState([])
+  const [loadingCommunityImages, setLoadingCommunityImages] = useState(false)
+  const [currentReferenceUserCard, setCurrentReferenceUserCard] = useState(null)
   const { addToast } = useToast()
 
   // Function to determine text color based on background brightness
@@ -192,7 +196,7 @@ function AdminCards() {
     setShowEditModal(true)
   }
 
-  const handleEditCard = (card) => {
+  const handleEditCard = async (card) => {
     setEditingCard(card)
     setEditForm({
       card_number: card.card_number || '',
@@ -206,6 +210,11 @@ function AdminCards() {
     // Set current players for this card
     setCardPlayers(card.card_player_teams || [])
     setShowEditModal(true)
+
+    // Fetch community images for this card
+    if (card.card_id) {
+      await loadCommunityImages(card.card_id)
+    }
   }
 
   const handleCloseModal = () => {
@@ -214,6 +223,40 @@ function AdminCards() {
     setEditForm({})
     setCardPlayers([])
     setSaving(false)
+    setCommunityImages([])
+    setCurrentReferenceUserCard(null)
+  }
+
+  const loadCommunityImages = async (cardId) => {
+    try {
+      setLoadingCommunityImages(true)
+      const response = await axios.get(`/api/admin/cards/${cardId}/community-images`)
+      setCommunityImages(response.data.community_images || [])
+      setCurrentReferenceUserCard(response.data.current_reference)
+    } catch (error) {
+      console.error('Error loading community images:', error)
+      addToast('Failed to load community images', 'error')
+    } finally {
+      setLoadingCommunityImages(false)
+    }
+  }
+
+  const handleSelectReferenceImage = async (userCardId) => {
+    if (!editingCard) return
+
+    try {
+      // Update the reference image on the server
+      await axios.put(`/api/admin/cards/${editingCard.card_id}/reference-image`, {
+        user_card_id: userCardId
+      })
+
+      // Update local state
+      setCurrentReferenceUserCard(userCardId)
+      addToast('Reference image updated successfully', 'success')
+    } catch (error) {
+      console.error('Error updating reference image:', error)
+      addToast(`Failed to update reference image: ${error.response?.data?.message || error.message}`, 'error')
+    }
   }
 
 
@@ -572,29 +615,49 @@ function AdminCards() {
       
       {/* Edit/Add Card Modal */}
       {showEditModal && (
-        <div className="modal-overlay" onClick={handleCloseModal}>
-          <div className="edit-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>{editingCard ? `Edit Card #${editingCard.card_id}` : 'Add New Card'}</h3>
-              <button className="close-btn" onClick={handleCloseModal}>
+        <div className="admin-cards-modal-overlay" onClick={handleCloseModal}>
+          <div className="admin-cards-edit-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="admin-cards-modal-header">
+              <div className="admin-cards-modal-title">
+                {editingCard ? (
+                  <>
+                    <h3 className="admin-cards-modal-title-main">Edit Card #{editForm.card_number || 'N/A'}</h3>
+                    {selectedSeries && selectedSet && (
+                      <span className="admin-cards-modal-subtitle">
+                        {selectedSet.year} {selectedSeries.name}
+                      </span>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <h3 className="admin-cards-modal-title-main">Add New Card</h3>
+                    {selectedSeries && selectedSet && (
+                      <span className="admin-cards-modal-subtitle">
+                        {selectedSet.year} {selectedSeries.name}
+                      </span>
+                    )}
+                  </>
+                )}
+              </div>
+              <button className="admin-cards-close-btn" onClick={handleCloseModal}>
                 <Icon name="x" size={20} />
               </button>
             </div>
 
-            <div className="modal-body">
+            <div className="admin-cards-modal-body">
 
               {editingCard && (
-                <div className="form-row">
-                  <label className="form-label">Card ID</label>
-                  <span className="form-value">{editingCard.card_id}</span>
+                <div className="admin-cards-form-row">
+                  <label className="admin-cards-form-label">Card ID</label>
+                  <span className="admin-cards-form-value">{editingCard.card_id}</span>
                 </div>
               )}
 
-                <div className="form-row">
-                  <label className="form-label">Card Number</label>
+                <div className="admin-cards-form-row">
+                  <label className="admin-cards-form-label">Card Number</label>
                   <input
                     type="text"
-                    className="form-input"
+                    className="admin-cards-form-input"
                     value={editForm.card_number}
                     onChange={(e) => handleFormChange('card_number', e.target.value)}
                     onKeyDown={handleKeyDown}
@@ -604,11 +667,11 @@ function AdminCards() {
                   />
                 </div>
 
-                <div className="form-row">
-                  <label className="form-label">Sort Order</label>
+                <div className="admin-cards-form-row">
+                  <label className="admin-cards-form-label">Sort Order</label>
                   <input
                     type="number"
-                    className="form-input"
+                    className="admin-cards-form-input"
                     value={editForm.sort_order}
                     onChange={(e) => handleFormChange('sort_order', e.target.value)}
                     onKeyDown={handleKeyDown}
@@ -616,11 +679,11 @@ function AdminCards() {
                   />
                 </div>
 
-                <div className="form-row">
-                  <label className="form-label">Print Run</label>
+                <div className="admin-cards-form-row">
+                  <label className="admin-cards-form-label">Print Run</label>
                   <input
                     type="number"
-                    className="form-input"
+                    className="admin-cards-form-input"
                     value={editForm.print_run}
                     onChange={(e) => handleFormChange('print_run', e.target.value)}
                     onKeyDown={handleKeyDown}
@@ -628,10 +691,10 @@ function AdminCards() {
                   />
                 </div>
 
-                <div className="form-row">
-                  <label className="form-label">Attributes</label>
-                  <div className="checkbox-group">
-                    <label className="checkbox-item">
+                <div className="admin-cards-form-row">
+                  <label className="admin-cards-form-label">Attributes</label>
+                  <div className="admin-cards-checkbox-group">
+                    <label className="admin-cards-checkbox-item">
                       <input
                         type="checkbox"
                         checked={editForm.is_rookie}
@@ -640,7 +703,7 @@ function AdminCards() {
                       <span>Rookie Card</span>
                     </label>
 
-                    <label className="checkbox-item">
+                    <label className="admin-cards-checkbox-item">
                       <input
                         type="checkbox"
                         checked={editForm.is_autograph}
@@ -649,7 +712,7 @@ function AdminCards() {
                       <span>Autograph</span>
                     </label>
 
-                    <label className="checkbox-item">
+                    <label className="admin-cards-checkbox-item">
                       <input
                         type="checkbox"
                         checked={editForm.is_relic}
@@ -660,10 +723,10 @@ function AdminCards() {
                   </div>
                 </div>
 
-                <div className="form-row">
-                  <label className="form-label">Notes</label>
+                <div className="admin-cards-form-row">
+                  <label className="admin-cards-form-label">Notes</label>
                   <textarea
-                    className="form-input"
+                    className="admin-cards-form-input"
                     value={editForm.notes}
                     onChange={(e) => handleFormChange('notes', e.target.value)}
                     placeholder="Enter any notes (optional)"
@@ -671,19 +734,19 @@ function AdminCards() {
                   />
                 </div>
 
-                <div className="form-row">
-                  <label className="form-label">
+                <div className="admin-cards-form-row">
+                  <label className="admin-cards-form-label">
                     Players {cardPlayers.length > 0 && `(${cardPlayers.length})`}
                   </label>
-                  <div className="players-list">
+                  <div className="admin-cards-players-list">
                     {cardPlayers.length === 0 && (
-                      <div className="no-players-message">
+                      <div className="admin-cards-no-players-message">
                         <p>No players assigned to this card</p>
                       </div>
                     )}
                     {cardPlayers.map((cardPlayer, index) => (
-                      <div key={index} className="player-item">
-                        <div className="player-info">
+                      <div key={index} className="admin-cards-player-item">
+                        <div className="admin-cards-player-info">
                           <div
                             className="mini-team-circle"
                             style={{
@@ -698,7 +761,7 @@ function AdminCards() {
                         </div>
                         <button
                           type="button"
-                          className="remove-player-btn"
+                          className="admin-cards-remove-player-btn"
                           onClick={() => handleRemovePlayer(index)}
                           title="Remove player"
                         >
@@ -706,25 +769,25 @@ function AdminCards() {
                         </button>
                       </div>
                     ))}
-                    <div className="inline-player-search">
-                      <div className="player-search-box">
-                        <Icon name="search" size={16} className="search-icon" />
+                    <div className="admin-cards-inline-player-search">
+                      <div className="admin-cards-player-search-box">
+                        <Icon name="search" size={16} className="admin-cards-search-icon" />
                         <input
                           type="text"
                           placeholder="Search players to add..."
                           value={playerSearchTerm}
                           onChange={(e) => handlePlayerSearch(e.target.value)}
                           onKeyDown={handleSearchKeyDown}
-                          className="inline-player-search-input"
+                          className="admin-cards-inline-player-search-input"
                         />
                       </div>
 
                       {filteredPlayers.length > 0 && (
-                        <div className="inline-player-search-results">
+                        <div className="admin-cards-inline-player-search-results">
                           {filteredPlayers.slice(0, 8).map((result, index) => (
                             <button
                               key={`${result.player.player_id}-${result.team.team_id}`}
-                              className={`inline-player-search-result ${index === selectedResultIndex ? 'selected' : ''}`}
+                              className={`admin-cards-inline-player-search-result ${index === selectedResultIndex ? 'selected' : ''}`}
                               onClick={() => handleAddPlayer(result.player, result.team)}
                               onMouseEnter={() => setSelectedResultIndex(index)}
                             >
@@ -738,10 +801,10 @@ function AdminCards() {
                               >
                                 {result.team.abbreviation}
                               </div>
-                              <span className="inline-player-result-name">
+                              <span className="admin-cards-inline-player-result-name">
                                 {(result.player.first_name || '')} {(result.player.last_name || '')}
                               </span>
-                              <span className="inline-team-result-name">
+                              <span className="admin-cards-inline-team-result-name">
                                 {result.team.name}
                               </span>
                             </button>
@@ -752,14 +815,89 @@ function AdminCards() {
                   </div>
                 </div>
 
+                {/* Community Images Section - Only show when editing existing card */}
+                {editingCard && (
+                  <div className="admin-cards-community-images-section">
+                    <div className="admin-cards-community-images-header">
+                      <span className="admin-cards-community-images-title">
+                        Community Images {communityImages.length > 0 && `(${communityImages.length})`}
+                      </span>
+                      {currentReferenceUserCard && (
+                        <button
+                          type="button"
+                          className="admin-cards-clear-reference-btn"
+                          onClick={() => handleSelectReferenceImage(null)}
+                          title="Clear reference image"
+                        >
+                          Clear Selection
+                        </button>
+                      )}
+                    </div>
+
+                    {loadingCommunityImages ? (
+                      <div style={{ textAlign: 'center', padding: '2rem', color: 'rgba(255, 255, 255, 0.6)' }}>
+                        <div className="card-icon-spinner"></div>
+                        <p style={{ marginTop: '1rem' }}>Loading community images...</p>
+                      </div>
+                    ) : communityImages.length === 0 ? (
+                      <div className="admin-cards-no-community-images">
+                        <p>No community images available for this card yet.</p>
+                      </div>
+                    ) : (
+                      <div className="admin-cards-community-images-table">
+                        <div className="admin-cards-images-table-header">
+                          <div className="admin-cards-images-col-user">Uploaded By</div>
+                          <div className="admin-cards-images-col-front">Front Image</div>
+                          <div className="admin-cards-images-col-back">Back Image</div>
+                        </div>
+                        <div className="admin-cards-images-table-body">
+                          {communityImages.map((userCard) => (
+                            <div
+                              key={userCard.user_card_id}
+                              className={`admin-cards-image-row ${currentReferenceUserCard === userCard.user_card_id ? 'selected' : ''}`}
+                              onClick={() => handleSelectReferenceImage(userCard.user_card_id)}
+                              title="Click to select as reference image"
+                            >
+                              <div className="admin-cards-images-col-user">
+                                <div className="admin-cards-user-info">
+                                  <span className="admin-cards-user-email">{userCard.user_email}</span>
+                                  {currentReferenceUserCard === userCard.user_card_id && (
+                                    <span className="admin-cards-selected-badge">
+                                      <Icon name="check-circle" size={16} /> Selected
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="admin-cards-images-col-front">
+                                {userCard.front_image ? (
+                                  <img src={userCard.front_image} alt="Front" className="admin-cards-thumbnail" />
+                                ) : (
+                                  <div className="admin-cards-no-image">No front image</div>
+                                )}
+                              </div>
+                              <div className="admin-cards-images-col-back">
+                                {userCard.back_image ? (
+                                  <img src={userCard.back_image} alt="Back" className="admin-cards-thumbnail" />
+                                ) : (
+                                  <div className="admin-cards-no-image">No back image</div>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
             </div>
 
-            <div className="modal-actions">
-              <button className="cancel-btn" onClick={handleCloseModal} disabled={saving}>
+            <div className="admin-cards-modal-actions">
+              <button className="admin-cards-cancel-btn" onClick={handleCloseModal} disabled={saving}>
                 Cancel
               </button>
               <button
-                className="save-btn"
+                className="admin-cards-save-btn"
                 onClick={handleSave}
                 disabled={saving}
               >

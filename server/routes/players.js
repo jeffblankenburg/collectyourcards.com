@@ -22,20 +22,32 @@ router.get('/by-slug/:slug', async (req, res) => {
     if (nameParts.length === 1) {
       // Search by first name only for single-name players - use exact match
       results = await prisma.$queryRaw`
-        SELECT TOP 1 * FROM player
-        WHERE LOWER(first_name) = ${nameParts[0]}
-        AND (last_name IS NULL OR last_name = '')
-        ORDER BY player_id
+        SELECT TOP 1
+          p.*,
+          display_card_photo.photo_url as display_card_front_image
+        FROM player p
+        LEFT JOIN card display_card ON p.display_card = display_card.card_id
+        LEFT JOIN user_card display_uc ON display_card.reference_user_card = display_uc.user_card_id
+        LEFT JOIN user_card_photo display_card_photo ON display_uc.user_card_id = display_card_photo.user_card AND display_card_photo.sort_order = 1
+        WHERE LOWER(p.first_name) = ${nameParts[0]}
+        AND (p.last_name IS NULL OR p.last_name = '')
+        ORDER BY p.player_id
       `
     } else {
       // Search by first and last name for multi-part names - use exact match
       results = await prisma.$queryRaw`
-        SELECT TOP 1 * FROM player
-        WHERE LOWER(first_name) = ${nameParts[0]}
-        AND LOWER(last_name) = ${nameParts[1]}
+        SELECT TOP 1
+          p.*,
+          display_card_photo.photo_url as display_card_front_image
+        FROM player p
+        LEFT JOIN card display_card ON p.display_card = display_card.card_id
+        LEFT JOIN user_card display_uc ON display_card.reference_user_card = display_uc.user_card_id
+        LEFT JOIN user_card_photo display_card_photo ON display_uc.user_card_id = display_card_photo.user_card AND display_card_photo.sort_order = 1
+        WHERE LOWER(p.first_name) = ${nameParts[0]}
+        AND LOWER(p.last_name) = ${nameParts[1]}
       `
     }
-    
+
     if (results.length === 0) {
       return res.status(404).json({
         error: 'Player not found',

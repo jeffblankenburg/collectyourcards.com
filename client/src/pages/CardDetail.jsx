@@ -48,6 +48,8 @@ function CardDetail() {
   const [parallelSeries, setParallelSeries] = useState([])
   const [showParallels, setShowParallels] = useState(false)
   const parallelsRef = useRef(null)
+  const [showImageViewer, setShowImageViewer] = useState(false)
+  const [currentImageView, setCurrentImageView] = useState('front') // 'front' or 'back'
 
   // Determine which URL format we're using based on presence of year/setSlug
   const isSimpleUrl = !year || !setSlug
@@ -68,6 +70,26 @@ function CardDetail() {
       document.removeEventListener('mousedown', handleClickOutside)
     }
   }, [])
+
+  // Keyboard navigation for image viewer
+  useEffect(() => {
+    if (!showImageViewer) return
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        setShowImageViewer(false)
+      } else if (event.key === 'ArrowLeft') {
+        setCurrentImageView('front')
+      } else if (event.key === 'ArrowRight') {
+        setCurrentImageView('back')
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [showImageViewer])
 
   useEffect(() => {
     fetchCardDetails()
@@ -458,6 +480,15 @@ function CardDetail() {
     setShowAddCardModal(false)
   }
 
+  const handleImageClick = (side) => {
+    setCurrentImageView(side)
+    setShowImageViewer(true)
+  }
+
+  const handleToggleImage = () => {
+    setCurrentImageView(prev => prev === 'front' ? 'back' : 'front')
+  }
+
   if (loading) {
     return (
       <div className="card-detail-page">
@@ -656,16 +687,36 @@ function CardDetail() {
           <div className="card-header-right-section">
             {/* Card Images */}
             <div className="card-images-header">
-              <div className="card-image-placeholder front-card">
-                <Icon name="image" size={24} />
-                <p>Front</p>
-                <small>No Image</small>
-              </div>
-              <div className="card-image-placeholder back-card">
-                <Icon name="image" size={24} />
-                <p>Back</p>
-                <small>No Image</small>
-              </div>
+              {card.front_image_url ? (
+                <img
+                  src={card.front_image_url}
+                  alt={`${card.player_names} #${card.card_number} - Front`}
+                  className="card-image front-card card-image-clickable"
+                  onClick={() => handleImageClick('front')}
+                  title="Click to view full size"
+                />
+              ) : (
+                <div className="card-image-placeholder front-card">
+                  <Icon name="image" size={24} />
+                  <p>Front</p>
+                  <small>No Image</small>
+                </div>
+              )}
+              {card.back_image_url ? (
+                <img
+                  src={card.back_image_url}
+                  alt={`${card.player_names} #${card.card_number} - Back`}
+                  className="card-image back-card card-image-clickable"
+                  onClick={() => handleImageClick('back')}
+                  title="Click to view full size"
+                />
+              ) : (
+                <div className="card-image-placeholder back-card">
+                  <Icon name="image" size={24} />
+                  <p>Back</p>
+                  <small>No Image</small>
+                </div>
+              )}
             </div>
 
             {/* Stats Boxes */}
@@ -864,6 +915,67 @@ function CardDetail() {
           locations={locations}
           gradingAgencies={gradingAgencies}
         />
+      )}
+
+      {/* Full-Screen Image Viewer */}
+      {showImageViewer && (card.front_image_url || card.back_image_url) && (
+        <div className="card-image-viewer-overlay" onClick={() => setShowImageViewer(false)}>
+          <div className="card-image-viewer-container" onClick={(e) => e.stopPropagation()}>
+            {/* Close Button */}
+            <button
+              className="card-image-viewer-close"
+              onClick={() => setShowImageViewer(false)}
+              title="Close (Esc)"
+            >
+              <Icon name="x" size={24} />
+            </button>
+
+            {/* Image Display */}
+            <div className="card-image-viewer-image-container">
+              {currentImageView === 'front' && card.front_image_url && (
+                <img
+                  src={card.front_image_url}
+                  alt={`${card.player_names} #${card.card_number} - Front`}
+                  className="card-image-viewer-image"
+                />
+              )}
+              {currentImageView === 'back' && card.back_image_url && (
+                <img
+                  src={card.back_image_url}
+                  alt={`${card.player_names} #${card.card_number} - Back`}
+                  className="card-image-viewer-image"
+                />
+              )}
+            </div>
+
+            {/* Navigation - Only show if both images exist */}
+            {card.front_image_url && card.back_image_url && (
+              <div className="card-image-viewer-nav">
+                <button
+                  className={`card-image-viewer-nav-btn ${currentImageView === 'front' ? 'active' : ''}`}
+                  onClick={() => setCurrentImageView('front')}
+                  title="Front (Left Arrow)"
+                >
+                  <Icon name="chevron-left" size={32} />
+                  <span>Front</span>
+                </button>
+                <button
+                  className={`card-image-viewer-nav-btn ${currentImageView === 'back' ? 'active' : ''}`}
+                  onClick={() => setCurrentImageView('back')}
+                  title="Back (Right Arrow)"
+                >
+                  <span>Back</span>
+                  <Icon name="chevron-right" size={32} />
+                </button>
+              </div>
+            )}
+
+            {/* Label */}
+            <div className="card-image-viewer-label">
+              {currentImageView === 'front' ? 'Front' : 'Back'} - {card.player_names} #{card.card_number}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

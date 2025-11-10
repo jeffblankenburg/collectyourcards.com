@@ -117,6 +117,10 @@ function AdminPlayers() {
   const [selectedPlayerTeam, setSelectedPlayerTeam] = useState(null)
   const [reassigningCards, setReassigningCards] = useState(false)
   const [collapsedTeams, setCollapsedTeams] = useState(new Set())
+  const [showDisplayCardModal, setShowDisplayCardModal] = useState(false)
+  const [displayCardOptions, setDisplayCardOptions] = useState([])
+  const [selectedDisplayCard, setSelectedDisplayCard] = useState(null)
+  const [settingDisplayCard, setSettingDisplayCard] = useState(false)
   const addButtonRef = useRef(null)
   const { addToast } = useToast()
 
@@ -329,20 +333,35 @@ function AdminPlayers() {
       birthdate: player.birthdate ? player.birthdate.split('T')[0] : '',
       is_hof: player.is_hof || false
     })
-    
+
     // Load teams if not already loaded
     if (availableTeams.length === 0) {
       await loadTeams()
     }
-    
+
     // Load detailed team data with card counts for this player
     try {
       const response = await axios.get(`/api/admin/players/${player.player_id}/teams`)
       // Update the player object with detailed team data that includes card counts
-      const updatedPlayer = {
+      let updatedPlayer = {
         ...player,
         teams: response.data.teams || []
       }
+
+      // Load display card details if player has one assigned
+      if (player.display_card) {
+        try {
+          const cardResponse = await axios.get(`/api/admin/players/${player.player_id}/cards`)
+          const cards = cardResponse.data.cards || []
+          const displayCard = cards.find(c => c.card_id === player.display_card)
+          if (displayCard) {
+            updatedPlayer.displayCardDetails = displayCard
+          }
+        } catch (error) {
+          console.error('Error loading display card details:', error)
+        }
+      }
+
       setEditingPlayer(updatedPlayer)
     } catch (error) {
       console.error('Error loading player team details:', error)
@@ -874,6 +893,67 @@ function AdminPlayers() {
     }
   }
 
+  // Display card handlers
+  const handleShowDisplayCardModal = async () => {
+    if (!editingPlayer) return
+
+    try {
+      const response = await axios.get(`/api/admin/players/${editingPlayer.player_id}/cards`)
+      const cards = response.data.cards || []
+
+      // Filter to only cards that have images
+      const cardsWithImages = cards.filter(card =>
+        card.front_image_url || card.back_image_url
+      )
+
+      setDisplayCardOptions(cardsWithImages)
+      setSelectedDisplayCard(editingPlayer.display_card || null)
+      setShowDisplayCardModal(true)
+    } catch (error) {
+      console.error('Error loading player cards:', error)
+      addToast('Failed to load player cards', 'error')
+    }
+  }
+
+  const handleSetDisplayCard = async () => {
+    if (!editingPlayer) return
+
+    try {
+      setSettingDisplayCard(true)
+
+      await axios.put(`/api/admin/players/${editingPlayer.player_id}/display-card`, {
+        card_id: selectedDisplayCard
+      })
+
+      addToast(
+        selectedDisplayCard
+          ? 'Display card assigned successfully'
+          : 'Display card removed successfully',
+        'success'
+      )
+
+      // Update the editing player with the new display card
+      setEditingPlayer({
+        ...editingPlayer,
+        display_card: selectedDisplayCard
+      })
+
+      // Close modal
+      setShowDisplayCardModal(false)
+      setDisplayCardOptions([])
+      setSelectedDisplayCard(null)
+
+      // Reload main players list
+      await loadPlayers(searchTerm, showZeroCardsOnly, showDuplicatesOnly)
+
+    } catch (error) {
+      console.error('Error setting display card:', error)
+      addToast(error.response?.data?.message || 'Failed to set display card', 'error')
+    } finally {
+      setSettingDisplayCard(false)
+    }
+  }
+
   return (
     <div className="admin-players-page">
       <div className="admin-header">
@@ -1156,6 +1236,36 @@ function AdminPlayers() {
                     <span>Hall of Fame</span>
                     {editForm.is_hof && <Icon name="check" size={16} className="hof-check" />}
                   </button>
+                </div>
+
+                {/* Display Card Section */}
+                <div className="form-group">
+                  <label>Display Card</label>
+                  <button
+                    type="button"
+                    className="set-display-card-btn-main"
+                    onClick={handleShowDisplayCardModal}
+                    title="Set display card for this player"
+                  >
+                    <Icon name="image" size={16} />
+                    {editingPlayer.display_card ? 'Change Display Card' : 'Set Display Card'}
+                  </button>
+                  {editingPlayer.displayCardDetails && (
+                    <div className="current-display-card">
+                      <div className="display-card-images">
+                        {editingPlayer.displayCardDetails.front_image_url && (
+                          <img src={editingPlayer.displayCardDetails.front_image_url} alt="Front" />
+                        )}
+                        {editingPlayer.displayCardDetails.back_image_url && (
+                          <img src={editingPlayer.displayCardDetails.back_image_url} alt="Back" />
+                        )}
+                      </div>
+                      <div className="display-card-info">
+                        <span className="display-card-series">{editingPlayer.displayCardDetails.series_name}</span>
+                        <span className="display-card-number">#{editingPlayer.displayCardDetails.card_number}</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Teams Section */}
@@ -2123,6 +2233,154 @@ function AdminPlayers() {
                     <>
                       <Icon name="shuffle" size={16} />
                       Reassign {selectedCardIds.length} Card{selectedCardIds.length !== 1 ? 's' : ''}
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Display Card Assignment Modal */}
+      {showDisplayCardModal && editingPlayer && (
+        <div className="modal-overlay" onClick={() => setShowDisplayCardModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>
+                <Icon name="image" size={20} />
+                Set Display Card - {getPlayerNameString(editingPlayer)}
+              </h3>
+              <button
+                className="modal-close-btn"
+                onClick={() => setShowDisplayCardModal(false)}
+                type="button"
+              >
+                <Icon name="x" size={20} />
+              </button>
+            </div>
+
+            <div className="modal-form">
+              <div className="form-group">
+                <p className="field-hint">
+                  Select one card to use as the display image for this player on player cards and detail pages.
+                </p>
+              </div>
+
+              {/* Remove display card option */}
+              {editingPlayer.display_card && (
+                <div className="form-group">
+                  <button
+                    type="button"
+                    className="remove-display-card-btn"
+                    onClick={() => setSelectedDisplayCard(null)}
+                    disabled={settingDisplayCard}
+                  >
+                    <Icon name="x-circle" size={16} />
+                    Remove Display Card
+                  </button>
+                </div>
+              )}
+
+              {/* Cards list */}
+              {displayCardOptions.length > 0 ? (
+                <div className="display-card-options">
+                  {(() => {
+                    // Group cards by team
+                    const cardsByTeam = {}
+                    displayCardOptions.forEach(card => {
+                      const teamKey = card.team_id
+                      if (!cardsByTeam[teamKey]) {
+                        cardsByTeam[teamKey] = {
+                          team_name: card.team_name,
+                          team_abbreviation: card.team_abbreviation,
+                          primary_color: card.primary_color,
+                          secondary_color: card.secondary_color,
+                          cards: []
+                        }
+                      }
+                      cardsByTeam[teamKey].cards.push(card)
+                    })
+
+                    return Object.entries(cardsByTeam).map(([teamId, group]) => (
+                      <div key={teamId} className="display-card-team-group">
+                        <div className="display-card-team-header">
+                          <div
+                            className="team-circle-base team-circle-sm"
+                            style={{
+                              '--primary-color': group.primary_color || '#666',
+                              '--secondary-color': group.secondary_color || '#999'
+                            }}
+                            title={group.team_name}
+                          >
+                            {group.team_abbreviation}
+                          </div>
+                          <span className="team-name">{group.team_name} ({group.cards.length} cards)</span>
+                        </div>
+                        <div className="display-card-list">
+                          {group.cards.map(card => (
+                            <button
+                              key={card.card_id}
+                              type="button"
+                              className={`display-card-option ${selectedDisplayCard === card.card_id ? 'selected' : ''}`}
+                              onClick={() => setSelectedDisplayCard(card.card_id)}
+                              disabled={settingDisplayCard}
+                            >
+                              <div className="display-card-images-small">
+                                {card.front_image_url && (
+                                  <img src={card.front_image_url} alt="Front" />
+                                )}
+                                {card.back_image_url && (
+                                  <img src={card.back_image_url} alt="Back" />
+                                )}
+                              </div>
+                              <div className="card-info">
+                                <span className="card-details">
+                                  {card.series_name} #{card.card_number}
+                                </span>
+                              </div>
+                              {selectedDisplayCard === card.card_id && (
+                                <Icon name="check-circle" size={20} className="check-icon" />
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ))
+                  })()}
+                </div>
+              ) : (
+                <div className="empty-state">
+                  <Icon name="inbox" size={48} />
+                  <p>No cards found for this player</p>
+                </div>
+              )}
+
+              {/* Action buttons */}
+              <div className="modal-actions">
+                <button
+                  type="button"
+                  className="btn-cancel"
+                  onClick={() => setShowDisplayCardModal(false)}
+                  disabled={settingDisplayCard}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="btn-primary"
+                  onClick={handleSetDisplayCard}
+                  disabled={settingDisplayCard || selectedDisplayCard === editingPlayer.display_card}
+                >
+                  {settingDisplayCard ? (
+                    <>
+                      <div className="spinner"></div>
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Icon name="check" size={16} />
+                      {selectedDisplayCard ? 'Set Display Card' : 'Remove Display Card'}
                     </>
                   )}
                 </button>

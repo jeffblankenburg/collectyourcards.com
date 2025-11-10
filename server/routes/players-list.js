@@ -97,12 +97,16 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
               JOIN player_team pt ON cpt.player_team = pt.player_team_id
               WHERE pt.player = p.player_id AND uc.[user] = ${userId}
             ) as user_card_count,
-            MAX(pv.viewed_at) as last_viewed
+            MAX(pv.viewed_at) as last_viewed,
+            display_card_photo.photo_url as display_card_front_image
           FROM player_views pv
           JOIN player p ON pv.player_id = p.player_id
+          LEFT JOIN card display_card ON p.display_card = display_card.card_id
+          LEFT JOIN user_card display_uc ON display_card.reference_user_card = display_uc.user_card_id
+          LEFT JOIN user_card_photo display_card_photo ON display_uc.user_card_id = display_card_photo.user_card AND display_card_photo.sort_order = 1
           WHERE pv.user_id = ${userId}
             AND pv.viewed_at >= DATEADD(day, -30, GETDATE())
-          GROUP BY p.player_id, p.first_name, p.last_name, p.nick_name, p.slug, p.is_hof, p.card_count
+          GROUP BY p.player_id, p.first_name, p.last_name, p.nick_name, p.slug, p.is_hof, p.card_count, display_card_photo.photo_url
           ORDER BY MAX(pv.viewed_at) DESC
         )
         SELECT * FROM RecentPlayers
@@ -140,11 +144,15 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
               JOIN player_team pt ON cpt.player_team = pt.player_team_id
               WHERE pt.player = p.player_id AND uc.[user] = ${userId}
             ) as user_card_count,
-            COUNT(pv.view_id) as view_count
+            COUNT(pv.view_id) as view_count,
+            display_card_photo.photo_url as display_card_front_image
           FROM player_views pv
           JOIN player p ON pv.player_id = p.player_id
+          LEFT JOIN card display_card ON p.display_card = display_card.card_id
+          LEFT JOIN user_card display_uc ON display_card.reference_user_card = display_uc.user_card_id
+          LEFT JOIN user_card_photo display_card_photo ON display_uc.user_card_id = display_card_photo.user_card AND display_card_photo.sort_order = 1
           WHERE pv.viewed_at >= DATEADD(day, -7, GETDATE())
-          GROUP BY p.player_id, p.first_name, p.last_name, p.nick_name, p.slug, p.is_hof, p.card_count
+          GROUP BY p.player_id, p.first_name, p.last_name, p.nick_name, p.slug, p.is_hof, p.card_count, display_card_photo.photo_url
           ORDER BY COUNT(pv.view_id) DESC
         )
         SELECT * FROM PopularPlayers
@@ -192,8 +200,12 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
             JOIN card_player_team cpt ON c.card_id = cpt.card
             JOIN player_team pt ON cpt.player_team = pt.player_team_id
             WHERE pt.player = p.player_id AND uc.[user] = ${userId}
-          ) as user_card_count` : ''}
+          ) as user_card_count` : ''},
+          display_card_photo.photo_url as display_card_front_image
         FROM player p
+        LEFT JOIN card display_card ON p.display_card = display_card.card_id
+        LEFT JOIN user_card display_uc ON display_card.reference_user_card = display_uc.user_card_id
+        LEFT JOIN user_card_photo display_card_photo ON display_uc.user_card_id = display_card_photo.user_card AND display_card_photo.sort_order = 1
         ${searchCondition}
         ORDER BY ${sortColumn} ${sortDirection}
         OFFSET ${offset} ROWS
@@ -232,7 +244,7 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
         ) WITHIN GROUP (ORDER BY pt.team_card_count DESC) as teams_json
       FROM PlayerData pd
       LEFT JOIN PlayerTeams pt ON pd.player_id = pt.player_id
-      GROUP BY pd.player_id, pd.first_name, pd.last_name, pd.nick_name, pd.slug, pd.is_hof, pd.card_count, pd.rookie_count${userId ? ', pd.user_card_count' : ''}
+      GROUP BY pd.player_id, pd.first_name, pd.last_name, pd.nick_name, pd.slug, pd.is_hof, pd.card_count, pd.rookie_count${userId ? ', pd.user_card_count' : ''}, pd.display_card_front_image
       ORDER BY ${sortColumn} ${sortDirection}
     `
 
@@ -249,7 +261,8 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
       card_count: Number(player.card_count),
       rookie_count: Number(player.rookie_count || 0),
       user_card_count: userId ? Number(player.user_card_count || 0) : undefined,
-      teams: player.teams_json ? 
+      display_card_front_image: player.display_card_front_image || null,
+      teams: player.teams_json ?
         player.teams_json.split('|||').map(teamStr => {
           try {
             const team = JSON.parse(teamStr)
@@ -324,6 +337,7 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
         card_count: Number(player.card_count),
         rookie_count: Number(player.rookie_count || 0),
         user_card_count: userId ? Number(player.user_card_count || 0) : undefined,
+        display_card_front_image: player.display_card_front_image || null,
         teams: teamsMap[Number(player.player_id)] || [],
         is_priority: true
       }))

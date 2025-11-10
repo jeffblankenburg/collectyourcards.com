@@ -191,4 +191,134 @@ router.put('/:id', requireDataAdmin, async (req, res) => {
   }
 })
 
+// GET /api/admin/cards/:id/community-images - Get all community-uploaded images for a card
+router.get('/:id/community-images', requireDataAdmin, async (req, res) => {
+  try {
+    const cardId = parseInt(req.params.id)
+
+    if (!cardId) {
+      return res.status(400).json({ error: 'Card ID is required' })
+    }
+
+    // Check if card exists
+    const card = await prisma.card.findUnique({
+      where: { card_id: cardId }
+    })
+
+    if (!card) {
+      return res.status(404).json({ error: 'Card not found' })
+    }
+
+    // Find all user_card records for this card with their photos
+    const userCards = await prisma.user_card.findMany({
+      where: {
+        card: BigInt(cardId)
+      },
+      include: {
+        user_card_photo_user_card_photo_user_cardTouser_card: {
+          orderBy: {
+            sort_order: 'asc'
+          }
+        },
+        user_user_card_userTouser: {
+          select: {
+            user_id: true,
+            email: true
+          }
+        }
+      }
+    })
+
+    // Transform the data for easier consumption
+    const communityImages = userCards.map(uc => {
+      const photos = uc.user_card_photo_user_card_photo_user_cardTouser_card
+      return {
+        user_card_id: Number(uc.user_card_id),
+        user_email: uc.user_user_card_userTouser?.email || 'Unknown',
+        created: uc.created,
+        front_image: photos.find(p => p.sort_order === 1)?.photo_url || null,
+        back_image: photos.find(p => p.sort_order === 2)?.photo_url || null,
+        has_images: photos.length > 0,
+        photo_count: photos.length
+      }
+    }).filter(uc => uc.has_images) // Only return user_cards that have at least one photo
+
+    res.json({
+      card_id: cardId,
+      current_reference: card.reference_user_card ? Number(card.reference_user_card) : null,
+      community_images: communityImages
+    })
+
+  } catch (error) {
+    console.error('Error fetching community images:', error)
+    res.status(500).json({
+      error: 'Failed to fetch community images',
+      message: error.message
+    })
+  }
+})
+
+// PUT /api/admin/cards/:id/reference-image - Update the reference_user_card for a card
+router.put('/:id/reference-image', requireDataAdmin, async (req, res) => {
+  try {
+    const cardId = parseInt(req.params.id)
+    const { user_card_id } = req.body
+
+    if (!cardId) {
+      return res.status(400).json({ error: 'Card ID is required' })
+    }
+
+    // Check if card exists
+    const card = await prisma.card.findUnique({
+      where: { card_id: cardId }
+    })
+
+    if (!card) {
+      return res.status(404).json({ error: 'Card not found' })
+    }
+
+    // If user_card_id is provided, validate it exists and belongs to this card
+    if (user_card_id !== null && user_card_id !== undefined) {
+      const userCard = await prisma.user_card.findUnique({
+        where: { user_card_id: BigInt(user_card_id) },
+        include: {
+          user_card_photo_user_card_photo_user_cardTouser_card: true
+        }
+      })
+
+      if (!userCard) {
+        return res.status(404).json({ error: 'User card not found' })
+      }
+
+      if (Number(userCard.card) !== cardId) {
+        return res.status(400).json({ error: 'User card does not belong to this card' })
+      }
+
+      if (userCard.user_card_photo_user_card_photo_user_cardTouser_card.length === 0) {
+        return res.status(400).json({ error: 'User card has no photos' })
+      }
+    }
+
+    // Update the card's reference_user_card
+    await prisma.card.update({
+      where: { card_id: cardId },
+      data: {
+        reference_user_card: user_card_id ? BigInt(user_card_id) : null
+      }
+    })
+
+    res.json({
+      message: 'Reference image updated successfully',
+      reference_user_card: user_card_id ? Number(user_card_id) : null
+    })
+
+  } catch (error) {
+    console.error('Error updating reference image:', error)
+    res.status(500).json({
+      error: 'Failed to update reference image',
+      message: error.message
+    })
+  }
+})
+
 module.exports = router

@@ -102,9 +102,13 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
           p.last_name,
           p.nick_name,
           p.is_hof,
-          p.card_count
+          p.card_count,
+          display_card_photo.photo_url as display_card_front_image
           ${isAuthUserDefaultView ? ', ISNULL(upc.user_collection_count, 0) as user_collection_count' : ''}
         FROM player p
+        LEFT JOIN card display_card ON p.display_card = display_card.card_id
+        LEFT JOIN user_card display_uc ON display_card.reference_user_card = display_uc.user_card_id
+        LEFT JOIN user_card_photo display_card_photo ON display_uc.user_card_id = display_card_photo.user_card AND display_card_photo.sort_order = 1
         ${isAuthUserDefaultView ? 'LEFT JOIN UserPlayerCounts upc ON p.player_id = upc.player_id' : ''}
         ${searchCondition}
         ORDER BY ${isAuthUserDefaultView ? 'ISNULL(upc.user_collection_count, 0) DESC, p.card_count DESC' : sortColumn + ' ' + sortDirection}
@@ -144,7 +148,7 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
         ) WITHIN GROUP (ORDER BY pt.team_card_count DESC) as teams_json
       FROM PlayerData pd
       LEFT JOIN PlayerTeams pt ON pd.player_id = pt.player_id
-      GROUP BY pd.player_id, pd.first_name, pd.last_name, pd.nick_name, pd.is_hof, pd.card_count${isAuthUserDefaultView ? ', pd.user_collection_count' : ''}
+      GROUP BY pd.player_id, pd.first_name, pd.last_name, pd.nick_name, pd.is_hof, pd.card_count, pd.display_card_front_image${isAuthUserDefaultView ? ', pd.user_collection_count' : ''}
       ORDER BY ${isAuthUserDefaultView ? 'pd.user_collection_count DESC, pd.card_count DESC' : sortColumn + ' ' + sortDirection}
     `
 
@@ -174,6 +178,7 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
         nick_name: player.nick_name,
         is_hof: player.is_hof,
         card_count: Number(player.card_count),
+        display_card_front_image: player.display_card_front_image || null,
         teams: player.teams_json ?
           player.teams_json.split('|||').map(teamStr => {
             try {
