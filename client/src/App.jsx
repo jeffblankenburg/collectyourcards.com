@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import axios from 'axios'
 import { useAuth } from './contexts/AuthContext'
 import UniversalSearch from './components/UniversalSearch'
+import CardCarousel from './components/CardCarousel'
 import Icon from './components/Icon'
 import './HomePage.css'
 
@@ -43,6 +44,9 @@ function App() {
           <p>Search through {databaseStats.cards.toLocaleString()} cards, {databaseStats.players.toLocaleString()} players, and {databaseStats.teams.toLocaleString()} teams</p>
           <UniversalSearch className="home-page-search" />
         </div>
+
+        {/* Card Carousel */}
+        <CardCarousel />
 
         {!isAuthenticated && (
           <div className="home-page-auth-section">

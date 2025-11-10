@@ -389,6 +389,82 @@ router.get('/rainbow', optionalAuthMiddleware, async (req, res) => {
   }
 })
 
+// GET /api/cards/carousel - Get random card images for home page carousel
+router.get('/carousel', async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 20
+
+    // Get random card front images with navigation data
+    // Query user_card_photo directly for ANY user upload (not just reference images)
+    const query = `
+      SELECT TOP ${limit}
+        ucp.photo_url,
+        ucp.user_card_photo_id,
+        c.card_id,
+        c.card_number,
+        s.slug as series_slug,
+        s.name as series_name,
+        st.year as set_year,
+        st.slug as set_slug,
+        p.first_name,
+        p.last_name,
+        p.player_id
+      FROM user_card_photo ucp
+      JOIN user_card uc ON ucp.user_card = uc.user_card_id
+      JOIN card c ON uc.card = c.card_id
+      JOIN series s ON c.series = s.series_id
+      JOIN [set] st ON s.[set] = st.set_id
+      LEFT JOIN card_player_team cpt ON c.card_id = cpt.card
+      LEFT JOIN player_team pt ON cpt.player_team = pt.player_team_id
+      LEFT JOIN player p ON pt.player = p.player_id
+      WHERE ucp.sort_order = 1
+        AND ucp.photo_url IS NOT NULL
+        AND p.player_id IS NOT NULL
+      ORDER BY NEWID()
+    `
+
+    const results = await prisma.$queryRawUnsafe(query)
+
+    // Transform results and generate player slugs
+    const carouselCards = results.map(row => {
+      const playerSlug = `${row.first_name || ''}-${row.last_name || ''}`
+        .toLowerCase()
+        .replace(/[^a-z0-9\\s-]/g, '')
+        .replace(/\\s+/g, '-')
+        .replace(/-+/g, '-')
+        .trim()
+
+      return {
+        photo_url: row.photo_url,
+        card_id: Number(row.card_id),
+        card_number: row.card_number,
+        series_slug: row.series_slug,
+        series_name: row.series_name,
+        set_year: Number(row.set_year),
+        set_slug: row.set_slug,
+        player_name: `${row.first_name || ''} ${row.last_name || ''}`.trim(),
+        player_slug: playerSlug,
+        // URL for CardDetail page
+        url: `/sets/${row.set_year}/${row.set_slug}/${row.series_slug}/${encodeURIComponent(row.card_number)}/${playerSlug}`
+      }
+    })
+
+    res.json({
+      success: true,
+      cards: carouselCards,
+      total: carouselCards.length
+    })
+
+  } catch (error) {
+    console.error('Error fetching carousel cards:', error)
+    res.status(500).json({
+      error: 'Database error',
+      message: 'Failed to fetch carousel cards',
+      details: error.message
+    })
+  }
+})
+
 // GET /api/parallel-series - Get parallel series for a specific card number in a set
 router.get('/parallel-series', async (req, res) => {
   try {
