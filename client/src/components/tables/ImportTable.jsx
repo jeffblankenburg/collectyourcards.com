@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react'
+import React, { useState, useMemo, useEffect, useRef } from 'react'
 import axios from 'axios'
 import { useToast } from '../../contexts/ToastContext'
 import Icon from '../Icon'
@@ -6,7 +6,7 @@ import './ImportTableScoped.css'
 
 /**
  * ImportTable - Enhanced import review with granular player/team/player_team matching
- * 
+ *
  * Features:
  * - Separate validation for players, teams, and player_team combinations
  * - Fuzzy matching suggestions for typos
@@ -33,7 +33,9 @@ const ImportTable = ({
   const [bulkPrintRun, setBulkPrintRun] = useState('')
   const [bulkColorId, setBulkColorId] = useState('')
   const [showBulkModal, setShowBulkModal] = useState(false)
-  
+  const [openColorDropdown, setOpenColorDropdown] = useState(null) // Track which color dropdown is open (by sortOrder)
+  const colorDropdownRef = useRef(null)
+
   // Fetch colors on mount
   useEffect(() => {
     const fetchColors = async () => {
@@ -51,6 +53,22 @@ const ImportTable = ({
     }
     fetchColors()
   }, [showToast])
+
+  // Handle click outside to close color dropdown
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (colorDropdownRef.current && !colorDropdownRef.current.contains(event.target)) {
+        setOpenColorDropdown(null)
+      }
+    }
+
+    if (openColorDropdown !== null) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside)
+      }
+    }
+  }, [openColorDropdown])
 
   const handleNotesChange = (cardIndex, newNotes) => {
     if (onCardUpdate) {
@@ -1384,18 +1402,68 @@ const ImportTable = ({
                       />
                     </td>
                     <td className="color-cell">
-                      <select
-                        className="import-color-select"
-                        value={card.colorId || ''}
-                        onChange={(e) => handleColorChange(card.sortOrder, e.target.value)}
+                      <div
+                        className="import-color-dropdown"
+                        ref={openColorDropdown === card.sortOrder ? colorDropdownRef : null}
                       >
-                        <option value="">—</option>
-                        {colors.map(color => (
-                          <option key={color.color_id} value={color.color_id}>
-                            {color.name}
-                          </option>
-                        ))}
-                      </select>
+                        <button
+                          className="import-color-trigger"
+                          onClick={() => setOpenColorDropdown(
+                            openColorDropdown === card.sortOrder ? null : card.sortOrder
+                          )}
+                          type="button"
+                        >
+                          {card.colorId ? (
+                            <>
+                              <span
+                                className="import-color-dot"
+                                style={{
+                                  backgroundColor: colors.find(c => c.color_id === card.colorId)?.hex_value || '#666'
+                                }}
+                              />
+                              <span className="import-color-name">
+                                {colors.find(c => c.color_id === card.colorId)?.name || '—'}
+                              </span>
+                            </>
+                          ) : (
+                            <span className="import-color-placeholder">—</span>
+                          )}
+                          <Icon name="chevron-down" size={12} className="import-color-chevron" />
+                        </button>
+
+                        {openColorDropdown === card.sortOrder && (
+                          <div className="import-color-dropdown-menu">
+                            <div
+                              className="import-color-option"
+                              onClick={() => {
+                                handleColorChange(card.sortOrder, '')
+                                setOpenColorDropdown(null)
+                              }}
+                            >
+                              <span className="import-color-option-label">No Color</span>
+                            </div>
+                            {colors.map(color => (
+                              <div
+                                key={color.color_id}
+                                className={`import-color-option ${card.colorId === color.color_id ? 'selected' : ''}`}
+                                onClick={() => {
+                                  handleColorChange(card.sortOrder, color.color_id)
+                                  setOpenColorDropdown(null)
+                                }}
+                              >
+                                <span
+                                  className="import-color-dot"
+                                  style={{ backgroundColor: color.hex_value || '#666' }}
+                                />
+                                <span className="import-color-option-label">{color.name}</span>
+                                {card.colorId === color.color_id && (
+                                  <Icon name="check" size={14} className="import-color-check" />
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </td>
                     <td className="player-team-combo-cell">
                       <div className="player-team-combos">

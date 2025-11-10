@@ -1,0 +1,68 @@
+# Git and version control
+.git*
+.vscode
+.idea
+
+# Local development files
+local.settings.json
+.env
+
+# Documentation
+*.md
+README*
+CHANGELOG*
+LICENSE*
+CONTRIBUTING*
+
+# TypeScript source files (we only need compiled JS)
+*.ts
+!*.d.ts
+tsconfig.json
+
+# Source maps (not needed in production)
+*.map
+
+# Test files and directories
+test/
+tests/
+__tests__/
+*.test.js
+*.spec.js
+coverage/
+
+# Build artifacts
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# TypeScript definitions (not needed at runtime)
+node_modules/@types/
+
+# TypeScript compiler
+node_modules/typescript/
+
+# Prisma build artifacts
+node_modules/prisma/build/public/
+node_modules/@prisma/engines/
+
+# Keep only Linux Prisma binary, exclude others
+node_modules/.prisma/client/libquery_engine-darwin*
+node_modules/.prisma/client/libquery_engine-windows*
+node_modules/.prisma/client/libquery_engine-debian*
+node_modules/.prisma/client/libquery_engine-linux-arm*
+
+# Large packages that include docs/examples
+node_modules/*/examples/
+node_modules/*/docs/
+node_modules/*/test/
+node_modules/*/tests/
+
+# Azure Functions Core Tools (not needed in deployment)
+node_modules/azure-functions-core-tools/
+
+# Unnecessary binaries
+*.exe
+*.dll
+*.dylib
+*.so.debug

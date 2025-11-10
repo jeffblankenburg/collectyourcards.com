@@ -1240,7 +1240,7 @@
 
 /* Print Run and Color column headers */
 .print-run-header { width: 100px; }
-.color-header { width: 120px; }
+.color-header { width: 170px; }
 
 /* Print Run cell */
 .print-run-cell {
@@ -1249,16 +1249,28 @@
 
 .import-print-run-input {
   width: 100%;
-  max-width: 90px;
-  padding: 0.375rem 0.5rem;
+  max-width: 80px;
+  padding: 0.25rem 0.5rem;
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 4px;
   color: white;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   text-align: center;
   backdrop-filter: blur(5px);
   transition: all 0.2s ease;
+  height: 28px;
+}
+
+/* Remove up/down spinner arrows from number input */
+.import-print-run-input::-webkit-outer-spin-button,
+.import-print-run-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.import-print-run-input[type=number] {
+  -moz-appearance: textfield;
 }
 
 .import-print-run-input:focus {
@@ -1279,27 +1291,194 @@
 
 .import-color-select {
   width: 100%;
-  max-width: 110px;
-  padding: 0.375rem 0.5rem;
+  max-width: 100px;
+  padding: 0.25rem 0.5rem;
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 4px;
   color: white;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   backdrop-filter: blur(5px);
   transition: all 0.2s ease;
   cursor: pointer;
+  height: 28px;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.5rem center;
+  background-size: 10px;
+  padding-right: 1.5rem;
+}
+
+.import-color-select:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
 }
 
 .import-color-select:focus {
   outline: none;
   border-color: #3b82f6;
+  background-color: rgba(255, 255, 255, 0.15);
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
 }
 
 .import-color-select option {
   background: #1e293b;
   color: white;
+  padding: 0.5rem;
+}
+
+/* Custom Color Dropdown */
+.import-color-dropdown {
+  position: relative;
+  width: 100%;
+  max-width: 160px;
+}
+
+.import-color-trigger {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.25rem 0.5rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  color: white;
+  font-size: 0.75rem;
+  backdrop-filter: blur(5px);
+  transition: all 0.2s ease;
+  cursor: pointer;
+  height: 28px;
+  text-align: left;
+  position: relative;
+}
+
+.import-color-trigger:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.import-color-trigger:focus {
+  outline: none;
+  border-color: #3b82f6;
+  background: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.import-color-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  flex-shrink: 0;
+}
+
+.import-color-name {
+  color: white;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+
+.import-color-placeholder {
+  color: rgba(255, 255, 255, 0.4);
+  flex: 1;
+}
+
+.import-color-chevron {
+  color: rgba(255, 255, 255, 0.6);
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.import-color-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  right: 0;
+  background: rgba(15, 23, 42, 0.98);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  z-index: 100;
+  max-height: 280px;
+  overflow-y: auto;
+  animation: import-color-dropdown-fade-in 0.15s ease;
+}
+
+@keyframes import-color-dropdown-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.import-color-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.import-color-option:last-child {
+  border-bottom: none;
+}
+
+.import-color-option:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.import-color-option.selected {
+  background: rgba(59, 130, 246, 0.15);
+}
+
+.import-color-option.selected:hover {
+  background: rgba(59, 130, 246, 0.2);
+}
+
+.import-color-option-label {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.75rem;
+  font-weight: 500;
+  flex: 1;
+}
+
+.import-color-check {
+  color: #3b82f6;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+/* Scrollbar styling for color dropdown */
+.import-color-dropdown-menu::-webkit-scrollbar {
+  width: 6px;
+}
+
+.import-color-dropdown-menu::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+}
+
+.import-color-dropdown-menu::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+.import-color-dropdown-menu::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
 }
 
 /* Bulk Edit Modal */
@@ -1386,6 +1565,17 @@
   transition: all 0.2s ease;
 }
 
+/* Remove spinner arrows from bulk print run input */
+.bulk-input[type=number]::-webkit-outer-spin-button,
+.bulk-input[type=number]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.bulk-input[type=number] {
+  -moz-appearance: textfield;
+}
+
 .bulk-input:focus,
 .bulk-select:focus {
   outline: none;
@@ -1398,9 +1588,27 @@
   color: rgba(255, 255, 255, 0.4);
 }
 
+.bulk-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 12px;
+  padding-right: 2.5rem;
+  cursor: pointer;
+}
+
+.bulk-select:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
 .bulk-select option {
   background: #1e293b;
   color: white;
+  padding: 0.5rem;
 }
 
 .bulk-help-text {
