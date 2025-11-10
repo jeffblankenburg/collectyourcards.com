@@ -1036,4 +1036,240 @@ router.post('/:playerId/merge', async (req, res) => {
   }
 })
 
+// POST /api/admin/players/:id/reassign-selected-cards - Reassign selected cards to any player_team
+router.post('/:id/reassign-selected-cards', async (req, res) => {
+  try {
+    const playerId = parseInt(req.params.id)
+    const { card_ids, target_player_team_id } = req.body
+
+    console.log('Admin: Reassigning selected cards:', { playerId, card_ids, target_player_team_id })
+
+    if (isNaN(playerId)) {
+      return res.status(400).json({ error: 'Invalid player ID' })
+    }
+
+    if (!Array.isArray(card_ids) || card_ids.length === 0) {
+      return res.status(400).json({
+        error: 'Validation error',
+        message: 'card_ids must be a non-empty array'
+      })
+    }
+
+    if (!target_player_team_id || isNaN(parseInt(target_player_team_id))) {
+      return res.status(400).json({
+        error: 'Validation error',
+        message: 'target_player_team_id is required and must be a valid number'
+      })
+    }
+
+    const targetPlayerTeamId = BigInt(target_player_team_id)
+
+    // Verify target player_team exists
+    const targetPlayerTeam = await prisma.player_team.findUnique({
+      where: { player_team_id: targetPlayerTeamId },
+      include: {
+        player: true,
+        team: true
+      }
+    })
+
+    if (!targetPlayerTeam) {
+      return res.status(404).json({
+        error: 'Not found',
+        message: 'Target player-team combination not found'
+      })
+    }
+
+    // Convert card IDs to BigInt
+    const cardIdsBigInt = card_ids.map(id => BigInt(id))
+
+    // Verify all cards belong to the specified player
+    const cards = await prisma.$queryRawUnsafe(`
+      SELECT DISTINCT c.card_id
+      FROM card c
+      INNER JOIN card_player_team cpt ON c.card_id = cpt.card
+      INNER JOIN player_team pt ON cpt.player_team = pt.player_team_id
+      WHERE pt.player = ${playerId}
+        AND c.card_id IN (${cardIdsBigInt.map(id => id.toString()).join(',')})
+    `)
+
+    if (cards.length !== card_ids.length) {
+      return res.status(400).json({
+        error: 'Validation error',
+        message: 'Some card IDs do not belong to this player or do not exist',
+        foundCards: cards.length,
+        requestedCards: card_ids.length
+      })
+    }
+
+    // Perform the reassignment
+    const updateResult = await prisma.$executeRawUnsafe(`
+      UPDATE card_player_team
+      SET player_team = ${targetPlayerTeamId}
+      WHERE card IN (${cardIdsBigInt.map(id => id.toString()).join(',')})
+        AND player_team IN (
+          SELECT player_team_id
+          FROM player_team
+          WHERE player = ${playerId}
+        )
+    `)
+
+    console.log(`Admin: Reassigned ${card_ids.length} cards from player ${playerId} to player_team ${target_player_team_id}`)
+
+    res.json({
+      message: 'Cards reassigned successfully',
+      cardsReassigned: card_ids.length,
+      targetPlayer: `${targetPlayerTeam.player.first_name || ''} ${targetPlayerTeam.player.last_name || ''}`.trim(),
+      targetTeam: targetPlayerTeam.team.name
+    })
+
+  } catch (error) {
+    console.error('Error reassigning selected cards:', error)
+    res.status(500).json({
+      error: 'Database error',
+      message: 'Failed to reassign selected cards',
+      details: error.message
+    })
+  }
+})
+
+// GET /api/admin/players/:id/cards - Get all cards for a player (grouped by team)
+router.get('/:id/cards', async (req, res) => {
+  try {
+    const playerId = parseInt(req.params.id)
+
+    if (isNaN(playerId)) {
+      return res.status(400).json({ error: 'Invalid player ID' })
+    }
+
+    const cards = await prisma.$queryRawUnsafe(`
+      SELECT
+        c.card_id,
+        c.card_number,
+        c.is_rc,
+        c.is_auto,
+        c.is_relic,
+        s.name as series_name,
+        s.year as series_year,
+        pt.player_team_id,
+        pt.player as player_id,
+        pt.team as team_id,
+        t.name as team_name,
+        t.abbreviation as team_abbreviation,
+        t.primary_color,
+        t.secondary_color
+      FROM card c
+      INNER JOIN card_player_team cpt ON c.card_id = cpt.card
+      INNER JOIN player_team pt ON cpt.player_team = pt.player_team_id
+      INNER JOIN team t ON pt.team = t.team_Id
+      LEFT JOIN series s ON c.series = s.series_id
+      WHERE pt.player = ${playerId}
+      ORDER BY t.name, s.year DESC, s.name, c.card_number
+    `)
+
+    // Serialize BigInt values
+    const serializedCards = cards.map(card => ({
+      card_id: Number(card.card_id),
+      card_number: card.card_number,
+      is_rc: Boolean(card.is_rc),
+      is_auto: Boolean(card.is_auto),
+      is_relic: Boolean(card.is_relic),
+      series_name: card.series_name,
+      series_year: Number(card.series_year),
+      player_team_id: Number(card.player_team_id),
+      player_id: Number(card.player_id),
+      team_id: Number(card.team_id),
+      team_name: card.team_name,
+      team_abbreviation: card.team_abbreviation,
+      primary_color: card.primary_color,
+      secondary_color: card.secondary_color
+    }))
+
+    res.json({
+      cards: serializedCards
+    })
+
+  } catch (error) {
+    console.error('Error fetching player cards:', error)
+    res.status(500).json({
+      error: 'Database error',
+      message: 'Failed to fetch player cards',
+      details: error.message
+    })
+  }
+})
+
+// GET /api/admin/player-teams/search - Search for player-team combinations
+router.get('/player-teams/search', async (req, res) => {
+  try {
+    const { search, limit = 20 } = req.query
+    const limitNum = Math.min(parseInt(limit) || 20, 100)
+
+    if (!search || search.trim().length < 2) {
+      return res.json({ playerTeams: [] })
+    }
+
+    const searchTerm = search.trim()
+    const escapedSearch = searchTerm.replace(/'/g, "''")
+
+    const playerTeams = await prisma.$queryRawUnsafe(`
+      SELECT
+        pt.player_team_id,
+        p.player_id,
+        p.first_name,
+        p.last_name,
+        p.nick_name,
+        t.team_Id as team_id,
+        t.name as team_name,
+        t.abbreviation as team_abbreviation,
+        t.primary_color,
+        t.secondary_color,
+        COUNT(DISTINCT cpt.card) as card_count
+      FROM player_team pt
+      INNER JOIN player p ON pt.player = p.player_id
+      INNER JOIN team t ON pt.team = t.team_Id
+      LEFT JOIN card_player_team cpt ON pt.player_team_id = cpt.player_team
+      WHERE (
+        p.first_name LIKE N'%${escapedSearch}%' COLLATE Latin1_General_CI_AI
+        OR p.last_name LIKE N'%${escapedSearch}%' COLLATE Latin1_General_CI_AI
+        OR p.nick_name LIKE N'%${escapedSearch}%' COLLATE Latin1_General_CI_AI
+        OR CONCAT(p.first_name, ' ', p.last_name) LIKE N'%${escapedSearch}%' COLLATE Latin1_General_CI_AI
+        OR t.name LIKE N'%${escapedSearch}%' COLLATE Latin1_General_CI_AI
+      )
+      GROUP BY pt.player_team_id, p.player_id, p.first_name, p.last_name, p.nick_name,
+               t.team_Id, t.name, t.abbreviation, t.primary_color, t.secondary_color
+      ORDER BY p.last_name, p.first_name, t.name
+      OFFSET 0 ROWS
+      FETCH NEXT ${limitNum} ROWS ONLY
+    `)
+
+    // Serialize BigInt values
+    const serializedPlayerTeams = playerTeams.map(pt => ({
+      player_team_id: Number(pt.player_team_id),
+      player_id: Number(pt.player_id),
+      first_name: pt.first_name,
+      last_name: pt.last_name,
+      nick_name: pt.nick_name,
+      team_id: Number(pt.team_id),
+      team_name: pt.team_name,
+      team_abbreviation: pt.team_abbreviation,
+      primary_color: pt.primary_color,
+      secondary_color: pt.secondary_color,
+      card_count: Number(pt.card_count || 0)
+    }))
+
+    res.json({
+      playerTeams: serializedPlayerTeams
+    })
+
+  } catch (error) {
+    console.error('Error searching player-teams:', error)
+    res.status(500).json({
+      error: 'Database error',
+      message: 'Failed to search player-teams',
+      details: error.message
+    })
+  }
+})
+
 module.exports = router

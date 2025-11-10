@@ -1323,7 +1323,7 @@ const ImportTable = ({
                                     <div
                                       key={match.teamId}
                                       className="fuzzy-team-option"
-                                      onClick={() => {
+                                      onClick={async () => {
                                         // Update team name at card level
                                         const updatedCards = [...cards]
                                         updatedCards[cardIndex].teamNames[teamIdx] = match.teamName
@@ -1332,6 +1332,63 @@ const ImportTable = ({
                                         updatedCards[cardIndex].teamMatches.exact.push(match)
                                         updatedCards[cardIndex].teamMatches.fuzzy =
                                           updatedCards[cardIndex].teamMatches.fuzzy.filter(m => m.teamId !== match.teamId)
+
+                                        // Check for existing player_team relationships for this team
+                                        const card = updatedCards[cardIndex]
+                                        const playerTeamChecks = []
+
+                                        card.players?.forEach((player, pIdx) => {
+                                          if (player.selectedPlayer) {
+                                            const playerId = player.selectedPlayer.playerId
+                                            const teamId = match.teamId
+
+                                            // Check if player_team already exists in cache
+                                            const alreadyInCache = player.playerTeamMatches?.some(pt =>
+                                              pt.playerId === playerId && pt.teamId === teamId
+                                            )
+
+                                            if (!alreadyInCache) {
+                                              // Try to create/fetch player_team from database
+                                              const checkPromise = axios.post('/api/admin/import/create-player-team', {
+                                                playerId,
+                                                teamId
+                                              }).then(response => {
+                                                if (response.data.success) {
+                                                  // Add to cache
+                                                  if (!player.playerTeamMatches) player.playerTeamMatches = []
+                                                  if (!player.selectedPlayerTeams) player.selectedPlayerTeams = []
+                                                  player.playerTeamMatches.push(response.data.playerTeam)
+                                                  player.selectedPlayerTeams.push(response.data.playerTeam)
+                                                  return response.data.playerTeam
+                                                }
+                                              }).catch(error => {
+                                                // If already exists, add placeholder to cache
+                                                if (error.response?.data?.message?.includes('already exists')) {
+                                                  const existingPlayerTeam = {
+                                                    playerTeamId: `existing_${playerId}_${teamId}`,
+                                                    playerId,
+                                                    teamId,
+                                                    playerName: player.selectedPlayer.playerName,
+                                                    teamName: match.teamName
+                                                  }
+                                                  if (!player.playerTeamMatches) player.playerTeamMatches = []
+                                                  if (!player.selectedPlayerTeams) player.selectedPlayerTeams = []
+                                                  player.playerTeamMatches.push(existingPlayerTeam)
+                                                  player.selectedPlayerTeams.push(existingPlayerTeam)
+                                                  return existingPlayerTeam
+                                                }
+                                                return null
+                                              })
+
+                                              playerTeamChecks.push(checkPromise)
+                                            }
+                                          }
+                                        })
+
+                                        // Wait for all checks before updating UI
+                                        if (playerTeamChecks.length > 0) {
+                                          await Promise.all(playerTeamChecks)
+                                        }
 
                                         onCardUpdate(updatedCards)
                                       }}

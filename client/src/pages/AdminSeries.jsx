@@ -95,11 +95,14 @@ function AdminSeries() {
 
   // Memoized series row component to prevent unnecessary re-renders
   const SeriesRow = React.memo(({ seriesItem, onEdit, onDuplicate, onViewCards, onUpload }) => {
+    // Check if card counts don't match
+    const cardCountMismatch = seriesItem.card_count !== seriesItem.card_entered_count
+
     return (
-      <div 
-        className="series-row"
+      <div
+        className={`series-row ${cardCountMismatch ? 'card-count-mismatch' : ''}`}
         onDoubleClick={() => onEdit(seriesItem)}
-        title="Double-click to edit series"
+        title={cardCountMismatch ? "Card count mismatch - Double-click to edit" : "Double-click to edit series"}
       >
         <div className="col-actions">
           <button 

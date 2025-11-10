@@ -317,6 +317,16 @@
   border-bottom: none;
 }
 
+/* Card Count Mismatch Indicator */
+.admin-series-page .series-row.card-count-mismatch {
+  background: rgba(245, 158, 11, 0.1);
+  border-left: 3px solid rgba(245, 158, 11, 0.5);
+}
+
+.admin-series-page .series-row.card-count-mismatch:hover {
+  background: rgba(245, 158, 11, 0.15);
+}
+
 /* Column Styles */
 .admin-series-page .col-actions {
   display: flex;
