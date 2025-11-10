@@ -109,6 +109,13 @@ function AdminPlayers() {
   const [deleting, setDeleting] = useState(false)
   const [showZeroCardsOnly, setShowZeroCardsOnly] = useState(false)
   const [showDuplicatesOnly, setShowDuplicatesOnly] = useState(false)
+  const [showCardReassignModal, setShowCardReassignModal] = useState(false)
+  const [playerCards, setPlayerCards] = useState([])
+  const [selectedCardIds, setSelectedCardIds] = useState([])
+  const [playerTeamSearch, setPlayerTeamSearch] = useState('')
+  const [playerTeamResults, setPlayerTeamResults] = useState([])
+  const [selectedPlayerTeam, setSelectedPlayerTeam] = useState(null)
+  const [reassigningCards, setReassigningCards] = useState(false)
   const addButtonRef = useRef(null)
   const { addToast } = useToast()
 
@@ -731,6 +738,104 @@ function AdminPlayers() {
     return `${firstName} ${lastName}`.trim() || 'Unknown Player'
   }, [])
 
+  // Card reassignment handlers
+  const handleShowCardReassignModal = async () => {
+    if (!editingPlayer) return
+
+    try {
+      const response = await axios.get(`/api/admin/players/${editingPlayer.player_id}/cards`)
+      setPlayerCards(response.data.cards || [])
+      setSelectedCardIds([])
+      setPlayerTeamSearch('')
+      setPlayerTeamResults([])
+      setSelectedPlayerTeam(null)
+      setShowCardReassignModal(true)
+    } catch (error) {
+      console.error('Error loading player cards:', error)
+      addToast('Failed to load player cards', 'error')
+    }
+  }
+
+  const handleCardSelection = (cardId) => {
+    setSelectedCardIds(prev => {
+      if (prev.includes(cardId)) {
+        return prev.filter(id => id !== cardId)
+      } else {
+        return [...prev, cardId]
+      }
+    })
+  }
+
+  const handleSelectAllCards = () => {
+    if (selectedCardIds.length === playerCards.length) {
+      setSelectedCardIds([])
+    } else {
+      setSelectedCardIds(playerCards.map(card => card.card_id))
+    }
+  }
+
+  const handlePlayerTeamSearch = async (searchValue) => {
+    setPlayerTeamSearch(searchValue)
+
+    if (searchValue.length < 2) {
+      setPlayerTeamResults([])
+      return
+    }
+
+    try {
+      const response = await axios.get('/api/admin/player-teams/search', {
+        params: { search: searchValue }
+      })
+      setPlayerTeamResults(response.data.playerTeams || [])
+    } catch (error) {
+      console.error('Error searching player-teams:', error)
+      addToast('Failed to search player-teams', 'error')
+    }
+  }
+
+  const handleReassignSelectedCards = async () => {
+    if (!editingPlayer || selectedCardIds.length === 0 || !selectedPlayerTeam) return
+
+    try {
+      setReassigningCards(true)
+
+      await axios.post(`/api/admin/players/${editingPlayer.player_id}/reassign-selected-cards`, {
+        card_ids: selectedCardIds,
+        target_player_team_id: selectedPlayerTeam.player_team_id
+      })
+
+      addToast(
+        `Reassigned ${selectedCardIds.length} card(s) to ${selectedPlayerTeam.first_name} ${selectedPlayerTeam.last_name} - ${selectedPlayerTeam.team_name}`,
+        'success'
+      )
+
+      // Close modal
+      setShowCardReassignModal(false)
+      setSelectedCardIds([])
+      setPlayerCards([])
+      setPlayerTeamSearch('')
+      setPlayerTeamResults([])
+      setSelectedPlayerTeam(null)
+
+      // Reload player data
+      const response = await axios.get(`/api/admin/players/${editingPlayer.player_id}/teams`)
+      const updatedPlayer = {
+        ...editingPlayer,
+        teams: response.data.teams || []
+      }
+      setEditingPlayer(updatedPlayer)
+
+      // Reload main players list
+      await loadPlayers(searchTerm, showZeroCardsOnly, showDuplicatesOnly)
+
+    } catch (error) {
+      console.error('Error reassigning cards:', error)
+      addToast(error.response?.data?.message || 'Failed to reassign cards', 'error')
+    } finally {
+      setReassigningCards(false)
+    }
+  }
+
   return (
     <div className="admin-players-page">
       <div className="admin-header">
@@ -1019,7 +1124,17 @@ function AdminPlayers() {
                 <div className="teams-section">
                   <div className="teams-header">
                     <h4>Teams ({editingPlayer.teams?.length || 0})</h4>
-                    <div className="add-team-container">
+                    <div className="teams-header-actions">
+                      <button
+                        type="button"
+                        className="reassign-cards-btn"
+                        onClick={handleShowCardReassignModal}
+                        title="Reassign specific cards to another player"
+                      >
+                        <Icon name="shuffle" size={14} />
+                        Reassign Cards
+                      </button>
+                      <div className="add-team-container">
                       <button
                         ref={addButtonRef}
                         type="button"
@@ -1094,8 +1209,9 @@ function AdminPlayers() {
                         document.body
                       )}
                     </div>
+                    </div>
                   </div>
-                  
+
                   <div className="team-warning">
                     <Icon name="warning" size={16} />
                     <span>WARNING: Changes to the team list happen immediately.</span>
@@ -1737,6 +1853,218 @@ function AdminPlayers() {
                     <>
                       <Icon name="combine" size={16} />
                       Merge Players (Irreversible)
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Selected Cards Reassignment Modal */}
+      {showCardReassignModal && editingPlayer && (
+        <div className="modal-overlay" onClick={() => setShowCardReassignModal(false)}>
+          <div className="modal-content large-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>
+                <Icon name="shuffle" size={20} />
+                Reassign Selected Cards - {getPlayerNameString(editingPlayer)}
+              </h3>
+              <button
+                className="modal-close-btn"
+                onClick={() => setShowCardReassignModal(false)}
+                type="button"
+              >
+                <Icon name="x" size={20} />
+              </button>
+            </div>
+
+            <div className="modal-form">
+              {/* Step 1: Search for target player-team */}
+              <div className="form-group">
+                <label>Step 1: Search for target player-team</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="Type player name or team name..."
+                  value={playerTeamSearch}
+                  onChange={(e) => handlePlayerTeamSearch(e.target.value)}
+                  disabled={reassigningCards}
+                  autoFocus
+                />
+                {playerTeamSearch.length > 0 && playerTeamSearch.length < 2 && (
+                  <p className="field-hint">Type at least 2 characters to search</p>
+                )}
+              </div>
+
+              {/* Search results */}
+              {playerTeamResults.length > 0 && (
+                <div className="form-group">
+                  <label>Select target player-team:</label>
+                  <div className="player-team-results">
+                    {playerTeamResults.map((result) => (
+                      <button
+                        key={result.player_team_id}
+                        type="button"
+                        className={`player-team-result-item ${selectedPlayerTeam?.player_team_id === result.player_team_id ? 'selected' : ''}`}
+                        onClick={() => setSelectedPlayerTeam(result)}
+                        disabled={reassigningCards}
+                      >
+                        <div className="result-info">
+                          <div className="result-name-row">
+                            <span className="result-name">
+                              {result.first_name} {result.last_name}
+                            </span>
+                            <div className="result-team">
+                              <div
+                                className="team-circle-base team-circle-sm"
+                                style={{
+                                  '--primary-color': result.primary_color || '#666',
+                                  '--secondary-color': result.secondary_color || '#999'
+                                }}
+                                title={result.team_name}
+                              >
+                                {result.team_abbreviation}
+                              </div>
+                              <span className="team-name-display">{result.team_name}</span>
+                            </div>
+                          </div>
+                          <span className="result-details">
+                            player_team_id: {result.player_team_id} • {result.card_count || 0} existing cards
+                          </span>
+                        </div>
+                        {selectedPlayerTeam?.player_team_id === result.player_team_id && (
+                          <Icon name="check-circle" size={20} className="check-icon" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Selected target display */}
+              {selectedPlayerTeam && (
+                <div className="form-group">
+                  <div className="selected-target-display">
+                    <Icon name="arrow-right" size={20} className="arrow-icon" />
+                    <div className="target-info">
+                      <p><strong>Target:</strong> {selectedPlayerTeam.first_name} {selectedPlayerTeam.last_name} - {selectedPlayerTeam.team_name}</p>
+                      <p className="target-details">Currently has {selectedPlayerTeam.card_count || 0} cards</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Step 2: Select cards */}
+              <div className="form-group">
+                <label>Step 2: Select cards to reassign ({selectedCardIds.length} selected)</label>
+                {playerCards.length > 0 && (
+                  <button
+                    type="button"
+                    className="select-all-btn"
+                    onClick={handleSelectAllCards}
+                    disabled={reassigningCards}
+                  >
+                    {selectedCardIds.length === playerCards.length ? 'Deselect All' : 'Select All'}
+                  </button>
+                )}
+              </div>
+
+              {/* Cards list grouped by team */}
+              {playerCards.length > 0 ? (
+                <div className="cards-list">
+                  {(() => {
+                    // Group cards by team
+                    const cardsByTeam = {}
+                    playerCards.forEach(card => {
+                      const teamKey = card.team_id
+                      if (!cardsByTeam[teamKey]) {
+                        cardsByTeam[teamKey] = {
+                          team_name: card.team_name,
+                          team_abbreviation: card.team_abbreviation,
+                          primary_color: card.primary_color,
+                          secondary_color: card.secondary_color,
+                          cards: []
+                        }
+                      }
+                      cardsByTeam[teamKey].cards.push(card)
+                    })
+
+                    return Object.entries(cardsByTeam).map(([teamId, group]) => (
+                      <div key={teamId} className="team-card-group">
+                        <div className="team-group-header">
+                          <div
+                            className="team-circle-base team-circle-sm"
+                            style={{
+                              '--primary-color': group.primary_color || '#666',
+                              '--secondary-color': group.secondary_color || '#999'
+                            }}
+                            title={group.team_name}
+                          >
+                            {group.team_abbreviation}
+                          </div>
+                          <span className="team-group-name">{group.team_name} ({group.cards.length} cards)</span>
+                        </div>
+                        <div className="team-cards">
+                          {group.cards.map(card => (
+                            <label key={card.card_id} className="card-checkbox-item">
+                              <input
+                                type="checkbox"
+                                checked={selectedCardIds.includes(card.card_id)}
+                                onChange={() => handleCardSelection(card.card_id)}
+                                disabled={reassigningCards}
+                              />
+                              <span className="card-info">
+                                <span className="card-details">
+                                  {card.series_year} {card.series_name} #{card.card_number}
+                                </span>
+                                {(card.is_rc || card.is_auto || card.is_relic) && (
+                                  <span className="card-badges">
+                                    {card.is_rc && <span className="badge badge-rc">RC</span>}
+                                    {card.is_auto && <span className="badge badge-auto">AUTO</span>}
+                                    {card.is_relic && <span className="badge badge-relic">RELIC</span>}
+                                  </span>
+                                )}
+                              </span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    ))
+                  })()}
+                </div>
+              ) : (
+                <div className="empty-state">
+                  <p>No cards found for this player</p>
+                </div>
+              )}
+
+              {/* Action buttons */}
+              <div className="modal-actions">
+                <button
+                  type="button"
+                  className="btn-cancel"
+                  onClick={() => setShowCardReassignModal(false)}
+                  disabled={reassigningCards}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="btn-primary"
+                  onClick={handleReassignSelectedCards}
+                  disabled={reassigningCards || selectedCardIds.length === 0 || !selectedPlayerTeam}
+                >
+                  {reassigningCards ? (
+                    <>
+                      <div className="spinner"></div>
+                      Reassigning...
+                    </>
+                  ) : (
+                    <>
+                      <Icon name="shuffle" size={16} />
+                      Reassign {selectedCardIds.length} Card{selectedCardIds.length !== 1 ? 's' : ''}
                     </>
                   )}
                 </button>

@@ -1146,11 +1146,11 @@ router.get('/:id/cards', async (req, res) => {
       SELECT
         c.card_id,
         c.card_number,
-        c.is_rc,
-        c.is_auto,
+        c.is_rookie,
+        c.is_autograph,
         c.is_relic,
         s.name as series_name,
-        s.year as series_year,
+        st.year as series_year,
         pt.player_team_id,
         pt.player as player_id,
         pt.team as team_id,
@@ -1163,19 +1163,20 @@ router.get('/:id/cards', async (req, res) => {
       INNER JOIN player_team pt ON cpt.player_team = pt.player_team_id
       INNER JOIN team t ON pt.team = t.team_Id
       LEFT JOIN series s ON c.series = s.series_id
+      LEFT JOIN [set] st ON s.[set] = st.set_id
       WHERE pt.player = ${playerId}
-      ORDER BY t.name, s.year DESC, s.name, c.card_number
+      ORDER BY t.name, st.year DESC, s.name, c.card_number
     `)
 
     // Serialize BigInt values
     const serializedCards = cards.map(card => ({
       card_id: Number(card.card_id),
       card_number: card.card_number,
-      is_rc: Boolean(card.is_rc),
-      is_auto: Boolean(card.is_auto),
+      is_rc: Boolean(card.is_rookie),
+      is_auto: Boolean(card.is_autograph),
       is_relic: Boolean(card.is_relic),
       series_name: card.series_name,
-      series_year: Number(card.series_year),
+      series_year: card.series_year ? Number(card.series_year) : null,
       player_team_id: Number(card.player_team_id),
       player_id: Number(card.player_id),
       team_id: Number(card.team_id),
