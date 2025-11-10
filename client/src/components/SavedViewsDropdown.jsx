@@ -152,7 +152,7 @@ const SavedViewsDropdown = ({
           <div className="saved-views-section">
             {loading ? (
               <div className="saved-views-loading">
-                <Icon name="activity" size={16} className="spinner" />
+                <div className="card-icon-spinner small"></div>
                 <span>Loading...</span>
               </div>
             ) : savedViews.length === 0 ? (

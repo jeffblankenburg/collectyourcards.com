@@ -229,7 +229,7 @@ const CommentsSection = ({
           <h3><Icon name="users" size={20} /> {title}</h3>
         </div>
         <div className="comments-loading">
-          <Icon name="activity" size={20} className="spinner" />
+          <div className="card-icon-spinner small"></div>
           <span>Loading comments...</span>
         </div>
       </div>
@@ -275,7 +275,7 @@ const CommentsSection = ({
               >
                 {submitting ? (
                   <>
-                    <Icon name="activity" size={16} className="spinner" />
+                    <div className="card-icon-spinner small"></div>
                     Posting...
                   </>
                 ) : (
@@ -472,7 +472,7 @@ const CommentsSection = ({
                 >
                   {deleting ? (
                     <>
-                      <Icon name="activity" size={16} className="spinner" />
+                      <div className="card-icon-spinner small"></div>
                       Deleting...
                     </>
                   ) : (

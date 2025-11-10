@@ -114,7 +114,7 @@ function ActivityFeed({ setId, seriesId, title = "Recent Activity" }) {
           </h3>
         </div>
         <div className="activity-loading">
-          <Icon name="activity" size={24} className="spinner" />
+          <div className="card-icon-spinner"></div>
           <span>Loading activity...</span>
         </div>
       </div>
@@ -232,7 +232,7 @@ function ActivityFeed({ setId, seriesId, title = "Recent Activity" }) {
           >
             {loadingMore ? (
               <>
-                <Icon name="activity" size={16} className="spinner" />
+                <div className="card-icon-spinner small"></div>
                 Loading more...
               </>
             ) : (

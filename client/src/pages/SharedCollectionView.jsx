@@ -81,7 +81,7 @@ function SharedCollectionView() {
       <div className="collection-dashboard-page">
         <div className="dashboard-container">
           <div className="loading-state">
-            <Icon name="activity" size={48} className="spinner" />
+            <div className="card-icon-spinner xlarge"></div>
             <p>Loading collection view...</p>
           </div>
         </div>

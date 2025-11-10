@@ -385,7 +385,7 @@ function ProfileManagement() {
     return (
       <div className="profile-management-page">
         <div className="loading-container">
-          <Icon name="activity" size={32} className="spinner" />
+          <div className="card-icon-spinner large"></div>
           <p>Loading your profile...</p>
         </div>
       </div>
@@ -437,7 +437,7 @@ function ProfileManagement() {
                   />
                   {usernameStatus && (
                     <div className={`username-status ${usernameStatus}`}>
-                      {usernameStatus === 'checking' && <Icon name="activity" size={16} className="spinner" />}
+                      {usernameStatus === 'checking' && <div className="card-icon-spinner small"></div>}
                       {usernameStatus === 'available' && <Icon name="check" size={16} />}
                       {usernameStatus === 'taken' && <Icon name="x" size={16} />}
                       {usernameStatus === 'invalid' && <Icon name="alert-circle" size={16} />}
@@ -454,7 +454,7 @@ function ProfileManagement() {
                       >
                         {savingUsername ? (
                           <>
-                            <Icon name="activity" size={14} className="spinner" />
+                            <div className="card-icon-spinner tiny"></div>
                             Updating...
                           </>
                         ) : (
@@ -505,7 +505,7 @@ function ProfileManagement() {
                       />
                       {uploadingPicture ? (
                         <>
-                          <Icon name="activity" size={16} className="spinner" />
+                          <div className="card-icon-spinner small"></div>
                           Uploading...
                         </>
                       ) : (
@@ -524,7 +524,7 @@ function ProfileManagement() {
                       >
                         {deletingPicture ? (
                           <>
-                            <Icon name="activity" size={16} className="spinner" />
+                            <div className="card-icon-spinner small"></div>
                             Deleting...
                           </>
                         ) : (
@@ -710,7 +710,7 @@ function ProfileManagement() {
             >
               {saving ? (
                 <>
-                  <Icon name="activity" size={16} className="spinner" />
+                  <div className="card-icon-spinner small"></div>
                   Saving...
                 </>
               ) : (

@@ -253,7 +253,7 @@ function SeriesLanding() {
     return (
       <div className="series-landing">
         <div className="loading-container">
-          <Icon name="activity" size={24} className="spinner" />
+          <div className="card-icon-spinner"></div>
           <p>Loading...</p>
         </div>
       </div>

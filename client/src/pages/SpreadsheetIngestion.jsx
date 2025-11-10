@@ -217,7 +217,7 @@ function SpreadsheetIngestion() {
       
       {parsing && (
         <div className="parsing-status">
-          <Icon name="activity" size={24} className="spinner" />
+          <div className="card-icon-spinner"></div>
           <span>Parsing spreadsheet...</span>
         </div>
       )}

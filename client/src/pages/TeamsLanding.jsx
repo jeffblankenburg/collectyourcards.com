@@ -151,7 +151,7 @@ function TeamsLanding() {
     return (
       <div className="teams-landing-page">
         <div className="loading-container">
-          <Icon name="activity" size={24} className="spinner" />
+          <div className="card-icon-spinner"></div>
           <p>Loading teams...</p>
         </div>
       </div>

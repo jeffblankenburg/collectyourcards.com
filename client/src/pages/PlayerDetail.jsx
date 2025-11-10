@@ -349,7 +349,7 @@ function PlayerDetail() {
     return (
       <div className="player-detail-page">
         <div className="loading-container">
-          <Icon name="activity" size={24} className="spinner" />
+          <div className="card-icon-spinner"></div>
           <p>Loading player details...</p>
         </div>
       </div>

@@ -728,7 +728,7 @@ const EditCardModal = ({
                           disabled={loading || deletingPhotoId === photo.user_card_photo_id || reordering}
                         >
                           {deletingPhotoId === photo.user_card_photo_id ? (
-                            <Icon name="activity" size={12} className="spinner" />
+                            <div className="card-icon-spinner tiny"></div>
                           ) : (
                             <Icon name="x" size={14} />
                           )}
@@ -802,7 +802,7 @@ const EditCardModal = ({
               <button type="submit" className="edit-modal-btn btn-submit" disabled={loading}>
                 {loading ? (
                   <>
-                    <Icon name="activity" size={16} className="spinner" />
+                    <div className="card-icon-spinner small"></div>
                     Updating...
                   </>
                 ) : (
@@ -857,7 +857,7 @@ const EditCardModal = ({
               >
                 {deleting ? (
                   <>
-                    <Icon name="activity" size={16} className="spinner" />
+                    <div className="card-icon-spinner small"></div>
                     Deleting...
                   </>
                 ) : (

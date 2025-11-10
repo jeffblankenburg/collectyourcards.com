@@ -190,7 +190,7 @@ function ChangePasswordModal({ isOpen, onClose }) {
               >
                 {sendingResetEmail ? (
                   <>
-                    <Icon name="activity" size={12} className="spinner" />
+                    <div className="card-icon-spinner tiny"></div>
                     Sending email...
                   </>
                 ) : (
@@ -267,7 +267,7 @@ function ChangePasswordModal({ isOpen, onClose }) {
             >
               {loading ? (
                 <>
-                  <Icon name="activity" size={16} className="spinner" />
+                  <div className="card-icon-spinner small"></div>
                   Changing Password...
                 </>
               ) : (

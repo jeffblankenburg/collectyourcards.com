@@ -113,7 +113,7 @@ const PhotoCountHover = ({ photoCount, userCardId, onUploadClick }) => {
         >
           {loading ? (
             <div className="photo-loading">
-              <Icon name="activity" size={16} className="spinner" />
+              <div className="card-icon-spinner small"></div>
               <span>Loading photos...</span>
             </div>
           ) : photos.length > 0 ? (

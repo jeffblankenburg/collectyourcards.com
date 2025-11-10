@@ -472,7 +472,7 @@ function AdminCards() {
                 <thead>
                   <tr>
                     <th style={{width: '80px'}}>Sort</th>
-                    <th style={{width: '100px'}}>Card #</th>
+                    <th style={{width: '130px'}}>Card #</th>
                     <th style={{width: '30%'}}>Player(s)</th>
                     <th style={{width: '110px'}}>Print Run</th>
                     <th style={{width: '120px'}}>Color</th>

@@ -1444,7 +1444,7 @@ const UniversalCardTable = ({
             >
               {loading ? (
                 <>
-                  <Icon name="activity" size={16} className="spinner" />
+                  <div className="card-icon-spinner small"></div>
                   Preparing...
                 </>
               ) : (
@@ -1527,7 +1527,7 @@ const UniversalCardTable = ({
               >
                 {deleting ? (
                   <>
-                    <Icon name="activity" size={16} className="spinner" />
+                    <div className="card-icon-spinner small"></div>
                     Deleting...
                   </>
                 ) : (

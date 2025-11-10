@@ -109,7 +109,7 @@ function Blog() {
     return (
       <div className="blog-page">
         <div className="blog-loading">
-          <Icon name="activity" size={24} className="spinner" />
+          <div className="card-icon-spinner"></div>
           <p>Loading blog posts...</p>
         </div>
       </div>

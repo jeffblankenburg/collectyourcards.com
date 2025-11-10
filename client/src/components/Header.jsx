@@ -382,7 +382,7 @@ function Header() {
                     
                     {loadingNotifications ? (
                       <div className="notifications-loading">
-                        <Icon name="activity" size={16} className="spinner" />
+                        <div className="card-icon-spinner small"></div>
                         <span>Loading...</span>
                       </div>
                     ) : notifications.length > 0 ? (

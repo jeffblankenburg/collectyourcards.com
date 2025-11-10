@@ -44,6 +44,18 @@ code {
   border-radius: 2px;
 }
 
+.card-icon-spinner.large {
+  width: 32px;
+  height: 43px;
+  border-radius: 5px;
+}
+
+.card-icon-spinner.xlarge {
+  width: 48px;
+  height: 64px;
+  border-radius: 6px;
+}
+
 @keyframes card-spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }

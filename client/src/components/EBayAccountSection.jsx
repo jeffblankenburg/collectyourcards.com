@@ -333,7 +333,7 @@ function EBayAccountSection() {
           eBay Integration
         </h3>
         <div className="ebay-loading">
-          <Icon name="activity" size={20} className="spinner" />
+          <div className="card-icon-spinner small"></div>
           <span>Checking eBay connection...</span>
         </div>
       </div>
@@ -415,7 +415,7 @@ function EBayAccountSection() {
             >
               {syncing ? (
                 <>
-                  <Icon name="activity" size={14} className="spinner" />
+                  <div className="card-icon-spinner tiny"></div>
                   Syncing...
                 </>
               ) : (
@@ -434,7 +434,7 @@ function EBayAccountSection() {
               >
                 {syncing ? (
                   <>
-                    <Icon name="activity" size={14} className="spinner" />
+                    <div className="card-icon-spinner tiny"></div>
                     Processing...
                   </>
                 ) : (
@@ -461,7 +461,7 @@ function EBayAccountSection() {
             >
               {disconnecting ? (
                 <>
-                  <Icon name="activity" size={14} className="spinner" />
+                  <div className="card-icon-spinner tiny"></div>
                   Disconnecting...
                 </>
               ) : (
@@ -502,7 +502,7 @@ function EBayAccountSection() {
                   >
                     {testing ? (
                       <>
-                        <Icon name="activity" size={14} className="spinner" />
+                        <div className="card-icon-spinner tiny"></div>
                         Testing...
                       </>
                     ) : (
@@ -680,7 +680,7 @@ function EBayAccountSection() {
             >
               {connecting ? (
                 <>
-                  <Icon name="activity" size={16} className="spinner" />
+                  <div className="card-icon-spinner small"></div>
                   Connecting to eBay...
                 </>
               ) : (

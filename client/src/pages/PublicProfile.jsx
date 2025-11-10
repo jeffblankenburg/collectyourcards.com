@@ -160,7 +160,7 @@ function PublicProfile() {
     return (
       <div className="public-profile-page">
         <div className="loading-container">
-          <Icon name="activity" size={32} className="spinner" />
+          <div className="card-icon-spinner large"></div>
           <p>Loading profile...</p>
         </div>
       </div>
@@ -272,7 +272,7 @@ function PublicProfile() {
                       title={followStatus.are_friends ? 'You are friends' : followStatus.is_following ? 'Click to unfollow' : 'Click to follow'}
                     >
                       {followLoading ? (
-                        <Icon name="activity" size={14} className="spinner" />
+                        <div className="card-icon-spinner tiny"></div>
                       ) : (followStatus.are_friends || followStatus.is_following) && isHoveringFollow ? (
                         <>
                           <Icon name="user-x" size={14} />

@@ -1094,7 +1094,7 @@ function CollectionDashboard() {
                             title="Delete location"
                           >
                             {deletingLocationId === location.user_location_id ? (
-                              <Icon name="activity" size={16} className="spinner" />
+                              <div className="card-icon-spinner small"></div>
                             ) : (
                               <Icon name="trash" size={16} />
                             )}
@@ -1189,7 +1189,7 @@ function CollectionDashboard() {
               >
                 {deletingLocationId ? (
                   <>
-                    <Icon name="activity" size={16} className="spinner" />
+                    <div className="card-icon-spinner small"></div>
                     Reassigning...
                   </>
                 ) : (

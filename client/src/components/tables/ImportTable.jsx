@@ -981,7 +981,7 @@ const ImportTable = ({
   if (loading) {
     return (
       <div className="import-table-loading">
-        <Icon name="activity" size={24} className="import-table-spinner" />
+        <div className="card-icon-spinner"></div>
         <p>Processing import data...</p>
       </div>
     )

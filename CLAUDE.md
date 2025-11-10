@@ -2,6 +2,8 @@
 
 ## 🚨 CRITICAL: HOW TO WORK WITH THIS USER (READ FIRST - EVERY SESSION)
 
+New tasks can be found in the GitHub Issues for this project.
+
 ### Core Working Principles - NEVER FORGET THESE
 1. **BE A SYSTEMATIC CODE ANALYST, NOT A GUESSER**
    - ALWAYS search for existing code patterns, dependencies, and conflicts BEFORE attempting fixes

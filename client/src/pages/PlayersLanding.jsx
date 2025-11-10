@@ -258,7 +258,7 @@ function PlayersLanding() {
     return (
       <div className="players-landing-page">
         <div className="loading-container">
-          <Icon name="activity" size={24} className="spinner" />
+          <div className="card-icon-spinner"></div>
           <p>Loading players...</p>
         </div>
       </div>
@@ -299,7 +299,7 @@ function PlayersLanding() {
             />
             {searching && (
               <div className="search-loading">
-                <Icon name="activity" size={16} className="spinner" />
+                <div className="card-icon-spinner small"></div>
               </div>
             )}
           </div>

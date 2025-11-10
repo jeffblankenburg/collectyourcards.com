@@ -360,7 +360,7 @@ function Auth() {
                   />
                   {usernameStatus && (
                     <div className={`username-status ${usernameStatus}`}>
-                      {usernameStatus === 'checking' && <Icon name="activity" size={16} className="spinner" />}
+                      {usernameStatus === 'checking' && <div className="card-icon-spinner small"></div>}
                       {usernameStatus === 'available' && <Icon name="check" size={16} />}
                       {usernameStatus === 'taken' && <Icon name="x" size={16} />}
                       {usernameStatus === 'invalid' && <Icon name="alert-circle" size={16} />}

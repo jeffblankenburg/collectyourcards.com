@@ -330,7 +330,7 @@ function SeriesDetail() {
     return (
       <div className="series-detail-page">
         <div className="loading-container">
-          <Icon name="activity" size={24} className="spinner" />
+          <div className="card-icon-spinner"></div>
           <p>Loading series details...</p>
         </div>
       </div>

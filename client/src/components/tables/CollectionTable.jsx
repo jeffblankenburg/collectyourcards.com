@@ -261,7 +261,8 @@ const CollectionTable = ({
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
     } else {
       setSortField(field)
-      setSortDirection('asc')
+      // For date fields, start with descending (newest first)
+      setSortDirection(field === 'added_date' ? 'desc' : 'asc')
     }
   }
 

@@ -377,10 +377,12 @@
 }
 
 .attribute-tags {
-  display: flex;
-  flex-direction: column;
+  display: inline-flex;
+  flex-direction: row;
   gap: 0.25rem;
   align-items: center;
+  flex-wrap: nowrap;
+  white-space: nowrap;
 }
 
 .auto-tag, .relic-tag {

@@ -151,7 +151,7 @@ function TeamDetail() {
     return (
       <div className="team-detail-page">
         <div className="loading-container">
-          <Icon name="activity" size={24} className="spinner" />
+          <div className="card-icon-spinner"></div>
           <p>Loading team details...</p>
         </div>
       </div>

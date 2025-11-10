@@ -442,7 +442,7 @@ const CardTable = ({
   if (loading) {
     return (
       <div className="card-table-loading">
-        <Icon name="activity" size={24} className="card-table-spinner" />
+        <div className="card-icon-spinner"></div>
         <p>Loading cards...</p>
       </div>
     )
