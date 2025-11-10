@@ -392,6 +392,11 @@ router.get('/rainbow', optionalAuthMiddleware, async (req, res) => {
 // GET /api/cards/carousel - Get random card images for home page carousel
 router.get('/carousel', async (req, res) => {
   try {
+    // Prevent caching - we want fresh random images every time
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private')
+    res.setHeader('Pragma', 'no-cache')
+    res.setHeader('Expires', '0')
+
     const limit = parseInt(req.query.limit) || 20
 
     // Get random card front images with navigation data
