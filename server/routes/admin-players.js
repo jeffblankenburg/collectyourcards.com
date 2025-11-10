@@ -365,6 +365,80 @@ router.get('/', async (req, res) => {
   }
 })
 
+// GET /api/admin/player-teams/search - Search for player-team combinations
+// IMPORTANT: This route must come BEFORE /:id to avoid matching "player-teams" as an ID
+router.get('/player-teams/search', async (req, res) => {
+  try {
+    const { search, limit = 20 } = req.query
+    const limitNum = Math.min(parseInt(limit) || 20, 100)
+
+    if (!search || search.trim().length < 2) {
+      return res.json({ playerTeams: [] })
+    }
+
+    const searchTerm = search.trim()
+    const escapedSearch = searchTerm.replace(/'/g, "''")
+
+    const playerTeams = await prisma.$queryRawUnsafe(`
+      SELECT
+        pt.player_team_id,
+        p.player_id,
+        p.first_name,
+        p.last_name,
+        p.nick_name,
+        t.team_Id as team_id,
+        t.name as team_name,
+        t.abbreviation as team_abbreviation,
+        t.primary_color,
+        t.secondary_color,
+        COUNT(DISTINCT cpt.card) as card_count
+      FROM player_team pt
+      INNER JOIN player p ON pt.player = p.player_id
+      INNER JOIN team t ON pt.team = t.team_Id
+      LEFT JOIN card_player_team cpt ON pt.player_team_id = cpt.player_team
+      WHERE (
+        p.first_name LIKE N'%${escapedSearch}%' COLLATE Latin1_General_CI_AI
+        OR p.last_name LIKE N'%${escapedSearch}%' COLLATE Latin1_General_CI_AI
+        OR p.nick_name LIKE N'%${escapedSearch}%' COLLATE Latin1_General_CI_AI
+        OR CONCAT(p.first_name, ' ', p.last_name) LIKE N'%${escapedSearch}%' COLLATE Latin1_General_CI_AI
+        OR t.name LIKE N'%${escapedSearch}%' COLLATE Latin1_General_CI_AI
+      )
+      GROUP BY pt.player_team_id, p.player_id, p.first_name, p.last_name, p.nick_name,
+               t.team_Id, t.name, t.abbreviation, t.primary_color, t.secondary_color
+      ORDER BY p.last_name, p.first_name, t.name
+      OFFSET 0 ROWS
+      FETCH NEXT ${limitNum} ROWS ONLY
+    `)
+
+    // Serialize BigInt values
+    const serializedPlayerTeams = playerTeams.map(pt => ({
+      player_team_id: Number(pt.player_team_id),
+      player_id: Number(pt.player_id),
+      first_name: pt.first_name,
+      last_name: pt.last_name,
+      nick_name: pt.nick_name,
+      team_id: Number(pt.team_id),
+      team_name: pt.team_name,
+      team_abbreviation: pt.team_abbreviation,
+      primary_color: pt.primary_color,
+      secondary_color: pt.secondary_color,
+      card_count: Number(pt.card_count || 0)
+    }))
+
+    res.json({
+      playerTeams: serializedPlayerTeams
+    })
+
+  } catch (error) {
+    console.error('Error searching player-teams:', error)
+    res.status(500).json({
+      error: 'Database error',
+      message: 'Failed to search player-teams',
+      details: error.message
+    })
+  }
+})
+
 // GET /api/admin/players/:id - Get specific player details
 router.get('/:id', async (req, res) => {
   try {
@@ -1064,21 +1138,29 @@ router.post('/:id/reassign-selected-cards', async (req, res) => {
 
     const targetPlayerTeamId = BigInt(target_player_team_id)
 
-    // Verify target player_team exists
-    const targetPlayerTeam = await prisma.player_team.findUnique({
-      where: { player_team_id: targetPlayerTeamId },
-      include: {
-        player: true,
-        team: true
-      }
-    })
+    // Verify target player_team exists and get player/team info
+    const targetPlayerTeamResult = await prisma.$queryRawUnsafe(`
+      SELECT
+        pt.player_team_id,
+        p.player_id,
+        p.first_name,
+        p.last_name,
+        t.team_Id,
+        t.name as team_name
+      FROM player_team pt
+      INNER JOIN player p ON pt.player = p.player_id
+      INNER JOIN team t ON pt.team = t.team_Id
+      WHERE pt.player_team_id = ${targetPlayerTeamId}
+    `)
 
-    if (!targetPlayerTeam) {
+    if (!targetPlayerTeamResult || targetPlayerTeamResult.length === 0) {
       return res.status(404).json({
         error: 'Not found',
         message: 'Target player-team combination not found'
       })
     }
+
+    const targetPlayerTeam = targetPlayerTeamResult[0]
 
     // Convert card IDs to BigInt
     const cardIdsBigInt = card_ids.map(id => BigInt(id))
@@ -1116,11 +1198,45 @@ router.post('/:id/reassign-selected-cards', async (req, res) => {
 
     console.log(`Admin: Reassigned ${card_ids.length} cards from player ${playerId} to player_team ${target_player_team_id}`)
 
+    // Update card counts for both the source and target players
+    const sourcePlayerId = BigInt(playerId)
+    const targetPlayerId = BigInt(targetPlayerTeam.player_id)
+
+    // Update card count for source player
+    await prisma.$executeRawUnsafe(`
+      UPDATE player
+      SET card_count = (
+        SELECT COUNT(DISTINCT c.card_id)
+        FROM card c
+        INNER JOIN card_player_team cpt ON c.card_id = cpt.card
+        INNER JOIN player_team pt ON cpt.player_team = pt.player_team_id
+        WHERE pt.player = ${sourcePlayerId}
+      )
+      WHERE player_id = ${sourcePlayerId}
+    `)
+
+    // Update card count for target player (only if different from source)
+    if (targetPlayerId !== sourcePlayerId) {
+      await prisma.$executeRawUnsafe(`
+        UPDATE player
+        SET card_count = (
+          SELECT COUNT(DISTINCT c.card_id)
+          FROM card c
+          INNER JOIN card_player_team cpt ON c.card_id = cpt.card
+          INNER JOIN player_team pt ON cpt.player_team = pt.player_team_id
+          WHERE pt.player = ${targetPlayerId}
+        )
+        WHERE player_id = ${targetPlayerId}
+      `)
+    }
+
+    console.log(`Admin: Updated card counts for players ${playerId} and ${targetPlayerTeam.player_id}`)
+
     res.json({
       message: 'Cards reassigned successfully',
       cardsReassigned: card_ids.length,
-      targetPlayer: `${targetPlayerTeam.player.first_name || ''} ${targetPlayerTeam.player.last_name || ''}`.trim(),
-      targetTeam: targetPlayerTeam.team.name
+      targetPlayer: `${targetPlayerTeam.first_name || ''} ${targetPlayerTeam.last_name || ''}`.trim(),
+      targetTeam: targetPlayerTeam.team_name
     })
 
   } catch (error) {
@@ -1195,79 +1311,6 @@ router.get('/:id/cards', async (req, res) => {
     res.status(500).json({
       error: 'Database error',
       message: 'Failed to fetch player cards',
-      details: error.message
-    })
-  }
-})
-
-// GET /api/admin/player-teams/search - Search for player-team combinations
-router.get('/player-teams/search', async (req, res) => {
-  try {
-    const { search, limit = 20 } = req.query
-    const limitNum = Math.min(parseInt(limit) || 20, 100)
-
-    if (!search || search.trim().length < 2) {
-      return res.json({ playerTeams: [] })
-    }
-
-    const searchTerm = search.trim()
-    const escapedSearch = searchTerm.replace(/'/g, "''")
-
-    const playerTeams = await prisma.$queryRawUnsafe(`
-      SELECT
-        pt.player_team_id,
-        p.player_id,
-        p.first_name,
-        p.last_name,
-        p.nick_name,
-        t.team_Id as team_id,
-        t.name as team_name,
-        t.abbreviation as team_abbreviation,
-        t.primary_color,
-        t.secondary_color,
-        COUNT(DISTINCT cpt.card) as card_count
-      FROM player_team pt
-      INNER JOIN player p ON pt.player = p.player_id
-      INNER JOIN team t ON pt.team = t.team_Id
-      LEFT JOIN card_player_team cpt ON pt.player_team_id = cpt.player_team
-      WHERE (
-        p.first_name LIKE N'%${escapedSearch}%' COLLATE Latin1_General_CI_AI
-        OR p.last_name LIKE N'%${escapedSearch}%' COLLATE Latin1_General_CI_AI
-        OR p.nick_name LIKE N'%${escapedSearch}%' COLLATE Latin1_General_CI_AI
-        OR CONCAT(p.first_name, ' ', p.last_name) LIKE N'%${escapedSearch}%' COLLATE Latin1_General_CI_AI
-        OR t.name LIKE N'%${escapedSearch}%' COLLATE Latin1_General_CI_AI
-      )
-      GROUP BY pt.player_team_id, p.player_id, p.first_name, p.last_name, p.nick_name,
-               t.team_Id, t.name, t.abbreviation, t.primary_color, t.secondary_color
-      ORDER BY p.last_name, p.first_name, t.name
-      OFFSET 0 ROWS
-      FETCH NEXT ${limitNum} ROWS ONLY
-    `)
-
-    // Serialize BigInt values
-    const serializedPlayerTeams = playerTeams.map(pt => ({
-      player_team_id: Number(pt.player_team_id),
-      player_id: Number(pt.player_id),
-      first_name: pt.first_name,
-      last_name: pt.last_name,
-      nick_name: pt.nick_name,
-      team_id: Number(pt.team_id),
-      team_name: pt.team_name,
-      team_abbreviation: pt.team_abbreviation,
-      primary_color: pt.primary_color,
-      secondary_color: pt.secondary_color,
-      card_count: Number(pt.card_count || 0)
-    }))
-
-    res.json({
-      playerTeams: serializedPlayerTeams
-    })
-
-  } catch (error) {
-    console.error('Error searching player-teams:', error)
-    res.status(500).json({
-      error: 'Database error',
-      message: 'Failed to search player-teams',
       details: error.message
     })
   }

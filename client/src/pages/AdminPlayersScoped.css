@@ -682,6 +682,7 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  flex-wrap: wrap;
 }
 
 .admin-players-page .reassign-cards-btn {
@@ -776,8 +777,8 @@
 
 .admin-players-page .team-option {
   width: 100%;
-  background: transparent !important;
-  border: none !important;
+  background: transparent;
+  border: none;
   padding: 0.75rem;
   color: white;
   cursor: pointer;
@@ -785,10 +786,11 @@
   align-items: center;
   gap: 0.5rem;
   transition: background 0.2s ease;
+  text-align: left;
 }
 
 .admin-players-page .team-option:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.1) !important;
 }
 
 .admin-players-page .team-warning {
@@ -1413,7 +1415,7 @@
 .admin-players-page .player-team-result-item {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 0.75rem;
   padding: 1rem;
   background: rgba(255, 255, 255, 0.05);
   border: 2px solid rgba(255, 255, 255, 0.1);
@@ -1434,39 +1436,23 @@
   border-color: #8b5cf6;
 }
 
-.admin-players-page .player-team-result-item .result-info {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  flex: 1;
-}
-
-.admin-players-page .player-team-result-item .result-name-row {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-}
-
 .admin-players-page .player-team-result-item .result-name {
   font-weight: 600;
   font-size: 1rem;
-  color: #f3f4f6;
+  color: white;
+  flex: 1;
 }
 
-.admin-players-page .player-team-result-item .result-team {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.25rem 0.75rem;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 6px;
+.admin-players-page .player-team-result-item .result-ids {
+  font-size: 0.8rem;
+  font-family: monospace;
+  color: white;
+  opacity: 0.7;
 }
 
-.admin-players-page .player-team-result-item .result-details {
-  font-size: 0.85rem;
-  color: rgba(156, 163, 175, 0.9);
+.admin-players-page .player-team-result-item .check-icon {
+  color: #8b5cf6;
+  flex-shrink: 0;
 }
 
 .admin-players-page .selected-target-display {
@@ -1549,6 +1535,49 @@
   font-weight: 600;
   color: white;
   font-size: 0.95rem;
+  flex: 1;
+}
+
+.admin-players-page .select-team-btn {
+  background: rgba(59, 130, 246, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 4px;
+  padding: 0.35rem 0.6rem;
+  color: #60a5fa;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.admin-players-page .select-team-btn:hover {
+  background: rgba(59, 130, 246, 0.25);
+  border-color: rgba(59, 130, 246, 0.4);
+}
+
+.admin-players-page .collapse-team-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  padding: 0.25rem;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.admin-players-page .collapse-team-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+.admin-players-page .collapse-team-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .admin-players-page .team-cards {

@@ -116,6 +116,7 @@ function AdminPlayers() {
   const [playerTeamResults, setPlayerTeamResults] = useState([])
   const [selectedPlayerTeam, setSelectedPlayerTeam] = useState(null)
   const [reassigningCards, setReassigningCards] = useState(false)
+  const [collapsedTeams, setCollapsedTeams] = useState(new Set())
   const addButtonRef = useRef(null)
   const { addToast } = useToast()
 
@@ -744,7 +745,13 @@ function AdminPlayers() {
 
     try {
       const response = await axios.get(`/api/admin/players/${editingPlayer.player_id}/cards`)
-      setPlayerCards(response.data.cards || [])
+      const cards = response.data.cards || []
+      setPlayerCards(cards)
+
+      // Extract all unique team IDs and collapse them all by default
+      const teamIds = new Set(cards.map(card => card.team_id))
+      setCollapsedTeams(teamIds)
+
       setSelectedCardIds([])
       setPlayerTeamSearch('')
       setPlayerTeamResults([])
@@ -774,6 +781,31 @@ function AdminPlayers() {
     }
   }
 
+  const handleSelectTeamCards = (teamCards) => {
+    const teamCardIds = teamCards.map(card => card.card_id)
+    const allTeamCardsSelected = teamCardIds.every(id => selectedCardIds.includes(id))
+
+    if (allTeamCardsSelected) {
+      // Deselect all cards from this team
+      setSelectedCardIds(prev => prev.filter(id => !teamCardIds.includes(id)))
+    } else {
+      // Select all cards from this team
+      setSelectedCardIds(prev => [...new Set([...prev, ...teamCardIds])])
+    }
+  }
+
+  const handleToggleTeamCollapse = (teamId) => {
+    setCollapsedTeams(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(teamId)) {
+        newSet.delete(teamId)
+      } else {
+        newSet.add(teamId)
+      }
+      return newSet
+    })
+  }
+
   const handlePlayerTeamSearch = async (searchValue) => {
     setPlayerTeamSearch(searchValue)
 
@@ -783,10 +815,16 @@ function AdminPlayers() {
     }
 
     try {
-      const response = await axios.get('/api/admin/player-teams/search', {
+      const response = await axios.get('/api/admin/players/player-teams/search', {
         params: { search: searchValue }
       })
-      setPlayerTeamResults(response.data.playerTeams || [])
+
+      // Filter out player-teams that belong to the current editing player
+      const filteredResults = (response.data.playerTeams || []).filter(
+        pt => pt.player_id !== editingPlayer?.player_id
+      )
+
+      setPlayerTeamResults(filteredResults)
     } catch (error) {
       console.error('Error searching player-teams:', error)
       addToast('Failed to search player-teams', 'error')
@@ -1154,56 +1192,58 @@ function AdminPlayers() {
                       </button>
                       
                       {showTeamDropdown && createPortal(
-                        <div className="team-dropdown" style={{
-                          position: 'fixed',
-                          top: `${dropdownPosition.top}px`,
-                          left: `${dropdownPosition.left}px`,
-                          zIndex: 10000,
-                          maxHeight: '400px',
-                          width: '300px'
-                        }}>
-                          <div className="team-search-box">
-                            <Icon name="search" size={16} />
-                            <input
-                              type="text"
-                              placeholder="Search teams..."
-                              value={teamSearchTerm}
-                              onChange={(e) => setTeamSearchTerm(e.target.value)}
-                              className="team-search-input"
-                              autoFocus
-                            />
-                          </div>
-                          <div className="team-options-list">
-                            {availableTeams
-                              .filter(team => !editingPlayer.teams?.some(pt => pt.team_id === team.team_id))
-                              .filter(team => 
-                                !teamSearchTerm.trim() || 
-                                team.name?.toLowerCase().includes(teamSearchTerm.toLowerCase()) ||
-                                team.city?.toLowerCase().includes(teamSearchTerm.toLowerCase()) ||
-                                team.abbreviation?.toLowerCase().includes(teamSearchTerm.toLowerCase())
-                              )
-                              .map(team => (
-                                <button
-                                  key={team.team_id}
-                                  type="button"
-                                  className="team-option"
-                                  onClick={() => {
-                                    handleAddTeam(team.team_id)
-                                  }}
-                                >
-                                  <div
-                                    className="team-circle-base team-circle-xs"
-                                    style={{
-                                      '--primary-color': team.primary_color || '#666',
-                                      '--secondary-color': team.secondary_color || '#999'
+                        <div className="admin-players-page">
+                          <div className="team-dropdown" style={{
+                            position: 'fixed',
+                            top: `${dropdownPosition.top}px`,
+                            left: `${dropdownPosition.left}px`,
+                            zIndex: 10000,
+                            maxHeight: '400px',
+                            width: '300px'
+                          }}>
+                            <div className="team-search-box">
+                              <Icon name="search" size={16} />
+                              <input
+                                type="text"
+                                placeholder="Search teams..."
+                                value={teamSearchTerm}
+                                onChange={(e) => setTeamSearchTerm(e.target.value)}
+                                className="team-search-input"
+                                autoFocus
+                              />
+                            </div>
+                            <div className="team-options-list">
+                              {availableTeams
+                                .filter(team => !editingPlayer.teams?.some(pt => pt.team_id === team.team_id))
+                                .filter(team =>
+                                  !teamSearchTerm.trim() ||
+                                  team.name?.toLowerCase().includes(teamSearchTerm.toLowerCase()) ||
+                                  team.city?.toLowerCase().includes(teamSearchTerm.toLowerCase()) ||
+                                  team.abbreviation?.toLowerCase().includes(teamSearchTerm.toLowerCase())
+                                )
+                                .map(team => (
+                                  <button
+                                    key={team.team_id}
+                                    type="button"
+                                    className="team-option"
+                                    onClick={() => {
+                                      handleAddTeam(team.team_id)
                                     }}
                                   >
-                                    {team.abbreviation}
-                                  </div>
-                                  <span>{team.name}</span>
-                                </button>
-                              ))
-                            }
+                                    <div
+                                      className="team-circle-base team-circle-xs"
+                                      style={{
+                                        '--primary-color': team.primary_color || '#666',
+                                        '--secondary-color': team.secondary_color || '#999'
+                                      }}
+                                    >
+                                      {team.abbreviation}
+                                    </div>
+                                    <span>{team.name}</span>
+                                  </button>
+                                ))
+                              }
+                            </div>
                           </div>
                         </div>,
                         document.body
@@ -1567,54 +1607,56 @@ function AdminPlayers() {
                       </button>
                       
                       {showTeamDropdown && createPortal(
-                        <div className="team-dropdown" style={{
-                          position: 'fixed',
-                          top: `${dropdownPosition.top}px`,
-                          left: `${dropdownPosition.left}px`,
-                          zIndex: 10000,
-                          maxHeight: '400px',
-                          width: '300px'
-                        }}>
-                          <div className="team-search-box">
-                            <Icon name="search" size={16} />
-                            <input
-                              type="text"
-                              placeholder="Search teams..."
-                              value={teamSearchTerm}
-                              onChange={(e) => setTeamSearchTerm(e.target.value)}
-                              className="team-search-input"
-                              autoFocus
-                            />
-                          </div>
-                          <div className="team-options-list">
-                            {availableTeams
-                              .filter(team => !(editForm.teams || []).some(pt => pt.team_id === team.team_id))
-                              .filter(team => 
-                                !teamSearchTerm.trim() || 
-                                team.name?.toLowerCase().includes(teamSearchTerm.toLowerCase()) ||
-                                team.city?.toLowerCase().includes(teamSearchTerm.toLowerCase()) ||
-                                team.abbreviation?.toLowerCase().includes(teamSearchTerm.toLowerCase())
-                              )
-                              .map(team => (
-                                <button
-                                  key={team.team_id}
-                                  type="button"
-                                  className="team-option"
-                                  onClick={() => handleAddTeamToNewPlayer(team.team_id)}
-                                >
-                                  <div
-                                    className="team-circle-base team-circle-xs"
-                                    style={{
-                                      '--primary-color': team.primary_color || '#666',
-                                      '--secondary-color': team.secondary_color || '#999'
-                                    }}
+                        <div className="admin-players-page">
+                          <div className="team-dropdown" style={{
+                            position: 'fixed',
+                            top: `${dropdownPosition.top}px`,
+                            left: `${dropdownPosition.left}px`,
+                            zIndex: 10000,
+                            maxHeight: '400px',
+                            width: '300px'
+                          }}>
+                            <div className="team-search-box">
+                              <Icon name="search" size={16} />
+                              <input
+                                type="text"
+                                placeholder="Search teams..."
+                                value={teamSearchTerm}
+                                onChange={(e) => setTeamSearchTerm(e.target.value)}
+                                className="team-search-input"
+                                autoFocus
+                              />
+                            </div>
+                            <div className="team-options-list">
+                              {availableTeams
+                                .filter(team => !(editForm.teams || []).some(pt => pt.team_id === team.team_id))
+                                .filter(team =>
+                                  !teamSearchTerm.trim() ||
+                                  team.name?.toLowerCase().includes(teamSearchTerm.toLowerCase()) ||
+                                  team.city?.toLowerCase().includes(teamSearchTerm.toLowerCase()) ||
+                                  team.abbreviation?.toLowerCase().includes(teamSearchTerm.toLowerCase())
+                                )
+                                .map(team => (
+                                  <button
+                                    key={team.team_id}
+                                    type="button"
+                                    className="team-option"
+                                    onClick={() => handleAddTeamToNewPlayer(team.team_id)}
                                   >
-                                    {team.abbreviation}
-                                  </div>
-                                  <span>{team.name}</span>
-                                </button>
-                              ))
-                            }
+                                    <div
+                                      className="team-circle-base team-circle-xs"
+                                      style={{
+                                        '--primary-color': team.primary_color || '#666',
+                                        '--secondary-color': team.secondary_color || '#999'
+                                      }}
+                                    >
+                                      {team.abbreviation}
+                                    </div>
+                                    <span>{team.name}</span>
+                                  </button>
+                                ))
+                              }
+                            </div>
                           </div>
                         </div>,
                         document.body
@@ -1911,29 +1953,22 @@ function AdminPlayers() {
                         onClick={() => setSelectedPlayerTeam(result)}
                         disabled={reassigningCards}
                       >
-                        <div className="result-info">
-                          <div className="result-name-row">
-                            <span className="result-name">
-                              {result.first_name} {result.last_name}
-                            </span>
-                            <div className="result-team">
-                              <div
-                                className="team-circle-base team-circle-sm"
-                                style={{
-                                  '--primary-color': result.primary_color || '#666',
-                                  '--secondary-color': result.secondary_color || '#999'
-                                }}
-                                title={result.team_name}
-                              >
-                                {result.team_abbreviation}
-                              </div>
-                              <span className="team-name-display">{result.team_name}</span>
-                            </div>
-                          </div>
-                          <span className="result-details">
-                            player_team_id: {result.player_team_id} • {result.card_count || 0} existing cards
-                          </span>
+                        <div
+                          className="team-circle-base team-circle-sm"
+                          style={{
+                            '--primary-color': result.primary_color || '#666',
+                            '--secondary-color': result.secondary_color || '#999'
+                          }}
+                          title={result.team_name}
+                        >
+                          {result.team_abbreviation}
                         </div>
+                        <span className="result-name">
+                          {result.first_name} {result.last_name}
+                        </span>
+                        <span className="result-ids">
+                          player_id: {result.player_id} • player_team_id: {result.player_team_id}
+                        </span>
                         {selectedPlayerTeam?.player_team_id === result.player_team_id && (
                           <Icon name="check-circle" size={20} className="check-icon" />
                         )}
@@ -1991,47 +2026,70 @@ function AdminPlayers() {
                       cardsByTeam[teamKey].cards.push(card)
                     })
 
-                    return Object.entries(cardsByTeam).map(([teamId, group]) => (
-                      <div key={teamId} className="team-card-group">
-                        <div className="team-group-header">
-                          <div
-                            className="team-circle-base team-circle-sm"
-                            style={{
-                              '--primary-color': group.primary_color || '#666',
-                              '--secondary-color': group.secondary_color || '#999'
-                            }}
-                            title={group.team_name}
-                          >
-                            {group.team_abbreviation}
+                    return Object.entries(cardsByTeam).map(([teamId, group]) => {
+                      const isCollapsed = collapsedTeams.has(parseInt(teamId))
+
+                      return (
+                        <div key={teamId} className="team-card-group">
+                          <div className="team-group-header">
+                            <button
+                              type="button"
+                              className="collapse-team-btn"
+                              onClick={() => handleToggleTeamCollapse(parseInt(teamId))}
+                              disabled={reassigningCards}
+                              title={isCollapsed ? "Expand team" : "Collapse team"}
+                            >
+                              <Icon name={isCollapsed ? 'chevron-right' : 'chevron-down'} size={16} />
+                            </button>
+                            <div
+                              className="team-circle-base team-circle-sm"
+                              style={{
+                                '--primary-color': group.primary_color || '#666',
+                                '--secondary-color': group.secondary_color || '#999'
+                              }}
+                              title={group.team_name}
+                            >
+                              {group.team_abbreviation}
+                            </div>
+                            <span className="team-group-name">{group.team_name} ({group.cards.length} cards)</span>
+                            <button
+                              type="button"
+                              className="select-team-btn"
+                              onClick={() => handleSelectTeamCards(group.cards)}
+                              disabled={reassigningCards}
+                            >
+                              {group.cards.every(card => selectedCardIds.includes(card.card_id)) ? 'Deselect All' : 'Select All'}
+                            </button>
                           </div>
-                          <span className="team-group-name">{group.team_name} ({group.cards.length} cards)</span>
-                        </div>
-                        <div className="team-cards">
-                          {group.cards.map(card => (
-                            <label key={card.card_id} className="card-checkbox-item">
-                              <input
-                                type="checkbox"
-                                checked={selectedCardIds.includes(card.card_id)}
-                                onChange={() => handleCardSelection(card.card_id)}
-                                disabled={reassigningCards}
-                              />
-                              <span className="card-info">
-                                <span className="card-details">
-                                  {card.series_year} {card.series_name} #{card.card_number}
-                                </span>
-                                {(card.is_rc || card.is_auto || card.is_relic) && (
-                                  <span className="card-badges">
-                                    {card.is_rc && <span className="badge badge-rc">RC</span>}
-                                    {card.is_auto && <span className="badge badge-auto">AUTO</span>}
-                                    {card.is_relic && <span className="badge badge-relic">RELIC</span>}
+                          {!isCollapsed && (
+                            <div className="team-cards">
+                              {group.cards.map(card => (
+                                <label key={card.card_id} className="card-checkbox-item">
+                                  <input
+                                    type="checkbox"
+                                    checked={selectedCardIds.includes(card.card_id)}
+                                    onChange={() => handleCardSelection(card.card_id)}
+                                    disabled={reassigningCards}
+                                  />
+                                  <span className="card-info">
+                                    <span className="card-details">
+                                      {card.series_year} {card.series_name} #{card.card_number}
+                                    </span>
+                                    {(card.is_rc || card.is_auto || card.is_relic) && (
+                                      <span className="card-badges">
+                                        {card.is_rc && <span className="badge badge-rc">RC</span>}
+                                        {card.is_auto && <span className="badge badge-auto">AUTO</span>}
+                                        {card.is_relic && <span className="badge badge-relic">RELIC</span>}
+                                      </span>
+                                    )}
                                   </span>
-                                )}
-                              </span>
-                            </label>
-                          ))}
+                                </label>
+                              ))}
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    ))
+                      )
+                    })
                   })()}
                 </div>
               ) : (
