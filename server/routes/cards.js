@@ -429,8 +429,8 @@ router.get('/carousel', async (req, res) => {
     const carouselCards = results.map(row => {
       const playerSlug = `${row.first_name || ''}-${row.last_name || ''}`
         .toLowerCase()
-        .replace(/[^a-z0-9\\s-]/g, '')
-        .replace(/\\s+/g, '-')
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
         .replace(/-+/g, '-')
         .trim()
 
