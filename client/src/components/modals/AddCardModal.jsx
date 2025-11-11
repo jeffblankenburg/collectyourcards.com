@@ -114,8 +114,8 @@ const AddCardModal = ({
         continue
       }
       
-      if (file.size > 5 * 1024 * 1024) {
-        error(`${file.name}: File size must be less than 5MB`)
+      if (file.size > 10 * 1024 * 1024) {
+        error(`${file.name}: File size must be less than 10MB`)
         continue
       }
       

@@ -99,8 +99,8 @@ const QuickEditModal = ({
         continue
       }
       
-      if (file.size > 5 * 1024 * 1024) {
-        error(`${file.name}: File size must be less than 5MB`)
+      if (file.size > 10 * 1024 * 1024) {
+        error(`${file.name}: File size must be less than 10MB`)
         continue
       }
       
@@ -164,13 +164,28 @@ const QuickEditModal = ({
     }
   }
 
-  const handleImageClick = (photo) => {
-    setSelectedImage(photo)
+  const handleImageClick = (photo, isNewPhoto = false, index = null) => {
+    if (isNewPhoto && index !== null) {
+      // For new photos (not yet uploaded), create a mock photo object
+      const mockPhoto = {
+        photo_url: URL.createObjectURL(photo),
+        sort_order: existingPhotos.length + index + 1,
+        isNewPhoto: true,
+        fileIndex: index
+      }
+      setSelectedImage(mockPhoto)
+    } else {
+      // For existing photos already on server
+      setSelectedImage({ ...photo, isNewPhoto: false })
+    }
     setShowImageEditor(true)
   }
 
   const handleImageEditorClose = () => {
     setShowImageEditor(false)
+    if (selectedImage?.isNewPhoto && selectedImage?.photo_url) {
+      URL.revokeObjectURL(selectedImage.photo_url)
+    }
     setSelectedImage(null)
   }
 
@@ -178,19 +193,40 @@ const QuickEditModal = ({
     if (!selectedImage || !editedImageBlob) return
 
     try {
-      const formData = new FormData()
-      formData.append('photo', editedImageBlob, 'edited-photo.jpg')
-      
-      // Replace the existing photo
-      const response = await axios.put(`/api/user/cards/${card.user_card_id}/photos/${selectedImage.user_card_photo_id}`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      })
-      
-      if (response.data.success) {
+      if (selectedImage.isNewPhoto) {
+        // Editing a new photo that hasn't been uploaded yet
+        const imageIndex = selectedImage.fileIndex
+
+        // Create new file from blob
+        const editedFile = new File([editedImageBlob], `edited-photo-${imageIndex}.jpg`, {
+          type: 'image/jpeg'
+        })
+
+        // Replace the file in selectedPhotos array
+        setSelectedPhotos(prev => {
+          const newPhotos = [...prev]
+          newPhotos[imageIndex] = editedFile
+          return newPhotos
+        })
+
         success('Photo updated successfully')
-        await loadExistingPhotos() // Refresh the existing photos
+        handleImageEditorClose()
+      } else {
+        // Editing an existing uploaded photo
+        const formData = new FormData()
+        formData.append('photo', editedImageBlob, 'edited-photo.jpg')
+
+        // Replace the existing photo on server
+        const response = await axios.put(`/api/user/cards/${card.user_card_id}/photos/${selectedImage.user_card_photo_id}`, formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        })
+
+        if (response.data.success) {
+          success('Photo updated successfully')
+          await loadExistingPhotos() // Refresh the existing photos
+        }
       }
     } catch (err) {
       console.error('Error updating photo:', err)
@@ -514,17 +550,29 @@ const QuickEditModal = ({
                         <img
                           src={URL.createObjectURL(photo)}
                           alt={`Preview ${index + 1}`}
+                          onClick={() => handleImageClick(photo, true, index)}
+                          className="photo-clickable"
+                          title="Click to edit image"
                           onLoad={(e) => URL.revokeObjectURL(e.target.src)}
                         />
+                        {index === 0 && existingPhotos.length === 0 && (
+                          <div className="primary-badge">Primary</div>
+                        )}
                         <div className="new-badge">New</div>
-                        <button
-                          type="button"
-                          className="remove-photo"
-                          onClick={() => removeNewPhoto(index)}
-                          disabled={saving || uploadingPhotos}
-                        >
-                          <Icon name="x" size={14} />
-                        </button>
+                        <div className="photo-controls">
+                          <button
+                            type="button"
+                            className="remove-photo"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              removeNewPhoto(index)
+                            }}
+                            disabled={saving || uploadingPhotos}
+                            title="Remove photo"
+                          >
+                            <Icon name="x" size={14} />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))}

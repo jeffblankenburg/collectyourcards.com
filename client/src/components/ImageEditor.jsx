@@ -1,15 +1,17 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
+import { useToast } from '../contexts/ToastContext'
 import Icon from './Icon'
 import './ImageEditor.css'
 
-const ImageEditor = ({ 
-  isOpen, 
-  onClose, 
-  imageUrl, 
+const ImageEditor = ({
+  isOpen,
+  onClose,
+  imageUrl,
   onSave,
   title = "Edit Image"
 }) => {
+  const { error: showToastError } = useToast()
   const canvasRef = useRef(null)
   const [rotation, setRotation] = useState(0)
   const [crop, setCrop] = useState({ x: 0, y: 0, width: 1, height: 1 })
@@ -336,7 +338,7 @@ const ImageEditor = ({
 
     // Check if CORS is available for saving
     if (!corsEnabled) {
-      showToast('Cannot save edited image: The image is from a domain that doesn\'t allow editing. You can view and rotate/crop for preview, but saving requires server configuration changes.', 'error')
+      showToastError('Cannot save edited image: The image is from a domain that doesn\'t allow editing. You can view and rotate/crop for preview, but saving requires server configuration changes.')
       return
     }
 
@@ -384,9 +386,9 @@ const ImageEditor = ({
     } catch (error) {
       console.error('Error saving image:', error)
       if (error.name === 'SecurityError' || error.message.includes('tainted')) {
-        showToast('Unable to save image due to security restrictions. The image may be from a different domain that doesn\'t allow editing.', 'error')
+        showToastError('Unable to save image due to security restrictions. The image may be from a different domain that doesn\'t allow editing.')
       } else {
-        showToast('Failed to save image. Please try again.', 'error')
+        showToastError('Failed to save image. Please try again.')
       }
     } finally {
       setSaving(false)

@@ -7,10 +7,10 @@ const { prisma } = require('../config/prisma-singleton')
 const { Prisma } = require('@prisma/client')
 
 // Configure multer for memory storage
-const upload = multer({ 
+const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB limit per photo
+    fileSize: 10 * 1024 * 1024 // 10MB limit per photo (increased for modern phone cameras)
   },
   fileFilter: (req, file, cb) => {
     // Only allow image files
