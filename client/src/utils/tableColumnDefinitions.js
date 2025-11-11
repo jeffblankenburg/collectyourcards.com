@@ -95,6 +95,17 @@ export const CARD_TABLE_COLUMNS = {
     description: 'Relic/memorabilia indicator'
   },
 
+  sp: {
+    id: 'sp',
+    label: 'SP',
+    defaultVisible: true,
+    alwaysVisible: false,
+    mobileVisible: false,
+    sortable: true,
+    width: '80px',
+    description: 'Short print indicator'
+  },
+
   // Optional columns (hidden by default)
   notes: {
     id: 'notes',
@@ -298,6 +309,17 @@ export const COLLECTION_TABLE_COLUMNS = {
     sortable: true,
     width: '80px',
     description: 'Relic/memorabilia indicator'
+  },
+
+  sp: {
+    id: 'sp',
+    label: 'SP',
+    defaultVisible: true,
+    alwaysVisible: false,
+    mobileVisible: false,
+    sortable: true,
+    width: '80px',
+    description: 'Short print indicator'
   },
 
   aftermarket_autograph: {

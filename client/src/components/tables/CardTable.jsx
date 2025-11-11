@@ -75,6 +75,7 @@ const CardTable = ({
     print_run: 120,    // Width for "PRINT RUN" header text
     auto: 80,          // Width for "AUTO" column (split from attributes)
     relic: 80,         // Width for "RELIC" column (split from attributes)
+    sp: 80,            // Width for "SP" column (short print)
     find: 80,          // Width for "FIND" marketplace dropdown column
     notes: 'auto',
     remove: 56         // Width for remove button column
@@ -214,7 +215,7 @@ const CardTable = ({
         bVal = b.card_player_teams?.[0]?.player ?
           `${b.card_player_teams[0].player.first_name || ''} ${b.card_player_teams[0].player.last_name || ''}`.trim() : ''
         primaryResult = compareValues(aVal, bVal, sortDirection)
-      } else if (sortField === 'is_autograph' || sortField === 'is_relic') {
+      } else if (sortField === 'is_autograph' || sortField === 'is_relic' || sortField === 'is_short_print') {
         aVal = a[sortField] ? 1 : 0
         bVal = b[sortField] ? 1 : 0
         primaryResult = sortDirection === 'asc' ? bVal - aVal : aVal - bVal
@@ -624,6 +625,19 @@ const CardTable = ({
                   </div>
                 </th>
               )}
+              {isColumnVisible('sp') && (
+                <th
+                  className="sortable sp-header"
+                  style={{ width: columnWidths.sp || 80 }}
+                >
+                  <div className="card-table-header-with-resize">
+                    <div className="card-table-header-content" onClick={() => handleSort('is_short_print')}>
+                      SP <SortIcon field="is_short_print" />
+                    </div>
+                    <ResizeHandle columnKey="sp" />
+                  </div>
+                </th>
+              )}
               {isColumnVisible('notes') && (
                 <th className="notes-header" style={{ width: columnWidths.notes }}>
                   <div className="card-table-header-with-resize">
@@ -762,6 +776,7 @@ const CardTable = ({
                           </span>
                         )}
                         {card.is_rookie && <span className="cardcard-tag cardcard-rc cardcard-rc-inline"> RC</span>}
+                        {card.is_short_print && <span className="cardcard-tag cardcard-sp cardcard-rc-inline"> SP</span>}
                       </div>
                     ))}
                   </td>
@@ -822,6 +837,11 @@ const CardTable = ({
                   {isColumnVisible('relic') && (
                     <td className="relic-cell">
                       {card.is_relic && <span className="cardcard-tag cardcard-relic">RELIC</span>}
+                    </td>
+                  )}
+                  {isColumnVisible('sp') && (
+                    <td className="sp-cell">
+                      {card.is_short_print && <span className="cardcard-tag cardcard-sp">SP</span>}
                     </td>
                   )}
                   {isColumnVisible('notes') && (

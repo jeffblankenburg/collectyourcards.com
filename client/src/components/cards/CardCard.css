@@ -206,6 +206,12 @@
   border-color: rgba(59, 130, 246, 0.3);
 }
 
+.cardcard-sp {
+  background: rgba(236, 72, 153, 0.2);
+  color: #ec4899;
+  border-color: rgba(236, 72, 153, 0.3);
+}
+
 /* Card Stats Section */
 .cardcard-stats {
   display: flex;

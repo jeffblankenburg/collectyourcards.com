@@ -109,6 +109,7 @@ const GalleryCard = ({
           {card.is_rookie && <span className="cardcard-tag cardcard-rc">RC</span>}
           {card.is_autograph && <span className="cardcard-tag cardcard-insert">AUTO</span>}
           {card.is_relic && <span className="cardcard-tag cardcard-relic">RELIC</span>}
+          {card.is_short_print && <span className="cardcard-tag cardcard-sp">SP</span>}
           {card.serial_number && card.print_run && (
             <span className="cardcard-tag cardcard-serial">{card.serial_number}/{card.print_run}</span>
           )}

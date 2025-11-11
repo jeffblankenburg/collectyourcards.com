@@ -619,6 +619,11 @@ function CardDetail() {
                               RC
                             </span>
                           )}
+                          {card.is_short_print && index === 0 && (
+                            <span className="rookie-indicator" style={{ background: 'rgba(236, 72, 153, 0.2)', color: '#ec4899', borderColor: 'rgba(236, 72, 153, 0.3)' }}>
+                              SP
+                            </span>
+                          )}
                         </h2>
                       </div>
                     </div>
@@ -626,9 +631,9 @@ function CardDetail() {
                 })}
               </div>
               
-              {/* Card Tags (Auto/Relic) and Action Buttons - Separate Row */}
+              {/* Card Tags (Auto/Relic/SP) and Action Buttons - Separate Row */}
               <div className="card-subtitle-bottom">
-                {(card.is_autograph || card.is_relic) && (
+                {(card.is_autograph || card.is_relic || card.is_short_print) && (
                   <div className="player-card-tags">
                     {card.is_autograph && (
                       <span className="player-tag player-tag-auto">
@@ -638,6 +643,11 @@ function CardDetail() {
                     {card.is_relic && (
                       <span className="player-tag player-tag-relic">
                         RELIC
+                      </span>
+                    )}
+                    {card.is_short_print && (
+                      <span className="player-tag player-tag-sp">
+                        SHORT PRINT
                       </span>
                     )}
                   </div>

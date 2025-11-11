@@ -2185,11 +2185,12 @@ function AdminPlayers() {
                                     <span className="card-details">
                                       {card.series_year} {card.series_name} #{card.card_number}
                                     </span>
-                                    {(card.is_rc || card.is_auto || card.is_relic) && (
+                                    {(card.is_rc || card.is_auto || card.is_relic || card.is_sp) && (
                                       <span className="card-badges">
                                         {card.is_rc && <span className="badge badge-rc">RC</span>}
                                         {card.is_auto && <span className="badge badge-auto">AUTO</span>}
                                         {card.is_relic && <span className="badge badge-relic">RELIC</span>}
+                                        {card.is_sp && <span className="badge badge-sp">SP</span>}
                                       </span>
                                     )}
                                   </span>

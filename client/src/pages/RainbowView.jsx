@@ -346,6 +346,11 @@ function RainbowView() {
                               RC
                             </span>
                           )}
+                          {cardInfo.is_short_print && index === 0 && (
+                            <span className="rookie-indicator" style={{ background: 'rgba(236, 72, 153, 0.2)', color: '#ec4899', borderColor: 'rgba(236, 72, 153, 0.3)' }}>
+                              SP
+                            </span>
+                          )}
                         </h2>
                       </div>
                     </div>
@@ -353,9 +358,9 @@ function RainbowView() {
                 })}
               </div>
 
-              {/* Card Tags (Auto/Relic) and Action Buttons */}
+              {/* Card Tags (Auto/Relic/SP) and Action Buttons */}
               <div className="card-subtitle-bottom">
-                {(cardInfo.is_autograph || cardInfo.is_relic) && (
+                {(cardInfo.is_autograph || cardInfo.is_relic || cardInfo.is_short_print) && (
                   <div className="player-card-tags">
                     {cardInfo.is_autograph && (
                       <span className="player-tag player-tag-auto">
@@ -365,6 +370,11 @@ function RainbowView() {
                     {cardInfo.is_relic && (
                       <span className="player-tag player-tag-relic">
                         RELIC
+                      </span>
+                    )}
+                    {cardInfo.is_short_print && (
+                      <span className="player-tag player-tag-sp">
+                        SHORT PRINT
                       </span>
                     )}
                   </div>

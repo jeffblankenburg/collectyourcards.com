@@ -114,6 +114,37 @@ Each entry should include:
   ```
 - **Expected Result**: One row showing `reference_user_card` as BIGINT, nullable
 
+### 2025-01-11: Short Print Card Property
+- **Date**: 2025-01-11
+- **Change Type**: Schema (Column Addition)
+- **Description**:
+  - Added `is_short_print` column to `card` table to support GitHub Issue #14
+  - Tracks cards that are short prints (SP) - cards with lower print runs than standard cards in a set
+  - Column is BIT NOT NULL with default value 0 (false)
+  - Follows same pattern as existing `is_rookie`, `is_autograph`, and `is_relic` columns
+  - Will be displayed with pink "SP" tag in UI alongside other card type badges
+- **Tables Affected**: `card`
+- **SQL File Reference**: DATABASE_CHANGES_FOR_PRODUCTION.sql
+- **Status**: ✅ Applied to Dev, ⏳ Pending Production
+- **Related Features**:
+  - UI components updated to show pink "SP" tag when is_short_print = 1
+  - Admin edit forms include is_short_print checkbox
+  - Data migration script to set is_short_print from existing notes containing "SP"
+- **Verification Query**:
+  ```sql
+  SELECT
+      c.name as column_name,
+      t.name as data_type,
+      c.is_nullable,
+      ISNULL(dc.definition, 'No default') as default_value
+  FROM sys.columns c
+  JOIN sys.types t ON c.user_type_id = t.user_type_id
+  LEFT JOIN sys.default_constraints dc ON c.default_object_id = dc.object_id
+  WHERE c.object_id = OBJECT_ID('card')
+  AND c.name = 'is_short_print'
+  ```
+- **Expected Result**: One row showing `is_short_print` as BIT, NOT NULL, default ((0))
+
 ---
 
 ## Notes

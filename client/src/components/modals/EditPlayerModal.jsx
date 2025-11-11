@@ -255,9 +255,14 @@ function EditPlayerModal({ player, isOpen, onClose, onSave }) {
           e.stopPropagation()
         }}>
           <div className="modal-header">
-            <h3>Edit Player #{editingPlayer?.player_id || player?.player_id || 'Unknown'}</h3>
-            <button 
-              className="close-btn" 
+            <h3>
+              Edit Player #{editingPlayer?.player_id || player?.player_id || 'Unknown'}
+              {(editingPlayer || player) && (
+                <> - {editingPlayer?.first_name || player?.first_name || ''} {editingPlayer?.last_name || player?.last_name || ''}</>
+              )}
+            </h3>
+            <button
+              className="close-btn"
               onClick={onClose}
               type="button"
             >

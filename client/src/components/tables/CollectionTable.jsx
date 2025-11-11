@@ -62,6 +62,7 @@ const CollectionTable = ({
     photos: 100,       // Width for photo count - repositioned after COLOR
     auto: 80,          // Width for "AUTO" column (split from attributes)
     relic: 80,         // Width for "RELIC" column (split from attributes)
+    sp: 80,            // Width for "SP" column (split from attributes)
     price: 130,        // Width for "PURCHASE $" header text
     value: 140,        // Width for "ESTIMATED $" header text
     current_value: 120, // Width for "CURRENT $" header text
@@ -188,7 +189,11 @@ const CollectionTable = ({
       
       // Search in notes
       if (card.notes?.toLowerCase().includes(query)) return true
-      
+
+      // Search for short print
+      if (card.is_short_print && 'short print'.includes(query)) return true
+      if (card.is_short_print && 'sp'.includes(query)) return true
+
       return false
     })
   }, [cards, searchQuery])
@@ -216,7 +221,7 @@ const CollectionTable = ({
         aVal = a.date_added ? new Date(a.date_added).getTime() : 0
         bVal = b.date_added ? new Date(b.date_added).getTime() : 0
         return sortDirection === 'asc' ? aVal - bVal : bVal - aVal
-      } else if (sortField === 'is_autograph' || sortField === 'is_relic') {
+      } else if (sortField === 'is_autograph' || sortField === 'is_relic' || sortField === 'is_short_print') {
         // Boolean sorting: true values first when ascending
         aVal = a[sortField] ? 1 : 0
         bVal = b[sortField] ? 1 : 0
@@ -351,6 +356,7 @@ const CollectionTable = ({
         'Photos',
         'Auto',
         'Relic',
+        'SP',
         'Purchase Price',
         'Estimated Value',
         'Current Value',
@@ -375,9 +381,10 @@ const CollectionTable = ({
             `${card.serial_number}/${card.print_run}` : 
             card.serial_number || (card.print_run ? `/${card.print_run}` : '')
           
-          // Format auto and relic separately
+          // Format auto, relic, and sp separately
           const auto = card.is_autograph ? 'AUTO' : ''
           const relic = card.is_relic ? 'RELIC' : ''
+          const sp = card.is_short_print ? 'SP' : ''
 
           // Format grade
           const grade = card.grade ? (
@@ -396,6 +403,7 @@ const CollectionTable = ({
             `"${card.photo_count || 0}"`,
             `"${auto}"`,
             `"${relic}"`,
+            `"${sp}"`,
             `"${card.purchase_price ? formatCurrency(card.purchase_price) : ''}"`,
             `"${card.estimated_value ? formatCurrency(card.estimated_value) : ''}"`,
             `"${card.current_value ? formatCurrency(card.current_value) : ''}"`,
@@ -687,8 +695,8 @@ const CollectionTable = ({
                   <ResizeHandle columnKey="auto" />
                 </div>
               </th>
-              <th 
-                className="sortable relic-header" 
+              <th
+                className="sortable relic-header"
                 style={{ width: columnWidths.relic }}
               >
                 <div className="header-with-resize">
@@ -698,7 +706,18 @@ const CollectionTable = ({
                   <ResizeHandle columnKey="relic" />
                 </div>
               </th>
-              <th 
+              <th
+                className="sortable sp-header"
+                style={{ width: columnWidths.sp }}
+              >
+                <div className="header-with-resize">
+                  <div className="collection-table-header-content" onClick={() => handleSort('is_short_print')}>
+                    SP <SortIcon field="is_short_print" />
+                  </div>
+                  <ResizeHandle columnKey="sp" />
+                </div>
+              </th>
+              <th
                 className="sortable price-header"
                 style={{ width: columnWidths.price }}
               >
@@ -850,6 +869,7 @@ const CollectionTable = ({
                         {cpt.player?.first_name} {cpt.player?.last_name}
                       </span>
                       {card.is_rookie && <span className="cardcard-tag cardcard-rc cardcard-rc-inline"> RC</span>}
+                      {card.is_short_print && <span className="cardcard-tag cardcard-sp cardcard-rc-inline"> SP</span>}
                     </div>
                   ))}
                 </td>
@@ -891,6 +911,9 @@ const CollectionTable = ({
                 </td>
                 <td className="relic-cell">
                   {card.is_relic && <span className="cardcard-tag cardcard-relic">RELIC</span>}
+                </td>
+                <td className="sp-cell">
+                  {card.is_short_print && <span className="cardcard-tag cardcard-sp">SP</span>}
                 </td>
                 <td className="price-cell">
                   {formatCurrency(card.purchase_price)}

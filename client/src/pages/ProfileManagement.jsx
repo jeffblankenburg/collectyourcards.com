@@ -666,6 +666,7 @@ function ProfileManagement() {
                                 {card.is_rookie && <span className="attribute rookie">RC</span>}
                                 {card.is_autograph && <span className="attribute auto">AUTO</span>}
                                 {card.is_relic && <span className="attribute relic">RELIC</span>}
+                                {card.is_short_print && <span className="attribute sp">SP</span>}
                                 {card.print_run && <span className="attribute print-run">/{card.print_run}</span>}
                                 {card.grade && card.grading_agency_abbr && (
                                   <span className="attribute grade">{card.grading_agency_abbr} {card.grade}</span>

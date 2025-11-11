@@ -106,6 +106,9 @@ function CardCard({ card, showBadge = false, customOnClick = null }) {
             {card.is_relic && (
               <span className="cardcard-tag cardcard-relic cardcard-rc-inline">RELIC</span>
             )}
+            {card.is_short_print && (
+              <span className="cardcard-tag cardcard-sp cardcard-rc-inline">SP</span>
+            )}
           </h3>
         </div>
 

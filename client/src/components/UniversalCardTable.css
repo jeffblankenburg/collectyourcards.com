@@ -385,7 +385,7 @@
   white-space: nowrap;
 }
 
-.auto-tag, .relic-tag {
+.auto-tag, .relic-tag, .sp-tag {
   font-size: 0.7rem;
   font-weight: 600;
   padding: 0.1rem 0.3rem;
@@ -400,6 +400,11 @@
 
 .relic-tag {
   background: #8b5cf6;
+  color: white;
+}
+
+.sp-tag {
+  background: #ec4899;
   color: white;
 }
 

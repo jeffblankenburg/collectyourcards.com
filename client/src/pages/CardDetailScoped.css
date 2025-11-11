@@ -1142,6 +1142,12 @@
   border: 1px solid rgba(245, 158, 11, 0.4);
 }
 
+.card-detail-page .player-tag-sp {
+  background: rgba(236, 72, 153, 0.2);
+  color: #ec4899;
+  border: 1px solid rgba(236, 72, 153, 0.4);
+}
+
 /* Override UniversalCardTable for narrower collection table */
 .card-detail-page .user-collection-section .cards-table {
   min-width: auto !important;

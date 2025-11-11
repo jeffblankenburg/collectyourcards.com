@@ -190,11 +190,12 @@ function FavoriteCardsModal({ isOpen, onClose, onUpdate }) {
                           {card.grade && (
                             <div className="card-grade">Grade: {card.grade}</div>
                           )}
-                          {(card.is_rookie || card.is_autograph || card.is_relic) && (
+                          {(card.is_rookie || card.is_autograph || card.is_relic || card.is_short_print) && (
                             <div className="card-attributes">
                               {card.is_rookie && <span className="attribute rookie">RC</span>}
                               {card.is_autograph && <span className="attribute auto">AUTO</span>}
                               {card.is_relic && <span className="attribute relic">RELIC</span>}
+                              {card.is_short_print && <span className="attribute sp">SP</span>}
                             </div>
                           )}
                         </div>
@@ -239,11 +240,12 @@ function FavoriteCardsModal({ isOpen, onClose, onUpdate }) {
                   )}
                   <div className="card-info">
                     <div className="card-name">{formatCardName(card)}</div>
-                    {(card.is_rookie || card.is_autograph || card.is_relic) && (
+                    {(card.is_rookie || card.is_autograph || card.is_relic || card.is_short_print) && (
                       <div className="card-attributes">
                         {card.is_rookie && <span className="attribute rookie">RC</span>}
                         {card.is_autograph && <span className="attribute auto">AUTO</span>}
                         {card.is_relic && <span className="attribute relic">RELIC</span>}
+                        {card.is_short_print && <span className="attribute sp">SP</span>}
                       </div>
                     )}
                   </div>

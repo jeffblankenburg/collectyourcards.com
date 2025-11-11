@@ -350,8 +350,9 @@ const AdvancedCardTable = ({ apiEndpoint, showPlayerColumn = true, loadAllCards 
     const rookies = sortedCards.filter(card => card.is_rookie).length
     const autographs = sortedCards.filter(card => card.is_autograph).length
     const relics = sortedCards.filter(card => card.is_relic).length
-    
-    return { total, rookies, autographs, relics }
+    const shortPrints = sortedCards.filter(card => card.is_short_print).length
+
+    return { total, rookies, autographs, relics, shortPrints }
   }, [sortedCards])
 
   const downloadCSV = () => {
@@ -379,6 +380,7 @@ const AdvancedCardTable = ({ apiEndpoint, showPlayerColumn = true, loadAllCards 
         if (card.is_rookie) attributes.push('RC')
         if (card.is_autograph) attributes.push('AUTO')
         if (card.is_relic) attributes.push('RELIC')
+        if (card.is_short_print) attributes.push('SP')
         if (card.print_run) attributes.push(`/${card.print_run}`)
 
         const row = [
@@ -796,6 +798,9 @@ const AdvancedCardTable = ({ apiEndpoint, showPlayerColumn = true, loadAllCards 
                         {card.is_relic && (
                           <span className="badge badge-relic">RELIC</span>
                         )}
+                        {card.is_short_print && (
+                          <span className="badge badge-sp">SP</span>
+                        )}
                       </div>
                     </td>
                     <td>
@@ -908,6 +913,9 @@ const AdvancedCardTable = ({ apiEndpoint, showPlayerColumn = true, loadAllCards 
           </span>
           <span className="summary-stat">
             {summary.relics} RELIC
+          </span>
+          <span className="summary-stat">
+            {summary.shortPrints} SP
           </span>
           <button 
             className="download-btn"

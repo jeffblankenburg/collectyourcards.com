@@ -42,6 +42,7 @@ function CardResult({ card, showBadge = false }) {
           {card.is_rookie && <span className="badge badge-rookie">RC</span>}
           {card.is_autograph && <span className="badge badge-auto">Auto</span>}
           {card.is_relic && <span className="badge badge-relic">Relic</span>}
+          {card.is_short_print && <span className="badge badge-sp">SP</span>}
           {card.print_run && <span className="badge badge-hof">/{card.print_run}</span>}
         </div>
       </div>

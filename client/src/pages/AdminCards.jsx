@@ -103,7 +103,9 @@ function AdminCards() {
           (card.notes && card.notes.toLowerCase().includes(searchLower)) ||
           (card.is_rookie && 'rookie'.includes(searchLower)) ||
           (card.is_autograph && 'auto'.includes(searchLower)) ||
-          (card.is_relic && 'relic'.includes(searchLower))
+          (card.is_relic && 'relic'.includes(searchLower)) ||
+          (card.is_short_print && 'short print'.includes(searchLower)) ||
+          (card.is_short_print && 'sp'.includes(searchLower))
         )
       })
       setFilteredCards(filtered)
@@ -189,6 +191,7 @@ function AdminCards() {
       is_rookie: false,
       is_autograph: false,
       is_relic: false,
+      is_short_print: false,
       print_run: '',
       notes: ''
     })
@@ -204,6 +207,7 @@ function AdminCards() {
       is_rookie: card.is_rookie || false,
       is_autograph: card.is_autograph || false,
       is_relic: card.is_relic || false,
+      is_short_print: card.is_short_print || false,
       print_run: card.print_run || '',
       notes: card.notes || ''
     })
@@ -297,6 +301,7 @@ function AdminCards() {
         is_rookie: editForm.is_rookie,
         is_autograph: editForm.is_autograph,
         is_relic: editForm.is_relic,
+        is_short_print: editForm.is_short_print,
         print_run: editForm.print_run ? parseInt(editForm.print_run) : null,
         notes: editForm.notes.trim(),
         players: playersToSave
@@ -552,6 +557,7 @@ function AdminCards() {
                             </div>
                             <span className="player-name">{playerTeam.player.name}</span>
                             {card.is_rookie && <span className="rc-tag">RC</span>}
+                            {card.is_short_print && <span className="sp-tag">SP</span>}
                           </div>
                         ))}
                       </td>
@@ -575,6 +581,7 @@ function AdminCards() {
                         <div className="attribute-tags">
                           {card.is_autograph && <span className="auto-tag">AUTO</span>}
                           {card.is_relic && <span className="relic-tag">RELIC</span>}
+                          {card.is_short_print && <span className="sp-tag">SP</span>}
                         </div>
                       </td>
                       <td className="notes-cell">
@@ -719,6 +726,15 @@ function AdminCards() {
                         onChange={(e) => handleFormChange('is_relic', e.target.checked)}
                       />
                       <span>Relic</span>
+                    </label>
+
+                    <label className="admin-cards-checkbox-item">
+                      <input
+                        type="checkbox"
+                        checked={editForm.is_short_print}
+                        onChange={(e) => handleFormChange('is_short_print', e.target.checked)}
+                      />
+                      <span>Short Print</span>
                     </label>
                   </div>
                 </div>

@@ -508,6 +508,8 @@ const UniversalCardTable = ({
         if (card.is_autograph && 'autograph'.includes(query)) return true
         if (card.is_autograph && 'auto'.includes(query)) return true
         if (card.is_relic && 'relic'.includes(query)) return true
+        if (card.is_short_print && 'short print'.includes(query)) return true
+        if (card.is_short_print && 'sp'.includes(query)) return true
         
         // Search in collection-specific fields
         if (showCollectionColumns) {
@@ -728,7 +730,8 @@ const UniversalCardTable = ({
           const attributes = [
             card.is_rookie ? 'RC' : '',
             card.is_autograph ? 'AUTO' : '',
-            card.is_relic ? 'RELIC' : ''
+            card.is_relic ? 'RELIC' : '',
+            card.is_short_print ? 'SP' : ''
           ].filter(Boolean).join(' ')
           
           // Format grade exactly like the table
@@ -1162,6 +1165,7 @@ const UniversalCardTable = ({
                         </div>
                         <span className="player-name">{playerTeam.player.name}</span>
                         {card.is_rookie && <span className="rc-tag">RC</span>}
+                        {card.is_short_print && <span className="sp-tag">SP</span>}
                       </div>
                     ))}
                   </td>
@@ -1214,6 +1218,7 @@ const UniversalCardTable = ({
                     <div className="attribute-tags">
                       {card.is_autograph && <span className="auto-tag">AUTO</span>}
                       {card.is_relic && <span className="relic-tag">RELIC</span>}
+                      {card.is_short_print && <span className="sp-tag">SP</span>}
                     </div>
                   </td>
                 )}
