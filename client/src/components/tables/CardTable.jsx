@@ -776,7 +776,6 @@ const CardTable = ({
                           </span>
                         )}
                         {card.is_rookie && <span className="cardcard-tag cardcard-rc cardcard-rc-inline"> RC</span>}
-                        {card.is_short_print && <span className="cardcard-tag cardcard-sp cardcard-rc-inline"> SP</span>}
                       </div>
                     ))}
                   </td>

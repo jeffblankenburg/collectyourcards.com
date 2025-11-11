@@ -112,8 +112,8 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
     
     const cardsQuery = `
       SELECT
-        c.card_id, c.card_number, c.is_rookie, c.is_autograph, c.is_relic,
-        c.print_run, c.sort_order, c.notes,
+        c.card_id, c.card_number, c.is_rookie, c.is_autograph, c.is_relic, c.is_short_print,
+        c.print_run, c.sort_order, c.notes, c.reference_user_card,
         s.name as series_name, s.series_id, s.slug as series_slug,
         col.name as color, col.hex_value as hex_color,
         ${userIdNumber ? 'ISNULL(COUNT(uc.user_card_id), 0) as user_card_count' : '0 as user_card_count'}
@@ -122,8 +122,8 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
       LEFT JOIN color col ON c.color = col.color_id
       ${userCollectionJoin}
       ${whereClause}
-      GROUP BY c.card_id, c.card_number, c.is_rookie, c.is_autograph, c.is_relic,
-               c.print_run, c.sort_order, c.notes, s.name, s.series_id, s.slug,
+      GROUP BY c.card_id, c.card_number, c.is_rookie, c.is_autograph, c.is_relic, c.is_short_print,
+               c.print_run, c.sort_order, c.notes, c.reference_user_card, s.name, s.series_id, s.slug,
                col.name, col.hex_value
       ORDER BY s.name ASC, c.sort_order ASC
       OFFSET ${offsetNum} ROWS FETCH NEXT ${limitNum} ROWS ONLY
@@ -202,9 +202,11 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
         is_rookie: serialized.is_rookie,
         is_autograph: serialized.is_autograph,
         is_relic: serialized.is_relic,
+        is_short_print: serialized.is_short_print,
         print_run: serialized.print_run,
         sort_order: serialized.sort_order,
         notes: serialized.notes,
+        reference_user_card: serialized.reference_user_card ? Number(serialized.reference_user_card) : null,
         user_card_count: Number(serialized.user_card_count) || 0,
         card_player_teams: cardPlayerTeamMap[cardId] || [],
         series_rel: {

@@ -263,6 +263,10 @@ const QuickEditModal = ({
           loc.user_location_id === parseInt(formData.user_location)
         )
 
+        // Get current photo count and primary photo URL (existingPhotos is always up-to-date after uploadNewPhotos)
+        const currentPhotoCount = existingPhotos.length
+        const primaryPhotoUrl = existingPhotos.length > 0 ? existingPhotos[0].photo_url : card.primary_photo_url
+
         const updatedCard = {
           ...card,
           // Update with form data
@@ -276,7 +280,9 @@ const QuickEditModal = ({
           aftermarket_autograph: formData.aftermarket_autograph,
           grading_agency: formData.grading_agency || null,
           grade: formData.grade || null,
-          grade_id: formData.grade_id || null
+          grade_id: formData.grade_id || null,
+          photo_count: currentPhotoCount, // ✅ Include updated photo count
+          primary_photo_url: primaryPhotoUrl // ✅ Include updated primary photo URL for gallery view
         }
 
         onCardUpdated(updatedCard)
@@ -319,7 +325,6 @@ const QuickEditModal = ({
                     <span className="quick-edit-player-name">
                       {cpt.player?.first_name} {cpt.player?.last_name}
                       {card.is_rookie && <span className="cardcard-tag cardcard-rc cardcard-rc-inline"> RC</span>}
-                      {card.is_short_print && <span className="cardcard-tag cardcard-sp cardcard-rc-inline"> SP</span>}
                     </span>
                   </div>
                 ))}

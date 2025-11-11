@@ -284,7 +284,6 @@ const AddCardModal = ({
                     <span className="quick-edit-player-name">
                       {cpt.player?.first_name} {cpt.player?.last_name}
                       {card.is_rookie && <span className="cardcard-tag cardcard-rc cardcard-rc-inline"> RC</span>}
-                      {card.is_short_print && <span className="cardcard-tag cardcard-sp cardcard-rc-inline"> SP</span>}
                     </span>
                   </div>
                 ))}

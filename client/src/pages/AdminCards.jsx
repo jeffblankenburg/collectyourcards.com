@@ -525,6 +525,7 @@ function AdminCards() {
                     <th style={{width: '110px'}}>Print Run</th>
                     <th style={{width: '120px'}}>Color</th>
                     <th style={{width: '130px'}}>Attributes</th>
+                    <th style={{width: '50px'}} title="Has assigned image">Img</th>
                     <th style={{width: 'auto'}}>Notes</th>
                     <th style={{width: '60px'}}></th>
                   </tr>
@@ -557,7 +558,6 @@ function AdminCards() {
                             </div>
                             <span className="player-name">{playerTeam.player.name}</span>
                             {card.is_rookie && <span className="rc-tag">RC</span>}
-                            {card.is_short_print && <span className="sp-tag">SP</span>}
                           </div>
                         ))}
                       </td>
@@ -583,6 +583,16 @@ function AdminCards() {
                           {card.is_relic && <span className="relic-tag">RELIC</span>}
                           {card.is_short_print && <span className="sp-tag">SP</span>}
                         </div>
+                      </td>
+                      <td className="image-indicator-cell center">
+                        {card.reference_user_card && (
+                          <Icon
+                            name="image"
+                            size={18}
+                            style={{ color: '#10b981' }}
+                            title="Card has assigned image"
+                          />
+                        )}
                       </td>
                       <td className="notes-cell">
                         {card.notes}
