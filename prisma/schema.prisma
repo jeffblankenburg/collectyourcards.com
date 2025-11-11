@@ -31,6 +31,7 @@ model card {
   is_rookie                                    Boolean            @default(false, map: "DEFAULT_card_is_rookie")
   is_autograph                                 Boolean            @default(false, map: "DEFAULT_card_is_autograph")
   is_relic                                     Boolean            @default(false, map: "DEFAULT_card_is_relic")
+  is_short_print                               Boolean            @default(false, map: "DEFAULT_card_is_short_print")
   print_run                                    Int?
   series                                       BigInt?
   color                                        Int?
@@ -48,7 +49,7 @@ model card {
 
   @@index([created_month], map: "idx_card_created_month")
   @@index([series], map: "IX_card_series_optimized")
-  @@index([is_rookie, is_autograph, is_relic], map: "IX_card_attributes")
+  @@index([is_rookie, is_autograph, is_relic, is_short_print], map: "IX_card_attributes")
   @@index([card_number_indexed], map: "IX_card_number")
   @@index([reference_user_card], map: "IX_card_reference_user_card")
 }

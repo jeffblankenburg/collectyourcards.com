@@ -31,6 +31,7 @@ model card {
   is_rookie                                    Boolean            @default(false, map: "DEFAULT_card_is_rookie")
   is_autograph                                 Boolean            @default(false, map: "DEFAULT_card_is_autograph")
   is_relic                                     Boolean            @default(false, map: "DEFAULT_card_is_relic")
+  is_short_print                               Boolean            @default(false, map: "DEFAULT_card_is_short_print")
   print_run                                    Int?
   series                                       BigInt?
   color                                        Int?
