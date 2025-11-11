@@ -146,3 +146,19 @@ WHERE fk.name = 'FK_card_reference_user_card';
 -- ============================================================================
 -- End of changes
 -- ============================================================================
+
+-- ============================================================================
+-- DEFERRED: eBay Integration Schema Changes
+-- ============================================================================
+-- The following changes are deferred until eBay integration is fully implemented
+-- in production (tables: ebay_purchases, ebay_sync_logs, user_ebay_accounts, etc.)
+--
+-- ALTER TABLE user_card
+-- ADD ebay_purchase_id BIGINT NULL;
+--
+-- ALTER TABLE user_card
+-- ADD CONSTRAINT FK_user_card_ebay_purchase
+-- FOREIGN KEY (ebay_purchase_id) REFERENCES ebay_purchases(id);
+--
+-- CREATE INDEX IX_user_card_ebay_purchase ON user_card(ebay_purchase_id);
+-- ============================================================================

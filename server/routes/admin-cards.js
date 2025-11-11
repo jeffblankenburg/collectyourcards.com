@@ -210,14 +210,22 @@ router.get('/:id/community-images', requireDataAdmin, async (req, res) => {
     }
 
     // Find all user_card records for this card with their photos
+    // Note: Explicitly select fields to avoid missing columns (like ebay_purchase_id) in production
     const userCards = await prisma.user_card.findMany({
       where: {
         card: BigInt(cardId)
       },
-      include: {
+      select: {
+        user_card_id: true,
+        created: true,
         user_card_photo_user_card_photo_user_cardTouser_card: {
           orderBy: {
             sort_order: 'asc'
+          },
+          select: {
+            user_card_photo_id: true,
+            photo_url: true,
+            sort_order: true
           }
         },
         user_user_card_userTouser: {
@@ -281,8 +289,16 @@ router.put('/:id/reference-image', requireDataAdmin, async (req, res) => {
     if (user_card_id !== null && user_card_id !== undefined) {
       const userCard = await prisma.user_card.findUnique({
         where: { user_card_id: BigInt(user_card_id) },
-        include: {
-          user_card_photo_user_card_photo_user_cardTouser_card: true
+        select: {
+          user_card_id: true,
+          card: true,
+          user_card_photo_user_card_photo_user_cardTouser_card: {
+            select: {
+              user_card_photo_id: true,
+              photo_url: true,
+              sort_order: true
+            }
+          }
         }
       })
 
