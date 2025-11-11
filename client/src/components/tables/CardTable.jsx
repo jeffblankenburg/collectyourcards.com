@@ -45,22 +45,16 @@ const CardTable = ({
   onRemoveFromList = null,
   removingCardId = null
 }) => {
-  console.log('🔴 CardTable RENDER - Card count:', cards.length, {
-    cardsIdentity: cards,
-    onAddCard: !!onAddCard,
-    onCardClick: !!onCardClick,
-    searchQuery,
-    bulkSelectionMode,
-    selectedCardsSize: selectedCards.size,
-    loading
-  })
-
   const { isAuthenticated } = useAuth()
   const [sortField, setSortField] = useState(defaultSort)
   const [sortDirection, setSortDirection] = useState('asc')
   const [visibleColumns, setVisibleColumns] = useState(
     getDefaultVisibleColumns('card_table')
   )
+
+  // Manage search state internally when not controlled by parent
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('')
+  const isControlled = searchQuery !== '' || onSearchChange !== null
 
 
   // Column resizing state
@@ -86,6 +80,7 @@ const CardTable = ({
   const [lastSelectedIndex, setLastSelectedIndex] = useState(null)
   const searchInputRef = useRef(null)
   const marketplaceDropdownRef = useRef(null)
+  const searchDebounceRef = useRef(null)
 
   // Auto-focus search input when component loads
   useEffect(() => {
@@ -153,11 +148,11 @@ const CardTable = ({
     fetchPreferences()
   }, [isAuthenticated])
 
-  // Filter cards based on search query
+  // Filter cards based on debounced search query
   const filteredCards = useMemo(() => {
-    if (!searchQuery.trim()) return cards
+    if (!debouncedSearchQuery.trim()) return cards
 
-    const query = searchQuery.toLowerCase()
+    const query = debouncedSearchQuery.toLowerCase()
     return cards.filter(card => {
       // Search in card number
       if (card.card_number?.toLowerCase().includes(query)) return true
@@ -188,7 +183,7 @@ const CardTable = ({
 
       return false
     })
-  }, [cards, searchQuery])
+  }, [cards, debouncedSearchQuery])
 
   // Sort filtered cards with multi-level sorting: primary field → series → card number → player
   const sortedCards = useMemo(() => {
@@ -470,8 +465,21 @@ const CardTable = ({
                   ref={searchInputRef}
                   type="text"
                   placeholder="Search cards..."
-                  value={searchQuery}
-                  onChange={(e) => onSearchChange?.(e.target.value)}
+                  defaultValue={isControlled ? searchQuery : ''}
+                  onChange={(e) => {
+                    const newValue = e.target.value
+                    if (isControlled && onSearchChange) {
+                      onSearchChange(newValue)
+                    } else {
+                      // Debounce the search without triggering immediate re-renders
+                      if (searchDebounceRef.current) {
+                        clearTimeout(searchDebounceRef.current)
+                      }
+                      searchDebounceRef.current = setTimeout(() => {
+                        setDebouncedSearchQuery(newValue)
+                      }, 300)
+                    }
+                  }}
                   className="card-table-search-input"
                 />
               </div>
@@ -946,7 +954,7 @@ const CardTable = ({
       <div className="card-table-footer">
         <div className="card-table-info">
           Showing {sortedCards.length} of {cards.length} cards
-          {searchQuery && ` (filtered by "${searchQuery}")`}
+          {debouncedSearchQuery && ` (filtered)`}
         </div>
         
         {showDownload && (

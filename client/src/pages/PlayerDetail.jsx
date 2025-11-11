@@ -33,7 +33,6 @@ function PlayerDetail() {
   const [showEditModal, setShowEditModal] = useState(false)
   const [activeStatFilter, setActiveStatFilter] = useState(null)
   const [cardsLoading, setCardsLoading] = useState(false)
-  const [searchQuery, setSearchQuery] = useState('')
   const [bulkSelectionMode, setBulkSelectionMode] = useState(false)
   const [selectedCards, setSelectedCards] = useState(new Set())
   const [showAddCardModal, setShowAddCardModal] = useState(false)
@@ -61,6 +60,7 @@ function PlayerDetail() {
       trackPlayerVisit(player)
     }
   }, [player])
+
 
   // Apply team filter from URL or navigation state
   useEffect(() => {
@@ -253,10 +253,6 @@ function PlayerDetail() {
     return filtered
   }, [cards, selectedTeamIds, activeStatFilter])
 
-  const handleSearchChange = (query) => {
-    setSearchQuery(query)
-  }
-
   const handleCardClick = (card) => {
     // Navigate to card detail page
     if (card.series_rel && card.card_number) {
@@ -403,8 +399,6 @@ function PlayerDetail() {
           onSeriesClick={handleSeriesClick}
           showSearch={true}
           autoFocusSearch={true}
-          searchQuery={searchQuery}
-          onSearchChange={handleSearchChange}
           downloadFilename={`${player?.first_name || 'player'}-${player?.last_name || 'cards'}-cards`}
           showBulkActions={true}
           bulkSelectionMode={bulkSelectionMode}
