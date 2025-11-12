@@ -114,6 +114,38 @@ Each entry should include:
   ```
 - **Expected Result**: One row showing `reference_user_card` as BIGINT, nullable
 
+### 2025-01-12: Card Image Path Columns (Issue #33)
+- **Date**: 2025-01-12
+- **Change Type**: Schema (Column Addition)
+- **Description**:
+  - Added `front_image_path` and `back_image_path` columns to `card` table
+  - Stores URLs of web-optimized card images (300px height, 85% JPEG quality)
+  - Separate from user_card_photo table (user uploads remain high-res)
+  - Enables fast carousel loading and deletion-safe public images
+  - Both columns are NVARCHAR(MAX) NULL (nullable)
+- **Tables Affected**: `card`
+- **SQL File Reference**: DATABASE_CHANGES_FOR_PRODUCTION.sql (lines 208-288)
+- **Status**: ✅ Applied to Dev, ⏳ Pending Production
+- **Related Features**:
+  - Image optimization system (Issue #33)
+  - Automatic optimization when admin assigns reference_user_card
+  - Carousel uses front_image_path for performance
+  - Azure Storage card-optimized container
+- **Verification Query**:
+  ```sql
+  SELECT
+      c.name as column_name,
+      t.name as data_type,
+      c.is_nullable,
+      c.max_length
+  FROM sys.columns c
+  JOIN sys.types t ON c.user_type_id = t.user_type_id
+  WHERE c.object_id = OBJECT_ID('card')
+  AND c.name IN ('front_image_path', 'back_image_path')
+  ORDER BY c.name
+  ```
+- **Expected Result**: Two rows showing both columns as NVARCHAR, nullable, max_length -1 (MAX)
+
 ### 2025-01-11: Short Print Card Property
 - **Date**: 2025-01-11
 - **Change Type**: Schema (Column Addition)

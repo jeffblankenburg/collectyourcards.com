@@ -204,3 +204,85 @@ PRINT '=========================================================================
 PRINT 'MIGRATION COMPLETE';
 PRINT '============================================================================';
 PRINT '';
+
+-- ============================================================================
+-- 2025-01-12: Add front_image_path and back_image_path columns to card table
+-- Description: Adds columns to store web-optimized card image URLs for
+--              performance (carousel, card detail pages). Used by Issue #33
+--              image optimization system. Original user uploads remain
+--              separate in user_card_photo table.
+-- ============================================================================
+
+PRINT '';
+PRINT '============================================================================';
+PRINT 'CARD IMAGE OPTIMIZATION - ADD IMAGE PATH COLUMNS';
+PRINT '============================================================================';
+PRINT '';
+
+-- Check if front_image_path column already exists
+IF NOT EXISTS (
+    SELECT 1
+    FROM sys.columns
+    WHERE object_id = OBJECT_ID('card')
+    AND name = 'front_image_path'
+)
+BEGIN
+    PRINT 'Adding front_image_path column to card table...';
+
+    ALTER TABLE card
+    ADD front_image_path NVARCHAR(MAX) NULL;
+
+    PRINT 'Column front_image_path added successfully!';
+    PRINT '';
+END
+ELSE
+BEGIN
+    PRINT 'Column front_image_path already exists. Skipping column creation.';
+    PRINT '';
+END
+
+-- Check if back_image_path column already exists
+IF NOT EXISTS (
+    SELECT 1
+    FROM sys.columns
+    WHERE object_id = OBJECT_ID('card')
+    AND name = 'back_image_path'
+)
+BEGIN
+    PRINT 'Adding back_image_path column to card table...';
+
+    ALTER TABLE card
+    ADD back_image_path NVARCHAR(MAX) NULL;
+
+    PRINT 'Column back_image_path added successfully!';
+    PRINT '';
+END
+ELSE
+BEGIN
+    PRINT 'Column back_image_path already exists. Skipping column creation.';
+    PRINT '';
+END
+
+-- Verify the columns exist
+PRINT 'Verifying columns...';
+SELECT
+    c.name as column_name,
+    t.name as data_type,
+    c.is_nullable,
+    c.max_length
+FROM sys.columns c
+JOIN sys.types t ON c.user_type_id = t.user_type_id
+WHERE c.object_id = OBJECT_ID('card')
+AND c.name IN ('front_image_path', 'back_image_path')
+ORDER BY c.name;
+
+PRINT '';
+PRINT '============================================================================';
+PRINT 'IMAGE PATH COLUMNS MIGRATION COMPLETE';
+PRINT '============================================================================';
+PRINT '';
+PRINT 'Next steps:';
+PRINT '1. Deploy code changes to production';
+PRINT '2. Run migration script: node server/scripts/migrate-optimize-card-images.js';
+PRINT '3. This will populate front_image_path and back_image_path for existing cards';
+PRINT '';
