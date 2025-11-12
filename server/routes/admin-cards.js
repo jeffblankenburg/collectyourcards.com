@@ -2,6 +2,7 @@ const express = require('express')
 const router = express.Router()
 const { prisma } = require('../config/prisma-singleton')
 const { authMiddleware, requireDataAdmin } = require('../middleware/auth')
+const { processCardImage, deleteOptimizedImage } = require('../utils/image-optimizer')
 
 // POST /api/admin/cards - Create a new card
 router.post('/', requireDataAdmin, async (req, res) => {
@@ -278,56 +279,157 @@ router.put('/:id/reference-image', requireDataAdmin, async (req, res) => {
       return res.status(400).json({ error: 'Card ID is required' })
     }
 
-    // Check if card exists
+    // Check if card exists and get current image URLs
     const card = await prisma.card.findUnique({
-      where: { card_id: cardId }
+      where: { card_id: cardId },
+      select: {
+        card_id: true,
+        reference_user_card: true,
+        front_image_path: true,
+        back_image_path: true
+      }
     })
 
     if (!card) {
       return res.status(404).json({ error: 'Card not found' })
     }
 
-    // If user_card_id is provided, validate it exists and belongs to this card
-    if (user_card_id !== null && user_card_id !== undefined) {
-      const userCard = await prisma.user_card.findUnique({
-        where: { user_card_id: BigInt(user_card_id) },
-        select: {
-          user_card_id: true,
-          card: true,
-          user_card_photo_user_card_photo_user_cardTouser_card: {
-            select: {
-              user_card_photo_id: true,
-              photo_url: true,
-              sort_order: true
-            }
-          }
+    // CASE 1: Clearing reference (setting to null)
+    if (user_card_id === null || user_card_id === undefined) {
+      console.log(`Clearing reference for card ${cardId}...`)
+
+      // Delete old optimized images if they exist
+      const deletionPromises = []
+      if (card.front_image_path) {
+        deletionPromises.push(deleteOptimizedImage(card.front_image_path))
+      }
+      if (card.back_image_path) {
+        deletionPromises.push(deleteOptimizedImage(card.back_image_path))
+      }
+
+      await Promise.allSettled(deletionPromises) // Don't fail if deletion fails
+
+      // Update card to clear reference and image paths
+      await prisma.card.update({
+        where: { card_id: cardId },
+        data: {
+          reference_user_card: null,
+          front_image_path: null,
+          back_image_path: null
         }
       })
 
-      if (!userCard) {
-        return res.status(404).json({ error: 'User card not found' })
-      }
-
-      if (Number(userCard.card) !== cardId) {
-        return res.status(400).json({ error: 'User card does not belong to this card' })
-      }
-
-      if (userCard.user_card_photo_user_card_photo_user_cardTouser_card.length === 0) {
-        return res.status(400).json({ error: 'User card has no photos' })
-      }
+      return res.json({
+        message: 'Reference image cleared successfully',
+        reference_user_card: null,
+        front_image_url: null,
+        back_image_url: null
+      })
     }
 
-    // Update the card's reference_user_card
-    await prisma.card.update({
-      where: { card_id: cardId },
-      data: {
-        reference_user_card: user_card_id ? BigInt(user_card_id) : null
+    // CASE 2: Setting or changing reference
+    console.log(`Setting reference for card ${cardId} to user_card ${user_card_id}...`)
+
+    // Validate the new user_card exists and has photos
+    const userCard = await prisma.user_card.findUnique({
+      where: { user_card_id: BigInt(user_card_id) },
+      select: {
+        user_card_id: true,
+        card: true,
+        user_card_photo_user_card_photo_user_cardTouser_card: {
+          orderBy: {
+            sort_order: 'asc'
+          },
+          select: {
+            user_card_photo_id: true,
+            photo_url: true,
+            sort_order: true
+          }
+        }
       }
     })
 
+    if (!userCard) {
+      return res.status(404).json({ error: 'User card not found' })
+    }
+
+    if (Number(userCard.card) !== cardId) {
+      return res.status(400).json({ error: 'User card does not belong to this card' })
+    }
+
+    const photos = userCard.user_card_photo_user_card_photo_user_cardTouser_card
+    if (photos.length === 0) {
+      return res.status(400).json({ error: 'User card has no photos' })
+    }
+
+    // Get front and back images (sort_order 1 = front, 2 = back)
+    const frontPhoto = photos.find(p => p.sort_order === 1)
+    const backPhoto = photos.find(p => p.sort_order === 2)
+
+    // Delete old optimized images if reference is changing
+    if (card.reference_user_card && Number(card.reference_user_card) !== user_card_id) {
+      console.log(`Reference changing from ${card.reference_user_card} to ${user_card_id}, deleting old optimized images...`)
+      const deletionPromises = []
+      if (card.front_image_path) {
+        deletionPromises.push(deleteOptimizedImage(card.front_image_path))
+      }
+      if (card.back_image_path) {
+        deletionPromises.push(deleteOptimizedImage(card.back_image_path))
+      }
+      await Promise.allSettled(deletionPromises) // Don't fail if deletion fails
+    }
+
+    // Process images: download, optimize, and upload
+    const processingResults = {
+      front_image_url: null,
+      back_image_url: null
+    }
+
+    // Process front image if available
+    if (frontPhoto?.photo_url) {
+      try {
+        console.log(`Processing front image for card ${cardId}...`)
+        processingResults.front_image_url = await processCardImage(frontPhoto.photo_url, cardId, 'front')
+        console.log(`✓ Front image optimized successfully`)
+      } catch (error) {
+        console.error(`Failed to process front image:`, error.message)
+        // Continue - we'll update what we can
+      }
+    }
+
+    // Process back image if available
+    if (backPhoto?.photo_url) {
+      try {
+        console.log(`Processing back image for card ${cardId}...`)
+        processingResults.back_image_url = await processCardImage(backPhoto.photo_url, cardId, 'back')
+        console.log(`✓ Back image optimized successfully`)
+      } catch (error) {
+        console.error(`Failed to process back image:`, error.message)
+        // Continue - we'll update what we can
+      }
+    }
+
+    // Update the card with reference and optimized image URLs
+    await prisma.card.update({
+      where: { card_id: cardId },
+      data: {
+        reference_user_card: BigInt(user_card_id),
+        front_image_path: processingResults.front_image_url,
+        back_image_path: processingResults.back_image_url
+      }
+    })
+
+    console.log(`✓ Reference updated successfully for card ${cardId}`)
+
     res.json({
-      message: 'Reference image updated successfully',
-      reference_user_card: user_card_id ? Number(user_card_id) : null
+      message: 'Reference image updated and optimized successfully',
+      reference_user_card: Number(user_card_id),
+      front_image_url: processingResults.front_image_url,
+      back_image_url: processingResults.back_image_url,
+      processing_summary: {
+        front_processed: !!processingResults.front_image_url,
+        back_processed: !!processingResults.back_image_url
+      }
     })
 
   } catch (error) {

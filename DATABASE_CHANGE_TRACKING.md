@@ -149,6 +149,59 @@ Each entry should include:
 
 ## Application Changes (Non-Database)
 
+### 2025-01-12: Card Image Optimization System (Issue #33)
+- **Date**: 2025-01-12
+- **Change Type**: Application Infrastructure + Performance
+- **Description**:
+  - Implemented automatic image optimization for card reference images
+  - Admins assign reference user_card images → system downloads, optimizes, and stores web-friendly versions
+  - Optimized images: 300px height, 85% JPEG quality, ~50-150KB per image (vs 2-5MB originals)
+  - Solves carousel performance issues (20 images loading slowly)
+  - Creates deletion-safe copies (user deletions don't break site)
+- **Files Modified**:
+  - **NEW**: `server/utils/image-optimizer.js` - Image processing utility using sharp library
+    - `processCardImage(url, cardId, side)` - Download, optimize, and upload workflow
+    - `optimizeImage(buffer)` - Resize to 300px height, compress to JPEG 85%
+    - `uploadOptimizedImage(buffer, name)` - Upload to Azure card-optimized container
+    - `deleteOptimizedImage(url)` - Cleanup when reference changes
+  - **NEW**: `server/scripts/migrate-optimize-card-images.js` - Migration script for existing references
+  - `server/routes/admin-cards.js` - Updated reference-image endpoint:
+    - Processes images when reference assigned/changed
+    - Deletes old optimized images when reference cleared/changed
+    - Updates card.front_image_path and card.back_image_path
+  - `server/routes/cards.js` - Updated carousel endpoint:
+    - Changed from user_card_photo.photo_url to card.front_image_path
+    - Now serves optimized images instead of original uploads
+  - `package.json` - Added sharp dependency for image processing
+- **Azure Storage Structure**:
+  - New container: `card-optimized`
+  - Naming pattern: `{cardId}_front.jpg`, `{cardId}_back.jpg`
+  - Environment separation: dev/ prefix in development
+  - Cache headers: `max-age=31536000` (1 year)
+- **Database Fields Used**:
+  - `card.reference_user_card` - Points to source user_card (already exists)
+  - `card.front_image_path` - Optimized front image URL (already exists)
+  - `card.back_image_path` - Optimized back image URL (already exists)
+- **User Experience**:
+  - **Public facing** (carousel, card detail): Optimized images (fast loading)
+  - **User collections**: Original uploaded images (high-res)
+  - **Deletion safety**: User deletions don't affect public site
+- **Performance Impact**:
+  - Carousel load time: ~10-30 seconds → ~1-2 seconds (estimated 10-15x faster)
+  - Image size reduction: 2-5MB → 50-150KB per image (~95% smaller)
+  - Network bandwidth: 40-100MB → 1-3MB for 20 carousel images
+- **Status**: ✅ Applied to Dev, ⏳ Pending Production Deployment
+- **Production Deployment Steps**:
+  1. Deploy code changes (includes sharp npm package)
+  2. Run migration script: `node server/scripts/migrate-optimize-card-images.js`
+  3. Verify carousel loads optimized images
+  4. Check Azure Storage card-optimized container for new images
+- **Migration Notes**:
+  - Migration script processes all cards with reference_user_card but missing optimized images
+  - Safe to re-run (skips already-processed images)
+  - Provides detailed progress and error reporting
+  - Can be run in both dev and production environments
+
 ### 2025-01-12: Azure Storage Dev/Production Separation
 - **Date**: 2025-01-12
 - **Change Type**: Application Infrastructure

@@ -401,12 +401,11 @@ router.get('/carousel', async (req, res) => {
 
     const limit = parseInt(req.query.limit) || 20
 
-    // Get random card front images with navigation data
-    // Query user_card_photo directly for ANY user upload (not just reference images)
+    // Get random cards with optimized front images
+    // Uses card.front_image_path which contains web-optimized versions
     const query = `
       SELECT TOP ${limit}
-        ucp.photo_url,
-        ucp.user_card_photo_id,
+        c.front_image_path as photo_url,
         c.card_id,
         c.card_number,
         s.slug as series_slug,
@@ -416,16 +415,13 @@ router.get('/carousel', async (req, res) => {
         p.first_name,
         p.last_name,
         p.player_id
-      FROM user_card_photo ucp
-      JOIN user_card uc ON ucp.user_card = uc.user_card_id
-      JOIN card c ON uc.card = c.card_id
+      FROM card c
       JOIN series s ON c.series = s.series_id
       JOIN [set] st ON s.[set] = st.set_id
       LEFT JOIN card_player_team cpt ON c.card_id = cpt.card
       LEFT JOIN player_team pt ON cpt.player_team = pt.player_team_id
       LEFT JOIN player p ON pt.player = p.player_id
-      WHERE ucp.sort_order = 1
-        AND ucp.photo_url IS NOT NULL
+      WHERE c.front_image_path IS NOT NULL
         AND p.player_id IS NOT NULL
       ORDER BY NEWID()
     `
