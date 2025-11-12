@@ -40,17 +40,6 @@ async function migrateCardImages() {
         reference_user_card: true,
         front_image_path: true,
         back_image_path: true,
-        series_card_seriesToseries: {
-          select: {
-            name: true,
-            set_series_setToset: {
-              select: {
-                name: true,
-                year: true
-              }
-            }
-          }
-        },
         user_card_card_reference_user_cardTouser_card: {
           select: {
             user_card_id: true,
@@ -82,11 +71,9 @@ async function migrateCardImages() {
 
     for (const card of cardsToProcess) {
       const cardId = Number(card.card_id)
-      const setInfo = card.series_card_seriesToseries?.set_series_setToset
-      const seriesInfo = card.series_card_seriesToseries
-      const displayName = `${setInfo?.year || '????'} ${setInfo?.name || 'Unknown'} ${seriesInfo?.name || 'Unknown'} #${card.card_number}`
+      const displayName = `Card #${card.card_number || 'Unknown'} (ID: ${cardId})`
 
-      console.log(`\n📸 Processing: ${displayName} (ID: ${cardId})`)
+      console.log(`\n📸 Processing: ${displayName}`)
 
       try {
         const userCard = card.user_card_card_reference_user_cardTouser_card
