@@ -542,12 +542,50 @@ router.get('/needs-reference', requireDataAdmin, async (req, res) => {
     const limit = parseInt(req.query.limit) || 100
     const offset = parseInt(req.query.offset) || 0
 
-    // Find cards that:
-    // 1. Have reference_user_card IS NULL
-    // 2. Have at least one user_card with photos
-    // Use subquery to get first player per card to avoid duplicates
+    // Optimized query: Filter early, simplified ordering, avoid expensive aggregations
     const query = `
-      WITH CardPlayers AS (
+      WITH CardsWithPhotos AS (
+        SELECT DISTINCT TOP ${limit + offset}
+          c.card_id,
+          c.card_number,
+          s.series_id,
+          s.name as series_name,
+          s.slug as series_slug,
+          st.set_id,
+          st.name as set_name,
+          st.year as set_year,
+          st.slug as set_slug
+        FROM card c WITH (NOLOCK)
+        JOIN series s WITH (NOLOCK) ON c.series = s.series_id
+        JOIN [set] st WITH (NOLOCK) ON s.[set] = st.set_id
+        WHERE c.reference_user_card IS NULL
+          AND EXISTS (
+            SELECT 1
+            FROM user_card uc WITH (NOLOCK)
+            JOIN user_card_photo ucp WITH (NOLOCK) ON uc.user_card_id = ucp.user_card
+            WHERE uc.card = c.card_id
+          )
+        ORDER BY st.year DESC, st.name, s.name, c.card_number
+      )
+      SELECT
+        cwp.*,
+        (SELECT COUNT(DISTINCT ucp.user_card_photo_id)
+         FROM user_card uc WITH (NOLOCK)
+         JOIN user_card_photo ucp WITH (NOLOCK) ON uc.user_card_id = ucp.user_card
+         WHERE uc.card = cwp.card_id) as photo_count,
+        (SELECT COUNT(DISTINCT uc.user_card_id)
+         FROM user_card uc WITH (NOLOCK)
+         WHERE uc.card = cwp.card_id) as user_card_count,
+        cp.player_id,
+        cp.first_name,
+        cp.last_name,
+        cp.team_id,
+        cp.team_name,
+        cp.team_abbreviation,
+        cp.primary_color,
+        cp.secondary_color
+      FROM CardsWithPhotos cwp
+      LEFT JOIN (
         SELECT
           cpt.card,
           p.player_id,
@@ -559,60 +597,39 @@ router.get('/needs-reference', requireDataAdmin, async (req, res) => {
           t.primary_color,
           t.secondary_color,
           ROW_NUMBER() OVER (PARTITION BY cpt.card ORDER BY p.last_name, p.first_name) as rn
-        FROM card_player_team cpt
-        JOIN player_team pt ON cpt.player_team = pt.player_team_id
-        JOIN player p ON pt.player = p.player_id
-        JOIN team t ON pt.team = t.team_id
-      )
-      SELECT
-        c.card_id,
-        c.card_number,
-        s.series_id,
-        s.name as series_name,
-        s.slug as series_slug,
-        st.set_id,
-        st.name as set_name,
-        st.year as set_year,
-        st.slug as set_slug,
-        COUNT(DISTINCT ucp.user_card_photo_id) as photo_count,
-        COUNT(DISTINCT uc.user_card_id) as user_card_count,
-        cp.player_id,
-        cp.first_name,
-        cp.last_name,
-        cp.team_id,
-        cp.team_name,
-        cp.team_abbreviation,
-        cp.primary_color,
-        cp.secondary_color
-      FROM card c
-      JOIN series s ON c.series = s.series_id
-      JOIN [set] st ON s.[set] = st.set_id
-      JOIN user_card uc ON c.card_id = uc.card
-      JOIN user_card_photo ucp ON uc.user_card_id = ucp.user_card
-      LEFT JOIN CardPlayers cp ON c.card_id = cp.card AND cp.rn = 1
-      WHERE c.reference_user_card IS NULL
-      GROUP BY c.card_id, c.card_number, s.series_id, s.name, s.slug,
-               st.set_id, st.name, st.year, st.slug,
-               cp.player_id, cp.first_name, cp.last_name,
-               cp.team_id, cp.team_name, cp.team_abbreviation, cp.primary_color, cp.secondary_color
-      ORDER BY photo_count DESC, st.year DESC, st.name, s.name, c.card_number
+        FROM card_player_team cpt WITH (NOLOCK)
+        JOIN player_team pt WITH (NOLOCK) ON cpt.player_team = pt.player_team_id
+        JOIN player p WITH (NOLOCK) ON pt.player = p.player_id
+        JOIN team t WITH (NOLOCK) ON pt.team = t.team_id
+      ) cp ON cwp.card_id = cp.card AND cp.rn = 1
+      ORDER BY cwp.set_year DESC, cwp.set_name, cwp.series_name, cwp.card_number
       OFFSET ${offset} ROWS
       FETCH NEXT ${limit} ROWS ONLY
+      OPTION (RECOMPILE)
     `
 
     const results = await prisma.$queryRawUnsafe(query)
 
-    // Get total count
-    const countQuery = `
-      SELECT COUNT(DISTINCT c.card_id) as total
-      FROM card c
-      JOIN user_card uc ON c.card_id = uc.card
-      JOIN user_card_photo ucp ON uc.user_card_id = ucp.user_card
-      WHERE c.reference_user_card IS NULL
-    `
-
-    const countResult = await prisma.$queryRawUnsafe(countQuery)
-    const total = Number(countResult[0].total)
+    // Simplified count query - only run if offset is 0 (first page)
+    let total = 0
+    if (offset === 0) {
+      const countQuery = `
+        SELECT COUNT(DISTINCT c.card_id) as total
+        FROM card c WITH (NOLOCK)
+        WHERE c.reference_user_card IS NULL
+          AND EXISTS (
+            SELECT 1
+            FROM user_card uc WITH (NOLOCK)
+            JOIN user_card_photo ucp WITH (NOLOCK) ON uc.user_card_id = ucp.user_card
+            WHERE uc.card = c.card_id
+          )
+      `
+      const countResult = await prisma.$queryRawUnsafe(countQuery)
+      total = Number(countResult[0].total)
+    } else {
+      // For pagination, just return -1 to indicate unknown (frontend won't need it)
+      total = -1
+    }
 
     // Transform results
     const cards = results.map(row => ({

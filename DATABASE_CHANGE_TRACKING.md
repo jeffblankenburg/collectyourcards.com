@@ -114,6 +114,30 @@ Each entry should include:
   ```
 - **Expected Result**: One row showing `reference_user_card` as BIGINT, nullable
 
+### 2025-01-12: Performance Index for Cards Needing Reference
+- **Date**: 2025-01-12
+- **Change Type**: Index Creation (Performance)
+- **Description**:
+  - Created filtered index on `card.reference_user_card` column
+  - Dramatically improves performance of admin "cards needing reference" page
+  - Index only includes cards where reference_user_card IS NULL (filtered index)
+  - Includes card_id, card_number, series columns for covering index performance
+  - Resolves production timeout (499 error after 240 seconds)
+- **Tables Affected**: `card`
+- **SQL File Reference**: `ADD_REFERENCE_INDEX_PRODUCTION.sql`
+- **Status**: ✅ Applied to Dev, ⏳ Pending Production
+- **Performance Impact**:
+  - Before: Query timeout at 240+ seconds (4 minutes)
+  - After: Expected <1-2 seconds
+- **Verification Query**:
+  ```sql
+  SELECT i.name, i.type_desc, i.has_filter, i.filter_definition
+  FROM sys.indexes i
+  WHERE i.object_id = OBJECT_ID('card')
+  AND i.name = 'IX_card_reference_user_card'
+  ```
+- **Expected Result**: One row showing filtered NONCLUSTERED index with filter `reference_user_card IS NULL`
+
 ### 2025-01-12: Card Image Path Columns (Issue #33)
 - **Date**: 2025-01-12
 - **Change Type**: Schema (Column Addition)
