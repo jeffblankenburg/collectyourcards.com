@@ -3,6 +3,7 @@ import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom'
 import axios from 'axios'
 import { useToast } from '../contexts/ToastContext'
 import Icon from '../components/Icon'
+import ImageEditor from '../components/ImageEditor'
 import './AdminSets.css'
 import './AdminCardsScoped.css'
 import '../components/UniversalCardTable.css'
@@ -32,6 +33,9 @@ function AdminCards() {
   const [communityImages, setCommunityImages] = useState([])
   const [loadingCommunityImages, setLoadingCommunityImages] = useState(false)
   const [currentReferenceUserCard, setCurrentReferenceUserCard] = useState(null)
+  const [showImageEditor, setShowImageEditor] = useState(false)
+  const [editingImage, setEditingImage] = useState(null) // { imageUrl, side: 'front'|'back' }
+  const [currentAssignedImages, setCurrentAssignedImages] = useState({ front: null, back: null })
   const { addToast } = useToast()
 
   // Function to determine text color based on background brightness
@@ -237,6 +241,25 @@ function AdminCards() {
       const response = await axios.get(`/api/admin/cards/${cardId}/community-images`)
       setCommunityImages(response.data.community_images || [])
       setCurrentReferenceUserCard(response.data.current_reference)
+
+      // Get current assigned images from the card in the cards list
+      const currentCard = cards.find(c => c.card_id === cardId)
+      if (currentCard) {
+        setCurrentAssignedImages({
+          front: currentCard.front_image_path || null,
+          back: currentCard.back_image_path || null
+        })
+      } else {
+        // If not in list, make an API call to get card details including image paths
+        const cardResponse = await axios.get(`/api/cards`, { params: { card_id: cardId, limit: 1 } })
+        const cardData = cardResponse.data.cards?.[0]
+        if (cardData) {
+          setCurrentAssignedImages({
+            front: cardData.front_image_path || null,
+            back: cardData.back_image_path || null
+          })
+        }
+      }
     } catch (error) {
       console.error('Error loading community images:', error)
       addToast('Failed to load community images', 'error')
@@ -257,9 +280,52 @@ function AdminCards() {
       // Update local state
       setCurrentReferenceUserCard(userCardId)
       addToast('Reference image updated successfully', 'success')
+
+      // Reload to get the new optimized images
+      await loadCommunityImages(editingCard.card_id)
     } catch (error) {
       console.error('Error updating reference image:', error)
       addToast(`Failed to update reference image: ${error.response?.data?.message || error.message}`, 'error')
+    }
+  }
+
+  const handleEditAssignedImage = (imageUrl, side) => {
+    setEditingImage({ imageUrl, side })
+    setShowImageEditor(true)
+  }
+
+  const handleImageEditorClose = () => {
+    setShowImageEditor(false)
+    setEditingImage(null)
+  }
+
+  const handleImageEditorSave = async (editedImageBlob) => {
+    if (!editingCard || !editingImage || !editedImageBlob) return
+
+    try {
+      // Create FormData to upload the edited image
+      const formData = new FormData()
+      const fieldName = `${editingImage.side}_image` // 'front_image' or 'back_image'
+      formData.append(fieldName, editedImageBlob, `edited-${editingImage.side}.jpg`)
+
+      await axios.put(`/api/admin/cards/${editingCard.card_id}/reference-image`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      })
+
+      addToast(`${editingImage.side === 'front' ? 'Front' : 'Back'} image updated successfully!`, 'success')
+
+      // Reload cards list to get updated image URLs in the main state
+      await loadCardsForSeries(selectedSeries.series_id)
+
+      // Reload community images to get updated assigned images in the modal
+      await loadCommunityImages(editingCard.card_id)
+
+      handleImageEditorClose()
+    } catch (error) {
+      console.error('Error updating assigned image:', error)
+      addToast(`Failed to update image: ${error.response?.data?.message || error.message}`, 'error')
     }
   }
 
@@ -841,12 +907,99 @@ function AdminCards() {
                   </div>
                 </div>
 
+                {/* Currently Assigned Images Section */}
+                {editingCard && (currentAssignedImages.front || currentAssignedImages.back) && (
+                  <div className="admin-cards-community-images-section">
+                    <div className="admin-cards-community-images-header">
+                      <span className="admin-cards-community-images-title">
+                        Currently Assigned Reference Images
+                      </span>
+                    </div>
+                    <div className="admin-cards-community-images-table">
+                      <div className="admin-cards-images-table-header">
+                        <div className="admin-cards-images-col-front">Front Image</div>
+                        <div className="admin-cards-images-col-back">Back Image</div>
+                      </div>
+                      <div className="admin-cards-images-table-body">
+                        <div className="admin-cards-image-row" style={{ background: 'rgba(16, 185, 129, 0.1)', border: '2px solid rgba(16, 185, 129, 0.3)' }}>
+                          <div className="admin-cards-images-col-front">
+                            {currentAssignedImages.front ? (
+                              <div
+                                style={{ position: 'relative', cursor: 'pointer' }}
+                                onClick={() => handleEditAssignedImage(currentAssignedImages.front, 'front')}
+                                title="Click to edit front image (rotate/crop)"
+                              >
+                                <img src={currentAssignedImages.front} alt="Front" className="admin-cards-thumbnail" />
+                                <div
+                                  style={{
+                                    position: 'absolute',
+                                    top: '5px',
+                                    right: '5px',
+                                    background: 'rgba(59, 130, 246, 0.9)',
+                                    border: 'none',
+                                    borderRadius: '4px',
+                                    padding: '6px 10px',
+                                    color: 'white',
+                                    fontSize: '12px',
+                                    fontWeight: '600',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                    pointerEvents: 'none'
+                                  }}
+                                >
+                                  <Icon name="edit" size={14} /> Edit
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="admin-cards-no-image">No front image</div>
+                            )}
+                          </div>
+                          <div className="admin-cards-images-col-back">
+                            {currentAssignedImages.back ? (
+                              <div
+                                style={{ position: 'relative', cursor: 'pointer' }}
+                                onClick={() => handleEditAssignedImage(currentAssignedImages.back, 'back')}
+                                title="Click to edit back image (rotate/crop)"
+                              >
+                                <img src={currentAssignedImages.back} alt="Back" className="admin-cards-thumbnail" />
+                                <div
+                                  style={{
+                                    position: 'absolute',
+                                    top: '5px',
+                                    right: '5px',
+                                    background: 'rgba(59, 130, 246, 0.9)',
+                                    border: 'none',
+                                    borderRadius: '4px',
+                                    padding: '6px 10px',
+                                    color: 'white',
+                                    fontSize: '12px',
+                                    fontWeight: '600',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                    pointerEvents: 'none'
+                                  }}
+                                >
+                                  <Icon name="edit" size={14} /> Edit
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="admin-cards-no-image">No back image</div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Community Images Section - Only show when editing existing card */}
                 {editingCard && (
                   <div className="admin-cards-community-images-section">
                     <div className="admin-cards-community-images-header">
                       <span className="admin-cards-community-images-title">
-                        Community Images {communityImages.length > 0 && `(${communityImages.length})`}
+                        Select Reference Image From Community {communityImages.length > 0 && `(${communityImages.length})`}
                       </span>
                       {currentReferenceUserCard && (
                         <button
@@ -943,6 +1096,15 @@ function AdminCards() {
           </div>
         </div>
       )}
+
+      {/* Image Editor Modal */}
+      <ImageEditor
+        isOpen={showImageEditor}
+        onClose={handleImageEditorClose}
+        imageUrl={editingImage?.imageUrl}
+        onSave={handleImageEditorSave}
+        title={`Edit ${editingImage?.side === 'front' ? 'Front' : 'Back'} Image`}
+      />
 
     </div>
   )

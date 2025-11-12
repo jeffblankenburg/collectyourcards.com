@@ -114,6 +114,7 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
       SELECT
         c.card_id, c.card_number, c.is_rookie, c.is_autograph, c.is_relic, c.is_short_print,
         c.print_run, c.sort_order, c.notes, c.reference_user_card,
+        c.front_image_path, c.back_image_path,
         s.name as series_name, s.series_id, s.slug as series_slug,
         col.name as color, col.hex_value as hex_color,
         ${userIdNumber ? 'ISNULL(COUNT(uc.user_card_id), 0) as user_card_count' : '0 as user_card_count'}
@@ -123,8 +124,8 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
       ${userCollectionJoin}
       ${whereClause}
       GROUP BY c.card_id, c.card_number, c.is_rookie, c.is_autograph, c.is_relic, c.is_short_print,
-               c.print_run, c.sort_order, c.notes, c.reference_user_card, s.name, s.series_id, s.slug,
-               col.name, col.hex_value
+               c.print_run, c.sort_order, c.notes, c.reference_user_card, c.front_image_path, c.back_image_path,
+               s.name, s.series_id, s.slug, col.name, col.hex_value
       ORDER BY s.name ASC, c.sort_order ASC
       OFFSET ${offsetNum} ROWS FETCH NEXT ${limitNum} ROWS ONLY
     `
@@ -207,6 +208,8 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
         sort_order: serialized.sort_order,
         notes: serialized.notes,
         reference_user_card: serialized.reference_user_card ? Number(serialized.reference_user_card) : null,
+        front_image_path: serialized.front_image_path,
+        back_image_path: serialized.back_image_path,
         user_card_count: Number(serialized.user_card_count) || 0,
         card_player_teams: cardPlayerTeamMap[cardId] || [],
         series_rel: {

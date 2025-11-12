@@ -351,18 +351,6 @@ router.put('/:id/reference-image', requireDataAdmin, upload.fields([
       })
     }
 
-    // Delete old optimized images before processing new ones
-    const deletionPromises = []
-    if (card.front_image_path) {
-      deletionPromises.push(deleteOptimizedImage(card.front_image_path))
-    }
-    if (card.back_image_path) {
-      deletionPromises.push(deleteOptimizedImage(card.back_image_path))
-    }
-    if (deletionPromises.length > 0) {
-      await Promise.allSettled(deletionPromises)
-    }
-
     const processingResults = {
       front_image_url: null,
       back_image_url: null
@@ -376,6 +364,12 @@ router.put('/:id/reference-image', requireDataAdmin, upload.fields([
       if (files.front_image && files.front_image[0]) {
         try {
           console.log(`Processing uploaded front image...`)
+          // Delete old front image before uploading new one
+          if (card.front_image_path) {
+            await deleteOptimizedImage(card.front_image_path).catch(err =>
+              console.warn('Failed to delete old front image:', err.message)
+            )
+          }
           const frontBuffer = files.front_image[0].buffer
           const optimizedBuffer = await optimizeImage(frontBuffer)
           const blobName = `${cardId}_front.jpg`
@@ -391,6 +385,12 @@ router.put('/:id/reference-image', requireDataAdmin, upload.fields([
       if (files.back_image && files.back_image[0]) {
         try {
           console.log(`Processing uploaded back image...`)
+          // Delete old back image before uploading new one
+          if (card.back_image_path) {
+            await deleteOptimizedImage(card.back_image_path).catch(err =>
+              console.warn('Failed to delete old back image:', err.message)
+            )
+          }
           const backBuffer = files.back_image[0].buffer
           const optimizedBuffer = await optimizeImage(backBuffer)
           const blobName = `${cardId}_back.jpg`
@@ -402,7 +402,8 @@ router.put('/:id/reference-image', requireDataAdmin, upload.fields([
         }
       }
 
-      // Update card with new optimized images (no reference_user_card when using uploaded files)
+      // Update card with new optimized images
+      // Keep existing images if not replaced
       await prisma.card.update({
         where: { card_id: cardId },
         data: {
@@ -428,6 +429,18 @@ router.put('/:id/reference-image', requireDataAdmin, upload.fields([
 
     // CASE 3: Reference existing user_card images (original flow)
     console.log(`Setting reference for card ${cardId} to user_card ${user_card_id}...`)
+
+    // Delete old optimized images before processing new reference
+    const deletionPromises = []
+    if (card.front_image_path) {
+      deletionPromises.push(deleteOptimizedImage(card.front_image_path))
+    }
+    if (card.back_image_path) {
+      deletionPromises.push(deleteOptimizedImage(card.back_image_path))
+    }
+    if (deletionPromises.length > 0) {
+      await Promise.allSettled(deletionPromises)
+    }
 
     // Validate the new user_card exists and has photos
     const userCard = await prisma.user_card.findUnique({

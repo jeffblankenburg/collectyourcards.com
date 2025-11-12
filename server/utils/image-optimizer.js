@@ -49,6 +49,7 @@ async function downloadImage(url) {
 async function optimizeImage(imageBuffer) {
   try {
     const optimized = await sharp(imageBuffer)
+      .rotate() // Auto-rotate based on EXIF orientation, then remove EXIF data
       .resize({
         height: IMAGE_CONFIG.height,
         fit: IMAGE_CONFIG.fit,
