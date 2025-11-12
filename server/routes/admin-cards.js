@@ -1,8 +1,25 @@
 const express = require('express')
 const router = express.Router()
+const multer = require('multer')
 const { prisma } = require('../config/prisma-singleton')
 const { authMiddleware, requireDataAdmin } = require('../middleware/auth')
-const { processCardImage, deleteOptimizedImage } = require('../utils/image-optimizer')
+const { processCardImage, deleteOptimizedImage, optimizeImage, uploadOptimizedImage } = require('../utils/image-optimizer')
+
+// Configure multer for memory storage
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB limit per file
+  },
+  fileFilter: (req, file, cb) => {
+    const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg']
+    if (allowedMimeTypes.includes(file.mimetype)) {
+      cb(null, true)
+    } else {
+      cb(new Error('Only JPEG, PNG, and WebP image files are allowed'))
+    }
+  }
+})
 
 // POST /api/admin/cards - Create a new card
 router.post('/', requireDataAdmin, async (req, res) => {
@@ -270,10 +287,17 @@ router.get('/:id/community-images', requireDataAdmin, async (req, res) => {
 })
 
 // PUT /api/admin/cards/:id/reference-image - Update the reference_user_card for a card
-router.put('/:id/reference-image', requireDataAdmin, async (req, res) => {
+// Supports both:
+// 1. Uploading edited image files (front_image, back_image)
+// 2. Referencing existing user_card images (user_card_id)
+router.put('/:id/reference-image', requireDataAdmin, upload.fields([
+  { name: 'front_image', maxCount: 1 },
+  { name: 'back_image', maxCount: 1 }
+]), async (req, res) => {
   try {
     const cardId = parseInt(req.params.id)
     const { user_card_id } = req.body
+    const files = req.files || {}
 
     if (!cardId) {
       return res.status(400).json({ error: 'Card ID is required' })
@@ -327,7 +351,82 @@ router.put('/:id/reference-image', requireDataAdmin, async (req, res) => {
       })
     }
 
-    // CASE 2: Setting or changing reference
+    // Delete old optimized images before processing new ones
+    const deletionPromises = []
+    if (card.front_image_path) {
+      deletionPromises.push(deleteOptimizedImage(card.front_image_path))
+    }
+    if (card.back_image_path) {
+      deletionPromises.push(deleteOptimizedImage(card.back_image_path))
+    }
+    if (deletionPromises.length > 0) {
+      await Promise.allSettled(deletionPromises)
+    }
+
+    const processingResults = {
+      front_image_url: null,
+      back_image_url: null
+    }
+
+    // CASE 2: Uploaded image files (edited/cropped/rotated by admin)
+    if (files.front_image || files.back_image) {
+      console.log(`Processing uploaded image files for card ${cardId}...`)
+
+      // Process front image if uploaded
+      if (files.front_image && files.front_image[0]) {
+        try {
+          console.log(`Processing uploaded front image...`)
+          const frontBuffer = files.front_image[0].buffer
+          const optimizedBuffer = await optimizeImage(frontBuffer)
+          const blobName = `${cardId}_front.jpg`
+          processingResults.front_image_url = await uploadOptimizedImage(optimizedBuffer, blobName)
+          console.log(`✓ Front image optimized and uploaded`)
+        } catch (error) {
+          console.error(`Failed to process front image:`, error.message)
+          // Continue - we'll update what we can
+        }
+      }
+
+      // Process back image if uploaded
+      if (files.back_image && files.back_image[0]) {
+        try {
+          console.log(`Processing uploaded back image...`)
+          const backBuffer = files.back_image[0].buffer
+          const optimizedBuffer = await optimizeImage(backBuffer)
+          const blobName = `${cardId}_back.jpg`
+          processingResults.back_image_url = await uploadOptimizedImage(optimizedBuffer, blobName)
+          console.log(`✓ Back image optimized and uploaded`)
+        } catch (error) {
+          console.error(`Failed to process back image:`, error.message)
+          // Continue - we'll update what we can
+        }
+      }
+
+      // Update card with new optimized images (no reference_user_card when using uploaded files)
+      await prisma.card.update({
+        where: { card_id: cardId },
+        data: {
+          reference_user_card: null, // Clear reference when using uploaded files
+          front_image_path: processingResults.front_image_url || card.front_image_path,
+          back_image_path: processingResults.back_image_url || card.back_image_path
+        }
+      })
+
+      console.log(`✓ Card images updated successfully for card ${cardId}`)
+
+      return res.json({
+        message: 'Reference images updated and optimized successfully',
+        reference_user_card: null,
+        front_image_url: processingResults.front_image_url || card.front_image_path,
+        back_image_url: processingResults.back_image_url || card.back_image_path,
+        processing_summary: {
+          front_processed: !!processingResults.front_image_url,
+          back_processed: !!processingResults.back_image_url
+        }
+      })
+    }
+
+    // CASE 3: Reference existing user_card images (original flow)
     console.log(`Setting reference for card ${cardId} to user_card ${user_card_id}...`)
 
     // Validate the new user_card exists and has photos
@@ -366,25 +465,7 @@ router.put('/:id/reference-image', requireDataAdmin, async (req, res) => {
     const frontPhoto = photos.find(p => p.sort_order === 1)
     const backPhoto = photos.find(p => p.sort_order === 2)
 
-    // Delete old optimized images if reference is changing
-    if (card.reference_user_card && Number(card.reference_user_card) !== user_card_id) {
-      console.log(`Reference changing from ${card.reference_user_card} to ${user_card_id}, deleting old optimized images...`)
-      const deletionPromises = []
-      if (card.front_image_path) {
-        deletionPromises.push(deleteOptimizedImage(card.front_image_path))
-      }
-      if (card.back_image_path) {
-        deletionPromises.push(deleteOptimizedImage(card.back_image_path))
-      }
-      await Promise.allSettled(deletionPromises) // Don't fail if deletion fails
-    }
-
     // Process images: download, optimize, and upload
-    const processingResults = {
-      front_image_url: null,
-      back_image_url: null
-    }
-
     // Process front image if available
     if (frontPhoto?.photo_url) {
       try {

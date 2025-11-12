@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import axios from 'axios'
 import { useToast } from '../contexts/ToastContext'
 import Icon from '../components/Icon'
+import ImageEditor from '../components/ImageEditor'
 import './AdminSets.css'
 import './AdminCardsScoped.css'
 import '../components/UniversalCardTable.css'
@@ -15,6 +16,9 @@ function AdminCardsNeedingReference() {
   const [expandedCardId, setExpandedCardId] = useState(null)
   const [communityImages, setCommunityImages] = useState({})
   const [loadingImages, setLoadingImages] = useState({})
+  const [showImageEditor, setShowImageEditor] = useState(false)
+  const [selectedImageForEdit, setSelectedImageForEdit] = useState(null)
+  const [currentCardIdForAssignment, setCurrentCardIdForAssignment] = useState(null)
   const { addToast } = useToast()
 
   useEffect(() => {
@@ -73,25 +77,55 @@ function AdminCardsNeedingReference() {
     }
   }
 
-  const handleAssignReference = async (cardId, userCardId) => {
+  const handleImageClick = (cardId, userCard) => {
+    // Open ImageEditor with the front image (primary image)
+    setCurrentCardIdForAssignment(cardId)
+    setSelectedImageForEdit({
+      imageUrl: userCard.front_image,
+      userCardId: userCard.user_card_id,
+      hasFront: !!userCard.front_image,
+      hasBack: !!userCard.back_image,
+      frontUrl: userCard.front_image,
+      backUrl: userCard.back_image
+    })
+    setShowImageEditor(true)
+  }
+
+  const handleImageEditorClose = () => {
+    setShowImageEditor(false)
+    setSelectedImageForEdit(null)
+    setCurrentCardIdForAssignment(null)
+  }
+
+  const handleImageEditorSave = async (editedImageBlob) => {
+    if (!currentCardIdForAssignment || !editedImageBlob) return
+
     try {
-      await axios.put(`/api/admin/cards/${cardId}/reference-image`, {
-        user_card_id: userCardId
+      // Create FormData to upload the edited image
+      const formData = new FormData()
+      formData.append('front_image', editedImageBlob, 'edited-image.jpg')
+
+      await axios.put(`/api/admin/cards/${currentCardIdForAssignment}/reference-image`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
       })
 
-      addToast('Reference image assigned successfully!', 'success')
+      addToast('Reference image assigned and optimized successfully!', 'success')
 
       // Remove this card from the list since it now has a reference
-      setCards(prev => prev.filter(c => c.card_id !== cardId))
+      setCards(prev => prev.filter(c => c.card_id !== currentCardIdForAssignment))
       setTotalCards(prev => prev - 1)
       setExpandedCardId(null)
 
       // Clear cached images
       setCommunityImages(prev => {
         const updated = { ...prev }
-        delete updated[cardId]
+        delete updated[currentCardIdForAssignment]
         return updated
       })
+
+      handleImageEditorClose()
     } catch (error) {
       console.error('Error assigning reference image:', error)
       addToast(`Failed to assign image: ${error.response?.data?.message || error.message}`, 'error')
@@ -239,8 +273,8 @@ function AdminCardsNeedingReference() {
                                     <div
                                       key={userCard.user_card_id}
                                       className="admin-cards-image-row"
-                                      onClick={() => handleAssignReference(card.card_id, userCard.user_card_id)}
-                                      title="Click to assign as reference image"
+                                      onClick={() => handleImageClick(card.card_id, userCard)}
+                                      title="Click to edit and assign as reference image"
                                       style={{ cursor: 'pointer' }}
                                     >
                                       <div className="admin-cards-images-col-user">
@@ -278,6 +312,15 @@ function AdminCardsNeedingReference() {
           </div>
         )}
       </div>
+
+      {/* Image Editor Modal */}
+      <ImageEditor
+        isOpen={showImageEditor}
+        onClose={handleImageEditorClose}
+        imageUrl={selectedImageForEdit?.imageUrl}
+        onSave={handleImageEditorSave}
+        title="Edit & Assign Reference Image"
+      />
     </div>
   )
 }
