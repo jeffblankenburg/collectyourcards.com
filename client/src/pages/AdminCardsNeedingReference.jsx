@@ -30,7 +30,7 @@ function AdminCardsNeedingReference() {
       setLoading(true)
       const response = await axios.get('/api/admin/cards/needs-reference', {
         params: {
-          limit: 1000 // Get a large batch for now
+          limit: 20 // Limit to 20 cards for faster loading
         }
       })
       setCards(response.data.cards || [])
