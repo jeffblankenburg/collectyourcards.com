@@ -40,6 +40,8 @@ model card {
   created_month                                DateTime?          @db.Date
   card_number_indexed                          String?            @db.NVarChar(100)
   reference_user_card                          BigInt?
+  front_image_path                             String?            @db.NVarChar(Max)
+  back_image_path                              String?            @db.NVarChar(Max)
   color_card_colorTocolor                      color?             @relation("card_colorTocolor", fields: [color], references: [color_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_card_color")
   user_card_card_reference_user_cardTouser_card user_card?       @relation("card_reference_user_cardTouser_card", fields: [reference_user_card], references: [user_card_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_card_reference_user_card")
   card_player_team_card_player_team_cardTocard card_player_team[] @relation("card_player_team_cardTocard")
@@ -373,8 +375,6 @@ model series {
   card_entered_count        Int?                     @default(0, map: "DF__series__card_ent__3493CFA7")
   is_base                   Boolean?                 @default(false, map: "DEFAULT_series_is_base")
   parallel_of_series        BigInt?
-  front_image_path          String?                  @db.NVarChar(Max)
-  back_image_path           String?                  @db.NVarChar(Max)
   min_print_run             Int?
   max_print_run             Int?
   print_run_variations      Int?
