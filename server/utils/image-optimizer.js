@@ -100,7 +100,9 @@ async function uploadOptimizedImage(imageBuffer, blobName) {
       }
     })
 
-    return blockBlobClient.url
+    // Add cache-busting query parameter to force browser to reload when image changes
+    const timestamp = Date.now()
+    return `${blockBlobClient.url}?v=${timestamp}`
   } catch (error) {
     throw new Error(`Failed to upload optimized image: ${error.message}`)
   }

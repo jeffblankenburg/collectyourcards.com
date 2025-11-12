@@ -318,7 +318,79 @@ router.put('/:id/reference-image', requireDataAdmin, upload.fields([
       return res.status(404).json({ error: 'Card not found' })
     }
 
-    // CASE 1: Clearing reference (setting to null)
+    const processingResults = {
+      front_image_url: null,
+      back_image_url: null
+    }
+
+    // CASE 1: Uploaded image files (edited/cropped/rotated by admin)
+    // CHECK FILES FIRST before checking user_card_id, because FormData without user_card_id has undefined value
+    if (files.front_image || files.back_image) {
+      console.log(`Processing uploaded image files for card ${cardId}...`)
+
+      // Process front image if uploaded
+      if (files.front_image && files.front_image[0]) {
+        try {
+          console.log(`Processing uploaded front image...`)
+          const frontBuffer = files.front_image[0].buffer
+          const optimizedBuffer = await optimizeImage(frontBuffer)
+          const blobName = `${cardId}_front.jpg`
+          // Upload will automatically overwrite existing blob with same name
+          const newFrontUrl = await uploadOptimizedImage(optimizedBuffer, blobName)
+
+          processingResults.front_image_url = newFrontUrl
+          console.log(`✓ Front image optimized and uploaded`)
+        } catch (error) {
+          console.error(`Failed to process front image:`, error.message)
+          // If processing fails, keep the old image by not updating front_image_url
+        }
+      }
+
+      // Process back image if uploaded
+      if (files.back_image && files.back_image[0]) {
+        try {
+          console.log(`Processing uploaded back image...`)
+          const backBuffer = files.back_image[0].buffer
+          const optimizedBuffer = await optimizeImage(backBuffer)
+          const blobName = `${cardId}_back.jpg`
+          // Upload will automatically overwrite existing blob with same name
+          const newBackUrl = await uploadOptimizedImage(optimizedBuffer, blobName)
+
+          processingResults.back_image_url = newBackUrl
+          console.log(`✓ Back image optimized and uploaded`)
+        } catch (error) {
+          console.error(`Failed to process back image:`, error.message)
+          // If processing fails, keep the old image by not updating back_image_url
+        }
+      }
+
+      // Update card with new optimized images
+      // Keep existing images if not replaced
+      await prisma.card.update({
+        where: { card_id: cardId },
+        data: {
+          reference_user_card: null, // Clear reference when using uploaded files
+          front_image_path: processingResults.front_image_url || card.front_image_path,
+          back_image_path: processingResults.back_image_url || card.back_image_path
+        }
+      })
+
+      console.log(`✓ Card images updated successfully for card ${cardId}`)
+
+      return res.json({
+        message: 'Reference images updated and optimized successfully',
+        reference_user_card: null,
+        front_image_url: processingResults.front_image_url || card.front_image_path,
+        back_image_url: processingResults.back_image_url || card.back_image_path,
+        processing_summary: {
+          front_processed: !!processingResults.front_image_url,
+          back_processed: !!processingResults.back_image_url
+        }
+      })
+    }
+
+    // CASE 2: Clearing reference (setting to null)
+    // This now comes AFTER checking for uploaded files
     if (user_card_id === null || user_card_id === undefined) {
       console.log(`Clearing reference for card ${cardId}...`)
 
@@ -348,82 +420,6 @@ router.put('/:id/reference-image', requireDataAdmin, upload.fields([
         reference_user_card: null,
         front_image_url: null,
         back_image_url: null
-      })
-    }
-
-    const processingResults = {
-      front_image_url: null,
-      back_image_url: null
-    }
-
-    // CASE 2: Uploaded image files (edited/cropped/rotated by admin)
-    if (files.front_image || files.back_image) {
-      console.log(`Processing uploaded image files for card ${cardId}...`)
-
-      // Process front image if uploaded
-      if (files.front_image && files.front_image[0]) {
-        try {
-          console.log(`Processing uploaded front image...`)
-          // Delete old front image before uploading new one
-          if (card.front_image_path) {
-            await deleteOptimizedImage(card.front_image_path).catch(err =>
-              console.warn('Failed to delete old front image:', err.message)
-            )
-          }
-          const frontBuffer = files.front_image[0].buffer
-          const optimizedBuffer = await optimizeImage(frontBuffer)
-          const blobName = `${cardId}_front.jpg`
-          processingResults.front_image_url = await uploadOptimizedImage(optimizedBuffer, blobName)
-          console.log(`✓ Front image optimized and uploaded`)
-        } catch (error) {
-          console.error(`Failed to process front image:`, error.message)
-          // Continue - we'll update what we can
-        }
-      }
-
-      // Process back image if uploaded
-      if (files.back_image && files.back_image[0]) {
-        try {
-          console.log(`Processing uploaded back image...`)
-          // Delete old back image before uploading new one
-          if (card.back_image_path) {
-            await deleteOptimizedImage(card.back_image_path).catch(err =>
-              console.warn('Failed to delete old back image:', err.message)
-            )
-          }
-          const backBuffer = files.back_image[0].buffer
-          const optimizedBuffer = await optimizeImage(backBuffer)
-          const blobName = `${cardId}_back.jpg`
-          processingResults.back_image_url = await uploadOptimizedImage(optimizedBuffer, blobName)
-          console.log(`✓ Back image optimized and uploaded`)
-        } catch (error) {
-          console.error(`Failed to process back image:`, error.message)
-          // Continue - we'll update what we can
-        }
-      }
-
-      // Update card with new optimized images
-      // Keep existing images if not replaced
-      await prisma.card.update({
-        where: { card_id: cardId },
-        data: {
-          reference_user_card: null, // Clear reference when using uploaded files
-          front_image_path: processingResults.front_image_url || card.front_image_path,
-          back_image_path: processingResults.back_image_url || card.back_image_path
-        }
-      })
-
-      console.log(`✓ Card images updated successfully for card ${cardId}`)
-
-      return res.json({
-        message: 'Reference images updated and optimized successfully',
-        reference_user_card: null,
-        front_image_url: processingResults.front_image_url || card.front_image_path,
-        back_image_url: processingResults.back_image_url || card.back_image_path,
-        processing_summary: {
-          front_processed: !!processingResults.front_image_url,
-          back_processed: !!processingResults.back_image_url
-        }
       })
     }
 
@@ -501,6 +497,11 @@ router.put('/:id/reference-image', requireDataAdmin, upload.fields([
         console.error(`Failed to process back image:`, error.message)
         // Continue - we'll update what we can
       }
+    }
+
+    // Only update if at least one image was successfully processed
+    if (!processingResults.front_image_url && !processingResults.back_image_url) {
+      throw new Error('Failed to process any images from the selected user_card')
     }
 
     // Update the card with reference and optimized image URLs

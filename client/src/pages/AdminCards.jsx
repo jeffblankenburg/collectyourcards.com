@@ -273,16 +273,25 @@ function AdminCards() {
 
     try {
       // Update the reference image on the server
-      await axios.put(`/api/admin/cards/${editingCard.card_id}/reference-image`, {
+      const response = await axios.put(`/api/admin/cards/${editingCard.card_id}/reference-image`, {
         user_card_id: userCardId
       })
 
-      // Update local state
+      // Update local state with reference user card
       setCurrentReferenceUserCard(userCardId)
-      addToast('Reference image updated successfully', 'success')
 
-      // Reload to get the new optimized images
-      await loadCommunityImages(editingCard.card_id)
+      // IMMEDIATELY update currentAssignedImages from API response to avoid race condition
+      // This handles both setting new images and clearing them (when userCardId is null)
+      setCurrentAssignedImages({
+        front: response.data.front_image_url || null,
+        back: response.data.back_image_url || null
+      })
+
+      const message = userCardId ? 'Reference image updated successfully' : 'Reference image cleared successfully'
+      addToast(message, 'success')
+
+      // Reload cards list in background to update the main table
+      loadCardsForSeries(selectedSeries.series_id)
     } catch (error) {
       console.error('Error updating reference image:', error)
       addToast(`Failed to update reference image: ${error.response?.data?.message || error.message}`, 'error')
@@ -308,19 +317,26 @@ function AdminCards() {
       const fieldName = `${editingImage.side}_image` // 'front_image' or 'back_image'
       formData.append(fieldName, editedImageBlob, `edited-${editingImage.side}.jpg`)
 
-      await axios.put(`/api/admin/cards/${editingCard.card_id}/reference-image`, formData, {
+      const response = await axios.put(`/api/admin/cards/${editingCard.card_id}/reference-image`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
       })
 
+      // IMMEDIATELY update currentAssignedImages from API response to avoid race condition
+      // The backend returns both front and back URLs, preserving any images we didn't edit
+      setCurrentAssignedImages({
+        front: response.data.front_image_url || null,
+        back: response.data.back_image_url || null
+      })
+
+      // Clear reference_user_card since we're now using an edited version
+      setCurrentReferenceUserCard(null)
+
       addToast(`${editingImage.side === 'front' ? 'Front' : 'Back'} image updated successfully!`, 'success')
 
-      // Reload cards list to get updated image URLs in the main state
-      await loadCardsForSeries(selectedSeries.series_id)
-
-      // Reload community images to get updated assigned images in the modal
-      await loadCommunityImages(editingCard.card_id)
+      // Reload cards list in background to update the main table
+      loadCardsForSeries(selectedSeries.series_id)
 
       handleImageEditorClose()
     } catch (error) {
