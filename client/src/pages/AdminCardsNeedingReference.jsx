@@ -4,6 +4,7 @@ import axios from 'axios'
 import { useToast } from '../contexts/ToastContext'
 import Icon from '../components/Icon'
 import './AdminSets.css'
+import './AdminCardsScoped.css'
 import '../components/UniversalCardTable.css'
 
 function AdminCardsNeedingReference() {
@@ -11,6 +12,9 @@ function AdminCardsNeedingReference() {
   const [cards, setCards] = useState([])
   const [loading, setLoading] = useState(true)
   const [totalCards, setTotalCards] = useState(0)
+  const [expandedCardId, setExpandedCardId] = useState(null)
+  const [communityImages, setCommunityImages] = useState({})
+  const [loadingImages, setLoadingImages] = useState({})
   const { addToast } = useToast()
 
   useEffect(() => {
@@ -35,9 +39,63 @@ function AdminCardsNeedingReference() {
     }
   }
 
-  const handleCardClick = (card) => {
-    // Navigate to the admin cards page for this series with a query param to load by series ID
-    navigate(`/admin/cards?series=${card.series.series_id}`)
+  const handleRowClick = async (card) => {
+    // Toggle expansion
+    if (expandedCardId === card.card_id) {
+      setExpandedCardId(null)
+      return
+    }
+
+    setExpandedCardId(card.card_id)
+
+    // Load community images if not already loaded
+    if (!communityImages[card.card_id]) {
+      await loadCommunityImages(card.card_id)
+    }
+  }
+
+  const loadCommunityImages = async (cardId) => {
+    try {
+      setLoadingImages(prev => ({ ...prev, [cardId]: true }))
+      const response = await axios.get(`/api/admin/cards/${cardId}/community-images`)
+      setCommunityImages(prev => ({
+        ...prev,
+        [cardId]: {
+          images: response.data.community_images || [],
+          currentReference: response.data.current_reference
+        }
+      }))
+    } catch (error) {
+      console.error('Error loading community images:', error)
+      addToast(`Failed to load images: ${error.response?.data?.message || error.message}`, 'error')
+    } finally {
+      setLoadingImages(prev => ({ ...prev, [cardId]: false }))
+    }
+  }
+
+  const handleAssignReference = async (cardId, userCardId) => {
+    try {
+      await axios.put(`/api/admin/cards/${cardId}/reference-image`, {
+        user_card_id: userCardId
+      })
+
+      addToast('Reference image assigned successfully!', 'success')
+
+      // Remove this card from the list since it now has a reference
+      setCards(prev => prev.filter(c => c.card_id !== cardId))
+      setTotalCards(prev => prev - 1)
+      setExpandedCardId(null)
+
+      // Clear cached images
+      setCommunityImages(prev => {
+        const updated = { ...prev }
+        delete updated[cardId]
+        return updated
+      })
+    } catch (error) {
+      console.error('Error assigning reference image:', error)
+      addToast(`Failed to assign image: ${error.response?.data?.message || error.message}`, 'error')
+    }
   }
 
   if (loading) {
@@ -95,42 +153,105 @@ function AdminCardsNeedingReference() {
               </thead>
               <tbody>
                 {cards.map(card => (
-                  <tr
-                    key={card.card_id}
-                    style={{ cursor: 'pointer' }}
-                    onDoubleClick={() => handleCardClick(card)}
-                    title="Double-click to edit this card"
-                  >
-                    <td className="center">{card.set.year}</td>
-                    <td>{card.set.name}</td>
-                    <td>{card.series.name}</td>
-                    <td>{card.card_number}</td>
-                    <td className="center">
-                      <span style={{
-                        background: 'rgba(34, 197, 94, 0.2)',
-                        color: '#22c55e',
-                        padding: '4px 12px',
-                        borderRadius: '12px',
-                        fontWeight: '600'
-                      }}>
-                        {card.photo_count}
-                      </span>
-                    </td>
-                    <td className="center">{card.user_card_count}</td>
-                    <td className="action-cell center">
-                      <button
-                        className="edit-btn"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleCardClick(card)
-                        }}
-                        title="Assign reference image"
-                      >
-                        <Icon name="image" size={16} />
-                        Assign
-                      </button>
-                    </td>
-                  </tr>
+                  <React.Fragment key={card.card_id}>
+                    <tr
+                      style={{ cursor: 'pointer' }}
+                      onClick={() => handleRowClick(card)}
+                      className={expandedCardId === card.card_id ? 'expanded' : ''}
+                      title="Click to view and assign images"
+                    >
+                      <td className="center">{card.set.year}</td>
+                      <td>{card.set.name}</td>
+                      <td>{card.series.name}</td>
+                      <td>{card.card_number}</td>
+                      <td className="center">
+                        <span style={{
+                          background: 'rgba(34, 197, 94, 0.2)',
+                          color: '#22c55e',
+                          padding: '4px 12px',
+                          borderRadius: '12px',
+                          fontWeight: '600'
+                        }}>
+                          {card.photo_count}
+                        </span>
+                      </td>
+                      <td className="center">{card.user_card_count}</td>
+                      <td className="action-cell center">
+                        <Icon
+                          name={expandedCardId === card.card_id ? "chevron-up" : "chevron-down"}
+                          size={16}
+                        />
+                      </td>
+                    </tr>
+                    {expandedCardId === card.card_id && (
+                      <tr className="expanded-row">
+                        <td colSpan="7" style={{ padding: 0 }}>
+                          <div className="admin-cards-community-images-section" style={{
+                            margin: '0',
+                            padding: '1.5rem',
+                            background: 'rgba(0, 0, 0, 0.2)',
+                            borderTop: '1px solid rgba(255, 255, 255, 0.1)'
+                          }}>
+                            <div className="admin-cards-community-images-header">
+                              <span className="admin-cards-community-images-title">
+                                Select Reference Image
+                              </span>
+                            </div>
+
+                            {loadingImages[card.card_id] ? (
+                              <div style={{ textAlign: 'center', padding: '2rem', color: 'rgba(255, 255, 255, 0.6)' }}>
+                                <div className="card-icon-spinner"></div>
+                                <p style={{ marginTop: '1rem' }}>Loading images...</p>
+                              </div>
+                            ) : communityImages[card.card_id]?.images.length === 0 ? (
+                              <div className="admin-cards-no-community-images">
+                                <p>No community images available for this card.</p>
+                              </div>
+                            ) : (
+                              <div className="admin-cards-community-images-table">
+                                <div className="admin-cards-images-table-header">
+                                  <div className="admin-cards-images-col-user">Uploaded By</div>
+                                  <div className="admin-cards-images-col-front">Front Image</div>
+                                  <div className="admin-cards-images-col-back">Back Image</div>
+                                </div>
+                                <div className="admin-cards-images-table-body">
+                                  {communityImages[card.card_id]?.images.map((userCard) => (
+                                    <div
+                                      key={userCard.user_card_id}
+                                      className="admin-cards-image-row"
+                                      onClick={() => handleAssignReference(card.card_id, userCard.user_card_id)}
+                                      title="Click to assign as reference image"
+                                      style={{ cursor: 'pointer' }}
+                                    >
+                                      <div className="admin-cards-images-col-user">
+                                        <div className="admin-cards-user-info">
+                                          <span className="admin-cards-user-email">{userCard.user_email}</span>
+                                        </div>
+                                      </div>
+                                      <div className="admin-cards-images-col-front">
+                                        {userCard.front_image ? (
+                                          <img src={userCard.front_image} alt="Front" className="admin-cards-thumbnail" />
+                                        ) : (
+                                          <div className="admin-cards-no-image">No front image</div>
+                                        )}
+                                      </div>
+                                      <div className="admin-cards-images-col-back">
+                                        {userCard.back_image ? (
+                                          <img src={userCard.back_image} alt="Back" className="admin-cards-thumbnail" />
+                                        ) : (
+                                          <div className="admin-cards-no-image">No back image</div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
                 ))}
               </tbody>
             </table>
