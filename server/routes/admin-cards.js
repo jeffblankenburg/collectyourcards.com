@@ -441,4 +441,89 @@ router.put('/:id/reference-image', requireDataAdmin, async (req, res) => {
   }
 })
 
+// GET /api/admin/cards/needs-reference - Get cards that have user photos but no reference image assigned
+router.get('/needs-reference', requireDataAdmin, async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 100
+    const offset = parseInt(req.query.offset) || 0
+
+    // Find cards that:
+    // 1. Have reference_user_card IS NULL
+    // 2. Have at least one user_card with photos
+    const query = `
+      SELECT TOP ${limit}
+        c.card_id,
+        c.card_number,
+        s.series_id,
+        s.name as series_name,
+        s.slug as series_slug,
+        st.set_id,
+        st.name as set_name,
+        st.year as set_year,
+        st.slug as set_slug,
+        COUNT(DISTINCT ucp.user_card_photo_id) as photo_count,
+        COUNT(DISTINCT uc.user_card_id) as user_card_count
+      FROM card c
+      JOIN series s ON c.series = s.series_id
+      JOIN [set] st ON s.[set] = st.set_id
+      JOIN user_card uc ON c.card_id = uc.card
+      JOIN user_card_photo ucp ON uc.user_card_id = ucp.user_card
+      WHERE c.reference_user_card IS NULL
+      GROUP BY c.card_id, c.card_number, s.series_id, s.name, s.slug,
+               st.set_id, st.name, st.year, st.slug
+      ORDER BY photo_count DESC, st.year DESC, st.name, s.name, c.card_number
+      OFFSET ${offset} ROWS
+    `
+
+    const results = await prisma.$queryRawUnsafe(query)
+
+    // Get total count
+    const countQuery = `
+      SELECT COUNT(DISTINCT c.card_id) as total
+      FROM card c
+      JOIN user_card uc ON c.card_id = uc.card
+      JOIN user_card_photo ucp ON uc.user_card_id = ucp.user_card
+      WHERE c.reference_user_card IS NULL
+    `
+
+    const countResult = await prisma.$queryRawUnsafe(countQuery)
+    const total = Number(countResult[0].total)
+
+    // Transform results
+    const cards = results.map(row => ({
+      card_id: Number(row.card_id),
+      card_number: row.card_number,
+      series: {
+        series_id: Number(row.series_id),
+        name: row.series_name,
+        slug: row.series_slug
+      },
+      set: {
+        set_id: Number(row.set_id),
+        name: row.set_name,
+        year: Number(row.set_year),
+        slug: row.set_slug
+      },
+      photo_count: Number(row.photo_count),
+      user_card_count: Number(row.user_card_count)
+    }))
+
+    res.json({
+      success: true,
+      cards,
+      total,
+      limit,
+      offset,
+      hasMore: offset + limit < total
+    })
+
+  } catch (error) {
+    console.error('Error fetching cards needing reference:', error)
+    res.status(500).json({
+      error: 'Failed to fetch cards',
+      message: error.message
+    })
+  }
+})
+
 module.exports = router

@@ -59,6 +59,7 @@ const AdminPlayers = lazy(() => import('./pages/AdminPlayers.jsx'))
 const AdminSets = lazy(() => import('./pages/AdminSets.jsx'))
 const AdminSeries = lazy(() => import('./pages/AdminSeries.jsx'))
 const AdminCards = lazy(() => import('./pages/AdminCards.jsx'))
+const AdminCardsNeedingReference = lazy(() => import('./pages/AdminCardsNeedingReference.jsx'))
 const AdminImport = lazy(() => import('./pages/AdminImport.jsx'))
 const CollectionDashboard = lazy(() => import('./pages/CollectionDashboard.jsx'))
 const CardDetail = lazy(() => import('./pages/CardDetail.jsx'))
@@ -129,6 +130,7 @@ createRoot(document.getElementById('root')).render(
               <Route path="/admin/sets/:year" element={<ProtectedRoute><AdminSets /></ProtectedRoute>} />
               <Route path="/admin/series" element={<ProtectedRoute><AdminSeries /></ProtectedRoute>} />
               <Route path="/admin/cards" element={<ProtectedRoute><AdminCards /></ProtectedRoute>} />
+              <Route path="/admin/cards-needing-reference" element={<ProtectedRoute><AdminCardsNeedingReference /></ProtectedRoute>} />
               {/* <Route path="/admin/sets/:year/:setSlug" element={<ProtectedRoute><AdminSets /></ProtectedRoute>} /> */}
               {/* <Route path="/admin/sets/:year/:setSlug/:seriesSlug" element={<ProtectedRoute><AdminSets /></ProtectedRoute>} /> */}
               <Route path="/admin/cards/:year/:setSlug/:seriesSlug" element={<ProtectedRoute><AdminCards /></ProtectedRoute>} />
