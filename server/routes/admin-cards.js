@@ -450,7 +450,25 @@ router.get('/needs-reference', requireDataAdmin, async (req, res) => {
     // Find cards that:
     // 1. Have reference_user_card IS NULL
     // 2. Have at least one user_card with photos
+    // Use subquery to get first player per card to avoid duplicates
     const query = `
+      WITH CardPlayers AS (
+        SELECT
+          cpt.card,
+          p.player_id,
+          p.first_name,
+          p.last_name,
+          t.team_id,
+          t.name as team_name,
+          t.abbreviation as team_abbreviation,
+          t.primary_color,
+          t.secondary_color,
+          ROW_NUMBER() OVER (PARTITION BY cpt.card ORDER BY p.last_name, p.first_name) as rn
+        FROM card_player_team cpt
+        JOIN player_team pt ON cpt.player_team = pt.player_team_id
+        JOIN player p ON pt.player = p.player_id
+        JOIN team t ON pt.team = t.team_id
+      )
       SELECT
         c.card_id,
         c.card_number,
@@ -462,15 +480,26 @@ router.get('/needs-reference', requireDataAdmin, async (req, res) => {
         st.year as set_year,
         st.slug as set_slug,
         COUNT(DISTINCT ucp.user_card_photo_id) as photo_count,
-        COUNT(DISTINCT uc.user_card_id) as user_card_count
+        COUNT(DISTINCT uc.user_card_id) as user_card_count,
+        cp.player_id,
+        cp.first_name,
+        cp.last_name,
+        cp.team_id,
+        cp.team_name,
+        cp.team_abbreviation,
+        cp.primary_color,
+        cp.secondary_color
       FROM card c
       JOIN series s ON c.series = s.series_id
       JOIN [set] st ON s.[set] = st.set_id
       JOIN user_card uc ON c.card_id = uc.card
       JOIN user_card_photo ucp ON uc.user_card_id = ucp.user_card
+      LEFT JOIN CardPlayers cp ON c.card_id = cp.card AND cp.rn = 1
       WHERE c.reference_user_card IS NULL
       GROUP BY c.card_id, c.card_number, s.series_id, s.name, s.slug,
-               st.set_id, st.name, st.year, st.slug
+               st.set_id, st.name, st.year, st.slug,
+               cp.player_id, cp.first_name, cp.last_name,
+               cp.team_id, cp.team_name, cp.team_abbreviation, cp.primary_color, cp.secondary_color
       ORDER BY photo_count DESC, st.year DESC, st.name, s.name, c.card_number
       OFFSET ${offset} ROWS
       FETCH NEXT ${limit} ROWS ONLY
@@ -506,7 +535,20 @@ router.get('/needs-reference', requireDataAdmin, async (req, res) => {
         slug: row.set_slug
       },
       photo_count: Number(row.photo_count),
-      user_card_count: Number(row.user_card_count)
+      user_card_count: Number(row.user_card_count),
+      player: row.player_id ? {
+        player_id: Number(row.player_id),
+        first_name: row.first_name,
+        last_name: row.last_name,
+        name: `${row.first_name || ''} ${row.last_name || ''}`.trim()
+      } : null,
+      team: row.team_id ? {
+        team_id: Number(row.team_id),
+        name: row.team_name,
+        abbreviation: row.team_abbreviation,
+        primary_color: row.primary_color,
+        secondary_color: row.secondary_color
+      } : null
     }))
 
     res.json({

@@ -143,12 +143,13 @@ function AdminCardsNeedingReference() {
               <thead>
                 <tr>
                   <th style={{width: '80px'}}>Year</th>
-                  <th style={{width: '25%'}}>Set</th>
-                  <th style={{width: '25%'}}>Series</th>
-                  <th style={{width: '120px'}}>Card #</th>
+                  <th style={{width: '20%'}}>Set</th>
+                  <th style={{width: '20%'}}>Series</th>
+                  <th style={{width: '100px'}}>Card #</th>
+                  <th style={{width: '25%'}}>Player</th>
                   <th style={{width: '100px', textAlign: 'center'}}>Photos</th>
                   <th style={{width: '100px', textAlign: 'center'}}>User Cards</th>
-                  <th style={{width: '100px'}}></th>
+                  <th style={{width: '60px'}}></th>
                 </tr>
               </thead>
               <tbody>
@@ -164,6 +165,25 @@ function AdminCardsNeedingReference() {
                       <td>{card.set.name}</td>
                       <td>{card.series.name}</td>
                       <td>{card.card_number}</td>
+                      <td className="player-cell">
+                        {card.player && card.team ? (
+                          <div className="player-row">
+                            <div
+                              className="mini-team-circle"
+                              style={{
+                                '--primary-color': card.team.primary_color,
+                                '--secondary-color': card.team.secondary_color
+                              }}
+                              title={card.team.name}
+                            >
+                              {card.team.abbreviation}
+                            </div>
+                            <span className="player-name">{card.player.name}</span>
+                          </div>
+                        ) : (
+                          <span style={{ color: 'rgba(255,255,255,0.5)', fontStyle: 'italic' }}>No player</span>
+                        )}
+                      </td>
                       <td className="center">
                         <span style={{
                           background: 'rgba(34, 197, 94, 0.2)',
@@ -185,7 +205,7 @@ function AdminCardsNeedingReference() {
                     </tr>
                     {expandedCardId === card.card_id && (
                       <tr className="expanded-row">
-                        <td colSpan="7" style={{ padding: 0 }}>
+                        <td colSpan="8" style={{ padding: 0 }}>
                           <div className="admin-cards-community-images-section" style={{
                             margin: '0',
                             padding: '1.5rem',
