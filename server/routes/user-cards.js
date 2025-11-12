@@ -3,6 +3,7 @@ const { PrismaClient, Prisma } = require('@prisma/client')
 const { authMiddleware } = require('../middleware/auth')
 const { sanitizeInput, sanitizeParams } = require('../middleware/inputSanitization')
 const { BlobServiceClient } = require('@azure/storage-blob')
+const { extractBlobNameFromUrl } = require('../utils/azure-storage')
 const { onCardAdded, onCardUpdated, onCardRemoved } = require('../middleware/achievementHooks')
 const { updateUserSeriesCompletion } = require('../utils/updateSeriesCompletion')
 const router = express.Router()
@@ -605,11 +606,9 @@ router.delete('/:userCardId', async (req, res, next) => {
         for (const photo of photos) {
           if (photo.photo_url) {
             try {
-              // Extract blob name from photo URL
-              // Assuming URL format: https://storageaccount.blob.core.windows.net/container/blobname
-              const url = new URL(photo.photo_url)
-              const blobName = url.pathname.split('/').slice(2).join('/') // Remove container name from path
-              
+              // Extract blob name from photo URL, handling both dev/ and production paths
+              const blobName = extractBlobNameFromUrl(photo.photo_url, 2)
+
               if (blobName) {
                 await containerClient.deleteBlob(blobName)
                 console.log(`Deleted blob: ${blobName}`)

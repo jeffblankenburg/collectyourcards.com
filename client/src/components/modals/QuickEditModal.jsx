@@ -247,48 +247,72 @@ const QuickEditModal = ({
     setSaving(true)
 
     try {
+      // PHASE 1: Save metadata immediately (fast ~300ms)
       await axios.put(`/api/user/cards/${card.user_card_id}`, formData)
 
-      // Upload photos if any were selected
-      if (selectedPhotos.length > 0) {
-        await uploadNewPhotos()
+      // Build updated card object with current data (before photo upload)
+      const selectedLocation = locations.find(loc =>
+        loc.user_location_id === parseInt(formData.user_location)
+      )
+
+      const currentPhotoCount = existingPhotos.length
+      const primaryPhotoUrl = existingPhotos.length > 0 ? existingPhotos[0].photo_url : card.primary_photo_url
+
+      const updatedCard = {
+        ...card,
+        random_code: formData.random_code || null,
+        serial_number: formData.serial_number ? parseInt(formData.serial_number) : null,
+        user_location: formData.user_location || null,
+        location_name: selectedLocation?.location || null,
+        purchase_price: formData.purchase_price ? parseFloat(formData.purchase_price) : null,
+        estimated_value: formData.estimated_value ? parseFloat(formData.estimated_value) : null,
+        notes: formData.notes || null,
+        aftermarket_autograph: formData.aftermarket_autograph,
+        grading_agency: formData.grading_agency || null,
+        grade: formData.grade || null,
+        grade_id: formData.grade_id || null,
+        photo_count: currentPhotoCount,
+        primary_photo_url: primaryPhotoUrl
       }
 
-      success('Card updated successfully')
-
-      // Build complete updated card object for parent component
+      // Update parent component with initial data
       if (onCardUpdated) {
-        // Find the selected location name for display
-        const selectedLocation = locations.find(loc =>
-          loc.user_location_id === parseInt(formData.user_location)
-        )
-
-        // Get current photo count and primary photo URL (existingPhotos is always up-to-date after uploadNewPhotos)
-        const currentPhotoCount = existingPhotos.length
-        const primaryPhotoUrl = existingPhotos.length > 0 ? existingPhotos[0].photo_url : card.primary_photo_url
-
-        const updatedCard = {
-          ...card,
-          // Update with form data
-          random_code: formData.random_code || null,
-          serial_number: formData.serial_number ? parseInt(formData.serial_number) : null,
-          user_location: formData.user_location || null,
-          location_name: selectedLocation?.location || null,
-          purchase_price: formData.purchase_price ? parseFloat(formData.purchase_price) : null,
-          estimated_value: formData.estimated_value ? parseFloat(formData.estimated_value) : null,
-          notes: formData.notes || null,
-          aftermarket_autograph: formData.aftermarket_autograph,
-          grading_agency: formData.grading_agency || null,
-          grade: formData.grade || null,
-          grade_id: formData.grade_id || null,
-          photo_count: currentPhotoCount, // ✅ Include updated photo count
-          primary_photo_url: primaryPhotoUrl // ✅ Include updated primary photo URL for gallery view
-        }
-
         onCardUpdated(updatedCard)
       }
 
+      // Close modal immediately - user sees instant feedback
       onClose()
+
+      // PHASE 2: Upload photos in background (slow, modal already closed)
+      if (selectedPhotos.length > 0) {
+        const photoCount = selectedPhotos.length
+        success(`Card saved! Uploading ${photoCount} photo${photoCount > 1 ? 's' : ''}...`)
+
+        try {
+          await uploadNewPhotos()
+          success(`${photoCount} photo${photoCount > 1 ? 's' : ''} uploaded successfully!`)
+
+          // Refresh parent component with updated photo data
+          if (onCardUpdated) {
+            const response = await axios.get(`/api/user/cards/${card.user_card_id}/photos`)
+            const updatedPhotos = response.data.photos || []
+
+            const refreshedCard = {
+              ...updatedCard,
+              photo_count: updatedPhotos.length,
+              primary_photo_url: updatedPhotos.length > 0 ? updatedPhotos[0].photo_url : card.primary_photo_url
+            }
+
+            onCardUpdated(refreshedCard)
+          }
+        } catch (photoErr) {
+          console.error('Photo upload failed:', photoErr)
+          error(`Card saved, but photo upload failed: ${photoErr.response?.data?.message || photoErr.message}`)
+        }
+      } else {
+        success('Card updated successfully')
+      }
+
     } catch (err) {
       error('Failed to update card: ' + (err.response?.data?.error || err.message))
     } finally {

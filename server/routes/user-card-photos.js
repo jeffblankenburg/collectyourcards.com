@@ -5,6 +5,7 @@ const multer = require('multer')
 const { BlobServiceClient } = require('@azure/storage-blob')
 const { prisma } = require('../config/prisma-singleton')
 const { Prisma } = require('@prisma/client')
+const { getBlobName, extractBlobNameFromUrl } = require('../utils/azure-storage')
 
 // Configure multer for memory storage
 const upload = multer({
@@ -192,9 +193,10 @@ router.post('/:userCardId/photos', upload.array('photos', 5), async (req, res) =
         .replace(/\.[^/.]+$/, '') // Remove extension
         .replace(/[^a-zA-Z0-9-_]/g, '_') // Replace special chars
         .substring(0, 50) // Limit filename length
-      
-      const blobName = `user-card/${userCardId}_${timestamp}_${sanitizedFileName}.${fileExtension}`
-      
+
+      // Use environment-aware blob name (dev/ prefix in development)
+      const blobName = getBlobName(`user-card/${userCardId}_${timestamp}_${sanitizedFileName}.${fileExtension}`)
+
       // Upload to Azure Blob Storage
       const blockBlobClient = containerClient.getBlockBlobClient(blobName)
       
@@ -416,9 +418,10 @@ router.put('/:userCardId/photos/:photoId', upload.single('photo'), async (req, r
       .replace(/\.[^/.]+$/, '') // Remove extension
       .replace(/[^a-zA-Z0-9-_]/g, '_') // Replace special chars
       .substring(0, 50) // Limit filename length
-    
-    const blobName = `user-card/${userCardId}_${timestamp}_${sanitizedFileName}.${fileExtension}`
-    
+
+    // Use environment-aware blob name (dev/ prefix in development)
+    const blobName = getBlobName(`user-card/${userCardId}_${timestamp}_${sanitizedFileName}.${fileExtension}`)
+
     // Upload new photo to Azure Blob Storage
     const blockBlobClient = containerClient.getBlockBlobClient(blobName)
     
@@ -442,10 +445,10 @@ router.put('/:userCardId/photos/:photoId', upload.single('photo'), async (req, r
     // Delete old photo from Azure Blob Storage (non-critical if it fails)
     try {
       if (oldPhotoUrl) {
-        const urlParts = oldPhotoUrl.split('/')
-        const oldBlobName = urlParts.slice(-2).join('/') // Get last two parts: user-card/filename
-        
-        if (oldBlobName.startsWith('user-card/')) {
+        // Extract blob name, handling both dev/ and production paths
+        const oldBlobName = extractBlobNameFromUrl(oldPhotoUrl, 2)
+
+        if (oldBlobName.includes('user-card/')) {
           const oldBlockBlobClient = containerClient.getBlockBlobClient(oldBlobName)
           await oldBlockBlobClient.deleteIfExists()
         }
@@ -541,12 +544,11 @@ router.delete('/:userCardId/photos/:photoId', async (req, res) => {
       if (AZURE_STORAGE_CONNECTION_STRING && photoUrl) {
         const blobServiceClient = BlobServiceClient.fromConnectionString(AZURE_STORAGE_CONNECTION_STRING)
         const containerClient = blobServiceClient.getContainerClient(CONTAINER_NAME)
-        
-        // Extract blob name from URL
-        const urlParts = photoUrl.split('/')
-        const blobName = urlParts.slice(-2).join('/') // Get last two parts: user-card/filename
-        
-        if (blobName.startsWith('user-card/')) {
+
+        // Extract blob name, handling both dev/ and production paths
+        const blobName = extractBlobNameFromUrl(photoUrl, 2)
+
+        if (blobName.includes('user-card/')) {
           const blockBlobClient = containerClient.getBlockBlobClient(blobName)
           await blockBlobClient.deleteIfExists()
         }

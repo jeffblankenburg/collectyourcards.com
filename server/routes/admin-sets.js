@@ -4,6 +4,7 @@ const router = express.Router()
 const multer = require('multer')
 const { BlobServiceClient } = require('@azure/storage-blob')
 const { prisma } = require('../config/prisma-singleton')
+const { getBlobName } = require('../utils/azure-storage')
 
 // Configure multer for memory storage
 const upload = multer({ 
@@ -1154,8 +1155,9 @@ router.post('/sets/upload-thumbnail', authMiddleware, requireAdmin, upload.singl
     })
 
     // Generate blob name using just the set_id for easy manual management
+    // Use environment-aware blob name (dev/ prefix in development)
     const fileExtension = file.originalname.split('.').pop()
-    const blobName = `${setId}.${fileExtension}`
+    const blobName = getBlobName(`${setId}.${fileExtension}`)
     
     // Get blob client
     const blockBlobClient = containerClient.getBlockBlobClient(blobName)
@@ -1271,7 +1273,8 @@ router.post('/series/upload-images/:seriesId', authMiddleware, requireAdmin, upl
       }
 
       const frontExtension = frontFile.originalname.split('.').pop()
-      const frontBlobName = `${seriesId}-front.${frontExtension}`
+      // Use environment-aware blob name (dev/ prefix in development)
+      const frontBlobName = getBlobName(`${seriesId}-front.${frontExtension}`)
       const frontBlockBlobClient = containerClient.getBlockBlobClient(frontBlobName)
 
       // Upload front image to Azure Storage
@@ -1298,7 +1301,8 @@ router.post('/series/upload-images/:seriesId', authMiddleware, requireAdmin, upl
       }
 
       const backExtension = backFile.originalname.split('.').pop()
-      const backBlobName = `${seriesId}-back.${backExtension}`
+      // Use environment-aware blob name (dev/ prefix in development)
+      const backBlobName = getBlobName(`${seriesId}-back.${backExtension}`)
       const backBlockBlobClient = containerClient.getBlockBlobClient(backBlobName)
 
       // Upload back image to Azure Storage

@@ -147,6 +147,59 @@ Each entry should include:
 
 ---
 
+## Application Changes (Non-Database)
+
+### 2025-01-12: Azure Storage Dev/Production Separation
+- **Date**: 2025-01-12
+- **Change Type**: Application Infrastructure
+- **Description**:
+  - Implemented environment-aware Azure Blob Storage paths to separate dev and production uploads
+  - Development environment now uploads all files to `dev/` subfolder in Azure Storage
+  - Production uploads continue using root paths (no prefix)
+  - Prevents dev environment uploads from appearing on production site
+  - All existing production images remain untouched
+- **Files Modified**:
+  - **NEW**: `server/utils/azure-storage.js` - Centralized utility module
+    - `getBlobName(path)` - Adds `dev/` prefix in development environment
+    - `extractBlobNameFromUrl(url, segments)` - Handles both dev/ and production paths for deletion
+    - `isProduction()`, `getEnvironment()` - Environment detection helpers
+  - `server/routes/user-card-photos.js` - User card photo uploads (3 upload locations, 2 deletion locations)
+  - `server/routes/user-profile.js` - User profile avatar uploads (1 upload location, 2 deletion locations)
+  - `server/routes/admin-sets.js` - Set thumbnails and series images (3 upload locations)
+  - `server/routes/user-cards.js` - Blob deletion logic when cards are removed (1 deletion location)
+- **Environment Detection**:
+  - Uses `process.env.NODE_ENV` to determine environment
+  - Development: `NODE_ENV !== 'production'` → adds `dev/` prefix
+  - Production: `NODE_ENV === 'production'` → no prefix (root paths)
+- **Azure Storage Structure**:
+  - **Production**: `https://storage.blob.core.windows.net/container/filename.jpg`
+  - **Development**: `https://storage.blob.core.windows.net/container/dev/filename.jpg`
+- **Affected Containers**:
+  - `user-card` - User card photos
+  - `profile` - User profile avatars
+  - `set` - Set thumbnails
+  - `series` - Series front/back images
+- **Deletion Logic**:
+  - Updated to handle both dev-prefixed and non-prefixed blob paths
+  - Properly extracts blob names from full Azure URLs
+  - Handles legacy production paths and new dev paths seamlessly
+- **Status**: ✅ Applied to Dev, ⏳ Pending Production Deployment
+- **Production Deployment Notes**:
+  - No production changes required - production already runs with `NODE_ENV=production`
+  - Existing production images remain at root paths (no migration needed)
+  - New production uploads after deployment will continue using root paths
+  - Dev environment will immediately start using `dev/` prefix after deployment
+- **Verification Commands**:
+  ```bash
+  # Check environment variable
+  echo $NODE_ENV
+
+  # Verify dev uploads go to dev/ subfolder
+  # Upload a test image in dev and check Azure Storage portal
+  ```
+
+---
+
 ## Notes
 
 - Always test changes in development before applying to production

@@ -4,9 +4,10 @@ const { PrismaClient } = require('@prisma/client')
 const prisma = new PrismaClient({ log: ['error'] }) // Only log errors, not queries
 const { authMiddleware, optionalAuthMiddleware } = require('../middleware/auth')
 const { sanitizeInput, sanitizeParams } = require('../middleware/inputSanitization')
-const { isReserved, suggestAlternatives } = require('../config/reserved-usernames')
+const { isReserved, suggestAlternatives} = require('../config/reserved-usernames')
 const multer = require('multer')
 const { BlobServiceClient } = require('@azure/storage-blob')
+const { getBlobName, extractBlobNameFromUrl } = require('../utils/azure-storage')
 
 // Configure multer for memory storage (profile pictures)
 const upload = multer({
@@ -811,10 +812,9 @@ router.post('/picture', authMiddleware, upload.single('picture'), async (req, re
     if (currentProfile.length > 0 && currentProfile[0].avatar_url) {
       try {
         const oldAvatarUrl = currentProfile[0].avatar_url
-        // Extract blob name from URL (assuming it follows our naming convention)
+        // Extract blob name from URL, handling both dev/ and production paths
         if (oldAvatarUrl.includes(CONTAINER_NAME)) {
-          const urlParts = oldAvatarUrl.split('/')
-          const oldBlobName = urlParts[urlParts.length - 1]
+          const oldBlobName = extractBlobNameFromUrl(oldAvatarUrl, 1)
           if (oldBlobName.includes(`${userId}_`)) {
             const oldBlockBlobClient = containerClient.getBlockBlobClient(oldBlobName)
             await oldBlockBlobClient.deleteIfExists()
@@ -826,10 +826,10 @@ router.post('/picture', authMiddleware, upload.single('picture'), async (req, re
       }
     }
 
-    // Generate unique blob name: userId_timestamp.extension
+    // Generate unique blob name with environment prefix: userId_timestamp.extension
     const timestamp = Date.now()
     const fileExtension = file.originalname.split('.').pop()
-    const blobName = `${userId}_${timestamp}.${fileExtension}`
+    const blobName = getBlobName(`${userId}_${timestamp}.${fileExtension}`)
 
     // Upload to Azure Blob Storage
     const blockBlobClient = containerClient.getBlockBlobClient(blobName)
@@ -923,10 +923,9 @@ router.delete('/picture', authMiddleware, async (req, res) => {
       try {
         const blobServiceClient = BlobServiceClient.fromConnectionString(AZURE_STORAGE_CONNECTION_STRING)
         const containerClient = blobServiceClient.getContainerClient(CONTAINER_NAME)
-        
-        // Extract blob name from URL
-        const urlParts = avatarUrl.split('/')
-        const blobName = urlParts[urlParts.length - 1]
+
+        // Extract blob name, handling both dev/ and production paths
+        const blobName = extractBlobNameFromUrl(avatarUrl, 1)
         if (blobName.includes(`${userId}_`)) {
           const blockBlobClient = containerClient.getBlockBlobClient(blobName)
           await blockBlobClient.deleteIfExists()
