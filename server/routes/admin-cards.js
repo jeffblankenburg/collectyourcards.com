@@ -451,7 +451,7 @@ router.get('/needs-reference', requireDataAdmin, async (req, res) => {
     // 1. Have reference_user_card IS NULL
     // 2. Have at least one user_card with photos
     const query = `
-      SELECT TOP ${limit}
+      SELECT
         c.card_id,
         c.card_number,
         s.series_id,
@@ -473,6 +473,7 @@ router.get('/needs-reference', requireDataAdmin, async (req, res) => {
                st.set_id, st.name, st.year, st.slug
       ORDER BY photo_count DESC, st.year DESC, st.name, s.name, c.card_number
       OFFSET ${offset} ROWS
+      FETCH NEXT ${limit} ROWS ONLY
     `
 
     const results = await prisma.$queryRawUnsafe(query)
