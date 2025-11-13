@@ -176,6 +176,7 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
     const {
       player_name,
       team_id,
+      team_ids,  // NEW: Multiple team IDs (comma-separated)
       series_name,
       series_id,
       card_number,
@@ -192,6 +193,7 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
     const cacheKey = JSON.stringify({
       player_name,
       team_id,
+      team_ids,
       series_name,
       series_id,
       card_number,
@@ -243,7 +245,21 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
       }
     }
 
-    if (team_id) {
+    // Handle team filtering - supports both single team_id and multiple team_ids
+    if (team_ids) {
+      // Multiple teams (comma-separated)
+      const teamIdsArray = team_ids.split(',').map(id => id.trim()).filter(id => id)
+      const validatedTeamIds = validateNumericArray(teamIdsArray)
+      if (validatedTeamIds.length > 0) {
+        const teamIdsList = validatedTeamIds.join(',')
+        whereConditions.push(`EXISTS (
+          SELECT 1 FROM card_player_team cpt3
+          JOIN player_team pt3 ON cpt3.player_team = pt3.player_team_id
+          WHERE cpt3.card = c.card_id AND pt3.team IN (${teamIdsList})
+        )`)
+      }
+    } else if (team_id) {
+      // Single team (backward compatibility)
       const teamIdNum = validateNumericId(team_id, 'team_id')
       whereConditions.push(`EXISTS (
         SELECT 1 FROM card_player_team cpt3
@@ -305,15 +321,28 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
         whereConditions.push(`(${colorConditions})`)
       }
 
-      // Keyword filters (series name, set name)
+      // Keyword filters (series name, set name, team name/abbreviation)
       if (searchParsed.keywords.length > 0) {
         const keywordConditions = searchParsed.keywords.map(keyword => {
           const safeKeyword = escapeLikePattern(keyword)
-          return `(LOWER(s.name) LIKE '%${safeKeyword}%' OR EXISTS (
-            SELECT 1 FROM [set] st2
-            WHERE st2.set_id = s.[set]
-            AND LOWER(st2.name) LIKE '%${safeKeyword}%'
-          ))`
+          return `(
+            LOWER(s.name) LIKE '%${safeKeyword}%'
+            OR EXISTS (
+              SELECT 1 FROM [set] st2
+              WHERE st2.set_id = s.[set]
+              AND LOWER(st2.name) LIKE '%${safeKeyword}%'
+            )
+            OR EXISTS (
+              SELECT 1 FROM card_player_team cpt_search
+              JOIN player_team pt_search ON cpt_search.player_team = pt_search.player_team_id
+              JOIN team t_search ON pt_search.team = t_search.team_id
+              WHERE cpt_search.card = c.card_id
+              AND (
+                LOWER(t_search.name) LIKE '%${safeKeyword}%'
+                OR LOWER(t_search.abbreviation) LIKE '%${safeKeyword}%'
+              )
+            )
+          )`
         }).join(' AND ')
         whereConditions.push(`(${keywordConditions})`)
       }

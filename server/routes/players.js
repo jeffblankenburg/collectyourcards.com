@@ -7,54 +7,61 @@ const { authMiddleware } = require('../middleware/auth')
 router.get('/by-slug/:slug', async (req, res) => {
   try {
     const { slug } = req.params
-    // Filter out empty parts to handle trailing hyphens (e.g., "pickle-" -> ["pickle"])
-    const nameParts = slug.toLowerCase().split('-').filter(part => part.length > 0)
 
-    if (nameParts.length === 0) {
+    // Normalize slug: remove all non-alphanumeric characters, lowercase
+    // "fernando-tatis-jr" -> "fernandotatisjr"
+    // "vladimir-guerrero" -> "vladimirguerrero"
+    const normalizedSlug = slug.toLowerCase().replace(/[^a-z0-9]/g, '')
+
+    if (!normalizedSlug) {
       return res.status(400).json({
         error: 'Invalid slug format',
         message: 'Slug cannot be empty'
       })
     }
 
-    // Handle single-name players (e.g., "Rhino", "Ichiro", "Pickle")
-    let results
-    if (nameParts.length === 1) {
-      // Search by first name only for single-name players - use exact match
-      results = await prisma.$queryRaw`
-        SELECT TOP 1
-          p.*,
-          display_card_photo.photo_url as display_card_front_image
-        FROM player p
-        LEFT JOIN card display_card ON p.display_card = display_card.card_id
-        LEFT JOIN user_card display_uc ON display_card.reference_user_card = display_uc.user_card_id
-        LEFT JOIN user_card_photo display_card_photo ON display_uc.user_card_id = display_card_photo.user_card AND display_card_photo.sort_order = 1
-        WHERE LOWER(p.first_name) = ${nameParts[0]}
-        AND (p.last_name IS NULL OR p.last_name = '')
-        ORDER BY p.player_id
-      `
-    } else {
-      // Search by first and last name for multi-part names - use exact match
-      results = await prisma.$queryRaw`
-        SELECT TOP 1
-          p.*,
-          display_card_photo.photo_url as display_card_front_image
-        FROM player p
-        LEFT JOIN card display_card ON p.display_card = display_card.card_id
-        LEFT JOIN user_card display_uc ON display_card.reference_user_card = display_uc.user_card_id
-        LEFT JOIN user_card_photo display_card_photo ON display_uc.user_card_id = display_card_photo.user_card AND display_card_photo.sort_order = 1
-        WHERE LOWER(p.first_name) = ${nameParts[0]}
-        AND LOWER(p.last_name) = ${nameParts[1]}
-      `
-    }
+    console.log(`🔍 Searching for player with slug: "${slug}" -> normalized: "${normalizedSlug}"`)
+
+    // Match against normalized concatenations of:
+    // 1. first_name + last_name (e.g., "fernandotatisjr")
+    // 2. nick_name + last_name (e.g., "bighurtthomas")
+    // 3. first_name + nick_name + last_name (e.g., "frankbighurtthomas")
+    // Get ALL matches, ordered by card_count DESC to prefer players with more cards
+    const results = await prisma.$queryRaw`
+      SELECT
+        p.*,
+        display_card_photo.photo_url as display_card_front_image
+      FROM player p
+      LEFT JOIN card display_card ON p.display_card = display_card.card_id
+      LEFT JOIN user_card display_uc ON display_card.reference_user_card = display_uc.user_card_id
+      LEFT JOIN user_card_photo display_card_photo ON display_uc.user_card_id = display_card_photo.user_card AND display_card_photo.sort_order = 1
+      WHERE
+        LOWER(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
+          ISNULL(p.first_name, '') + ISNULL(p.last_name, ''),
+          ' ', ''), '.', ''), '''', ''), '-', ''), ',', '')) = ${normalizedSlug}
+        OR LOWER(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
+          ISNULL(p.nick_name, '') + ISNULL(p.last_name, ''),
+          ' ', ''), '.', ''), '''', ''), '-', ''), ',', '')) = ${normalizedSlug}
+        OR LOWER(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
+          ISNULL(p.first_name, '') + ISNULL(p.nick_name, '') + ISNULL(p.last_name, ''),
+          ' ', ''), '.', ''), '''', ''), '-', ''), ',', '')) = ${normalizedSlug}
+      ORDER BY p.card_count DESC, p.player_id ASC
+    `
 
     if (results.length === 0) {
+      console.log(`❌ No player found for slug: "${slug}"`)
       return res.status(404).json({
         error: 'Player not found',
         message: `No player found for slug: ${slug}`
       })
     }
-    
+
+    const matchCount = results.length
+    console.log(`✅ Found ${matchCount} matching player(s): ${results[0].first_name} ${results[0].last_name} (ID: ${results[0].player_id}, Cards: ${results[0].card_count})`)
+    if (matchCount > 1) {
+      console.log(`   Other matches: ${results.slice(1).map(p => `${p.first_name} ${p.last_name} (${p.card_count} cards)`).join(', ')}`)
+    }
+
     // Convert BigInt to Number for JSON serialization
     const serializedResults = results.map(row => {
       const serialized = {}
@@ -65,6 +72,15 @@ router.get('/by-slug/:slug', async (req, res) => {
     })
 
     const player = serializedResults[0]
+
+    // Prepare alternate players list (if there are multiple matches)
+    const alternates = matchCount > 1 ? serializedResults.slice(1).map(p => ({
+      player_id: p.player_id,
+      first_name: p.first_name,
+      last_name: p.last_name,
+      nick_name: p.nick_name,
+      card_count: p.card_count
+    })) : []
     
     // Get team statistics for team circles with card counts
     const teamResults = await prisma.$queryRaw`
@@ -129,12 +145,19 @@ router.get('/by-slug/:slug', async (req, res) => {
       unique_series: Number(statsData.unique_series) || 0
     }
     
-    res.json({
+    const response = {
       player,
       cards,
       teams,
       stats
-    })
+    }
+
+    // Include alternate players if there are multiple matches
+    if (alternates.length > 0) {
+      response.alternate_players = alternates
+    }
+
+    res.json(response)
     
   } catch (error) {
     console.error('Error fetching player details:', error)

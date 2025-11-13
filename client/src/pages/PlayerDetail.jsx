@@ -122,7 +122,7 @@ function PlayerDetail() {
     }
   }
 
-  const fetchCards = async (playerData, page = 1, search = '', append = false) => {
+  const fetchCards = async (playerData, page = 1, search = '', append = false, teamIds = null) => {
     try {
       // Use different loading state for initial vs appending
       if (append) {
@@ -130,6 +130,9 @@ function PlayerDetail() {
       } else {
         setCardsLoading(true)
       }
+
+      // Use provided teamIds or fall back to state
+      const teamsToFilter = teamIds !== null ? teamIds : selectedTeamIds
 
       // Build query params
       const params = {
@@ -141,6 +144,11 @@ function PlayerDetail() {
       // Add search if provided
       if (search.trim()) {
         params.search = search.trim()
+      }
+
+      // Add team filtering if teams are selected
+      if (teamsToFilter && teamsToFilter.length > 0) {
+        params.team_ids = teamsToFilter.join(',')
       }
 
       const response = await axios.get('/api/cards', { params })
@@ -179,14 +187,14 @@ function PlayerDetail() {
   // Load more cards (infinite scroll)
   const loadMoreCards = async () => {
     if (!player || !hasMore || cardsLoading) return
-    await fetchCards(player, currentPage + 1, searchQuery, true)
+    await fetchCards(player, currentPage + 1, searchQuery, true, selectedTeamIds)
   }
 
   // Handle search from CardTable
   const handleSearch = async (query) => {
     if (!player) return
     setSearchQuery(query)
-    await fetchCards(player, 1, query, false)
+    await fetchCards(player, 1, query, false, selectedTeamIds)
   }
 
   const trackPlayerVisit = async (player) => {
@@ -245,15 +253,38 @@ function PlayerDetail() {
 
   const handleTeamFilter = (teamIds) => {
     setSelectedTeamIds(teamIds)
+    // Refetch cards when team filter changes
+    if (player) {
+      fetchCards(player, 1, searchQuery, false, teamIds)
+    }
   }
 
   const handleStatFilter = (statType) => {
     if (activeStatFilter === statType) {
       // If clicking the same filter, turn it off
       setActiveStatFilter(null)
+      // Clear stat filter from search
+      if (player) {
+        const cleanedSearch = searchQuery.replace(/\b(rc|rookie|auto|autograph|relic|sp|shortprint|short-print)\b/gi, '').trim()
+        setSearchQuery(cleanedSearch)
+        fetchCards(player, 1, cleanedSearch, false, selectedTeamIds)
+      }
     } else {
-      // Set new active filter
+      // Set new active filter and add to search
       setActiveStatFilter(statType)
+      if (player) {
+        // Map stat type to search keyword
+        const searchKeywords = {
+          'rookie': 'rc',
+          'autograph': 'auto',
+          'relic': 'relic',
+          'numbered': 'numbered'
+        }
+        const keyword = searchKeywords[statType] || statType
+        const newSearch = searchQuery ? `${searchQuery} ${keyword}` : keyword
+        setSearchQuery(newSearch)
+        fetchCards(player, 1, newSearch, false, selectedTeamIds)
+      }
     }
   }
 
@@ -276,9 +307,6 @@ function PlayerDetail() {
       }
     }
   }
-
-  // NOTE: Team and stat filtering removed - search box now handles ALL filtering via server-side search
-  // Users can type "chrome rc" to get Chrome rookies, etc.
 
   const handleCardClick = (card) => {
     // Navigate to card detail page
