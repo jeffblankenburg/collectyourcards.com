@@ -17,6 +17,9 @@ function UniversalSearch({ className = '' }) {
   const [showDropdown, setShowDropdown] = useState(false)
   const [selectedIndex, setSelectedIndex] = useState(-1)
   const [searchHistory, setSearchHistory] = useState([])
+  const [suggestions, setSuggestions] = useState([])
+  const [relaxationMessage, setRelaxationMessage] = useState(null)
+  const [searchTime, setSearchTime] = useState(null)
   
   const searchRef = useRef(null)
   const dropdownRef = useRef(null)
@@ -54,28 +57,35 @@ function UniversalSearch({ className = '' }) {
     if (!searchQuery.trim() || searchQuery.length < 2) {
       setResults([])
       setShowDropdown(false)
+      setSuggestions([])
+      setRelaxationMessage(null)
       return
     }
-    
+
     // Search is always available - no authentication required
-    
+
     setIsSearching(true)
-    
+
     try {
-      const response = await axios.get('/api/search/universal', {
+      const response = await axios.get('/api/search/universal-v2', {
         params: {
           q: searchQuery,
           limit: 50
         }
       })
-      
+
       setResults(response.data.results || [])
+      setSuggestions(response.data.suggestions || [])
+      setRelaxationMessage(response.data.relaxed ? response.data.message : null)
+      setSearchTime(response.data.searchTime)
       setShowDropdown(true)
       setSelectedIndex(-1)
     } catch (err) {
       console.error('Search error:', err)
       error('Search failed. Please try again.')
       setResults([])
+      setSuggestions([])
+      setRelaxationMessage(null)
       setShowDropdown(false)
     } finally {
       setIsSearching(false)
@@ -162,36 +172,37 @@ function UniversalSearch({ className = '' }) {
     
     // Add to search history (only for authenticated users)
     if (isAuthenticated && user) {
-      const searchTerm = result.title
+      const searchTerm = getResultTitle(result)
       const newHistory = [searchTerm, ...searchHistory.filter(h => h !== searchTerm)].slice(0, 10)
       setSearchHistory(newHistory)
       const userHistoryKey = `searchHistory_${user.id}`
       localStorage.setItem(userHistoryKey, JSON.stringify(newHistory))
     }
-    
+
     // Navigate based on result type
     switch (result.type) {
       case 'card':
-        // Use new simple URL format: /card/:seriesSlug/:cardNumber/:playerName
-        if (result.data?.card_number && result.data?.player_names && result.data?.series_slug) {
-          const playerSlug = result.data.player_names
+        // Use slug if available, otherwise use player name to create slug
+        const cardPlayerName = result.player_names || ''
+        if (cardPlayerName) {
+          const playerSlug = cardPlayerName
             .toLowerCase()
             .replace(/[^a-z0-9\s-]/g, '')
             .replace(/\s+/g, '-')
             .replace(/-+/g, '-')
             .trim()
-          navigate(`/card/${result.data.series_slug}/${result.data.card_number}/${playerSlug}`)
+          // For now, navigate to search - card detail route may need card ID
+          navigate(`/search?q=${encodeURIComponent(cardPlayerName + ' ' + result.card_number)}`)
         } else {
-          // Fallback to search if data is missing
-          navigate(`/search?q=${encodeURIComponent(result.title)}`)
+          navigate(`/search?q=${encodeURIComponent(result.card_number || '')}`)
         }
         break
       case 'player':
-        // Create player slug from first and last name
-        const firstName = result.data?.first_name || ''
-        const lastName = result.data?.last_name || ''
-        if (firstName && lastName) {
-          const playerSlug = `${firstName}-${lastName}`
+        // Use slug if available, otherwise create from first/last name
+        if (result.slug) {
+          navigate(`/players/${result.slug}`)
+        } else if (result.first_name && result.last_name) {
+          const playerSlug = `${result.first_name}-${result.last_name}`
             .toLowerCase()
             .replace(/[^a-z0-9\s-]/g, '')
             .replace(/\s+/g, '-')
@@ -207,7 +218,7 @@ function UniversalSearch({ className = '' }) {
         break
       case 'series':
         // Create series slug from series name
-        const seriesName = result.title || result.data?.series_name || ''
+        const seriesName = result.series_name || result.name || ''
         if (seriesName) {
           const seriesSlug = seriesName
             .toLowerCase()
@@ -215,14 +226,8 @@ function UniversalSearch({ className = '' }) {
             .replace(/\s+/g, '-')
             .replace(/-+/g, '-')
             .trim()
-
-          // Use canonical URL with year/setSlug if available
-          if (result.data?.set_year && result.data?.set_slug) {
-            navigate(`/sets/${result.data.set_year}/${result.data.set_slug}/${seriesSlug}`)
-          } else {
-            // Fallback to simple series route (will redirect to canonical)
-            navigate(`/series/${seriesSlug}`)
-          }
+          // For now, navigate to search
+          navigate(`/search?q=${encodeURIComponent(seriesName)}`)
         } else {
           console.error('Series name missing for navigation:', result)
         }
@@ -231,7 +236,7 @@ function UniversalSearch({ className = '' }) {
         navigate(`/collection?highlight=${result.id}`)
         break
       default:
-        navigate(`/search?q=${encodeURIComponent(result.title)}`)
+        navigate(`/search?q=${encodeURIComponent(getResultTitle(result))}`)
     }
   }
   
@@ -279,6 +284,24 @@ function UniversalSearch({ className = '' }) {
     }
   }
   
+  // Get display title for a result based on type
+  const getResultTitle = (result) => {
+    switch (result.type) {
+      case 'player':
+        return result.name || `${result.first_name || ''} ${result.last_name || ''}`.trim()
+      case 'card':
+        return result.player_names || result.card_number || 'Unknown Card'
+      case 'team':
+        return result.name || 'Unknown Team'
+      case 'series':
+        return result.series_name || result.name || 'Unknown Series'
+      case 'history':
+        return result.title
+      default:
+        return result.title || result.name || 'Unknown'
+    }
+  }
+
   // Get grouped results for display
   const getGroupedResults = () => {
     if (query.trim() && results.length > 0) {
@@ -294,7 +317,7 @@ function UniversalSearch({ className = '' }) {
     }
     return []
   }
-  
+
   const displayResults = getGroupedResults()
   
   return (
@@ -334,6 +357,34 @@ function UniversalSearch({ className = '' }) {
           {!query.trim() && searchHistory.length > 0 && (
             <div className="search-section-header">Recent Searches</div>
           )}
+
+          {/* Display filter relaxation message */}
+          {relaxationMessage && (
+            <div className="search-relaxation-message">
+              <Icon name="alert" size={16} />
+              <span>{relaxationMessage}</span>
+            </div>
+          )}
+
+          {/* Display suggestions */}
+          {suggestions && suggestions.length > 0 && (
+            <div className="search-suggestions">
+              {suggestions.map((suggestion, idx) => (
+                <div
+                  key={idx}
+                  className="search-suggestion"
+                  onClick={() => {
+                    setQuery(suggestion.suggestion)
+                    performSearch(suggestion.suggestion)
+                  }}
+                >
+                  <Icon name="lightbulb" size={16} />
+                  <span>{suggestion.reason}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
           {displayResults.length > 10 && query.trim() && (
             <div className="scroll-indicator">
               <Icon name="search" size={14} />
@@ -359,10 +410,10 @@ function UniversalSearch({ className = '' }) {
               </div>
               <div className="result-content">
                 <div className="result-title">
-                  {highlightQuery(result.title, query)}
-                  {result.type === 'player' && result.data?.teams && (
+                  {highlightQuery(getResultTitle(result), query)}
+                  {result.type === 'player' && result.teams && result.teams.length > 0 && (
                     <div className="result-teams-inline">
-                      {result.data.teams.map(team => (
+                      {result.teams.map(team => (
                         <div
                           key={team.team_id}
                           className="mini-team-circle"
@@ -379,21 +430,21 @@ function UniversalSearch({ className = '' }) {
                   )}
                 </div>
               </div>
-              {result.type === 'player' && result.data && (
+              {result.type === 'player' && (
                 <div className="result-card-count">
-                  <span className="card-count-number">{result.data.card_count || 0}</span>
+                  <span className="card-count-number">{result.card_count || 0}</span>
                   <span className="card-count-label">cards</span>
                 </div>
               )}
-              {result.type === 'team' && result.data && (
+              {result.type === 'team' && (
                 <div className="result-card-count">
-                  <span className="card-count-number">{result.data.player_count || 0}</span>
+                  <span className="card-count-number">{result.player_count || 0}</span>
                   <span className="card-count-label">players</span>
                 </div>
               )}
-              {result.type === 'series' && result.data && (
+              {result.type === 'series' && (
                 <div className="result-card-count">
-                  <span className="card-count-number">{result.data.card_count || 0}</span>
+                  <span className="card-count-number">{result.card_count || 0}</span>
                   <span className="card-count-label">cards</span>
                 </div>
               )}
@@ -430,6 +481,9 @@ function UniversalSearch({ className = '' }) {
             <div className="search-footer">
               <div className="search-result-count">
                 Showing {results.length} result{results.length !== 1 ? 's' : ''} for "{query}"
+                {searchTime !== null && (
+                  <span className="search-time"> · {searchTime}ms</span>
+                )}
               </div>
               <button
                 className="view-all-results"
@@ -447,8 +501,10 @@ function UniversalSearch({ className = '' }) {
 
 // Helper function to highlight search query in results
 function highlightQuery(text, query) {
-  if (!query.trim()) return text
-  
+  // Handle null/undefined text
+  if (!text || typeof text !== 'string') return text || ''
+  if (!query || !query.trim()) return text
+
   const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi')
   const parts = text.split(regex)
   

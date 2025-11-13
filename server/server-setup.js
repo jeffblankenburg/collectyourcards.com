@@ -239,6 +239,7 @@ if (config.environment === 'test') {
     { path: '/api/import', file: './routes/import-workflow', name: 'Import' },
     { path: '/api/ebay', file: './routes/ebay', name: 'eBay' },
     { path: '/api/search', file: './routes/search', name: 'Search' },
+    { path: '/api/search', file: './routes/search-v2', name: 'Search V2' },
     { path: '/api/players', file: './routes/players', name: 'Players' },
     { path: '/api/players-list', file: './routes/players-list-optimized', name: 'Players List (Optimized)' },
     { path: '/api/teams', file: './routes/teams', name: 'Teams' },

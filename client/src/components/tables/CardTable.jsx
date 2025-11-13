@@ -22,7 +22,9 @@ import './CardTableScoped.css'
  */
 const CardTable = ({
   cards = [],
+  totalCards = null, // Total cards from server (for infinite scroll)
   loading = false,
+  loadingMore = false, // Loading more cards (not initial load)
   onAddCard = null,
   onCardClick = null,
   onSeriesClick = null,
@@ -35,7 +37,9 @@ const CardTable = ({
   onCardSelection = null,
   onBulkAction = null,
   searchQuery = '',
-  onSearchChange = null,
+  onSearchChange = null, // Server-side search handler
+  onLoadMore = null, // Infinite scroll handler
+  hasMore = false, // Whether more cards can be loaded
   maxHeight = '600px', // Default max height for the table wrapper
   showDownload = true,
   downloadFilename = 'cards',
@@ -54,7 +58,9 @@ const CardTable = ({
 
   // Manage search state internally when not controlled by parent
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('')
+  const [searchInputValue, setSearchInputValue] = useState('') // Local state for input value
   const isControlled = searchQuery !== '' || onSearchChange !== null
+  const isServerSideSearch = onSearchChange !== null // Server-side search mode
 
 
   // Column resizing state
@@ -81,6 +87,7 @@ const CardTable = ({
   const searchInputRef = useRef(null)
   const marketplaceDropdownRef = useRef(null)
   const searchDebounceRef = useRef(null)
+  const tableWrapperRef = useRef(null)
 
   // Auto-focus search input when component loads
   useEffect(() => {
@@ -91,6 +98,14 @@ const CardTable = ({
       }, 100)
     }
   }, [autoFocusSearch, showSearch])
+
+  // Refocus search input after cards load (for server-side search)
+  useEffect(() => {
+    if (isServerSideSearch && searchInputValue && searchInputRef.current && !loading && !loadingMore) {
+      // Refocus after search results return
+      searchInputRef.current.focus()
+    }
+  }, [loading, loadingMore, searchInputValue, isServerSideSearch])
 
   // Reset last selected index when bulk selection mode changes
   useEffect(() => {
@@ -113,6 +128,43 @@ const CardTable = ({
       document.removeEventListener('mousedown', handleClickOutside)
     }
   }, [openMarketplaceDropdown])
+
+  // Infinite scroll - detect when user scrolls near bottom
+  useEffect(() => {
+    if (!onLoadMore || !hasMore || loadingMore) return
+
+    const handleScroll = () => {
+      const wrapper = tableWrapperRef.current
+      if (!wrapper) return
+
+      // Check if scrolled to within 200px of bottom
+      const { scrollTop, scrollHeight, clientHeight } = wrapper
+      const isNearBottom = scrollTop + clientHeight >= scrollHeight - 200
+
+      if (isNearBottom && hasMore && !loadingMore) {
+        onLoadMore()
+      }
+    }
+
+    const wrapper = tableWrapperRef.current
+    if (wrapper) {
+      wrapper.addEventListener('scroll', handleScroll)
+      return () => wrapper.removeEventListener('scroll', handleScroll)
+    }
+  }, [onLoadMore, hasMore, loadingMore])
+
+  // Preserve scroll position when new cards are appended
+  useEffect(() => {
+    if (!tableWrapperRef.current || !onLoadMore) return
+
+    const wrapper = tableWrapperRef.current
+    const scrollPos = wrapper.scrollTop
+
+    // After render, if scroll position changed unexpectedly, restore it
+    if (scrollPos > 0 && wrapper.scrollTop === 0) {
+      wrapper.scrollTop = scrollPos
+    }
+  }, [cards.length, onLoadMore])
 
   // Fetch user's column preferences
   useEffect(() => {
@@ -148,8 +200,11 @@ const CardTable = ({
     fetchPreferences()
   }, [isAuthenticated])
 
-  // Filter cards based on debounced search query
+  // Filter cards based on debounced search query (only when NOT using server-side search)
   const filteredCards = useMemo(() => {
+    // If server-side search is active, skip client-side filtering
+    if (isServerSideSearch) return cards
+
     if (!debouncedSearchQuery.trim()) return cards
 
     const query = debouncedSearchQuery.toLowerCase()
@@ -183,10 +238,15 @@ const CardTable = ({
 
       return false
     })
-  }, [cards, debouncedSearchQuery])
+  }, [cards, debouncedSearchQuery, isServerSideSearch])
 
   // Sort filtered cards with multi-level sorting: primary field → series → card number → player
+  // Skip sorting when using server-side search/infinite scroll (server handles ordering)
   const sortedCards = useMemo(() => {
+    if (isServerSideSearch && onLoadMore) {
+      return filteredCards // Don't sort - preserve server order for infinite scroll
+    }
+
     const sorted = [...filteredCards].sort((a, b) => {
       // Helper to compare values
       const compareValues = (aVal, bVal, direction) => {
@@ -279,7 +339,7 @@ const CardTable = ({
     })
 
     return sorted
-  }, [filteredCards, sortField, sortDirection])
+  }, [filteredCards, sortField, sortDirection, isServerSideSearch, onLoadMore])
 
   const handleSort = (field) => {
     if (sortField === field) {
@@ -435,7 +495,11 @@ const CardTable = ({
     }
   }
 
-  if (loading) {
+  // Only show full-screen loading on initial load (when there are no cards)
+  // During search, keep the table visible and show a loading overlay instead
+  const showFullScreenLoading = loading && cards.length === 0
+
+  if (showFullScreenLoading) {
     return (
       <div className="card-table-loading">
         <div className="card-icon-spinner"></div>
@@ -465,19 +529,38 @@ const CardTable = ({
                   ref={searchInputRef}
                   type="text"
                   placeholder="Search cards..."
-                  defaultValue={isControlled ? searchQuery : ''}
+                  value={searchInputValue}
                   onChange={(e) => {
                     const newValue = e.target.value
-                    if (isControlled && onSearchChange) {
-                      onSearchChange(newValue)
-                    } else {
-                      // Debounce the search without triggering immediate re-renders
+                    setSearchInputValue(newValue) // Update local state immediately
+
+                    // Always debounce search (both server-side and client-side)
+                    if (searchDebounceRef.current) {
+                      clearTimeout(searchDebounceRef.current)
+                    }
+
+                    searchDebounceRef.current = setTimeout(() => {
+                      if (isControlled && onSearchChange) {
+                        // Server-side search
+                        onSearchChange(newValue)
+                      } else {
+                        // Client-side search
+                        setDebouncedSearchQuery(newValue)
+                      }
+                    }, 300)
+                  }}
+                  onKeyDown={(e) => {
+                    // Allow Enter key to trigger immediate search
+                    if (e.key === 'Enter') {
                       if (searchDebounceRef.current) {
                         clearTimeout(searchDebounceRef.current)
                       }
-                      searchDebounceRef.current = setTimeout(() => {
-                        setDebouncedSearchQuery(newValue)
-                      }, 300)
+                      const value = e.target.value
+                      if (isControlled && onSearchChange) {
+                        onSearchChange(value)
+                      } else {
+                        setDebouncedSearchQuery(value)
+                      }
                     }
                   }}
                   className="card-table-search-input"
@@ -523,13 +606,33 @@ const CardTable = ({
       )}
 
       {/* Table */}
-      <div 
+      <div
+        ref={tableWrapperRef}
         className="card-table-wrapper"
-        style={{ 
+        style={{
           maxHeight: maxHeight,
-          overflowY: maxHeight === 'none' ? 'hidden' : 'auto'
+          overflowY: maxHeight === 'none' ? 'hidden' : 'auto',
+          position: 'relative'
         }}
       >
+        {/* Loading overlay during search (when we already have data) */}
+        {loading && cards.length > 0 && (
+          <div style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(255, 255, 255, 0.7)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 10
+          }}>
+            <div className="card-icon-spinner"></div>
+          </div>
+        )}
+
         <table className="card-table">
           <thead>
             <tr>
@@ -948,18 +1051,35 @@ const CardTable = ({
             })}
           </tbody>
         </table>
+
+        {/* Loading indicator for infinite scroll */}
+        {loadingMore && hasMore && (
+          <div className="card-table-loading-more">
+            <div className="card-icon-spinner"></div>
+            <p>Loading more cards...</p>
+          </div>
+        )}
       </div>
 
       {/* Footer */}
       <div className="card-table-footer">
         <div className="card-table-info">
-          Showing {sortedCards.length} of {cards.length} cards
-          {debouncedSearchQuery && ` (filtered)`}
+          {isServerSideSearch && totalCards !== null ? (
+            <>
+              Showing {cards.length} of {totalCards} cards
+              {hasMore && !loading && ` (scroll down for more)`}
+            </>
+          ) : (
+            <>
+              Showing {sortedCards.length} of {cards.length} cards
+              {debouncedSearchQuery && ` (filtered)`}
+            </>
+          )}
         </div>
-        
-        {showDownload && (
-          <div className="card-table-actions">
-            <button 
+
+        <div className="card-table-actions">
+          {showDownload && (
+            <button
               className="card-table-download-button"
               onClick={handleDownload}
               disabled={sortedCards.length === 0}
@@ -968,8 +1088,8 @@ const CardTable = ({
               <Icon name="download" size={16} />
               Download
             </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   )

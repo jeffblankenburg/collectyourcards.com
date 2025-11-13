@@ -10,6 +10,151 @@ const {
   escapeString
 } = require('../utils/sql-security')
 
+// ============================================================================
+// LRU CACHE for search results
+// ============================================================================
+
+class LRUCache {
+  constructor(maxSize = 1000) {
+    this.maxSize = maxSize
+    this.cache = new Map()
+  }
+
+  get(key) {
+    if (!this.cache.has(key)) return null
+    // Move to end (most recently used)
+    const value = this.cache.get(key)
+    this.cache.delete(key)
+    this.cache.set(key, value)
+    return value
+  }
+
+  set(key, value) {
+    // Remove if already exists
+    if (this.cache.has(key)) {
+      this.cache.delete(key)
+    }
+    // Add to end
+    this.cache.set(key, value)
+    // Remove oldest if over limit
+    if (this.cache.size > this.maxSize) {
+      const firstKey = this.cache.keys().next().value
+      this.cache.delete(firstKey)
+    }
+  }
+
+  clear() {
+    this.cache.clear()
+  }
+
+  size() {
+    return this.cache.size
+  }
+
+  stats() {
+    return {
+      size: this.cache.size,
+      maxSize: this.maxSize,
+      utilizationPercent: Math.round((this.cache.size / this.maxSize) * 100)
+    }
+  }
+}
+
+// Initialize search cache - larger size for detail page searches
+const searchCache = new LRUCache(2000)
+let cacheHits = 0
+let cacheMisses = 0
+
+// ============================================================================
+// SEARCH QUERY PARSER - Intelligent search term extraction
+// ============================================================================
+
+function parseSearchQuery(searchQuery) {
+  if (!searchQuery || !searchQuery.trim()) {
+    return {
+      keywords: [],
+      isRookie: false,
+      isAutograph: false,
+      isRelic: false,
+      isShortPrint: false,
+      printRun: null,
+      colors: [],
+      year: null
+    }
+  }
+
+  const query = searchQuery.toLowerCase().trim()
+  const terms = query.split(/\s+/)
+
+  const parsed = {
+    keywords: [],
+    isRookie: false,
+    isAutograph: false,
+    isRelic: false,
+    isShortPrint: false,
+    printRun: null,
+    colors: [],
+    year: null
+  }
+
+  const cardTypeKeywords = new Set(['rc', 'rookie', 'auto', 'autograph', 'relic', 'sp', 'shortprint', 'short-print'])
+  const colorKeywords = new Set(['red', 'blue', 'green', 'gold', 'silver', 'black', 'orange', 'purple',
+    'pink', 'refractor', 'shimmer', 'wave', 'prism', 'atomic'])
+
+  for (const term of terms) {
+    // Check for rookie
+    if (term === 'rc' || term === 'rookie') {
+      parsed.isRookie = true
+      continue
+    }
+
+    // Check for autograph
+    if (term === 'auto' || term === 'autograph') {
+      parsed.isAutograph = true
+      continue
+    }
+
+    // Check for relic
+    if (term === 'relic') {
+      parsed.isRelic = true
+      continue
+    }
+
+    // Check for short print
+    if (term === 'sp' || term === 'shortprint' || term === 'short-print') {
+      parsed.isShortPrint = true
+      continue
+    }
+
+    // Check for print run (e.g., "/99", "99", "/25")
+    const printRunMatch = term.match(/^\/(\d+)$/) || term.match(/^(\d+)$/)
+    if (printRunMatch && parseInt(printRunMatch[1]) < 1000) {
+      parsed.printRun = parseInt(printRunMatch[1])
+      continue
+    }
+
+    // Check for year (e.g., "2020", "2024")
+    const yearMatch = term.match(/^(19|20)\d{2}$/)
+    if (yearMatch) {
+      parsed.year = parseInt(term)
+      continue
+    }
+
+    // Check for color
+    if (colorKeywords.has(term)) {
+      parsed.colors.push(term)
+      continue
+    }
+
+    // Everything else is a keyword (series name, set name, etc.)
+    if (!cardTypeKeywords.has(term)) {
+      parsed.keywords.push(term)
+    }
+  }
+
+  return parsed
+}
+
 // Optional auth middleware
 const optionalAuthMiddleware = async (req, res, next) => {
   const authHeader = req.headers.authorization
@@ -25,17 +170,52 @@ const optionalAuthMiddleware = async (req, res, next) => {
 
 // GET /api/cards - Get cards with filtering and pagination
 router.get('/', optionalAuthMiddleware, async (req, res) => {
+  const startTime = Date.now()
+
   try {
-    const { 
-      player_name, 
-      team_id, 
+    const {
+      player_name,
+      team_id,
       series_name,
       series_id,
       card_number,
-      limit = 100, 
-      page = 1 
+      search,  // NEW: Intelligent search parameter
+      limit = 100,
+      page = 1
     } = req.query
 
+    // Parse search query if provided
+    const searchParsed = search ? parseSearchQuery(search) : null
+
+    // Create cache key for this specific query
+    const userId = req.user?.userId
+    const cacheKey = JSON.stringify({
+      player_name,
+      team_id,
+      series_name,
+      series_id,
+      card_number,
+      search,
+      limit,
+      page,
+      userId: userId || 'anonymous'
+    })
+
+    // Check cache first
+    const cached = searchCache.get(cacheKey)
+    if (cached) {
+      cacheHits++
+      const searchTime = Date.now() - startTime
+      console.log(`[Cards API] Cache HIT - ${searchTime}ms`)
+      return res.json({
+        ...cached,
+        searchTime,
+        cached: true,
+        cacheStats: { hits: cacheHits, misses: cacheMisses, hitRate: `${Math.round((cacheHits / (cacheHits + cacheMisses)) * 100)}%` }
+      })
+    }
+
+    cacheMisses++
 
     const limitNum = Math.min(parseInt(limit) || 100, 10000) // Cap at 10000 for loading all data
     const pageNum = parseInt(page) || 1
@@ -87,8 +267,60 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
       whereConditions.push(`c.card_number = '${safeCardNumber}'`)
     }
 
-    const whereClause = whereConditions.length > 0 
-      ? `WHERE ${whereConditions.join(' AND ')}` 
+    // Add intelligent search conditions
+    if (searchParsed) {
+      // Card type filters
+      if (searchParsed.isRookie) {
+        whereConditions.push(`c.is_rookie = 1`)
+      }
+      if (searchParsed.isAutograph) {
+        whereConditions.push(`c.is_autograph = 1`)
+      }
+      if (searchParsed.isRelic) {
+        whereConditions.push(`c.is_relic = 1`)
+      }
+      if (searchParsed.isShortPrint) {
+        whereConditions.push(`c.is_short_print = 1`)
+      }
+
+      // Print run filter
+      if (searchParsed.printRun) {
+        whereConditions.push(`c.print_run = ${searchParsed.printRun}`)
+      }
+
+      // Year filter
+      if (searchParsed.year) {
+        whereConditions.push(`EXISTS (
+          SELECT 1 FROM [set] st
+          WHERE st.set_id = s.[set]
+          AND st.year = ${searchParsed.year}
+        )`)
+      }
+
+      // Color filters
+      if (searchParsed.colors.length > 0) {
+        const colorConditions = searchParsed.colors.map(color =>
+          `LOWER(col.name) LIKE '%${escapeLikePattern(color)}%'`
+        ).join(' OR ')
+        whereConditions.push(`(${colorConditions})`)
+      }
+
+      // Keyword filters (series name, set name)
+      if (searchParsed.keywords.length > 0) {
+        const keywordConditions = searchParsed.keywords.map(keyword => {
+          const safeKeyword = escapeLikePattern(keyword)
+          return `(LOWER(s.name) LIKE '%${safeKeyword}%' OR EXISTS (
+            SELECT 1 FROM [set] st2
+            WHERE st2.set_id = s.[set]
+            AND LOWER(st2.name) LIKE '%${safeKeyword}%'
+          ))`
+        }).join(' AND ')
+        whereConditions.push(`(${keywordConditions})`)
+      }
+    }
+
+    const whereClause = whereConditions.length > 0
+      ? `WHERE ${whereConditions.join(' AND ')}`
       : ''
 
     // Get total count
@@ -104,7 +336,6 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
     const total = Number(countResult[0].total)
 
     // Get paginated cards with user collection data
-    const userId = req.user?.userId
     const userIdNumber = userId ? Number(userId) : null
     const userCollectionJoin = userIdNumber ? `
       LEFT JOIN user_card uc ON c.card_id = uc.card AND uc.[user] = ${userIdNumber}
@@ -224,12 +455,28 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
       }
     })
 
-    res.json({
+    // Prepare response object
+    const responseData = {
       cards,
       total,
       page: pageNum,
       limit: limitNum,
       hasMore: offsetNum + limitNum < total
+    }
+
+    // Cache the result for future requests
+    searchCache.set(cacheKey, responseData)
+
+    // Calculate search time
+    const searchTime = Date.now() - startTime
+    console.log(`[Cards API] Search complete - ${searchTime}ms (${searchParsed ? 'with search' : 'browse mode'})`)
+
+    // Send response with timing
+    res.json({
+      ...responseData,
+      searchTime,
+      cached: false,
+      cacheStats: { hits: cacheHits, misses: cacheMisses, hitRate: `${Math.round((cacheHits / (cacheHits + cacheMisses)) * 100)}%` }
     })
 
   } catch (error) {

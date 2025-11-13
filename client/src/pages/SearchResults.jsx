@@ -370,8 +370,8 @@ function SearchResults() {
         setSearchTime(Date.now() - startTime)
         
       } else {
-        // Real API call for all other queries
-        const response = await axios.get(`/api/search/universal?q=${encodeURIComponent(query)}&limit=50`)
+        // Real API call for all other queries - using V2 endpoint
+        const response = await axios.get(`/api/search/universal-v2?q=${encodeURIComponent(query)}&limit=50`)
         const { results = [] } = response.data
         
         // Organize results by type
@@ -386,51 +386,54 @@ function SearchResults() {
         
         results.forEach(result => {
           // Map API result types to our result categories
+          // NOTE: API returns data directly on result, not result.data
           switch(result.type) {
             case 'player':
               organizedResults.players.push({
-                ...result.data,
+                ...result,
                 type: 'player'
               })
               break
             case 'team':
               organizedResults.teams.push({
-                ...result.data,
+                ...result,
                 type: 'team'
               })
               break
             case 'series':
               organizedResults.series.push({
-                ...result.data,
+                ...result,
                 type: 'series'
               })
               break
             case 'card':
               organizedResults.cards.push({
-                ...result.data,
+                ...result,
                 type: 'card',
                 // Map API fields to component fields
-                card_id: result.data.card_id,
-                card_number: result.data.card_number,
-                player_name: result.data.player_names || 'Unknown Player',
-                team_name: result.data.team_name,
-                team_abbreviation: result.data.team_abbreviation,
-                team_primary_color: result.data.team_primary_color,
-                team_secondary_color: result.data.team_secondary_color,
-                series_name: result.data.series_name,
-                set_name: result.data.set_name,
-                is_rookie: result.data.is_rookie,
-                is_autograph: result.data.is_autograph,
-                is_relic: result.data.is_relic,
+                card_id: result.id || result.card_id,
+                card_number: result.card_number,
+                player_name: result.player_names || 'Unknown Player',
+                team_name: result.team_name,
+                team_abbreviation: result.team_abbreviation,
+                team_primary_color: result.team_primary_color,
+                team_secondary_color: result.team_secondary_color,
+                series_name: result.series_name,
+                set_name: result.set_name,
+                year: result.year,
+                manufacturer_name: result.manufacturer_name,
+                is_rookie: result.is_rookie,
+                is_autograph: result.is_autograph,
+                is_relic: result.is_relic,
                 is_insert: false, // Not available in database
-                is_parallel: result.data.is_parallel,
-                color_name: result.data.color_name,
-                color_hex: result.data.color_hex,
-                print_run: result.data.print_run,
+                is_parallel: result.is_parallel || (result.color_name ? true : false),
+                color_name: result.color_name,
+                color_hex: result.color_hex,
+                print_run: result.print_run,
                 serial_number: null, // Not available in database
                 estimated_value: '0.00', // TODO: Add to API when available
                 user_count: 0, // TODO: Add to API when available
-                series_slug: result.data.series_slug || `series-${result.data.series_id || result.id}`
+                series_slug: result.series_slug || `series-${result.series_id || result.id}`
               })
               break
             default:

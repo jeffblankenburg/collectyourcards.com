@@ -33,10 +33,16 @@ function PlayerDetail() {
   const [showEditModal, setShowEditModal] = useState(false)
   const [activeStatFilter, setActiveStatFilter] = useState(null)
   const [cardsLoading, setCardsLoading] = useState(false)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [bulkSelectionMode, setBulkSelectionMode] = useState(false)
   const [selectedCards, setSelectedCards] = useState(new Set())
   const [showAddCardModal, setShowAddCardModal] = useState(false)
   const [cardToAdd, setCardToAdd] = useState(null)
+  // Infinite scroll state
+  const [currentPage, setCurrentPage] = useState(1)
+  const [hasMore, setHasMore] = useState(true)
+  const [totalCards, setTotalCards] = useState(0)
+  const [searchQuery, setSearchQuery] = useState('')
 
   // Check if user is admin
   const isAdmin = user && ['admin', 'superadmin', 'data_admin'].includes(user.role)
@@ -116,17 +122,71 @@ function PlayerDetail() {
     }
   }
 
-  const fetchCards = async (playerData) => {
+  const fetchCards = async (playerData, page = 1, search = '', append = false) => {
     try {
-      setCardsLoading(true)
-      const response = await axios.get(`/api/cards?player_name=${encodeURIComponent(`${playerData.first_name} ${playerData.last_name}`)}&limit=10000`)
-      setCards(response.data.cards || [])
+      // Use different loading state for initial vs appending
+      if (append) {
+        setLoadingMore(true)
+      } else {
+        setCardsLoading(true)
+      }
+
+      // Build query params
+      const params = {
+        player_name: `${playerData.first_name} ${playerData.last_name}`,
+        limit: 100,
+        page
+      }
+
+      // Add search if provided
+      if (search.trim()) {
+        params.search = search.trim()
+      }
+
+      const response = await axios.get('/api/cards', { params })
+
+      const newCards = response.data.cards || []
+
+      // Append to existing cards or replace
+      if (append) {
+        // Filter out duplicates - create a Set of existing card IDs
+        setCards(prevCards => {
+          const existingIds = new Set(prevCards.map(c => c.card_id))
+          const uniqueNewCards = newCards.filter(c => !existingIds.has(c.card_id))
+          return [...prevCards, ...uniqueNewCards]
+        })
+      } else {
+        setCards(newCards)
+      }
+
+      setHasMore(response.data.hasMore || false)
+      setTotalCards(response.data.total || 0)
+      setCurrentPage(page)
     } catch (err) {
       console.error('Error fetching cards:', err)
-      setCards([])
+      if (!append) {
+        setCards([])
+      }
     } finally {
-      setCardsLoading(false)
+      if (append) {
+        setLoadingMore(false)
+      } else {
+        setCardsLoading(false)
+      }
     }
+  }
+
+  // Load more cards (infinite scroll)
+  const loadMoreCards = async () => {
+    if (!player || !hasMore || cardsLoading) return
+    await fetchCards(player, currentPage + 1, searchQuery, true)
+  }
+
+  // Handle search from CardTable
+  const handleSearch = async (query) => {
+    if (!player) return
+    setSearchQuery(query)
+    await fetchCards(player, 1, query, false)
   }
 
   const trackPlayerVisit = async (player) => {
@@ -217,41 +277,8 @@ function PlayerDetail() {
     }
   }
 
-  // Filter cards based on selected teams and stat filters
-  const filteredCards = useMemo(() => {
-    let filtered = [...cards]
-
-    // Apply team filtering
-    if (selectedTeamIds.length > 0) {
-      filtered = filtered.filter(card => 
-        card.card_player_teams?.some(cpt => 
-          selectedTeamIds.includes(cpt.team?.team_id)
-        )
-      )
-    }
-
-    // Apply stat filtering
-    if (activeStatFilter) {
-      switch (activeStatFilter) {
-        case 'rookie':
-          filtered = filtered.filter(card => card.is_rookie)
-          break
-        case 'autograph':
-          filtered = filtered.filter(card => card.is_autograph)
-          break
-        case 'relic':
-          filtered = filtered.filter(card => card.is_relic)
-          break
-        case 'numbered':
-          filtered = filtered.filter(card => card.print_run && card.print_run > 0)
-          break
-        default:
-          break
-      }
-    }
-
-    return filtered
-  }, [cards, selectedTeamIds, activeStatFilter])
+  // NOTE: Team and stat filtering removed - search box now handles ALL filtering via server-side search
+  // Users can type "chrome rc" to get Chrome rookies, etc.
 
   const handleCardClick = (card) => {
     // Navigate to card detail page
@@ -391,14 +418,19 @@ function PlayerDetail() {
           onStatFilter={handleStatFilter}
         />
 
-        {/* Cards Table */}
+        {/* Cards Table with infinite scroll and server-side search */}
         <CardTable
-          cards={filteredCards}
+          cards={cards}
+          totalCards={totalCards}
           loading={cardsLoading}
+          loadingMore={loadingMore}
           onCardClick={handleCardClick}
           onSeriesClick={handleSeriesClick}
           showSearch={true}
           autoFocusSearch={true}
+          onSearchChange={handleSearch}
+          onLoadMore={loadMoreCards}
+          hasMore={hasMore}
           downloadFilename={`${player?.first_name || 'player'}-${player?.last_name || 'cards'}-cards`}
           showBulkActions={true}
           bulkSelectionMode={bulkSelectionMode}
