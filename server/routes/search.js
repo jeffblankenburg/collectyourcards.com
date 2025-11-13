@@ -14,6 +14,13 @@ function generateSlug(name) {
     .replace(/^-|-$/g, '') // Remove leading/trailing hyphens
 }
 
+// Helper function to escape SQL special characters for LIKE queries
+// In SQL Server, single quotes must be escaped by doubling them
+function escapeSqlLike(str) {
+  if (!str) return ''
+  return str.replace(/'/g, "''") // Double single quotes for SQL Server
+}
+
 // Initialize Prisma with error handling for production
 let databaseAvailable = false
 
@@ -267,16 +274,19 @@ function analyzeSearchQuery(query) {
 async function searchCardsByNumberAndPlayer(cardNumber, playerName, limit) {
   try {
     console.log(`Searching cards by number "${cardNumber}" and player "${playerName}"`)
-    
-    const cardPattern = `%${cardNumber}%`
-    const playerPattern = `%${playerName}%`
-    
+
+    const cardPattern = `%${escapeSqlLike(cardNumber)}%`
+    const playerPattern = `%${escapeSqlLike(playerName)}%`
+    const playerPatternNoApostrophe = `%${escapeSqlLike(playerName.replace(/'/g, ''))}%`
+
     console.log(`Card pattern: "${cardPattern}", Player pattern: "${playerPattern}"`)
-    
+
     // Split player name for component matching
     const nameParts = playerName.split(' ')
-    const firstName = nameParts[0]
-    const lastName = nameParts.slice(1).join(' ')
+    const firstName = escapeSqlLike(nameParts[0])
+    const lastName = escapeSqlLike(nameParts.slice(1).join(' '))
+    const firstNameNoApostrophe = escapeSqlLike(nameParts[0].replace(/'/g, ''))
+    const lastNameNoApostrophe = escapeSqlLike(nameParts.slice(1).join(' ').replace(/'/g, ''))
     console.log(`Name parts: first="${firstName}", last="${lastName}"`)
     
     // Try the combined search first (card number + player name)
@@ -311,22 +321,26 @@ async function searchCardsByNumberAndPlayer(cardNumber, playerName, limit) {
       LEFT JOIN team t ON pt.team = t.team_id
       WHERE c.card_number LIKE '${cardPattern}'
         AND (
-          -- Name combinations (most likely matches)
+          -- Name combinations (most likely matches) - with apostrophes
           CONCAT(p.first_name, ' ', p.last_name) LIKE '${playerPattern}' COLLATE Latin1_General_CI_AI
           OR CONCAT(p.nick_name, ' ', p.last_name) LIKE '${playerPattern}' COLLATE Latin1_General_CI_AI
           OR CONCAT(p.first_name, ' ', p.nick_name, ' ', p.last_name) LIKE '${playerPattern}' COLLATE Latin1_General_CI_AI
           OR p.nick_name LIKE '${playerPattern}' COLLATE Latin1_General_CI_AI
-          -- Individual name components (for partial matches)
+          -- Individual name components (for partial matches) - with apostrophes
           OR (p.first_name LIKE '%${firstName}%' COLLATE Latin1_General_CI_AI AND p.last_name LIKE '%${lastName}%' COLLATE Latin1_General_CI_AI)
+          -- Name combinations (without apostrophes) - handles "oconnell" matching "o'connell"
+          OR REPLACE(CONCAT(p.first_name, ' ', p.last_name), '''', '') LIKE '${playerPatternNoApostrophe}' COLLATE Latin1_General_CI_AI
+          OR REPLACE(CONCAT(p.nick_name, ' ', p.last_name), '''', '') LIKE '${playerPatternNoApostrophe}' COLLATE Latin1_General_CI_AI
+          OR (REPLACE(p.first_name, '''', '') LIKE '%${firstNameNoApostrophe}%' COLLATE Latin1_General_CI_AI AND REPLACE(p.last_name, '''', '') LIKE '%${lastNameNoApostrophe}%' COLLATE Latin1_General_CI_AI)
         )
       GROUP BY c.card_id, c.card_number, c.is_rookie, c.is_autograph, c.is_relic, c.print_run,
                s.name, s.slug, st.name, st.slug, st.year, m.name, s.parallel_of_series, col.name, col.hex_value
-      ORDER BY 
-        CASE WHEN c.card_number = '${cardNumber}' THEN 0 ELSE 1 END,  -- Exact matches first
+      ORDER BY
+        CASE WHEN c.card_number = '${escapeSqlLike(cardNumber)}' THEN 0 ELSE 1 END,  -- Exact matches first
         s.name,  -- Then series name
         STRING_AGG(p.last_name, ', ')  -- Then player last name
     `)
-    
+
     console.log(`Found ${combinedResults.length} cards for exact "${cardNumber} ${playerName}" match`)
     
     // If we have good results from the combined search, return them
@@ -450,8 +464,8 @@ function formatCardResult(card, relevanceScore) {
 async function searchCardsByNumber(cardNumber, limit) {
   try {
     console.log(`Searching cards by number "${cardNumber}"`)
-    
-    const cardPattern = `%${cardNumber}%`
+
+    const cardPattern = `%${escapeSqlLike(cardNumber)}%`
     
     const results = await prisma.$queryRawUnsafe(`
       SELECT TOP ${limit}
@@ -485,14 +499,14 @@ async function searchCardsByNumber(cardNumber, limit) {
       WHERE c.card_number LIKE '${cardPattern}'
       GROUP BY c.card_id, c.card_number, c.is_rookie, c.is_autograph, c.is_relic, c.print_run,
                s.name, s.slug, st.name, st.slug, st.year, m.name, s.parallel_of_series, col.name, col.hex_value
-      ORDER BY 
-        CASE WHEN c.card_number = '${cardNumber}' THEN 0 ELSE 1 END,  -- Exact matches first
+      ORDER BY
+        CASE WHEN c.card_number = '${escapeSqlLike(cardNumber)}' THEN 0 ELSE 1 END,  -- Exact matches first
         s.name,  -- Then series name
         STRING_AGG(p.last_name, ', ')  -- Then player last name
     `)
-    
+
     console.log(`Found ${results.length} cards for number "${cardNumber}"`)
-    
+
     return results.map(card => {
       const relevanceScore = card.card_number === cardNumber ? 100 : 80
       return formatCardResult(card, relevanceScore)
@@ -514,9 +528,16 @@ async function searchCardsByType(cardTypes, playerName, limit) {
     if (cardTypes.includes('relic')) typeConditions.push('c.is_relic = 1')
     
     const typeConditionsSql = typeConditions.length > 0 ? typeConditions.join(' OR ') : '1=0'
-    
-    const playerCondition = playerName ? 
-      `AND (p.first_name LIKE '%${playerName}%' COLLATE Latin1_General_CI_AI OR p.last_name LIKE '%${playerName}%' COLLATE Latin1_General_CI_AI OR p.nick_name LIKE '%${playerName}%' COLLATE Latin1_General_CI_AI)` : 
+
+    const playerCondition = playerName ?
+      `AND (
+        p.first_name LIKE '%${escapeSqlLike(playerName)}%' COLLATE Latin1_General_CI_AI
+        OR p.last_name LIKE '%${escapeSqlLike(playerName)}%' COLLATE Latin1_General_CI_AI
+        OR p.nick_name LIKE '%${escapeSqlLike(playerName)}%' COLLATE Latin1_General_CI_AI
+        OR REPLACE(p.first_name, '''', '') LIKE '%${escapeSqlLike(playerName.replace(/'/g, ''))}%' COLLATE Latin1_General_CI_AI
+        OR REPLACE(p.last_name, '''', '') LIKE '%${escapeSqlLike(playerName.replace(/'/g, ''))}%' COLLATE Latin1_General_CI_AI
+        OR REPLACE(p.nick_name, '''', '') LIKE '%${escapeSqlLike(playerName.replace(/'/g, ''))}%' COLLATE Latin1_General_CI_AI
+      )` :
       ''
 
     const results = await prisma.$queryRawUnsafe(`
@@ -566,49 +587,57 @@ async function searchCardsByType(cardTypes, playerName, limit) {
 async function searchPlayers(query, limit) {
   try {
     console.log('Searching players for:', query)
-    
-    const searchPattern = `%${query}%`
+
+    const searchPattern = `%${escapeSqlLike(query)}%`
+    const searchPatternNoApostrophe = `%${escapeSqlLike(query.replace(/'/g, ''))}%`
     console.log('Player search pattern:', searchPattern)
-    
-    // Quick test: try to find a player with just "Christian"
-    const testQuery = await prisma.$queryRawUnsafe(`
-      SELECT TOP 5 first_name, last_name, nick_name 
-      FROM player 
-      WHERE first_name LIKE '%Christian%' AND last_name LIKE '%Encarnacion%'
-    `)
-    console.log('Test - Christian Encarnacion players:', testQuery)
-    
+    console.log('Player search pattern (no apostrophe):', searchPatternNoApostrophe)
+
     // Check if query contains spaces (likely full name)
     const queryParts = query.trim().split(/\s+/)
     let whereClause = ''
-    
+
     if (queryParts.length >= 2) {
       // Multi-word search - comprehensive fuzzy matching
-      const firstName = queryParts[0]
-      const lastName = queryParts.slice(1).join(' ')
-      
+      const firstName = escapeSqlLike(queryParts[0])
+      const lastName = escapeSqlLike(queryParts.slice(1).join(' '))
+      const firstNameNoApostrophe = escapeSqlLike(queryParts[0].replace(/'/g, ''))
+      const lastNameNoApostrophe = escapeSqlLike(queryParts.slice(1).join(' ').replace(/'/g, ''))
+
       whereClause = `
-        -- Name combinations (most likely matches first)
+        -- Name combinations (most likely matches first) - with apostrophes
         (CONCAT(first_name, ' ', last_name) LIKE '${searchPattern}' COLLATE Latin1_General_CI_AI)
         OR (CONCAT(nick_name, ' ', last_name) LIKE '${searchPattern}' COLLATE Latin1_General_CI_AI)
         OR (CONCAT(first_name, ' ', nick_name, ' ', last_name) LIKE '${searchPattern}' COLLATE Latin1_General_CI_AI)
         OR nick_name LIKE '${searchPattern}' COLLATE Latin1_General_CI_AI
-        -- Individual name components
+        -- Individual name components - with apostrophes
         OR (first_name LIKE '%${firstName}%' COLLATE Latin1_General_CI_AI AND last_name LIKE '%${lastName}%' COLLATE Latin1_General_CI_AI)
         OR (nick_name LIKE '%${firstName}%' COLLATE Latin1_General_CI_AI AND last_name LIKE '%${lastName}%' COLLATE Latin1_General_CI_AI)
         OR first_name LIKE '${searchPattern}' COLLATE Latin1_General_CI_AI
         OR last_name LIKE '${searchPattern}' COLLATE Latin1_General_CI_AI
+        -- Name combinations (without apostrophes) - handles "oconnell" matching "o'connell"
+        OR (REPLACE(CONCAT(first_name, ' ', last_name), '''', '') LIKE '${searchPatternNoApostrophe}' COLLATE Latin1_General_CI_AI)
+        OR (REPLACE(CONCAT(nick_name, ' ', last_name), '''', '') LIKE '${searchPatternNoApostrophe}' COLLATE Latin1_General_CI_AI)
+        OR (REPLACE(first_name, '''', '') LIKE '%${firstNameNoApostrophe}%' COLLATE Latin1_General_CI_AI AND REPLACE(last_name, '''', '') LIKE '%${lastNameNoApostrophe}%' COLLATE Latin1_General_CI_AI)
+        OR REPLACE(first_name, '''', '') LIKE '${searchPatternNoApostrophe}' COLLATE Latin1_General_CI_AI
+        OR REPLACE(last_name, '''', '') LIKE '${searchPatternNoApostrophe}' COLLATE Latin1_General_CI_AI
       `
     } else {
       // Single word search
       whereClause = `
-        -- Individual fields and name combinations
+        -- Individual fields and name combinations - with apostrophes
         first_name LIKE '${searchPattern}' COLLATE Latin1_General_CI_AI
         OR last_name LIKE '${searchPattern}' COLLATE Latin1_General_CI_AI
         OR nick_name LIKE '${searchPattern}' COLLATE Latin1_General_CI_AI
         OR CONCAT(first_name, ' ', last_name) LIKE '${searchPattern}' COLLATE Latin1_General_CI_AI
         OR CONCAT(nick_name, ' ', last_name) LIKE '${searchPattern}' COLLATE Latin1_General_CI_AI
         OR CONCAT(first_name, ' ', nick_name, ' ', last_name) LIKE '${searchPattern}' COLLATE Latin1_General_CI_AI
+        -- Same searches without apostrophes - handles "oconnell" matching "o'connell"
+        OR REPLACE(first_name, '''', '') LIKE '${searchPatternNoApostrophe}' COLLATE Latin1_General_CI_AI
+        OR REPLACE(last_name, '''', '') LIKE '${searchPatternNoApostrophe}' COLLATE Latin1_General_CI_AI
+        OR REPLACE(nick_name, '''', '') LIKE '${searchPatternNoApostrophe}' COLLATE Latin1_General_CI_AI
+        OR REPLACE(CONCAT(first_name, ' ', last_name), '''', '') LIKE '${searchPatternNoApostrophe}' COLLATE Latin1_General_CI_AI
+        OR REPLACE(CONCAT(nick_name, ' ', last_name), '''', '') LIKE '${searchPatternNoApostrophe}' COLLATE Latin1_General_CI_AI
       `
     }
     
@@ -678,8 +707,8 @@ async function searchPlayers(query, limit) {
 async function searchTeams(query, limit) {
   try {
     console.log('Searching teams for:', query)
-    
-    const searchPattern = `%${query}%`
+
+    const searchPattern = `%${escapeSqlLike(query)}%`
     
     const results = await prisma.$queryRawUnsafe(`
       SELECT TOP ${limit}
@@ -734,8 +763,8 @@ async function searchTeams(query, limit) {
 async function searchSeries(query, limit) {
   try {
     console.log('Searching series for:', query)
-    
-    const searchPattern = `%${query}%`
+
+    const searchPattern = `%${escapeSqlLike(query)}%`
     
     const results = await prisma.$queryRawUnsafe(`
       SELECT TOP ${limit}
