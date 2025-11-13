@@ -77,8 +77,35 @@ function AdminCardsNeedingReference() {
     }
   }
 
-  const handleImageClick = (cardId, userCard) => {
-    // Open ImageEditor with the front image (primary image)
+  // Direct assignment - no editing
+  const handleDirectAssign = async (cardId, userCardId) => {
+    try {
+      // Directly assign the user_card as reference (backend will optimize)
+      await axios.put(`/api/admin/cards/${cardId}/reference-image`, {
+        user_card_id: userCardId
+      })
+
+      addToast('Reference image assigned and optimized successfully!', 'success')
+
+      // Remove this card from the list since it now has a reference
+      setCards(prev => prev.filter(c => c.card_id !== cardId))
+      setTotalCards(prev => prev - 1)
+      setExpandedCardId(null)
+
+      // Clear cached images
+      setCommunityImages(prev => {
+        const updated = { ...prev }
+        delete updated[cardId]
+        return updated
+      })
+    } catch (error) {
+      console.error('Error assigning reference image:', error)
+      addToast(`Failed to assign image: ${error.response?.data?.message || error.message}`, 'error')
+    }
+  }
+
+  // Edit first workflow - open image editor
+  const handleEditFirst = (cardId, userCard) => {
     setCurrentCardIdForAssignment(cardId)
     setSelectedImageForEdit({
       imageUrl: userCard.front_image,
@@ -267,14 +294,15 @@ function AdminCardsNeedingReference() {
                                   <div className="admin-cards-images-col-user">Uploaded By</div>
                                   <div className="admin-cards-images-col-front">Front Image</div>
                                   <div className="admin-cards-images-col-back">Back Image</div>
+                                  <div style={{ width: '120px', textAlign: 'center' }}>Actions</div>
                                 </div>
                                 <div className="admin-cards-images-table-body">
                                   {communityImages[card.card_id]?.images.map((userCard) => (
                                     <div
                                       key={userCard.user_card_id}
                                       className="admin-cards-image-row"
-                                      onClick={() => handleImageClick(card.card_id, userCard)}
-                                      title="Click to edit and assign as reference image"
+                                      onClick={() => handleDirectAssign(card.card_id, userCard.user_card_id)}
+                                      title="Click to assign as reference (no editing)"
                                       style={{ cursor: 'pointer' }}
                                     >
                                       <div className="admin-cards-images-col-user">
@@ -295,6 +323,32 @@ function AdminCardsNeedingReference() {
                                         ) : (
                                           <div className="admin-cards-no-image">No back image</div>
                                         )}
+                                      </div>
+                                      <div style={{ width: '120px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation()
+                                            handleEditFirst(card.card_id, userCard)
+                                          }}
+                                          style={{
+                                            background: 'rgba(59, 130, 246, 0.2)',
+                                            border: '1px solid rgba(59, 130, 246, 0.4)',
+                                            color: '#3b82f6',
+                                            padding: '6px 12px',
+                                            borderRadius: '6px',
+                                            fontSize: '12px',
+                                            fontWeight: '600',
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '4px',
+                                            whiteSpace: 'nowrap'
+                                          }}
+                                          title="Edit images before assigning"
+                                        >
+                                          <Icon name="edit" size={14} />
+                                          Edit First
+                                        </button>
                                       </div>
                                     </div>
                                   ))}

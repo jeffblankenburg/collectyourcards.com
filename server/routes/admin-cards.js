@@ -545,7 +545,7 @@ router.get('/needs-reference', requireDataAdmin, async (req, res) => {
     // Optimized query: Filter first, then aggregate only what's needed
     const query = `
       WITH CardsNeedingRef AS (
-        -- First: Get ONLY cards needing reference (using index)
+        -- First: Get ONLY cards needing reference images that have actual photos available
         SELECT TOP ${limit + offset}
           c.card_id,
           c.card_number,
@@ -556,12 +556,14 @@ router.get('/needs-reference', requireDataAdmin, async (req, res) => {
           st.name as set_name,
           st.year as set_year,
           st.slug as set_slug
-        FROM card c WITH (NOLOCK, INDEX(IX_card_reference_user_card))
+        FROM card c WITH (NOLOCK)
         JOIN series s WITH (NOLOCK) ON c.series = s.series_id
         JOIN [set] st WITH (NOLOCK) ON s.[set] = st.set_id
-        WHERE c.reference_user_card IS NULL
+        WHERE (c.front_image_path IS NULL OR c.back_image_path IS NULL)
           AND EXISTS (
-            SELECT 1 FROM user_card uc WITH (NOLOCK)
+            SELECT 1
+            FROM user_card uc WITH (NOLOCK)
+            JOIN user_card_photo ucp WITH (NOLOCK) ON uc.user_card_id = ucp.user_card
             WHERE uc.card = c.card_id
           )
         ORDER BY st.year DESC, st.name, s.name, c.card_number
@@ -613,14 +615,15 @@ router.get('/needs-reference', requireDataAdmin, async (req, res) => {
 
     const results = await prisma.$queryRawUnsafe(query)
 
-    // Fast count query using same approach
+    // Fast count query - check for missing image paths
     const countQuery = `
       SELECT COUNT(DISTINCT c.card_id) as total
       FROM card c WITH (NOLOCK)
-      WHERE c.reference_user_card IS NULL
+      WHERE (c.front_image_path IS NULL OR c.back_image_path IS NULL)
         AND EXISTS (
           SELECT 1
           FROM user_card uc WITH (NOLOCK)
+          JOIN user_card_photo ucp WITH (NOLOCK) ON uc.user_card_id = ucp.user_card
           WHERE uc.card = c.card_id
         )
     `
