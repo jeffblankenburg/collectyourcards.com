@@ -124,13 +124,27 @@ function AdminCardsNeedingReference() {
     setCurrentCardIdForAssignment(null)
   }
 
-  const handleImageEditorSave = async (editedImageBlob) => {
-    if (!currentCardIdForAssignment || !editedImageBlob) return
+  const handleImageEditorSave = async (editedImageData) => {
+    if (!currentCardIdForAssignment || !editedImageData) return
 
     try {
-      // Create FormData to upload the edited image
+      // Create FormData to upload the edited image(s)
       const formData = new FormData()
-      formData.append('front_image', editedImageBlob, 'edited-image.jpg')
+
+      // Check if we have dual-image mode (both front and back) or single image
+      if (editedImageData.front && editedImageData.back) {
+        // Dual-image mode - append both
+        formData.append('front_image', editedImageData.front, 'edited-front.jpg')
+        formData.append('back_image', editedImageData.back, 'edited-back.jpg')
+      } else if (editedImageData instanceof Blob) {
+        // Legacy single-image mode - assume front
+        formData.append('front_image', editedImageData, 'edited-image.jpg')
+      } else {
+        // Should not happen, but handle gracefully
+        console.error('Invalid image data format:', editedImageData)
+        addToast('Failed to save image: Invalid image data', 'error')
+        return
+      }
 
       await axios.put(`/api/admin/cards/${currentCardIdForAssignment}/reference-image`, formData, {
         headers: {
@@ -138,7 +152,7 @@ function AdminCardsNeedingReference() {
         }
       })
 
-      addToast('Reference image assigned and optimized successfully!', 'success')
+      addToast('Reference images assigned and optimized successfully!', 'success')
 
       // Remove this card from the list since it now has a reference
       setCards(prev => prev.filter(c => c.card_id !== currentCardIdForAssignment))
@@ -371,9 +385,10 @@ function AdminCardsNeedingReference() {
       <ImageEditor
         isOpen={showImageEditor}
         onClose={handleImageEditorClose}
-        imageUrl={selectedImageForEdit?.imageUrl}
+        frontImageUrl={selectedImageForEdit?.frontUrl}
+        backImageUrl={selectedImageForEdit?.backUrl}
         onSave={handleImageEditorSave}
-        title="Edit & Assign Reference Image"
+        title="Edit & Assign Reference Images"
       />
     </div>
   )

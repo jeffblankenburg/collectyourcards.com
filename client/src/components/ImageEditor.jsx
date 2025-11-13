@@ -8,11 +8,14 @@ const ImageEditor = ({
   isOpen,
   onClose,
   imageUrl,
+  frontImageUrl,
+  backImageUrl,
   onSave,
   title = "Edit Image"
 }) => {
   const { error: showToastError } = useToast()
   const canvasRef = useRef(null)
+  const [currentSide, setCurrentSide] = useState('front') // 'front' or 'back'
   const [rotation, setRotation] = useState(0)
   const [crop, setCrop] = useState({ x: 0, y: 0, width: 1, height: 1 })
   const [isDragging, setIsDragging] = useState(false)
@@ -22,14 +25,34 @@ const ImageEditor = ({
   const [saving, setSaving] = useState(false)
   const [corsEnabled, setCorsEnabled] = useState(false)
 
+  // Store edits for both sides
+  const [frontEdits, setFrontEdits] = useState({ rotation: 0, crop: { x: 0, y: 0, width: 1, height: 1 } })
+  const [backEdits, setBackEdits] = useState({ rotation: 0, crop: { x: 0, y: 0, width: 1, height: 1 } })
+  const [editedBlobs, setEditedBlobs] = useState({ front: null, back: null })
+
+  // Determine which URL to use based on dual-image mode
+  const isDualMode = frontImageUrl && backImageUrl
+  const activeImageUrl = isDualMode ? (currentSide === 'front' ? frontImageUrl : backImageUrl) : imageUrl
+
+  // Load current side's saved edits when switching
   useEffect(() => {
-    if (isOpen && imageUrl) {
-      console.log('Loading image:', imageUrl)
+    if (isDualMode) {
+      const edits = currentSide === 'front' ? frontEdits : backEdits
+      setRotation(edits.rotation)
+      setCrop(edits.crop)
+    }
+  }, [currentSide, isDualMode])
+
+  useEffect(() => {
+    if (isOpen && activeImageUrl) {
+      console.log('Loading image:', activeImageUrl)
       // Reset state
       setImageLoaded(false)
       setOriginalImage(null)
-      setRotation(0)
-      setCrop({ x: 0, y: 0, width: 1, height: 1 })
+      if (!isDualMode) {
+        setRotation(0)
+        setCrop({ x: 0, y: 0, width: 1, height: 1 })
+      }
       
       // Try loading with CORS first
       const tryLoadWithCORS = () => {
@@ -54,32 +77,32 @@ const ImageEditor = ({
           })
           tryLoadWithoutCORS()
         }
-        
+
         img.crossOrigin = 'anonymous'
-        img.src = imageUrl
+        img.src = activeImageUrl
       }
-      
+
       // Fallback: load without CORS (allows viewing but not saving)
       const tryLoadWithoutCORS = () => {
         const img = new Image()
-        
+
         img.onload = () => {
           console.log('Image loaded without CORS:', img.width, 'x', img.height)
           setOriginalImage(img)
           setImageLoaded(true)
           setCorsEnabled(false)
         }
-        
+
         img.onerror = (error) => {
-          console.error('Error loading image:', error, imageUrl)
+          console.error('Error loading image:', error, activeImageUrl)
           setImageLoaded(false)
           setCorsEnabled(false)
         }
-        
+
         // No crossOrigin attribute
-        img.src = imageUrl
+        img.src = activeImageUrl
       }
-      
+
       tryLoadWithCORS()
     } else if (!isOpen) {
       // Clean up when modal closes
@@ -87,8 +110,12 @@ const ImageEditor = ({
       setOriginalImage(null)
       setRotation(0)
       setCrop({ x: 0, y: 0, width: 1, height: 1 })
+      setCurrentSide('front')
+      setFrontEdits({ rotation: 0, crop: { x: 0, y: 0, width: 1, height: 1 } })
+      setBackEdits({ rotation: 0, crop: { x: 0, y: 0, width: 1, height: 1 } })
+      setEditedBlobs({ front: null, back: null })
     }
-  }, [isOpen, imageUrl])
+  }, [isOpen, activeImageUrl])
 
   useEffect(() => {
     if (imageLoaded && originalImage) {
@@ -257,15 +284,59 @@ const ImageEditor = ({
   }
 
   const handleRotateLeft = () => {
-    setRotation(prev => (prev - 90 + 360) % 360)
+    setRotation(prev => {
+      const newRotation = (prev - 90 + 360) % 360
+      if (isDualMode) {
+        if (currentSide === 'front') {
+          setFrontEdits(e => ({ ...e, rotation: newRotation }))
+        } else {
+          setBackEdits(e => ({ ...e, rotation: newRotation }))
+        }
+      }
+      return newRotation
+    })
   }
 
   const handleRotateRight = () => {
-    setRotation(prev => (prev + 90) % 360)
+    setRotation(prev => {
+      const newRotation = (prev + 90) % 360
+      if (isDualMode) {
+        if (currentSide === 'front') {
+          setFrontEdits(e => ({ ...e, rotation: newRotation }))
+        } else {
+          setBackEdits(e => ({ ...e, rotation: newRotation }))
+        }
+      }
+      return newRotation
+    })
   }
 
   const handleResetCrop = () => {
-    setCrop({ x: 0, y: 0, width: 1, height: 1 })
+    const newCrop = { x: 0, y: 0, width: 1, height: 1 }
+    setCrop(newCrop)
+    if (isDualMode) {
+      if (currentSide === 'front') {
+        setFrontEdits(e => ({ ...e, crop: newCrop }))
+      } else {
+        setBackEdits(e => ({ ...e, crop: newCrop }))
+      }
+    }
+  }
+
+  const switchToFront = () => {
+    // Save current side's edits before switching
+    if (currentSide === 'back') {
+      setBackEdits({ rotation, crop })
+    }
+    setCurrentSide('front')
+  }
+
+  const switchToBack = () => {
+    // Save current side's edits before switching
+    if (currentSide === 'front') {
+      setFrontEdits({ rotation, crop })
+    }
+    setCurrentSide('back')
   }
 
   const handleCanvasMouseDown = (e) => {
@@ -333,6 +404,63 @@ const ImageEditor = ({
     }
   }
 
+  const generateImageBlob = async (imageSource, edits) => {
+    return new Promise((resolve, reject) => {
+      // Load the image
+      const img = new Image()
+      img.crossOrigin = 'anonymous'
+
+      img.onload = () => {
+        try {
+          const finalCanvas = document.createElement('canvas')
+          const finalCtx = finalCanvas.getContext('2d')
+
+          // Calculate final dimensions based on rotation
+          const sourceX = edits.crop.x * img.width
+          const sourceY = edits.crop.y * img.height
+          const sourceWidth = edits.crop.width * img.width
+          const sourceHeight = edits.crop.height * img.height
+
+          // Set canvas size based on rotation
+          if (edits.rotation % 180 === 0) {
+            finalCanvas.width = sourceWidth
+            finalCanvas.height = sourceHeight
+          } else {
+            finalCanvas.width = sourceHeight
+            finalCanvas.height = sourceWidth
+          }
+
+          // Apply rotation and crop to final canvas
+          finalCtx.save()
+          finalCtx.translate(finalCanvas.width / 2, finalCanvas.height / 2)
+          finalCtx.rotate((edits.rotation * Math.PI) / 180)
+
+          finalCtx.drawImage(
+            img,
+            sourceX, sourceY, sourceWidth, sourceHeight,
+            -sourceWidth / 2, -sourceHeight / 2, sourceWidth, sourceHeight
+          )
+
+          finalCtx.restore()
+
+          // Convert to blob
+          finalCanvas.toBlob((blob) => {
+            if (blob) {
+              resolve(blob)
+            } else {
+              reject(new Error('Failed to create blob'))
+            }
+          }, 'image/jpeg', 0.9)
+        } catch (error) {
+          reject(error)
+        }
+      }
+
+      img.onerror = () => reject(new Error('Failed to load image'))
+      img.src = imageSource
+    })
+  }
+
   const handleSave = async () => {
     if (!originalImage || !canvasRef.current) return
 
@@ -344,45 +472,67 @@ const ImageEditor = ({
 
     setSaving(true)
     try {
-      // Create a new canvas for the final image
-      const finalCanvas = document.createElement('canvas')
-      const finalCtx = finalCanvas.getContext('2d')
-      
-      // Calculate final dimensions based on rotation
-      const sourceX = crop.x * originalImage.width
-      const sourceY = crop.y * originalImage.height
-      const sourceWidth = crop.width * originalImage.width
-      const sourceHeight = crop.height * originalImage.height
-      
-      // Set canvas size based on rotation
-      if (rotation % 180 === 0) {
-        finalCanvas.width = sourceWidth
-        finalCanvas.height = sourceHeight
-      } else {
-        finalCanvas.width = sourceHeight
-        finalCanvas.height = sourceWidth
-      }
-      
-      // Apply rotation and crop to final canvas
-      finalCtx.save()
-      finalCtx.translate(finalCanvas.width / 2, finalCanvas.height / 2)
-      finalCtx.rotate((rotation * Math.PI) / 180)
-      
-      finalCtx.drawImage(
-        originalImage,
-        sourceX, sourceY, sourceWidth, sourceHeight,
-        -sourceWidth / 2, -sourceHeight / 2, sourceWidth, sourceHeight
-      )
-      
-      finalCtx.restore()
-      
-      // Convert to blob
-      finalCanvas.toBlob((blob) => {
-        if (blob && onSave) {
-          onSave(blob)
+      if (isDualMode) {
+        // Save current side's edits before processing
+        if (currentSide === 'front') {
+          setFrontEdits({ rotation, crop })
+        } else {
+          setBackEdits({ rotation, crop })
+        }
+
+        // Get the current edits for both sides
+        const currentFrontEdits = currentSide === 'front' ? { rotation, crop } : frontEdits
+        const currentBackEdits = currentSide === 'back' ? { rotation, crop } : backEdits
+
+        // Generate blobs for both sides
+        const frontBlob = await generateImageBlob(frontImageUrl, currentFrontEdits)
+        const backBlob = await generateImageBlob(backImageUrl, currentBackEdits)
+
+        if (frontBlob && backBlob && onSave) {
+          onSave({ front: frontBlob, back: backBlob })
         }
         onClose()
-      }, 'image/jpeg', 0.9)
+      } else {
+        // Single image mode - original logic
+        const finalCanvas = document.createElement('canvas')
+        const finalCtx = finalCanvas.getContext('2d')
+
+        // Calculate final dimensions based on rotation
+        const sourceX = crop.x * originalImage.width
+        const sourceY = crop.y * originalImage.height
+        const sourceWidth = crop.width * originalImage.width
+        const sourceHeight = crop.height * originalImage.height
+
+        // Set canvas size based on rotation
+        if (rotation % 180 === 0) {
+          finalCanvas.width = sourceWidth
+          finalCanvas.height = sourceHeight
+        } else {
+          finalCanvas.width = sourceHeight
+          finalCanvas.height = sourceWidth
+        }
+
+        // Apply rotation and crop to final canvas
+        finalCtx.save()
+        finalCtx.translate(finalCanvas.width / 2, finalCanvas.height / 2)
+        finalCtx.rotate((rotation * Math.PI) / 180)
+
+        finalCtx.drawImage(
+          originalImage,
+          sourceX, sourceY, sourceWidth, sourceHeight,
+          -sourceWidth / 2, -sourceHeight / 2, sourceWidth, sourceHeight
+        )
+
+        finalCtx.restore()
+
+        // Convert to blob
+        finalCanvas.toBlob((blob) => {
+          if (blob && onSave) {
+            onSave(blob)
+          }
+          onClose()
+        }, 'image/jpeg', 0.9)
+      }
     } catch (error) {
       console.error('Error saving image:', error)
       if (error.name === 'SecurityError' || error.message.includes('tainted')) {
@@ -417,42 +567,101 @@ const ImageEditor = ({
 
         <div className="image-editor-content">
           {imageLoaded ? (
-            <div className="image-editor-canvas-container">
-              <canvas
-                ref={canvasRef}
-                className="image-editor-canvas"
-                onMouseDown={handleCanvasMouseDown}
-                onMouseMove={handleCanvasMouseMove}
-                onMouseUp={handleCanvasMouseUp}
-                onMouseLeave={handleCanvasMouseUp}
-              />
-              <div className="image-editor-instructions">
-                <p>
-                  {(crop.width < 1 || crop.height < 1 || crop.x > 0 || crop.y > 0) && !isDragging ? 
-                    'Preview of cropped image • Use "Reset Crop" to start over • Rotate if needed' :
-                    'Click and drag to select crop area • Use rotation buttons to orient image'
-                  }
-                </p>
-                {!corsEnabled && (
-                  <div style={{ marginTop: '0.5rem', fontSize: '0.8rem', color: '#f59e0b', fontWeight: '500' }}>
-                    ⚠️ Preview only - Saving disabled due to server restrictions
-                  </div>
-                )}
-                {(rotation !== 0 || (crop.width < 1 || crop.height < 1 || crop.x > 0 || crop.y > 0)) && (
-                  <div style={{ marginTop: '0.5rem', fontSize: '0.8rem', color: '#3b82f6' }}>
-                    {rotation !== 0 && <span>Rotation: {rotation}° • </span>}
-                    {(crop.width < 1 || crop.height < 1 || crop.x > 0 || crop.y > 0) && <span>Cropped to selection • </span>}
-                    <span>{corsEnabled ? 'Click "Apply & Save" to save changes' : 'Preview only - cannot save'}</span>
-                  </div>
-                )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', justifyContent: 'center' }}>
+              {isDualMode && (
+                <button
+                  className={`image-editor-btn ${currentSide === 'front' ? 'active' : ''}`}
+                  onClick={switchToFront}
+                  disabled={!imageLoaded}
+                  style={{
+                    background: currentSide === 'front' ? 'rgba(59, 130, 246, 0.2)' : 'rgba(255, 255, 255, 0.1)',
+                    border: currentSide === 'front' ? '2px solid rgba(59, 130, 246, 0.6)' : '1px solid rgba(255, 255, 255, 0.2)',
+                    color: currentSide === 'front' ? '#3b82f6' : 'rgba(255, 255, 255, 0.6)',
+                    padding: '1rem',
+                    height: '120px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.5rem',
+                    fontSize: '0.875rem',
+                    fontWeight: '600'
+                  }}
+                  title="Edit front image"
+                >
+                  <Icon name="arrow-left" size={24} />
+                  <span>Front</span>
+                </button>
+              )}
+
+              <div className="image-editor-canvas-container">
+                <canvas
+                  ref={canvasRef}
+                  className="image-editor-canvas"
+                  onMouseDown={handleCanvasMouseDown}
+                  onMouseMove={handleCanvasMouseMove}
+                  onMouseUp={handleCanvasMouseUp}
+                  onMouseLeave={handleCanvasMouseUp}
+                />
+                <div className="image-editor-instructions">
+                  <p>
+                    {isDualMode && (
+                      <span style={{ color: '#3b82f6', fontWeight: '600', marginRight: '0.5rem' }}>
+                        {currentSide === 'front' ? 'Editing Front •' : 'Editing Back •'}
+                      </span>
+                    )}
+                    {(crop.width < 1 || crop.height < 1 || crop.x > 0 || crop.y > 0) && !isDragging ?
+                      'Preview of cropped image • Use "Reset Crop" to start over • Rotate if needed' :
+                      'Click and drag to select crop area • Use rotation buttons to orient image'
+                    }
+                  </p>
+                  {!corsEnabled && (
+                    <div style={{ marginTop: '0.5rem', fontSize: '0.8rem', color: '#f59e0b', fontWeight: '500' }}>
+                      ⚠️ Preview only - Saving disabled due to server restrictions
+                    </div>
+                  )}
+                  {(rotation !== 0 || (crop.width < 1 || crop.height < 1 || crop.x > 0 || crop.y > 0)) && (
+                    <div style={{ marginTop: '0.5rem', fontSize: '0.8rem', color: '#3b82f6' }}>
+                      {rotation !== 0 && <span>Rotation: {rotation}° • </span>}
+                      {(crop.width < 1 || crop.height < 1 || crop.x > 0 || crop.y > 0) && <span>Cropped to selection • </span>}
+                      <span>{corsEnabled ? 'Click "Apply & Save" to save changes' : 'Preview only - cannot save'}</span>
+                    </div>
+                  )}
+                </div>
               </div>
+
+              {isDualMode && (
+                <button
+                  className={`image-editor-btn ${currentSide === 'back' ? 'active' : ''}`}
+                  onClick={switchToBack}
+                  disabled={!imageLoaded}
+                  style={{
+                    background: currentSide === 'back' ? 'rgba(59, 130, 246, 0.2)' : 'rgba(255, 255, 255, 0.1)',
+                    border: currentSide === 'back' ? '2px solid rgba(59, 130, 246, 0.6)' : '1px solid rgba(255, 255, 255, 0.2)',
+                    color: currentSide === 'back' ? '#3b82f6' : 'rgba(255, 255, 255, 0.6)',
+                    padding: '1rem',
+                    height: '120px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.5rem',
+                    fontSize: '0.875rem',
+                    fontWeight: '600'
+                  }}
+                  title="Edit back image"
+                >
+                  <Icon name="arrow-right" size={24} />
+                  <span>Back</span>
+                </button>
+              )}
             </div>
-          ) : imageUrl ? (
+          ) : activeImageUrl ? (
             <div className="image-editor-loading">
               <div className="card-icon-spinner"></div>
               <p>Loading image...</p>
               <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.5rem' }}>
-                {imageUrl}
+                {activeImageUrl}
               </p>
             </div>
           ) : (
@@ -464,7 +673,7 @@ const ImageEditor = ({
 
         <div className="image-editor-controls">
           <div className="image-editor-rotate-controls">
-            <button 
+            <button
               className="image-editor-btn"
               onClick={handleRotateLeft}
               disabled={!imageLoaded}
@@ -473,7 +682,7 @@ const ImageEditor = ({
               <Icon name="arrow-left" size={16} />
               Rotate Left
             </button>
-            <button 
+            <button
               className="image-editor-btn"
               onClick={handleRotateRight}
               disabled={!imageLoaded}
@@ -483,9 +692,9 @@ const ImageEditor = ({
               Rotate Right
             </button>
           </div>
-          
+
           <div className="image-editor-crop-controls">
-            <button 
+            <button
               className="image-editor-btn"
               onClick={handleResetCrop}
               disabled={!imageLoaded}
