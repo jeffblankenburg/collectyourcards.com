@@ -1,7 +1,7 @@
 const express = require('express')
 const { getPrismaClient, runBatchedQueries } = require('../utils/prisma-pool-manager')
 const { optionalAuthMiddleware } = require('../middleware/auth')
-const { escapeLikePattern, sanitizeSearchTerm, validateNumericArray } = require('../utils/sql-security')
+const { escapeLikePattern, sanitizeSearchTerm, validateNumericArray, validateNumericId } = require('../utils/sql-security')
 const router = express.Router()
 
 // Use global Prisma instance
@@ -19,7 +19,8 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
       limit = 50,
       search,
       sortBy = 'card_count',
-      sortOrder = 'desc'
+      sortOrder = 'desc',
+      team_id
     } = req.query
 
     const currentPage = Math.max(1, parseInt(page))
@@ -35,20 +36,45 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
     const sortColumn = ['first_name', 'last_name', 'card_count', 'is_hof'].includes(sortBy) ? sortBy : 'card_count'
     const sortDirection = sortOrder === 'asc' ? 'ASC' : 'DESC'
 
-    // Build where clause for search
-    let searchCondition = ''
+    // Build where clause for search and team filtering
+    let whereConditions = []
+
     if (search && search.trim()) {
       const sanitized = sanitizeSearchTerm(search.trim())
       const safeSearchTerm = escapeLikePattern(sanitized)
-      searchCondition = `
-        WHERE (
+      whereConditions.push(`
+        (
           p.first_name LIKE '%${safeSearchTerm}%' COLLATE Latin1_General_CI_AI
           OR p.last_name LIKE '%${safeSearchTerm}%' COLLATE Latin1_General_CI_AI
           OR p.nick_name LIKE '%${safeSearchTerm}%' COLLATE Latin1_General_CI_AI
           OR CONCAT(p.first_name, ' ', p.last_name) LIKE '%${safeSearchTerm}%' COLLATE Latin1_General_CI_AI
         )
-      `
+      `)
     }
+
+    if (team_id && team_id.trim()) {
+      try {
+        const teamIdNum = validateNumericId(team_id, 'team_id')
+        console.log('✅ Team filter applied:', { team_id, teamIdNum })
+        whereConditions.push(`
+          p.player_id IN (
+            SELECT DISTINCT pt.player
+            FROM player_team pt
+            WHERE pt.team = ${teamIdNum}
+          )
+        `)
+      } catch (err) {
+        console.error('❌ Team filter validation failed:', err.message, { team_id })
+      }
+    } else if (team_id !== undefined) {
+      console.log('⚠️ team_id provided but empty:', team_id)
+    }
+
+    const searchCondition = whereConditions.length > 0
+      ? `WHERE ${whereConditions.join(' AND ')}`
+      : ''
+
+    console.log('📊 Final WHERE clause:', searchCondition || '(no filters)')
 
     // For authenticated users with no search, sort by their collection count
     // For non-authenticated users or with search, sort by card count (default)
@@ -61,6 +87,7 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
       userId,
       currentPage,
       search: !!search,
+      team_id: team_id || null,
       isAuthUserDefaultView,
       limit: pageSize
     })

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { useAuth } from '../contexts/AuthContext'
@@ -17,11 +17,15 @@ function TeamDetail() {
   log.info('TeamDetail mounted', { teamSlug, isAuthenticated })
   const [team, setTeam] = useState(null)
   const [players, setPlayers] = useState([])
-  const [filteredPlayers, setFilteredPlayers] = useState([])
   const [playerSearchTerm, setPlayerSearchTerm] = useState('')
   const [stats, setStats] = useState({})
   const [loading, setLoading] = useState(true)
+  const [playersLoading, setPlayersLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [hasMore, setHasMore] = useState(false)
+  const [totalPlayers, setTotalPlayers] = useState(0)
+  const searchDebounceRef = useRef(null)
 
   // Check if user is admin
   const isAdmin = user && ['admin', 'superadmin', 'data_admin'].includes(user.role)
@@ -29,19 +33,6 @@ function TeamDetail() {
   useEffect(() => {
     fetchTeamData()
   }, [teamSlug])
-
-  // Filter players based on search term
-  useEffect(() => {
-    if (!playerSearchTerm.trim()) {
-      setFilteredPlayers(players)
-    } else {
-      const filtered = players.filter(player =>
-        `${player.first_name} ${player.last_name}`.toLowerCase().includes(playerSearchTerm.toLowerCase()) ||
-        (player.nick_name && player.nick_name.toLowerCase().includes(playerSearchTerm.toLowerCase()))
-      )
-      setFilteredPlayers(filtered)
-    }
-  }, [players, playerSearchTerm])
 
   // Set page title
   useEffect(() => {
@@ -55,11 +46,11 @@ function TeamDetail() {
   const fetchTeamData = async () => {
     try {
       setLoading(true)
-      
+
       // Get team data from the teams list and find the matching one
       const response = await axios.get('/api/teams-list?limit=200')
       const teams = response.data.teams || []
-      
+
       // Find team by slug (recreate slug logic from TeamsLanding)
       const foundTeam = teams.find(t => {
         if (!t.name) return false
@@ -74,13 +65,7 @@ function TeamDetail() {
 
       if (foundTeam) {
         setTeam(foundTeam)
-        
-        // Fetch players for this team
-        const playersResponse = await axios.get(`/api/players-list?team_id=${foundTeam.team_id}&limit=100`)
-        const teamPlayers = playersResponse.data.players || []
-        setPlayers(teamPlayers)
-        setFilteredPlayers(teamPlayers)
-        
+
         // Calculate additional stats for the team
         const teamStats = {
           total_cards: foundTeam.card_count || 0,
@@ -92,6 +77,9 @@ function TeamDetail() {
         }
         setStats(teamStats)
         setError(null)
+
+        // Fetch players for this team
+        await fetchPlayers(foundTeam, 1, '', false)
       } else {
         setError('Team not found')
       }
@@ -103,6 +91,59 @@ function TeamDetail() {
     }
   }
 
+  const fetchPlayers = async (teamData, page = 1, search = '', append = false) => {
+    try {
+      setPlayersLoading(true)
+
+      // Build query params
+      const params = {
+        team_id: teamData.team_id,
+        limit: 100,
+        page
+      }
+
+      // Add search if provided
+      if (search.trim()) {
+        params.search = search.trim()
+      }
+
+      const response = await axios.get('/api/players-list', { params })
+
+      const newPlayers = response.data.players || []
+
+      // Append to existing players or replace
+      if (append) {
+        setPlayers(prevPlayers => [...prevPlayers, ...newPlayers])
+      } else {
+        setPlayers(newPlayers)
+      }
+
+      setHasMore(response.data.hasMore || false)
+      setTotalPlayers(response.data.total || newPlayers.length)
+      setCurrentPage(page)
+    } catch (err) {
+      console.error('Error fetching players:', err)
+      if (!append) {
+        setPlayers([])
+      }
+    } finally {
+      setPlayersLoading(false)
+    }
+  }
+
+  // Handle search from search input
+  const handleSearch = async (query) => {
+    if (!team) return
+    setPlayerSearchTerm(query)
+    await fetchPlayers(team, 1, query, false)
+  }
+
+  // Load more players (infinite scroll)
+  const loadMorePlayers = async () => {
+    if (!team || !hasMore || playersLoading) return
+    await fetchPlayers(team, currentPage + 1, playerSearchTerm, true)
+  }
+
   const handlePlayerClick = (player) => {
     const slug = `${player.first_name}-${player.last_name}`
       .toLowerCase()
@@ -111,7 +152,7 @@ function TeamDetail() {
       .replace(/-+/g, '-')
       .trim()
 
-    // Track visit for logged-in users  
+    // Track visit for logged-in users
     if (isAuthenticated) {
       trackPlayerVisit({
         ...player,
@@ -134,14 +175,14 @@ function TeamDetail() {
   }
 
   const handleTeamClick = (teamId) => {
-    // Navigate to team detail page  
+    // Navigate to team detail page
     const teamSlug = team?.name
       ?.toLowerCase()
       ?.replace(/[^a-z0-9\s-]/g, '')
       ?.replace(/\s+/g, '-')
       ?.replace(/-+/g, '-')
       ?.trim()
-    
+
     if (teamSlug) {
       navigate(`/teams/${teamSlug}`)
     }
@@ -186,12 +227,12 @@ function TeamDetail() {
   return (
     <div className="team-detail-page">
       <div className="team-detail-container">
-        
+
         {/* Compact Team Header */}
         <header className="team-header-combined compact">
           <div className="team-header-layout">
             {/* Team Circle */}
-            <div 
+            <div
               className="team-circle-xl"
               style={{
                 backgroundColor: team.primary_color || '#666',
@@ -220,42 +261,67 @@ function TeamDetail() {
 
       </div>
 
-      {/* Players Search and Grid - Simple Right-Aligned Search */}
-      {players.length > 0 && (
+      {/* Players Search and Grid */}
+      {(players.length > 0 || playerSearchTerm) && (
         <>
-          <div className="players-search-container-grid-aligned">
-            <div className="players-search-grid">
-              <div className="players-search-content">
-                <div className="players-search-box">
-                  <Icon name="search" size={20} />
-                  <input
-                    type="text"
-                    placeholder="Search players..."
-                    value={playerSearchTerm}
-                    onChange={(e) => setPlayerSearchTerm(e.target.value)}
-                    className="players-search-input"
-                    autoFocus
-                  />
-                  {playerSearchTerm && (
-                    <button 
-                      onClick={() => setPlayerSearchTerm('')}
-                      className="players-search-clear"
-                      title="Clear search"
-                    >
-                      <Icon name="x" size={16} />
-                    </button>
-                  )}
-                </div>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, 270px)',
+            gap: '0.5rem',
+            justifyContent: 'center',
+            padding: '0 2rem',
+            margin: '1rem 0'
+          }}>
+            <div style={{ gridColumn: '-5 / -1', justifySelf: 'end' }}>
+              <div className="players-search-box" style={{ width: '540px', maxWidth: 'none' }}>
+                <Icon name="search" size={20} />
+                <input
+                  type="text"
+                  placeholder="Search all players on this team..."
+                  value={playerSearchTerm}
+                  onChange={(e) => {
+                    const newValue = e.target.value
+                    setPlayerSearchTerm(newValue)
+
+                    // Debounce search
+                    if (searchDebounceRef.current) {
+                      clearTimeout(searchDebounceRef.current)
+                    }
+
+                    searchDebounceRef.current = setTimeout(() => {
+                      handleSearch(newValue)
+                    }, 300)
+                  }}
+                  onKeyDown={(e) => {
+                    // Allow Enter key to trigger immediate search
+                    if (e.key === 'Enter') {
+                      if (searchDebounceRef.current) {
+                        clearTimeout(searchDebounceRef.current)
+                      }
+                      handleSearch(e.target.value)
+                    }
+                  }}
+                  className="players-search-input"
+                  autoFocus
+                />
                 {playerSearchTerm && (
-                  <div className="players-search-results">
-                    {filteredPlayers.length} of {players.length} players
-                  </div>
+                  <button
+                    onClick={() => {
+                      setPlayerSearchTerm('')
+                      handleSearch('')
+                    }}
+                    className="players-search-clear"
+                    title="Clear search"
+                  >
+                    <Icon name="x" size={16} />
+                  </button>
                 )}
               </div>
             </div>
           </div>
-          <div className="players-grid-fullwidth">
-            {filteredPlayers.map((player) => (
+
+          <div className="players-grid">
+            {players.map((player) => (
               <PlayerCard
                 key={player.player_id}
                 player={player}
@@ -263,10 +329,28 @@ function TeamDetail() {
                 customOnClick={() => handlePlayerClick(player)}
               />
             ))}
-            {filteredPlayers.length === 0 && playerSearchTerm && (
+            {players.length === 0 && !playersLoading && playerSearchTerm && (
               <div className="no-players-found">
                 <Icon name="search" size={48} />
                 <p>No players found matching "{playerSearchTerm}"</p>
+              </div>
+            )}
+            {hasMore && !playersLoading && (
+              <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '20px' }}>
+                <button
+                  onClick={loadMorePlayers}
+                  className="load-more-button"
+                  style={{
+                    padding: '10px 20px',
+                    backgroundColor: '#007bff',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Load More Players
+                </button>
               </div>
             )}
           </div>
@@ -275,7 +359,7 @@ function TeamDetail() {
 
       {/* Admin Edit Button */}
       {isAdmin && team && (
-        <button 
+        <button
           className="admin-edit-button"
           onClick={() => navigate(`/admin/teams?search=${encodeURIComponent(team.name)}`)}
           title="Edit team (Admin)"

@@ -201,25 +201,26 @@ router.get('/telemetry/status', async (req, res) => {
 
     // Get environment variables (without sensitive data)
     const envConfig = {
-      APPLICATIONINSIGHTS_CONNECTION_STRING: process.env.APPLICATIONINSIGHTS_CONNECTION_STRING ? 'Configured (hidden)' : 'Not configured',
+      DYNATRACE_ENVIRONMENT_URL: process.env.DYNATRACE_ENVIRONMENT_URL || 'Not configured',
+      DYNATRACE_API_TOKEN: process.env.DYNATRACE_API_TOKEN ? 'Configured (hidden)' : 'Not configured',
       SERVICE_NAME: process.env.SERVICE_NAME || 'collect-your-cards-api',
       NODE_ENV: process.env.NODE_ENV || 'development'
     }
 
     // Get recent business events info
     const recentEvents = [
-      'Note: In development (without connection string), events are logged to console',
-      'With Application Insights connection string: Events export to Azure',
-      'With Dynatrace endpoint: Events export to Dynatrace',
-      'Check server logs for real-time event tracking'
+      'Note: In development (without Dynatrace URL/token), events are logged to console',
+      'With Dynatrace configuration: Events export to Dynatrace via OTLP',
+      'Check server logs for real-time event tracking',
+      'View telemetry in Dynatrace: Applications & Microservices → Services → collect-your-cards-api'
     ]
 
     // Check if telemetry is properly configured
-    const isConfigured = process.env.APPLICATIONINSIGHTS_CONNECTION_STRING
+    const isConfigured = process.env.DYNATRACE_ENVIRONMENT_URL && process.env.DYNATRACE_API_TOKEN
 
     const troubleshooting = []
     if (!isConfigured) {
-      troubleshooting.push('APPLICATIONINSIGHTS_CONNECTION_STRING not configured - telemetry will log to console only')
+      troubleshooting.push('DYNATRACE_ENVIRONMENT_URL or DYNATRACE_API_TOKEN not configured - telemetry will log to console only')
     }
     if (!telemetryStatus.telemetry_enabled) {
       troubleshooting.push('OpenTelemetry SDK failed to initialize')
@@ -232,12 +233,12 @@ router.get('/telemetry/status', async (req, res) => {
       recent_events: recentEvents,
       troubleshooting: troubleshooting,
       setup_guide: '/OPENTELEMETRY_MIGRATION.md',
-      expected_data_delay: '2-3 minutes for data to appear in dashboard'
+      expected_data_delay: '2-3 minutes for data to appear in Dynatrace'
     })
   } catch (error) {
     res.status(500).json({
       status: 'error',
-      message: 'Could not retrieve Dynatrace status',
+      message: 'Could not retrieve telemetry status',
       error: error.message
     })
   }

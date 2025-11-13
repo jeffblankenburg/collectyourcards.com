@@ -10,14 +10,17 @@ const prisma = getPrismaClient()
 // GET /api/players-list - Get paginated list of all players with their teams
 router.get('/', optionalAuthMiddleware, async (req, res) => {
   try {
-    const { 
-      page = 1, 
+    const {
+      page = 1,
       limit = 50,
       search,
       sortBy = 'card_count',
       sortOrder = 'desc',
       team_id
     } = req.query
+
+    // Debug logging
+    console.log('🔍 Players List Query:', { team_id, search, page, limit })
     
     const currentPage = Math.max(1, parseInt(page))
     const pageSize = Math.min(Math.max(1, parseInt(limit)), 100)
@@ -50,6 +53,7 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
     if (team_id && team_id.trim()) {
       try {
         const teamIdNum = validateNumericId(team_id, 'team_id')
+        console.log('✅ Team filter applied:', { team_id, teamIdNum })
         whereConditions.push(`
           p.player_id IN (
             SELECT DISTINCT pt.player
@@ -58,13 +62,18 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
           )
         `)
       } catch (err) {
+        console.error('❌ Team filter validation failed:', err.message, { team_id })
         // Invalid team_id - skip filter
       }
+    } else {
+      console.log('⚠️ No team_id provided or empty')
     }
     
-    const searchCondition = whereConditions.length > 0 
+    const searchCondition = whereConditions.length > 0
       ? `WHERE ${whereConditions.join(' AND ')}`
       : ''
+
+    console.log('📊 Final WHERE clause:', searchCondition || '(no filters)')
 
     // First, get recently viewed or most visited players if user is logged in
     let recentlyViewedPlayers = []

@@ -2,19 +2,20 @@
  * OpenTelemetry Service
  *
  * Provides observability for the CollectYourCards.com application.
- * Tracks traces, metrics, and custom events with Azure Application Insights integration.
+ * Tracks traces, metrics, and custom events with Dynatrace integration.
  *
  * Features:
  * - Automatic Express.js instrumentation
  * - Custom business events (auth, collection, import)
  * - Performance metrics
  * - Distributed tracing
- * - Azure Application Insights export
+ * - Dynatrace OTLP export
  */
 
 const { NodeSDK } = require('@opentelemetry/sdk-node')
 const { getNodeAutoInstrumentations } = require('@opentelemetry/auto-instrumentations-node')
-const { AzureMonitorTraceExporter } = require('@azure/monitor-opentelemetry-exporter')
+const { OTLPTraceExporter } = require('@opentelemetry/exporter-trace-otlp-http')
+const { OTLPMetricExporter } = require('@opentelemetry/exporter-metrics-otlp-http')
 const { Resource } = require('@opentelemetry/resources')
 const { SemanticResourceAttributes } = require('@opentelemetry/semantic-conventions')
 const { metrics, trace } = require('@opentelemetry/api')
@@ -48,7 +49,8 @@ class TelemetryService {
    */
   init() {
     try {
-      const connectionString = process.env.APPLICATIONINSIGHTS_CONNECTION_STRING
+      const dynatraceUrl = process.env.DYNATRACE_ENVIRONMENT_URL
+      const dynatraceToken = process.env.DYNATRACE_API_TOKEN
       const serviceName = process.env.SERVICE_NAME || 'collect-your-cards-api'
       const environment = process.env.NODE_ENV || 'development'
 
@@ -62,13 +64,23 @@ class TelemetryService {
       )
 
       // Configure exporters based on environment
-      const traceExporter = connectionString
-        ? new AzureMonitorTraceExporter({ connectionString })
+      const traceExporter = (dynatraceUrl && dynatraceToken)
+        ? new OTLPTraceExporter({
+            url: `${dynatraceUrl}/api/v2/otlp/v1/traces`,
+            headers: {
+              'Authorization': `Api-Token ${dynatraceToken}`
+            }
+          })
         : new ConsoleSpanExporter()
 
-      const metricReader = connectionString
+      const metricReader = (dynatraceUrl && dynatraceToken)
         ? new PeriodicExportingMetricReader({
-            exporter: new AzureMonitorTraceExporter({ connectionString }),
+            exporter: new OTLPMetricExporter({
+              url: `${dynatraceUrl}/api/v2/otlp/v1/metrics`,
+              headers: {
+                'Authorization': `Api-Token ${dynatraceToken}`
+              }
+            }),
             exportIntervalMillis: 60000 // Export every 60 seconds
           })
         : new PeriodicExportingMetricReader({
@@ -108,7 +120,7 @@ class TelemetryService {
 
       this.isEnabled = true
 
-      const mode = connectionString ? 'Azure Application Insights' : 'console (development mode)'
+      const mode = (dynatraceUrl && dynatraceToken) ? 'Dynatrace' : 'console (development mode)'
       console.log(`🔍 OpenTelemetry initialized successfully - exporting to ${mode}`)
 
     } catch (error) {
@@ -424,11 +436,15 @@ class TelemetryService {
     const uptime = Math.floor((new Date() - this.eventStats.startTime) / 1000)
     const eventsPerMinute = uptime > 0 ? Math.round((this.eventStats.totalEvents / uptime) * 60) : 0
 
+    const dynatraceUrl = process.env.DYNATRACE_ENVIRONMENT_URL
+    const dynatraceToken = process.env.DYNATRACE_API_TOKEN
+
     return {
       telemetry_enabled: this.isEnabled,
       framework: 'OpenTelemetry',
       version: require('@opentelemetry/api').version,
-      exporter: process.env.APPLICATIONINSIGHTS_CONNECTION_STRING ? 'Azure Application Insights' : 'Console',
+      exporter: (dynatraceUrl && dynatraceToken) ? 'Dynatrace' : 'Console',
+      dynatrace_environment: dynatraceUrl || 'Not configured',
       custom_events_tracked: [
         'auth_event', 'api_call', 'database_operation',
         'email_event', 'import_progress', 'collection_event'

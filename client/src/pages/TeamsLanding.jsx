@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import axios from 'axios'
@@ -14,41 +14,43 @@ function TeamsLanding() {
   const navigate = useNavigate()
 
   log.info('TeamsLanding mounted', { isAuthenticated })
-  
+
   const [teams, setTeams] = useState([])
-  const [filteredTeams, setFilteredTeams] = useState([])
   const [searchTerm, setSearchTerm] = useState('')
   const [loading, setLoading] = useState(true)
+  const [teamsLoading, setTeamsLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [hasMore, setHasMore] = useState(false)
+  const [totalTeams, setTotalTeams] = useState(0)
+  const searchDebounceRef = useRef(null)
 
   useEffect(() => {
     loadTeamsData()
     document.title = 'All Teams - Collect Your Cards'
   }, [isAuthenticated])
 
-  // Filter teams based on search term
-  useEffect(() => {
-    if (!searchTerm.trim()) {
-      setFilteredTeams(teams)
-    } else {
-      const filtered = teams.filter(team =>
-        team.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (team.abbreviation && team.abbreviation.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (team.organization_abbreviation && team.organization_abbreviation.toLowerCase().includes(searchTerm.toLowerCase()))
-      )
-      setFilteredTeams(filtered)
-    }
-  }, [teams, searchTerm])
-
-  const loadTeamsData = async () => {
+  const loadTeamsData = async (page = 1, search = '', append = false) => {
     try {
-      setLoading(true)
-      
-      // Load teams list with authentication if available
-      let apiUrl = '/api/teams-list?limit=100'
-      
+      if (append) {
+        setTeamsLoading(true)
+      } else {
+        setLoading(true)
+      }
+
+      // Build query params
+      const params = {
+        limit: 100,
+        page
+      }
+
+      // Add search if provided
+      if (search.trim()) {
+        params.search = search.trim()
+      }
+
       // Include auth header if authenticated - backend will automatically include recently viewed
-      const config = {}
+      const config = { params }
       if (isAuthenticated) {
         const token = localStorage.getItem('token')
         if (token) {
@@ -57,22 +59,46 @@ function TeamsLanding() {
           }
         }
       }
-      
-      const response = await axios.get(apiUrl, config)
-      let teamsList = response.data.teams || []
-      
-      // Backend automatically includes recently viewed teams at the top for authenticated users
-      // Non-authenticated users see teams sorted by card count (default)
-      
-      setTeams(teamsList)
-      setFilteredTeams(teamsList)
+
+      const response = await axios.get('/api/teams-list', config)
+      const newTeams = response.data.teams || []
+
+      // Append to existing teams or replace
+      if (append) {
+        setTeams(prevTeams => [...prevTeams, ...newTeams])
+      } else {
+        setTeams(newTeams)
+      }
+
+      setHasMore(response.data.hasMore || false)
+      setTotalTeams(response.data.total || newTeams.length)
+      setCurrentPage(page)
       setError(null)
     } catch (err) {
       console.error('Error loading teams:', err)
       setError('Failed to load teams data')
+      if (!append) {
+        setTeams([])
+      }
     } finally {
-      setLoading(false)
+      if (append) {
+        setTeamsLoading(false)
+      } else {
+        setLoading(false)
+      }
     }
+  }
+
+  // Handle search
+  const handleSearch = async (query) => {
+    setSearchTerm(query)
+    await loadTeamsData(1, query, false)
+  }
+
+  // Load more teams
+  const loadMoreTeams = async () => {
+    if (!hasMore || teamsLoading || loading) return
+    await loadTeamsData(currentPage + 1, searchTerm, true)
   }
 
   const handleTeamClick = (team) => {
@@ -185,23 +211,83 @@ function TeamsLanding() {
             <Icon name="search" size={20} />
             <input
               type="text"
-              placeholder="Search teams..."
+              placeholder="Search all teams..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => {
+                const newValue = e.target.value
+                setSearchTerm(newValue)
+
+                // Debounce search
+                if (searchDebounceRef.current) {
+                  clearTimeout(searchDebounceRef.current)
+                }
+
+                searchDebounceRef.current = setTimeout(() => {
+                  handleSearch(newValue)
+                }, 300)
+              }}
+              onKeyDown={(e) => {
+                // Allow Enter key to trigger immediate search
+                if (e.key === 'Enter') {
+                  if (searchDebounceRef.current) {
+                    clearTimeout(searchDebounceRef.current)
+                  }
+                  handleSearch(e.target.value)
+                }
+              }}
               autoFocus
             />
+            {searchTerm && (
+              <button
+                onClick={() => {
+                  setSearchTerm('')
+                  handleSearch('')
+                }}
+                style={{
+                  position: 'absolute',
+                  right: '10px',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: '5px'
+                }}
+                title="Clear search"
+              >
+                <Icon name="x" size={16} />
+              </button>
+            )}
           </div>
         </div>
         {/* Force new row after header */}
         <div className="grid-row-break"></div>
+
         {/* Team cards */}
-        {filteredTeams.map(team => (
+        {teams.map(team => (
           <TeamCardWithTracking key={team.team_id} team={team} />
         ))}
-        {filteredTeams.length === 0 && teams.length > 0 && (
+        {teams.length === 0 && !loading && searchTerm && (
           <div className="empty-state">
             <Icon name="search" size={48} />
             <p>No teams found matching "{searchTerm}"</p>
+          </div>
+        )}
+
+        {/* Load More button */}
+        {hasMore && !loading && !teamsLoading && (
+          <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '20px' }}>
+            <button
+              onClick={loadMoreTeams}
+              style={{
+                padding: '10px 20px',
+                backgroundColor: '#007bff',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer'
+              }}
+            >
+              Load More Teams
+            </button>
           </div>
         )}
       </div>

@@ -611,28 +611,9 @@ const CardTable = ({
         className="card-table-wrapper"
         style={{
           maxHeight: maxHeight,
-          overflowY: maxHeight === 'none' ? 'hidden' : 'auto',
-          position: 'relative'
+          overflowY: maxHeight === 'none' ? 'hidden' : 'auto'
         }}
       >
-        {/* Loading overlay during search (when we already have data) */}
-        {loading && cards.length > 0 && (
-          <div style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(255, 255, 255, 0.7)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 10
-          }}>
-            <div className="card-icon-spinner"></div>
-          </div>
-        )}
-
         <table className="card-table">
           <thead>
             <tr>
