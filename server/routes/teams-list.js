@@ -1,14 +1,30 @@
 const express = require('express')
 const router = express.Router()
+const jwt = require('jsonwebtoken')
 const { prisma } = require('../config/prisma-singleton')
+const { escapeLikePattern, sanitizeSearchTerm } = require('../utils/sql-security')
 
 // GET /api/teams-list - Get top teams by card count
 router.get('/', async (req, res) => {
   try {
-    const { limit = 50 } = req.query
+    const { limit = 50, search } = req.query
     const limitNum = Math.min(parseInt(limit) || 50, 100)
 
-    console.log('Getting top teams list with limit:', limitNum)
+    console.log('Getting top teams list with limit:', limitNum, search ? `and search: "${search}"` : '')
+
+    // Build search condition for filtering teams
+    let searchCondition = ''
+    if (search && search.trim()) {
+      const sanitized = sanitizeSearchTerm(search.trim())
+      const safeSearch = escapeLikePattern(sanitized)
+      searchCondition = `AND (
+        LOWER(t.name) LIKE '%${safeSearch}%' COLLATE Latin1_General_CI_AI
+        OR LOWER(t.city) LIKE '%${safeSearch}%' COLLATE Latin1_General_CI_AI
+        OR LOWER(t.abbreviation) LIKE '%${safeSearch}%' COLLATE Latin1_General_CI_AI
+        OR LOWER(org.name) LIKE '%${safeSearch}%' COLLATE Latin1_General_CI_AI
+        OR LOWER(org.abbreviation) LIKE '%${safeSearch}%' COLLATE Latin1_General_CI_AI
+      )`
+    }
 
     let recentlyViewedTeams = []
 
@@ -39,6 +55,7 @@ router.get('/', async (req, res) => {
           JOIN team t ON ut.team = t.team_id
           LEFT JOIN organization org ON t.organization = org.organization_id
           WHERE ut.[user] = ${userId}
+          ${searchCondition}
           ORDER BY ut.created DESC
         `
         
@@ -66,6 +83,7 @@ router.get('/', async (req, res) => {
       FROM team t
       LEFT JOIN organization org ON t.organization = org.organization_id
       WHERE t.card_count > 0
+      ${searchCondition}
       ORDER BY t.card_count DESC
     `
 

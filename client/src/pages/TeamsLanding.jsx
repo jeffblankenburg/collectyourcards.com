@@ -237,25 +237,6 @@ function TeamsLanding() {
               }}
               autoFocus
             />
-            {searchTerm && (
-              <button
-                onClick={() => {
-                  setSearchTerm('')
-                  handleSearch('')
-                }}
-                style={{
-                  position: 'absolute',
-                  right: '10px',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  padding: '5px'
-                }}
-                title="Clear search"
-              >
-                <Icon name="x" size={16} />
-              </button>
-            )}
           </div>
         </div>
         {/* Force new row after header */}
