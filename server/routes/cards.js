@@ -832,4 +832,6 @@ router.get('/parallel-series', async (req, res) => {
   }
 })
 
+// Export router and cache for use in other routes
 module.exports = router
+module.exports.searchCache = searchCache
