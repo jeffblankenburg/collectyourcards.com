@@ -122,8 +122,10 @@ router.post('/initiate', authMiddleware, async (req, res) => {
     
     // Generate authorization URL with state parameter
     const state = crypto.randomBytes(32).toString('hex')
-    const authUrl = ebayClient.getAuthorizationUrl(state)
-    
+    const authUrlObj = ebayClient.getAuthorizationUrl(state)
+
+    console.log('eBay auth URL object:', { hasUrl: !!authUrlObj.url, hasState: !!authUrlObj.state })
+
     // Store state in session or temporary storage for validation
     // For now, we'll include userId in the state and validate it in callback
     const stateData = {
@@ -131,11 +133,14 @@ router.post('/initiate', authMiddleware, async (req, res) => {
       timestamp: Date.now(),
       random: state
     }
-    
+
     const encodedState = Buffer.from(JSON.stringify(stateData)).toString('base64')
-    
+    const finalAuthUrl = authUrlObj.url.replace(state, encodedState)
+
+    console.log('Final auth URL:', finalAuthUrl.substring(0, 100) + '...')
+
     res.json({
-      authUrl: authUrl.url.replace(state, encodedState),
+      authUrl: finalAuthUrl,
       state: encodedState
     })
   } catch (error) {

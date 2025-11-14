@@ -11,6 +11,7 @@
 const sql = require('mssql')
 const { normalizePlayerName, normalizeTeamName } = require('./name-normalizer')
 const { levenshteinDistance } = require('../../utils/string-similarity')
+const { areNicknameVariations, getNameVariations } = require('../../utils/nickname-mapper')
 
 class BatchLookupService {
   constructor(pool) {
@@ -400,6 +401,23 @@ class BatchLookupService {
         if (normalizedLastName === normalizedSearchName) {
           console.log(`👤 SINGLE NAME MATCH (last name): "${searchName}" matches "${dbFullName}"`)
           player.similarity = 0.95
+          player.distance = 0
+          return true
+        }
+      }
+
+      // Check for nickname variations (e.g., "Matt Boyd" vs "Matthew Boyd")
+      const searchParts = normalizedSearchName.split(' ')
+      const dbParts = normalizedDbName.split(' ')
+
+      if (searchParts.length === 2 && dbParts.length === 2) {
+        const [searchFirst, searchLast] = searchParts
+        const [dbFirst, dbLast] = dbParts
+
+        // Check if last names match and first names are nickname variations
+        if (searchLast === dbLast && areNicknameVariations(searchFirst, dbFirst)) {
+          console.log(`🎯 NICKNAME MATCH: "${searchName}" matches "${dbFullName}" (first name variation: ${searchFirst} ↔ ${dbFirst})`)
+          player.similarity = 0.92 // High priority for nickname matches
           player.distance = 0
           return true
         }

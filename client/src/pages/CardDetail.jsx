@@ -50,6 +50,8 @@ function CardDetail() {
   const parallelsRef = useRef(null)
   const [showImageViewer, setShowImageViewer] = useState(false)
   const [currentImageView, setCurrentImageView] = useState('front') // 'front' or 'back'
+  const [ebayConnected, setEbayConnected] = useState(false)
+  const [creatingListing, setCreatingListing] = useState(false)
 
   // Determine which URL format we're using based on presence of year/setSlug
   const isSimpleUrl = !year || !setSlug
@@ -108,11 +110,23 @@ function CardDetail() {
   useEffect(() => {
     if (isAuthenticated && card) {
       checkUserCards()
+      checkEbayConnection()
     } else {
       setCheckingUserCards(false)
       setUserCards([])
+      setEbayConnected(false)
     }
   }, [isAuthenticated, card])
+
+  const checkEbayConnection = async () => {
+    try {
+      const response = await axios.get('/api/ebay/auth/status')
+      setEbayConnected(response.data.connected)
+    } catch (err) {
+      log.error('Failed to check eBay connection', err)
+      setEbayConnected(false)
+    }
+  }
 
   const checkUserCards = async () => {
     const startTime = performance.now()
@@ -489,6 +503,47 @@ function CardDetail() {
     setCurrentImageView(prev => prev === 'front' ? 'back' : 'front')
   }
 
+  const handleListOnEbay = async () => {
+    if (!isAuthenticated) {
+      showError('Please log in to list on eBay')
+      return
+    }
+
+    if (!ebayConnected) {
+      showError('Please connect your eBay account in your profile settings first')
+      navigate('/profile')
+      return
+    }
+
+    try {
+      setCreatingListing(true)
+      log.info('Creating eBay listing for card', { card_id: card.card_id })
+
+      const response = await axios.post('/api/ebay/listings/create', {
+        card_id: card.card_id
+      })
+
+      if (response.data.success) {
+        success('Listing created! Opening eBay to add photos and set price...')
+        log.success('eBay listing created', { itemId: response.data.listing.itemId })
+
+        // Open eBay's edit page in new tab
+        window.open(response.data.listing.editUrl, '_blank')
+      }
+    } catch (err) {
+      log.error('Failed to create eBay listing', err)
+
+      if (err.response?.data?.code === 'EBAY_NOT_CONNECTED') {
+        showError('Please connect your eBay account in your profile settings first')
+        navigate('/profile')
+      } else {
+        showError(err.response?.data?.message || 'Failed to create eBay listing')
+      }
+    } finally {
+      setCreatingListing(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="card-detail-page">
@@ -661,6 +716,17 @@ function CardDetail() {
                       onAddToCollection={handleAddToCollection}
                       className="squircle-button add-button"
                     />
+                  )}
+                  {isAuthenticated && ebayConnected && (
+                    <button
+                      onClick={handleListOnEbay}
+                      disabled={creatingListing}
+                      className="squircle-button ebay-list-button"
+                      title="List this card on eBay"
+                    >
+                      <Icon name="dollar-sign" size={16} />
+                      {creatingListing && <span className="button-loading-spinner"></span>}
+                    </button>
                   )}
                   {parallelSeries.length > 1 && (
                     <button

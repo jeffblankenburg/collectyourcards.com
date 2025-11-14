@@ -59,20 +59,27 @@ class EBayClient {
     const envScopes = process.env.EBAY_SCOPE
     const scopes = envScopes || [
       'https://api.ebay.com/oauth/api_scope',
-      'https://api.ebay.com/oauth/api_scope/buy.order.readonly'
+      'https://api.ebay.com/oauth/api_scope/buy.order.readonly',
+      'https://api.ebay.com/oauth/api_scope/sell.inventory'
     ].join(' ')
-    
+
+    const generatedState = state || crypto.randomBytes(16).toString('hex')
+
     const params = new URLSearchParams({
       client_id: this.credentials.appId,
       response_type: 'code',
       redirect_uri: this.credentials.redirectUri,
       scope: scopes,
-      state: state || crypto.randomBytes(16).toString('hex')
+      state: generatedState
     })
-    
+
+    const authUrl = `${this.baseUrls[this.environment].auth}/oauth2/authorize?${params.toString()}`
+
+    console.log(`Generated eBay authorization URL for ${this.environment}:`, authUrl.substring(0, 100) + '...')
+
     return {
-      url: `${this.baseUrls[this.environment].auth}/oauth2/authorize?${params}`,
-      state: params.get('state')
+      url: authUrl,
+      state: generatedState
     }
   }
   
@@ -336,6 +343,191 @@ class EBayClient {
     )
   }
   
+  // Create a draft listing on eBay using Trading API
+  async createDraftListing(accessToken, cardData) {
+    try {
+      // Build eBay-formatted title (80 char limit)
+      const title = this.buildListingTitle(cardData)
+
+      // Build description
+      const description = this.buildListingDescription(cardData)
+
+      // Build XML request for Trading API AddItem
+      const xmlRequest = `<?xml version="1.0" encoding="utf-8"?>
+<AddItemRequest xmlns="urn:ebay:apis:eBLBaseComponents">
+  <RequesterCredentials>
+    <eBayAuthToken>${accessToken}</eBayAuthToken>
+  </RequesterCredentials>
+  <Item>
+    <Title>${this.escapeXml(title)}</Title>
+    <Description><![CDATA[${description}]]></Description>
+    <PrimaryCategory>
+      <CategoryID>261328</CategoryID>
+    </PrimaryCategory>
+    <StartPrice>0.99</StartPrice>
+    <ConditionID>3000</ConditionID>
+    <Country>US</Country>
+    <Currency>USD</Currency>
+    <DispatchTimeMax>3</DispatchTimeMax>
+    <ListingDuration>Days_7</ListingDuration>
+    <ListingType>FixedPriceItem</ListingType>
+    <PaymentMethods>PayPal</PaymentMethods>
+    <PayPalEmailAddress>SELLER_PAYPAL_EMAIL</PayPalEmailAddress>
+    <PostalCode>00000</PostalCode>
+    <Quantity>1</Quantity>
+    <ReturnPolicy>
+      <ReturnsAcceptedOption>ReturnsAccepted</ReturnsAcceptedOption>
+      <RefundOption>MoneyBack</RefundOption>
+      <ReturnsWithinOption>Days_30</ReturnsWithinOption>
+      <ShippingCostPaidByOption>Buyer</ShippingCostPaidByOption>
+    </ReturnPolicy>
+    <ShippingDetails>
+      <ShippingType>Flat</ShippingType>
+      <ShippingServiceOptions>
+        <ShippingServicePriority>1</ShippingServicePriority>
+        <ShippingService>USPSFirstClass</ShippingService>
+        <ShippingServiceCost>1.00</ShippingServiceCost>
+      </ShippingServiceOptions>
+    </ShippingDetails>
+    <Site>US</Site>
+  </Item>
+</AddItemRequest>`
+
+      // Make Trading API call
+      const response = await axios.post(
+        this.baseUrls[this.environment].trading,
+        xmlRequest,
+        {
+          headers: {
+            'X-EBAY-API-SITEID': '0',
+            'X-EBAY-API-COMPATIBILITY-LEVEL': '967',
+            'X-EBAY-API-CALL-NAME': 'AddItem',
+            'X-EBAY-API-APP-NAME': this.credentials.appId,
+            'X-EBAY-API-DEV-NAME': this.credentials.devId,
+            'X-EBAY-API-CERT-NAME': this.credentials.certId,
+            'Content-Type': 'text/xml'
+          }
+        }
+      )
+
+      // Parse XML response
+      const itemId = this.extractItemIdFromXml(response.data)
+
+      return {
+        itemId: itemId,
+        title: title,
+        listingUrl: `https://${this.isProduction ? 'www' : 'cgi.sandbox'}.ebay.com/itm/${itemId}`,
+        editUrl: `https://${this.isProduction ? 'www' : 'cgi.sandbox'}.ebay.com/sh/lst/vi/${itemId}`
+      }
+    } catch (error) {
+      console.error('eBay create listing error:', error.response?.data || error.message)
+      throw new Error('Failed to create eBay listing: ' + (error.response?.data || error.message))
+    }
+  }
+
+  // Build eBay listing title (max 80 chars)
+  buildListingTitle(cardData) {
+    const parts = []
+
+    // Year
+    if (cardData.year) parts.push(cardData.year)
+
+    // Brand/Set
+    if (cardData.set) parts.push(cardData.set)
+
+    // Player name
+    if (cardData.player) parts.push(cardData.player)
+
+    // Card number
+    if (cardData.cardNumber) parts.push(`#${cardData.cardNumber}`)
+
+    // Parallel/Color
+    if (cardData.parallel) parts.push(cardData.parallel)
+
+    // Features (Rookie, Auto, etc.)
+    if (cardData.isRookie) parts.push('RC')
+    if (cardData.isAutograph) parts.push('Auto')
+    if (cardData.isRelic) parts.push('Relic')
+
+    // Print run
+    if (cardData.printRun) parts.push(`/${cardData.printRun}`)
+
+    // Grade
+    if (cardData.grade) parts.push(cardData.grade)
+
+    let title = parts.join(' ')
+
+    // Truncate to 80 chars if needed
+    if (title.length > 80) {
+      title = title.substring(0, 77) + '...'
+    }
+
+    return title
+  }
+
+  // Build eBay listing description
+  buildListingDescription(cardData) {
+    let html = '<div style="font-family: Arial, sans-serif;">'
+    html += '<h2>Card Details</h2>'
+    html += '<ul>'
+
+    if (cardData.year) html += `<li><strong>Year:</strong> ${cardData.year}</li>`
+    if (cardData.set) html += `<li><strong>Set:</strong> ${cardData.set}</li>`
+    if (cardData.series) html += `<li><strong>Series:</strong> ${cardData.series}</li>`
+    if (cardData.player) html += `<li><strong>Player:</strong> ${cardData.player}</li>`
+    if (cardData.team) html += `<li><strong>Team:</strong> ${cardData.team}</li>`
+    if (cardData.cardNumber) html += `<li><strong>Card Number:</strong> ${cardData.cardNumber}</li>`
+    if (cardData.parallel) html += `<li><strong>Parallel:</strong> ${cardData.parallel}</li>`
+    if (cardData.printRun) html += `<li><strong>Print Run:</strong> /${cardData.printRun}</li>`
+
+    // Features
+    const features = []
+    if (cardData.isRookie) features.push('Rookie Card')
+    if (cardData.isAutograph) features.push('Autograph')
+    if (cardData.isRelic) features.push('Game-Used Relic')
+    if (features.length > 0) {
+      html += `<li><strong>Features:</strong> ${features.join(', ')}</li>`
+    }
+
+    // Grade
+    if (cardData.grade) {
+      html += `<li><strong>Grade:</strong> ${cardData.grade}</li>`
+    }
+
+    html += '</ul>'
+
+    // Notes
+    if (cardData.notes) {
+      html += '<h3>Additional Notes</h3>'
+      html += `<p>${this.escapeXml(cardData.notes)}</p>`
+    }
+
+    html += '<p><em>Listed via CollectYourCards.com</em></p>'
+    html += '</div>'
+
+    return html
+  }
+
+  // Escape XML special characters
+  escapeXml(text) {
+    if (!text) return ''
+    return text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&apos;')
+  }
+
+  // Extract item ID from XML response
+  extractItemIdFromXml(xmlResponse) {
+    const match = xmlResponse.match(/<ItemID>(\d+)<\/ItemID>/)
+    if (match && match[1]) {
+      return match[1]
+    }
+    throw new Error('Failed to extract ItemID from eBay response')
+  }
+
   // Parse eBay item title for sports card information
   parseItemTitle(title) {
     const parsed = {
