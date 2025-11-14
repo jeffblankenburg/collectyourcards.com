@@ -2,31 +2,37 @@
  * OpenTelemetry Service
  *
  * Provides observability for the CollectYourCards.com application.
- * Tracks traces, metrics, and custom events with Dynatrace integration.
+ * Tracks traces, metrics, logs, and custom events with Dynatrace integration.
  *
  * Features:
  * - Automatic Express.js instrumentation
  * - Custom business events (auth, collection, import)
  * - Performance metrics
  * - Distributed tracing
- * - Dynatrace OTLP export
+ * - Structured logging
+ * - Dynatrace OTLP export (traces, metrics, logs)
  */
 
 const { NodeSDK } = require('@opentelemetry/sdk-node')
 const { getNodeAutoInstrumentations } = require('@opentelemetry/auto-instrumentations-node')
 const { OTLPTraceExporter } = require('@opentelemetry/exporter-trace-otlp-http')
 const { OTLPMetricExporter } = require('@opentelemetry/exporter-metrics-otlp-http')
-const { Resource } = require('@opentelemetry/resources')
-const { SemanticResourceAttributes } = require('@opentelemetry/semantic-conventions')
+const { OTLPLogExporter } = require('@opentelemetry/exporter-logs-otlp-http')
+const { resourceFromAttributes } = require('@opentelemetry/resources')
+const { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION, ATTR_DEPLOYMENT_ENVIRONMENT } = require('@opentelemetry/semantic-conventions')
 const { metrics, trace } = require('@opentelemetry/api')
+const { logs } = require('@opentelemetry/api-logs')
 const { ConsoleSpanExporter } = require('@opentelemetry/sdk-trace-base')
 const { PeriodicExportingMetricReader, ConsoleMetricExporter } = require('@opentelemetry/sdk-metrics')
+const { LoggerProvider, BatchLogRecordProcessor, ConsoleLogRecordExporter } = require('@opentelemetry/sdk-logs')
 
 class TelemetryService {
   constructor() {
     this.sdk = null
     this.meter = null
     this.tracer = null
+    this.logger = null
+    this.loggerProvider = null
     this.isEnabled = false
     this.eventStats = {
       totalEvents: 0,
@@ -55,13 +61,11 @@ class TelemetryService {
       const environment = process.env.NODE_ENV || 'development'
 
       // Create resource with service information
-      const resource = Resource.default().merge(
-        new Resource({
-          [SemanticResourceAttributes.SERVICE_NAME]: serviceName,
-          [SemanticResourceAttributes.SERVICE_VERSION]: process.env.npm_package_version || '1.0.0',
-          [SemanticResourceAttributes.DEPLOYMENT_ENVIRONMENT]: environment,
-        })
-      )
+      const resource = resourceFromAttributes({
+        [ATTR_SERVICE_NAME]: serviceName,
+        [ATTR_SERVICE_VERSION]: process.env.npm_package_version || '1.0.0',
+        [ATTR_DEPLOYMENT_ENVIRONMENT]: environment,
+      })
 
       // Configure exporters based on environment
       const traceExporter = (dynatraceUrl && dynatraceToken)
@@ -88,6 +92,28 @@ class TelemetryService {
             exportIntervalMillis: 60000
           })
 
+      // Configure log exporter
+      const logExporter = (dynatraceUrl && dynatraceToken)
+        ? new OTLPLogExporter({
+            url: `${dynatraceUrl}/api/v2/otlp/v1/logs`,
+            headers: {
+              'Authorization': `Api-Token ${dynatraceToken}`
+            }
+          })
+        : new ConsoleLogRecordExporter()
+
+      // Initialize Logger Provider with log record processor
+      const logRecordProcessor = new BatchLogRecordProcessor(logExporter, {
+        maxQueueSize: 1000,
+        maxExportBatchSize: 512,
+        scheduledDelayMillis: 5000 // Export every 5 seconds
+      })
+
+      this.loggerProvider = new LoggerProvider({
+        resource,
+        logRecordProcessors: [logRecordProcessor]
+      })
+
       // Initialize SDK with auto-instrumentation
       this.sdk = new NodeSDK({
         resource,
@@ -111,9 +137,10 @@ class TelemetryService {
 
       this.sdk.start()
 
-      // Get meter and tracer for custom instrumentation
+      // Get meter, tracer, and logger for custom instrumentation
       this.meter = metrics.getMeter(serviceName)
       this.tracer = trace.getTracer(serviceName)
+      this.logger = this.loggerProvider.getLogger(serviceName)
 
       // Initialize custom metrics
       this.initializeMetrics()
@@ -121,7 +148,10 @@ class TelemetryService {
       this.isEnabled = true
 
       const mode = (dynatraceUrl && dynatraceToken) ? 'Dynatrace' : 'console (development mode)'
-      console.log(`🔍 OpenTelemetry initialized successfully - exporting to ${mode}`)
+      console.log(`🔍 OpenTelemetry initialized successfully`)
+      console.log(`   📊 Traces: exporting to ${mode}`)
+      console.log(`   📈 Metrics: exporting to ${mode}`)
+      console.log(`   📝 Logs: exporting to ${mode}`)
 
     } catch (error) {
       console.warn('⚠️ OpenTelemetry initialization failed:', error.message)
@@ -354,6 +384,88 @@ class TelemetryService {
   }
 
   /**
+   * Emit a log with structured attributes
+   */
+  emitLog(severityText, body, attributes = {}) {
+    if (!this.isEnabled || !this.logger) return
+
+    try {
+      this.logger.emit({
+        severityText,
+        severityNumber: this.getSeverityNumber(severityText),
+        body,
+        attributes: {
+          ...attributes,
+          'service.name': process.env.SERVICE_NAME || 'collect-your-cards-api',
+          'deployment.environment': process.env.NODE_ENV || 'development'
+        }
+      })
+
+      this.updateStats('log_event')
+    } catch (error) {
+      console.error('Failed to emit log:', error)
+    }
+  }
+
+  /**
+   * Log info level message
+   */
+  logInfo(message, attributes = {}) {
+    this.emitLog('INFO', message, attributes)
+    console.log(`ℹ️ ${message}`)
+  }
+
+  /**
+   * Log warning level message
+   */
+  logWarn(message, attributes = {}) {
+    this.emitLog('WARN', message, attributes)
+    console.warn(`⚠️ ${message}`)
+  }
+
+  /**
+   * Log error level message
+   */
+  logError(message, error = null, attributes = {}) {
+    const errorAttributes = {
+      ...attributes,
+      ...(error ? {
+        'error.message': error.message,
+        'error.stack': error.stack,
+        'error.type': error.name
+      } : {})
+    }
+
+    this.emitLog('ERROR', message, errorAttributes)
+    console.error(`❌ ${message}`, error || '')
+  }
+
+  /**
+   * Log debug level message
+   */
+  logDebug(message, attributes = {}) {
+    this.emitLog('DEBUG', message, attributes)
+    if (process.env.NODE_ENV === 'development') {
+      console.debug(`🐛 ${message}`)
+    }
+  }
+
+  /**
+   * Get numeric severity level for log severity text
+   */
+  getSeverityNumber(severityText) {
+    const severityMap = {
+      'TRACE': 1,
+      'DEBUG': 5,
+      'INFO': 9,
+      'WARN': 13,
+      'ERROR': 17,
+      'FATAL': 21
+    }
+    return severityMap[severityText.toUpperCase()] || 0
+  }
+
+  /**
    * Express middleware for automatic request tracking
    */
   expressMiddleware() {
@@ -445,9 +557,14 @@ class TelemetryService {
       version: require('@opentelemetry/api').version,
       exporter: (dynatraceUrl && dynatraceToken) ? 'Dynatrace' : 'Console',
       dynatrace_environment: dynatraceUrl || 'Not configured',
+      telemetry_types: {
+        traces: this.tracer ? 'enabled' : 'disabled',
+        metrics: this.meter ? 'enabled' : 'disabled',
+        logs: this.logger ? 'enabled' : 'disabled'
+      },
       custom_events_tracked: [
         'auth_event', 'api_call', 'database_operation',
-        'email_event', 'import_progress', 'collection_event'
+        'email_event', 'import_progress', 'collection_event', 'log_event'
       ],
       statistics: {
         total_events: this.eventStats.totalEvents,
@@ -464,9 +581,20 @@ class TelemetryService {
    * Graceful shutdown
    */
   async shutdown() {
-    if (this.sdk) {
-      await this.sdk.shutdown()
-      console.log('🔍 OpenTelemetry shut down gracefully')
+    try {
+      // Shutdown logger provider first to flush pending logs
+      if (this.loggerProvider) {
+        await this.loggerProvider.shutdown()
+        console.log('📝 Logger provider shut down gracefully')
+      }
+
+      // Shutdown SDK
+      if (this.sdk) {
+        await this.sdk.shutdown()
+        console.log('🔍 OpenTelemetry shut down gracefully')
+      }
+    } catch (error) {
+      console.error('Error during telemetry shutdown:', error)
     }
   }
 }

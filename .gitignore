@@ -152,3 +152,4 @@ database_backups/
 
 # Azure Function local settings (contains secrets)
 azure-functions/*/local.settings.json
+DYNATRACE_TELEMETRY_SETUP.md

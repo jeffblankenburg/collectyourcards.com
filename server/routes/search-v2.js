@@ -384,73 +384,80 @@ async function extractPlayerNames(query, tokens) {
       return
     }
 
-    console.log(`  [Player Name] Searching for: "${cleanQuery}"`)
+    // N-gram entity extraction approach
+    // For "pink evan white" or "blue red sox", try ALL possible word combinations
+    // Let the database tell us which combinations are actual players/teams
+    // Examples:
+    //   "pink evan white" → try ["pink evan white", "pink evan", "evan white", "pink", "evan", "white"]
+    //   "blue red sox" → try ["blue red sox", "blue red", "red sox", "blue", "red", "sox"]
+    //   "whitey ford blue" → try ["whitey ford blue", "whitey ford", "ford blue", "whitey", "ford", "blue"]
 
-    // Check cache first
-    const cacheKey = `player:${cleanQuery.toLowerCase()}`
-    const cachedResults = playerCache.get(cacheKey)
+    const words = cleanQuery.trim().split(/\s+/)
+    const nGrams = []
 
-    let results
+    // Generate all contiguous n-grams (from longest to shortest)
+    // Only use 2+ word n-grams to avoid partial name matches
+    // Exception: If query is only 1-2 words, also include 1-word n-grams
+    const minNgramLength = words.length <= 2 ? 1 : 2
 
-    if (cachedResults !== null) {
-      results = cachedResults
-      cacheHits++
-      console.log(`  [Player Name] Cache HIT for "${cleanQuery}"`)
-    } else {
-      cacheMisses++
-      console.log(`  [Player Name] Cache MISS for "${cleanQuery}" - querying database`)
-
-      // Search database for matching players
-      const searchPattern = `%${escapeSqlLike(cleanQuery)}%`
-      const searchPatternNoApostrophe = `%${escapeSqlLike(cleanQuery.replace(/'/g, ''))}%`
-
-    // Split for component matching
-    const queryParts = cleanQuery.trim().split(/\s+/)
-    let whereClause = ''
-
-    if (queryParts.length >= 2) {
-      // Multi-word search
-      const firstName = escapeSqlLike(queryParts[0])
-      const lastName = escapeSqlLike(queryParts.slice(1).join(' '))
-      const firstNameNoApostrophe = escapeSqlLike(queryParts[0].replace(/'/g, ''))
-      const lastNameNoApostrophe = escapeSqlLike(queryParts.slice(1).join(' ').replace(/'/g, ''))
-
-      whereClause = `
-        -- Name combinations (most likely matches first) - with apostrophes
-        (CONCAT(first_name, ' ', last_name) LIKE '${searchPattern}' COLLATE Latin1_General_CI_AI)
-        OR (CONCAT(nick_name, ' ', last_name) LIKE '${searchPattern}' COLLATE Latin1_General_CI_AI)
-        OR (CONCAT(first_name, ' ', nick_name, ' ', last_name) LIKE '${searchPattern}' COLLATE Latin1_General_CI_AI)
-        OR nick_name LIKE '${searchPattern}' COLLATE Latin1_General_CI_AI
-        -- Individual name components - with apostrophes
-        OR (first_name LIKE '%${firstName}%' COLLATE Latin1_General_CI_AI AND last_name LIKE '%${lastName}%' COLLATE Latin1_General_CI_AI)
-        OR (nick_name LIKE '%${firstName}%' COLLATE Latin1_General_CI_AI AND last_name LIKE '%${lastName}%' COLLATE Latin1_General_CI_AI)
-        OR first_name LIKE '${searchPattern}' COLLATE Latin1_General_CI_AI
-        OR last_name LIKE '${searchPattern}' COLLATE Latin1_General_CI_AI
-        -- Name combinations (without apostrophes) - handles "oconnell" matching "o'connell"
-        OR (REPLACE(CONCAT(first_name, ' ', last_name), '''', '') LIKE '${searchPatternNoApostrophe}' COLLATE Latin1_General_CI_AI)
-        OR (REPLACE(CONCAT(nick_name, ' ', last_name), '''', '') LIKE '${searchPatternNoApostrophe}' COLLATE Latin1_General_CI_AI)
-        OR (REPLACE(first_name, '''', '') LIKE '%${firstNameNoApostrophe}%' COLLATE Latin1_General_CI_AI AND REPLACE(last_name, '''', '') LIKE '%${lastNameNoApostrophe}%' COLLATE Latin1_General_CI_AI)
-        OR REPLACE(first_name, '''', '') LIKE '${searchPatternNoApostrophe}' COLLATE Latin1_General_CI_AI
-        OR REPLACE(last_name, '''', '') LIKE '${searchPatternNoApostrophe}' COLLATE Latin1_General_CI_AI
-      `
-    } else {
-      // Single word search
-      whereClause = `
-        -- Individual fields and name combinations - with apostrophes
-        first_name LIKE '${searchPattern}' COLLATE Latin1_General_CI_AI
-        OR last_name LIKE '${searchPattern}' COLLATE Latin1_General_CI_AI
-        OR nick_name LIKE '${searchPattern}' COLLATE Latin1_General_CI_AI
-        OR CONCAT(first_name, ' ', last_name) LIKE '${searchPattern}' COLLATE Latin1_General_CI_AI
-        OR CONCAT(nick_name, ' ', last_name) LIKE '${searchPattern}' COLLATE Latin1_General_CI_AI
-        OR CONCAT(first_name, ' ', nick_name, ' ', last_name) LIKE '${searchPattern}' COLLATE Latin1_General_CI_AI
-        -- Same searches without apostrophes - handles "oconnell" matching "o'connell"
-        OR REPLACE(first_name, '''', '') LIKE '${searchPatternNoApostrophe}' COLLATE Latin1_General_CI_AI
-        OR REPLACE(last_name, '''', '') LIKE '${searchPatternNoApostrophe}' COLLATE Latin1_General_CI_AI
-        OR REPLACE(nick_name, '''', '') LIKE '${searchPatternNoApostrophe}' COLLATE Latin1_General_CI_AI
-        OR REPLACE(CONCAT(first_name, ' ', last_name), '''', '') LIKE '${searchPatternNoApostrophe}' COLLATE Latin1_General_CI_AI
-        OR REPLACE(CONCAT(nick_name, ' ', last_name), '''', '') LIKE '${searchPatternNoApostrophe}' COLLATE Latin1_General_CI_AI
-      `
+    for (let length = words.length; length >= minNgramLength; length--) {
+      for (let start = 0; start <= words.length - length; start++) {
+        const ngram = words.slice(start, start + length).join(' ')
+        if (ngram.length >= 2) { // Skip single letters
+          nGrams.push(ngram)
+        }
+      }
     }
+
+    console.log(`  [Player Name] Generated ${nGrams.length} n-grams from "${cleanQuery}"`)
+
+    // Search for each n-gram in parallel, collect all matches
+    const allMatches = []
+    const searchPromises = nGrams.map(async (ngram) => {
+      const cacheKey = `player:${ngram.toLowerCase()}`
+      let results = playerCache.get(cacheKey)
+
+      if (results !== null) {
+        cacheHits++
+        if (results.length > 0) {
+          console.log(`  [Player Name] Cache HIT for "${ngram}" - ${results.length} results`)
+        }
+        return { ngram, results }
+      }
+
+      cacheMisses++
+
+      // Build search query
+      const searchPattern = `%${escapeSqlLike(ngram)}%`
+      const searchPatternNoApostrophe = `%${escapeSqlLike(ngram.replace(/'/g, ''))}%`
+      const queryParts = ngram.trim().split(/\s+/)
+
+      let whereClause = ''
+
+      if (queryParts.length >= 2) {
+        // Multi-word search
+        const firstName = escapeSqlLike(queryParts[0])
+        const lastName = escapeSqlLike(queryParts.slice(1).join(' '))
+        const firstNameNoApostrophe = escapeSqlLike(queryParts[0].replace(/'/g, ''))
+        const lastNameNoApostrophe = escapeSqlLike(queryParts.slice(1).join(' ').replace(/'/g, ''))
+
+        whereClause = `
+          (CONCAT(first_name, ' ', last_name) LIKE '${searchPattern}' COLLATE Latin1_General_CI_AI)
+          OR (CONCAT(nick_name, ' ', last_name) LIKE '${searchPattern}' COLLATE Latin1_General_CI_AI)
+          OR (first_name LIKE '%${firstName}%' COLLATE Latin1_General_CI_AI AND last_name LIKE '%${lastName}%' COLLATE Latin1_General_CI_AI)
+          OR (REPLACE(CONCAT(first_name, ' ', last_name), '''', '') LIKE '${searchPatternNoApostrophe}' COLLATE Latin1_General_CI_AI)
+        `
+      } else {
+        // Single word search
+        whereClause = `
+          first_name LIKE '${searchPattern}' COLLATE Latin1_General_CI_AI
+          OR last_name LIKE '${searchPattern}' COLLATE Latin1_General_CI_AI
+          OR nick_name LIKE '${searchPattern}' COLLATE Latin1_General_CI_AI
+          OR CONCAT(first_name, ' ', last_name) LIKE '${searchPattern}' COLLATE Latin1_General_CI_AI
+          OR REPLACE(first_name, '''', '') LIKE '${searchPatternNoApostrophe}' COLLATE Latin1_General_CI_AI
+          OR REPLACE(last_name, '''', '') LIKE '${searchPatternNoApostrophe}' COLLATE Latin1_General_CI_AI
+        `
+      }
 
       results = await prisma.$queryRawUnsafe(`
         SELECT TOP 10
@@ -466,29 +473,70 @@ async function extractPlayerNames(query, tokens) {
         ORDER BY card_count DESC
       `)
 
-      // Store in cache for future requests
       playerCache.set(cacheKey, results)
+
+      if (results.length > 0) {
+        console.log(`  [Player Name] Found ${results.length} matches for n-gram "${ngram}"`)
+      }
+
+      return { ngram, results }
+    })
+
+    const searchResults = await Promise.all(searchPromises)
+
+    // Collect all unique player matches with their matching n-gram
+    const playerMatches = new Map() // player_id -> {player, ngram, ngramLength}
+
+    for (const { ngram, results } of searchResults) {
+      if (results.length > 0) {
+        const ngramLength = ngram.split(/\s+/).length
+
+        for (const player of results) {
+          const playerId = Number(player.player_id)
+          const existing = playerMatches.get(playerId)
+
+          // Prefer longer n-gram matches (more specific)
+          if (!existing || ngramLength > existing.ngramLength) {
+            playerMatches.set(playerId, { player, ngram, ngramLength })
+          }
+        }
+      }
     }
 
-    for (const player of results) {
+    console.log(`  [Player Name] Found ${playerMatches.size} unique players from n-gram matching`)
+
+    // Add all unique players to tokens
+    for (const { player, ngram, ngramLength } of playerMatches.values()) {
       const fullName = `${player.first_name}${player.nick_name ? ` "${player.nick_name}"` : ''} ${player.last_name}`
 
       // Calculate confidence based on match quality
       let confidence = 50
-      const lowerCleanQuery = cleanQuery.toLowerCase()
+      const lowerNgram = ngram.toLowerCase()
       const lowerFullName = fullName.toLowerCase()
+      const lowerFirstName = player.first_name.toLowerCase()
+      const lowerLastName = player.last_name.toLowerCase()
 
-      // Exact name match
-      if (lowerFullName === lowerCleanQuery) confidence = 100
-      else if (lowerFullName.includes(lowerCleanQuery)) confidence = 90
-      else if (player.last_name.toLowerCase() === lowerCleanQuery) confidence = 95
-      else if (player.first_name.toLowerCase() === lowerCleanQuery) confidence = 85
+      // Exact full name match
+      if (lowerFullName === lowerNgram) confidence = 100
+      // Exact first + last name match
+      else if (`${lowerFirstName} ${lowerLastName}` === lowerNgram) confidence = 100
+      // Last name match only
+      else if (lowerLastName === lowerNgram) confidence = 95
+      // First name match only
+      else if (lowerFirstName === lowerNgram) confidence = 85
+      // Partial match
+      else if (lowerFullName.includes(lowerNgram)) confidence = 90
+      // Generic match
       else confidence = 70
+
+      // Boost for longer n-gram matches (more specific = higher confidence)
+      if (ngramLength >= 3) confidence += 10
+      else if (ngramLength === 2) confidence += 5
 
       // Boost for HOF players
       if (player.is_hof) confidence += 5
 
-      // Boost for high card count
+      // Boost for high card count (popular players)
       if (player.card_count > 1000) confidence += 3
 
       tokens.player.push({
@@ -501,14 +549,42 @@ async function extractPlayerNames(query, tokens) {
         card_count: Number(player.card_count),
         is_hof: player.is_hof,
         confidence: Math.min(100, confidence),
-        matched: cleanQuery
+        matched: ngram // Store which n-gram matched this player
       })
 
-      console.log(`  [Player Name] Found: "${fullName}" (ID: ${player.player_id}, confidence: ${confidence})`)
+      console.log(`  [Player Name] Found: "${fullName}" via n-gram "${ngram}" (${ngramLength} words, confidence: ${Math.min(100, confidence)})`)
     }
 
     // Sort by confidence descending
     tokens.player.sort((a, b) => b.confidence - a.confidence)
+
+    // Filter: Keep only the best matches, remove low-confidence partial matches
+    // If we have a 2-word match like "Evan White", remove 1-word matches like "Evan"
+    // If we have high-confidence matches (95+), remove low-confidence matches (<80)
+    if (tokens.player.length > 1) {
+      const bestConfidence = tokens.player[0].confidence
+      const bestMatchLength = tokens.player[0].matched.split(/\s+/).length
+
+      // Keep players that are either:
+      // 1. Close to best confidence (within 15 points)
+      // 2. Same or longer match length as best match
+      // 3. Confidence >= 95 (exact matches)
+      const filteredPlayers = tokens.player.filter(p => {
+        const matchLength = p.matched.split(/\s+/).length
+        const confidenceDiff = bestConfidence - p.confidence
+
+        return (
+          p.confidence >= 95 || // Exact/high-quality match
+          confidenceDiff <= 15 || // Close to best confidence
+          matchLength >= bestMatchLength // Same or better match length
+        )
+      })
+
+      if (filteredPlayers.length < tokens.player.length) {
+        console.log(`  [Player Name] Filtered ${tokens.player.length} players down to ${filteredPlayers.length} best matches`)
+        tokens.player = filteredPlayers
+      }
+    }
 
   } catch (error) {
     console.error('  [Player Name] Error:', error.message)
@@ -521,73 +597,137 @@ async function extractPlayerNames(query, tokens) {
 
 async function extractSetNames(query, tokens) {
   try {
-    const lowerQuery = query.toLowerCase()
+    // N-gram extraction for sets
+    // Examples: "bieber topps" → ["bieber topps", "topps"], "2024 bowman chrome" → all combinations
+    const words = query.trim().split(/\s+/)
+    const nGrams = []
 
-    // Common set/manufacturer keywords to search for
-    const setKeywords = [
-      'topps', 'bowman', 'panini', 'upper deck', 'donruss', 'fleer', 'score',
-      'chrome', 'heritage', 'stadium club', 'gypsy queen', 'allen ginter',
-      'finest', 'draft', 'update', 'series', 'sapphire', 'sterling'
-    ]
+    // For 3+ word queries, skip 1-word n-grams to avoid noise
+    const minNgramLength = words.length <= 2 ? 1 : 2
 
-    // Check for any set keywords in the query
-    const foundKeywords = setKeywords.filter(keyword => lowerQuery.includes(keyword))
-
-    let searchPattern
-    let searchTerm
-    let isKeywordSearch = foundKeywords.length > 0
-
-    if (isKeywordSearch) {
-      // Keyword-based search (high confidence)
-      searchTerm = foundKeywords.join(' ')
-      searchPattern = `%${escapeSqlLike(searchTerm)}%`
-      console.log(`  [Set Name] Keyword search for: "${searchTerm}"`)
-    } else {
-      // General search for any text in series names (lower confidence)
-      searchTerm = query
-      searchPattern = `%${escapeSqlLike(query)}%`
-      console.log(`  [Set Name] General search for: "${query}"`)
+    for (let length = words.length; length >= minNgramLength; length--) {
+      for (let start = 0; start <= words.length - length; start++) {
+        const ngram = words.slice(start, start + length).join(' ')
+        if (ngram.length >= 3) { // Sets usually have longer names, require 3+ chars
+          nGrams.push(ngram)
+        }
+      }
     }
 
-    // Search series and manufacturer tables
-    const results = await prisma.$queryRawUnsafe(`
-      SELECT TOP 10
-        s.series_id,
-        s.name as series_name,
-        st.name as set_name,
-        m.name as manufacturer_name,
-        st.year as set_year
-      FROM series s
-      JOIN [set] st ON s.[set] = st.set_id
-      LEFT JOIN manufacturer m ON st.manufacturer = m.manufacturer_id
-      WHERE s.name LIKE '${searchPattern}' COLLATE Latin1_General_CI_AI
-         OR st.name LIKE '${searchPattern}' COLLATE Latin1_General_CI_AI
-         OR m.name LIKE '${searchPattern}' COLLATE Latin1_General_CI_AI
-      ORDER BY st.year DESC
-    `)
+    console.log(`  [Set Name] Generated ${nGrams.length} n-grams from "${query}"`)
 
-    for (const series of results) {
-      let confidence = isKeywordSearch ? 70 : 60  // Lower confidence for general searches
+    // Search for each n-gram in parallel
+    const searchPromises = nGrams.map(async (ngram) => {
+      const cacheKey = `set:${ngram.toLowerCase()}`
+      let results = setCache.get(cacheKey)
 
-      // Boost confidence for exact matches
-      if (isKeywordSearch && series.series_name.toLowerCase().includes(searchTerm)) {
-        confidence = 90
-      } else if (!isKeywordSearch && series.series_name.toLowerCase().includes(lowerQuery)) {
-        confidence = 75
+      if (results !== null) {
+        cacheHits++
+        if (results.length > 0) {
+          console.log(`  [Set Name] Cache HIT for "${ngram}" - ${results.length} results`)
+        }
+        return { ngram, results }
       }
+
+      cacheMisses++
+
+      const searchPattern = `%${escapeSqlLike(ngram)}%`
+
+      results = await prisma.$queryRawUnsafe(`
+        SELECT TOP 5
+          s.series_id,
+          s.name as series_name,
+          st.name as set_name,
+          st.slug as set_slug,
+          m.name as manufacturer_name,
+          st.year as set_year
+        FROM series s
+        JOIN [set] st ON s.[set] = st.set_id
+        LEFT JOIN manufacturer m ON st.manufacturer = m.manufacturer_id
+        WHERE s.name LIKE '${searchPattern}' COLLATE Latin1_General_CI_AI
+           OR st.name LIKE '${searchPattern}' COLLATE Latin1_General_CI_AI
+           OR m.name LIKE '${searchPattern}' COLLATE Latin1_General_CI_AI
+        ORDER BY st.year DESC
+      `)
+
+      setCache.set(cacheKey, results)
+
+      if (results.length > 0) {
+        console.log(`  [Set Name] Found ${results.length} matches for n-gram "${ngram}"`)
+      }
+
+      return { ngram, results }
+    })
+
+    const searchResults = await Promise.all(searchPromises)
+
+    // Collect all unique set matches
+    const setMatches = new Map() // series_id -> {series, ngram, ngramLength}
+
+    for (const { ngram, results } of searchResults) {
+      if (results.length > 0) {
+        const ngramLength = ngram.split(/\s+/).length
+
+        for (const series of results) {
+          const seriesId = Number(series.series_id)
+          const existing = setMatches.get(seriesId)
+
+          // Prefer longer n-gram matches
+          if (!existing || ngramLength > existing.ngramLength) {
+            setMatches.set(seriesId, { series, ngram, ngramLength })
+          }
+        }
+      }
+    }
+
+    console.log(`  [Set Name] Found ${setMatches.size} unique sets from n-gram matching`)
+
+    // Add all unique sets to tokens
+    for (const { series, ngram, ngramLength } of setMatches.values()) {
+      let confidence = 60
+      const lowerNgram = ngram.toLowerCase()
+      const lowerSeriesName = series.series_name?.toLowerCase() || ''
+      const lowerSetName = series.set_name?.toLowerCase() || ''
+      const lowerManufacturer = series.manufacturer_name?.toLowerCase() || ''
+
+      // Exact series name match
+      if (lowerSeriesName === lowerNgram) confidence = 95
+      // Exact set name match
+      else if (lowerSetName === lowerNgram) confidence = 90
+      // Exact manufacturer match
+      else if (lowerManufacturer === lowerNgram) confidence = 85
+      // Partial series name match
+      else if (lowerSeriesName.includes(lowerNgram)) confidence = 80
+      // Partial set name match
+      else if (lowerSetName.includes(lowerNgram)) confidence = 75
+      // Partial manufacturer match
+      else if (lowerManufacturer.includes(lowerNgram)) confidence = 70
+
+      // Boost for longer n-gram matches (more specific)
+      if (ngramLength >= 3) confidence += 10
+      else if (ngramLength === 2) confidence += 5
 
       tokens.set.push({
         series_id: Number(series.series_id),
         series_name: series.series_name,
         set_name: series.set_name,
+        set_slug: series.set_slug,
         manufacturer_name: series.manufacturer_name,
         year: series.set_year,
-        confidence: confidence,
-        matched: searchTerm
+        confidence: Math.min(100, confidence),
+        matched: ngram
       })
 
-      console.log(`  [Set Name] Found: "${series.series_name}" (ID: ${series.series_id}, confidence: ${confidence})`)
+      console.log(`  [Set Name] Found: "${series.series_name}" via n-gram "${ngram}" (confidence: ${Math.min(100, confidence)})`)
     }
+
+    // Sort by confidence and year (prefer recent sets)
+    tokens.set.sort((a, b) => {
+      if (Math.abs(b.confidence - a.confidence) > 10) {
+        return b.confidence - a.confidence
+      }
+      return b.year - a.year
+    })
 
   } catch (error) {
     console.error('  [Set Name] Error:', error.message)
@@ -600,37 +740,114 @@ async function extractSetNames(query, tokens) {
 
 async function extractTeamNames(query, tokens) {
   try {
-    const searchPattern = `%${escapeSqlLike(query)}%`
+    // N-gram extraction for teams (same approach as players)
+    // Examples: "bieber akron" → ["bieber akron", "akron"], "cleveland" → ["cleveland"]
+    const words = query.trim().split(/\s+/)
+    const nGrams = []
 
-    console.log(`  [Team Name] Searching for: "${query}"`)
+    // For 3+ word queries, skip 1-word n-grams to avoid noise
+    const minNgramLength = words.length <= 2 ? 1 : 2
 
-    // Search team table dynamically
-    const results = await prisma.$queryRawUnsafe(`
-      SELECT TOP 10
-        team_id,
-        name,
-        city,
-        mascot,
-        abbreviation
-      FROM team
-      WHERE name LIKE '${searchPattern}' COLLATE Latin1_General_CI_AI
-         OR city LIKE '${searchPattern}' COLLATE Latin1_General_CI_AI
-         OR mascot LIKE '${searchPattern}' COLLATE Latin1_General_CI_AI
-         OR abbreviation LIKE '${searchPattern}' COLLATE Latin1_General_CI_AI
-    `)
-
-    for (const team of results) {
-      let confidence = 70
-      const lowerQuery = query.toLowerCase()
-
-      // Boost confidence for exact matches
-      if (team.abbreviation && team.abbreviation.toLowerCase() === lowerQuery) {
-        confidence = 95
-      } else if (team.name && team.name.toLowerCase().includes(lowerQuery)) {
-        confidence = 85
-      } else if (team.mascot && team.mascot.toLowerCase().includes(lowerQuery)) {
-        confidence = 80
+    for (let length = words.length; length >= minNgramLength; length--) {
+      for (let start = 0; start <= words.length - length; start++) {
+        const ngram = words.slice(start, start + length).join(' ')
+        if (ngram.length >= 2) {
+          nGrams.push(ngram)
+        }
       }
+    }
+
+    console.log(`  [Team Name] Generated ${nGrams.length} n-grams from "${query}"`)
+
+    // Search for each n-gram in parallel
+    const searchPromises = nGrams.map(async (ngram) => {
+      const cacheKey = `team:${ngram.toLowerCase()}`
+      let results = teamCache.get(cacheKey)
+
+      if (results !== null) {
+        cacheHits++
+        if (results.length > 0) {
+          console.log(`  [Team Name] Cache HIT for "${ngram}" - ${results.length} results`)
+        }
+        return { ngram, results }
+      }
+
+      cacheMisses++
+
+      const searchPattern = `%${escapeSqlLike(ngram)}%`
+
+      results = await prisma.$queryRawUnsafe(`
+        SELECT TOP 5
+          team_id,
+          name,
+          city,
+          mascot,
+          abbreviation
+        FROM team
+        WHERE name LIKE '${searchPattern}' COLLATE Latin1_General_CI_AI
+           OR city LIKE '${searchPattern}' COLLATE Latin1_General_CI_AI
+           OR mascot LIKE '${searchPattern}' COLLATE Latin1_General_CI_AI
+           OR abbreviation LIKE '${searchPattern}' COLLATE Latin1_General_CI_AI
+      `)
+
+      teamCache.set(cacheKey, results)
+
+      if (results.length > 0) {
+        console.log(`  [Team Name] Found ${results.length} matches for n-gram "${ngram}"`)
+      }
+
+      return { ngram, results }
+    })
+
+    const searchResults = await Promise.all(searchPromises)
+
+    // Collect all unique team matches
+    const teamMatches = new Map() // team_id -> {team, ngram, ngramLength}
+
+    for (const { ngram, results } of searchResults) {
+      if (results.length > 0) {
+        const ngramLength = ngram.split(/\s+/).length
+
+        for (const team of results) {
+          const teamId = Number(team.team_id)
+          const existing = teamMatches.get(teamId)
+
+          // Prefer longer n-gram matches
+          if (!existing || ngramLength > existing.ngramLength) {
+            teamMatches.set(teamId, { team, ngram, ngramLength })
+          }
+        }
+      }
+    }
+
+    console.log(`  [Team Name] Found ${teamMatches.size} unique teams from n-gram matching`)
+
+    // Add all unique teams to tokens
+    for (const { team, ngram, ngramLength } of teamMatches.values()) {
+      let confidence = 70
+      const lowerNgram = ngram.toLowerCase()
+      const lowerName = team.name?.toLowerCase() || ''
+      const lowerCity = team.city?.toLowerCase() || ''
+      const lowerMascot = team.mascot?.toLowerCase() || ''
+      const lowerAbbr = team.abbreviation?.toLowerCase() || ''
+
+      // Exact abbreviation match
+      if (lowerAbbr === lowerNgram) confidence = 95
+      // Exact team name match
+      else if (lowerName === lowerNgram) confidence = 95
+      // Exact city match
+      else if (lowerCity === lowerNgram) confidence = 90
+      // Exact mascot match
+      else if (lowerMascot === lowerNgram) confidence = 90
+      // Partial name match
+      else if (lowerName.includes(lowerNgram)) confidence = 85
+      // Partial city match
+      else if (lowerCity.includes(lowerNgram)) confidence = 80
+      // Partial mascot match
+      else if (lowerMascot.includes(lowerNgram)) confidence = 75
+
+      // Boost for longer n-gram matches
+      if (ngramLength >= 2) confidence += 5
 
       tokens.team.push({
         team_id: Number(team.team_id),
@@ -638,12 +855,15 @@ async function extractTeamNames(query, tokens) {
         city: team.city,
         mascot: team.mascot,
         abbreviation: team.abbreviation,
-        confidence: confidence,
-        matched: query
+        confidence: Math.min(100, confidence),
+        matched: ngram
       })
 
-      console.log(`  [Team Name] Found: "${team.name}" (ID: ${team.team_id}, confidence: ${confidence})`)
+      console.log(`  [Team Name] Found: "${team.name}" via n-gram "${ngram}" (confidence: ${Math.min(100, confidence)})`)
     }
+
+    // Sort by confidence
+    tokens.team.sort((a, b) => b.confidence - a.confidence)
 
   } catch (error) {
     console.error('  [Team Name] Error:', error.message)
@@ -662,41 +882,53 @@ async function extractParallelDescriptors(query, tokens) {
     const parallelKeywords = [
       'refractor', 'prizm', 'shimmer', 'xfractor', 'superfractor',
       'red', 'blue', 'green', 'gold', 'silver', 'orange', 'purple', 'black', 'white',
-      'wave', 'atomic', 'sepia', 'negative', 'camo', 'pink'
+      'wave', 'atomic', 'sepia', 'negative', 'camo', 'pink', 'yellow', 'teal', 'bronze',
+      'platinum', 'emerald', 'sapphire', 'ruby', 'rainbow', 'prism', 'chrome', 'shimmer'
     ]
 
-    // Check for any parallel keywords in the query
-    const foundKeywords = parallelKeywords.filter(keyword => lowerQuery.includes(keyword))
+    // Check for any parallel keywords in the query (match whole words only)
+    const foundKeywords = parallelKeywords.filter(keyword => {
+      const regex = new RegExp(`\\b${keyword}\\b`, 'i')
+      return regex.test(query)
+    })
 
     if (foundKeywords.length === 0) {
       return
     }
 
-    // Build search pattern from found keywords
-    const searchPattern = `%${escapeSqlLike(foundKeywords.join(' '))}%`
+    console.log(`  [Parallel] Found keywords in query: ${foundKeywords.join(', ')}`)
 
-    console.log(`  [Parallel] Searching for: "${foundKeywords.join(' ')}"`)
+    // Search color table for EACH keyword individually
+    // This handles queries like "evan white pink" where "white" is a name and "pink" is a color
+    for (const keyword of foundKeywords) {
+      const searchPattern = `%${escapeSqlLike(keyword)}%`
 
-    // Search color table
-    const results = await prisma.$queryRawUnsafe(`
-      SELECT TOP 10
-        color_id,
-        name as color_name,
-        hex_value
-      FROM color
-      WHERE name LIKE '${searchPattern}' COLLATE Latin1_General_CI_AI
-    `)
+      console.log(`  [Parallel] Searching color table for: "${keyword}"`)
 
-    for (const color of results) {
-      tokens.parallel.push({
-        color_id: Number(color.color_id),
-        color_name: color.color_name,
-        hex_value: color.hex_value,
-        confidence: 85,
-        matched: foundKeywords.join(' ')
-      })
+      const results = await prisma.$queryRawUnsafe(`
+        SELECT TOP 5
+          color_id,
+          name as color_name,
+          hex_value
+        FROM color
+        WHERE name LIKE '${searchPattern}' COLLATE Latin1_General_CI_AI
+      `)
 
-      console.log(`  [Parallel] Found: "${color.color_name}" (ID: ${color.color_id})`)
+      for (const color of results) {
+        // Avoid duplicates
+        const alreadyAdded = tokens.parallel.some(p => p.color_id === Number(color.color_id))
+        if (alreadyAdded) continue
+
+        tokens.parallel.push({
+          color_id: Number(color.color_id),
+          color_name: color.color_name,
+          hex_value: color.hex_value,
+          confidence: 85,
+          matched: keyword
+        })
+
+        console.log(`  [Parallel] Found: "${color.color_name}" (ID: ${color.color_id})`)
+      }
     }
 
   } catch (error) {
@@ -1115,33 +1347,54 @@ async function buildAndExecuteQuery(tokens, pattern, limit = 50) {
         break
 
       case 'CARDS_WITH_MULTI_FILTERS':
-        // Execute multiple entity queries in parallel to show all matching entities
-        const entityQueries = []
+        // When there are multiple filters, prioritize CARD results (not just entities)
+        // This handles queries like "steven kwan pink" (player + color), "trout 2020" (player + year), etc.
 
-        // Add player entity query if player tokens exist
-        if (tokens.player && tokens.player.length > 0) {
-          entityQueries.push(executePlayerOnlyQuery(tokens, Math.ceil(limit / 3)))
-        }
+        // Check if we have filtering tokens beyond just entity names (player/team/set)
+        const hasFilteringTokens =
+          tokens.parallel.length > 0 ||
+          tokens.year.length > 0 ||
+          tokens.cardNumber.length > 0 ||
+          tokens.serial.length > 0 ||
+          tokens.insert.length > 0 ||
+          tokens.cardTypes.rookie ||
+          tokens.cardTypes.autograph ||
+          tokens.cardTypes.shortPrint ||
+          tokens.cardTypes.relic
 
-        // Add team entity query if team tokens exist
-        if (tokens.team && tokens.team.length > 0) {
-          entityQueries.push(executeTeamBrowseQuery(tokens, Math.ceil(limit / 3)))
-        }
-
-        // Add series entity query if set tokens exist
-        if (tokens.set && tokens.set.length > 0) {
-          entityQueries.push(executeSetBrowseQuery(tokens, Math.ceil(limit / 3)))
-        }
-
-        // If we have entity queries, execute them in parallel and combine results
-        if (entityQueries.length > 0) {
-          console.log(`  [CARDS_WITH_MULTI_FILTERS] Executing ${entityQueries.length} entity queries in parallel`)
-          const entityResults = await Promise.all(entityQueries)
-          results = entityResults.flat()
-          console.log(`  [CARDS_WITH_MULTI_FILTERS] Combined ${results.length} entity results`)
-        } else {
-          // No entity tokens, fall back to card results
+        // If we have entity tokens WITH filtering tokens, return cards
+        if (hasFilteringTokens && (tokens.player.length > 0 || tokens.team.length > 0 || tokens.set.length > 0)) {
+          console.log(`  [CARDS_WITH_MULTI_FILTERS] Have filtering tokens - returning CARDS`)
           results = await executeCardsWithMultiFiltersQuery(tokens, limit)
+        } else {
+          // No filtering tokens, return entities
+          const entityQueries = []
+
+          // Add player entity query if player tokens exist
+          if (tokens.player && tokens.player.length > 0) {
+            entityQueries.push(executePlayerOnlyQuery(tokens, Math.ceil(limit / 3)))
+          }
+
+          // Add team entity query if team tokens exist
+          if (tokens.team && tokens.team.length > 0) {
+            entityQueries.push(executeTeamBrowseQuery(tokens, Math.ceil(limit / 3)))
+          }
+
+          // Add series entity query if set tokens exist
+          if (tokens.set && tokens.set.length > 0) {
+            entityQueries.push(executeSetBrowseQuery(tokens, Math.ceil(limit / 3)))
+          }
+
+          // If we have entity queries, execute them in parallel and combine results
+          if (entityQueries.length > 0) {
+            console.log(`  [CARDS_WITH_MULTI_FILTERS] Executing ${entityQueries.length} entity queries in parallel`)
+            const entityResults = await Promise.all(entityQueries)
+            results = entityResults.flat()
+            console.log(`  [CARDS_WITH_MULTI_FILTERS] Combined ${results.length} entity results`)
+          } else {
+            // No entity tokens either, fall back to card results
+            results = await executeCardsWithMultiFiltersQuery(tokens, limit)
+          }
         }
         break
 
@@ -1579,12 +1832,19 @@ async function executeCardsWithMultiFiltersQuery(tokens, limit) {
       c.is_relic,
       c.print_run,
       s.name as series_name,
+      s.slug as series_slug,
       st.name as set_name,
+      st.slug as set_slug,
       st.year as set_year,
       m.name as manufacturer_name,
       col.name as color_name,
+      col.hex_value as color_hex,
       STRING_AGG(CONCAT(p.first_name, ' ', p.last_name), ', ') as player_names,
-      MAX(p.card_count) as max_card_count
+      MAX(p.card_count) as max_card_count,
+      MAX(t.name) as team_name,
+      MAX(t.abbreviation) as team_abbreviation,
+      MAX(t.primary_color) as team_primary_color,
+      MAX(t.secondary_color) as team_secondary_color
     FROM card c
     JOIN series s ON c.series = s.series_id
     JOIN [set] st ON s.[set] = st.set_id
@@ -1593,9 +1853,10 @@ async function executeCardsWithMultiFiltersQuery(tokens, limit) {
     LEFT JOIN card_player_team cpt ON c.card_id = cpt.card
     LEFT JOIN player_team pt ON cpt.player_team = pt.player_team_id
     LEFT JOIN player p ON pt.player = p.player_id
+    LEFT JOIN team t ON pt.team = t.team_id
     WHERE ${whereClause}
     GROUP BY c.card_id, c.card_number, c.is_rookie, c.is_autograph, c.is_relic, c.print_run,
-             s.name, st.name, st.year, m.name, col.name
+             s.name, s.slug, st.name, st.slug, st.year, m.name, col.name, col.hex_value
     ORDER BY
       st.year DESC,
       max_card_count DESC,
@@ -1615,9 +1876,16 @@ async function executeCardsWithMultiFiltersQuery(tokens, limit) {
     year: card.set_year,
     player_names: card.player_names,
     series_name: card.series_name,
+    series_slug: card.series_slug,
     set_name: card.set_name,
+    set_slug: card.set_slug,
     manufacturer_name: card.manufacturer_name,
     color_name: card.color_name,
+    color_hex: card.color_hex,
+    team_name: card.team_name,
+    team_abbreviation: card.team_abbreviation,
+    team_primary_color: card.team_primary_color,
+    team_secondary_color: card.team_secondary_color,
     is_rookie: card.is_rookie,
     is_autograph: card.is_autograph,
     is_relic: card.is_relic,
@@ -1947,12 +2215,19 @@ async function executeSetYearBrowseQuery(tokens, limit) {
       c.is_relic,
       c.print_run,
       s.name as series_name,
+      s.slug as series_slug,
       st.name as set_name,
+      st.slug as set_slug,
       st.year as set_year,
       m.name as manufacturer_name,
       col.name as color_name,
+      col.hex_value as color_hex,
       STRING_AGG(CONCAT(p.first_name, ' ', p.last_name), ', ') as player_names,
-      MAX(p.card_count) as max_card_count
+      MAX(p.card_count) as max_card_count,
+      MAX(t.name) as team_name,
+      MAX(t.abbreviation) as team_abbreviation,
+      MAX(t.primary_color) as team_primary_color,
+      MAX(t.secondary_color) as team_secondary_color
     FROM card c
     JOIN series s ON c.series = s.series_id
     JOIN [set] st ON s.[set] = st.set_id
@@ -1961,12 +2236,13 @@ async function executeSetYearBrowseQuery(tokens, limit) {
     LEFT JOIN card_player_team cpt ON c.card_id = cpt.card
     LEFT JOIN player_team pt ON cpt.player_team = pt.player_team_id
     LEFT JOIN player p ON pt.player = p.player_id
+    LEFT JOIN team t ON pt.team = t.team_id
     WHERE st.year = ${year}
       AND (st.name LIKE '${searchPattern}' COLLATE Latin1_General_CI_AI
            OR m.name LIKE '${searchPattern}' COLLATE Latin1_General_CI_AI
            OR s.name LIKE '${searchPattern}' COLLATE Latin1_General_CI_AI)
     GROUP BY c.card_id, c.card_number, c.is_rookie, c.is_autograph, c.is_relic, c.print_run,
-             s.name, st.name, st.year, m.name, col.name
+             s.name, s.slug, st.name, st.slug, st.year, m.name, col.name, col.hex_value
     ORDER BY max_card_count DESC, c.card_number
   `
 
@@ -1981,9 +2257,16 @@ async function executeSetYearBrowseQuery(tokens, limit) {
     year: card.set_year,
     player_names: card.player_names,
     series_name: card.series_name,
+    series_slug: card.series_slug,
     set_name: card.set_name,
+    set_slug: card.set_slug,
     manufacturer_name: card.manufacturer_name,
     color_name: card.color_name,
+    color_hex: card.color_hex,
+    team_name: card.team_name,
+    team_abbreviation: card.team_abbreviation,
+    team_primary_color: card.team_primary_color,
+    team_secondary_color: card.team_secondary_color,
     is_rookie: card.is_rookie,
     is_autograph: card.is_autograph,
     is_relic: card.is_relic,
@@ -2636,6 +2919,46 @@ router.get('/universal-v2', async (req, res) => {
 
     // PHASE 4: Apply fuzzy matching (abbreviation expansion, typo tolerance)
     tokens = await applyFuzzyMatching(searchQuery, tokens)
+
+    // PHASE 4.1: Clean up parallel tokens that match player/team names
+    // This prevents "Evan White pink" from matching both "white" and "pink" as colors
+    // Only use high-confidence player matches (95+) or multi-word matches to avoid
+    // removing valid color tokens (e.g., don't let player "Pink" override color "Pink")
+    if (tokens.player.length > 0 && tokens.parallel.length > 0) {
+      const highConfidencePlayers = tokens.player.filter(p => {
+        const wordCount = p.matched.split(/\s+/).length
+        return p.confidence >= 95 || wordCount >= 2
+      })
+
+      const playerWords = highConfidencePlayers.flatMap(p =>
+        [p.first_name, p.last_name, p.nick_name].filter(Boolean).flatMap(w => w.toLowerCase().split(/\s+/))
+      )
+
+      tokens.parallel = tokens.parallel.filter(parallel => {
+        const parallelWord = parallel.matched.toLowerCase()
+        const isPartOfPlayerName = playerWords.includes(parallelWord)
+        if (isPartOfPlayerName) {
+          console.log(`  [Token Cleanup] Removing parallel "${parallel.color_name}" because "${parallelWord}" is part of player name`)
+        }
+        return !isPartOfPlayerName
+      })
+    }
+
+    // Do the same for team names (teams are usually multi-word, so less strict filtering)
+    if (tokens.team.length > 0 && tokens.parallel.length > 0) {
+      const teamWords = tokens.team.flatMap(t =>
+        [t.name, t.city, t.mascot].filter(Boolean).flatMap(w => w.toLowerCase().split(/\s+/))
+      )
+
+      tokens.parallel = tokens.parallel.filter(parallel => {
+        const parallelWord = parallel.matched.toLowerCase()
+        const isPartOfTeamName = teamWords.includes(parallelWord)
+        if (isPartOfTeamName) {
+          console.log(`  [Token Cleanup] Removing parallel "${parallel.color_name}" because "${parallelWord}" is part of team name`)
+        }
+        return !isPartOfTeamName
+      })
+    }
 
     // PHASE 2: Recognize pattern (after fuzzy matching for best results)
     const pattern = recognizePattern(tokens)
