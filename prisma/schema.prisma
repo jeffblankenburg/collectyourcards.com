@@ -25,33 +25,33 @@ model admin_action_log {
 }
 
 model card {
-  card_id                                      BigInt             @id(map: "PK_card") @default(autoincrement())
-  sort_order                                   Int?
-  card_number                                  String?            @db.NVarChar(Max)
-  is_rookie                                    Boolean            @default(false, map: "DEFAULT_card_is_rookie")
-  is_autograph                                 Boolean            @default(false, map: "DEFAULT_card_is_autograph")
-  is_relic                                     Boolean            @default(false, map: "DEFAULT_card_is_relic")
-  is_short_print                               Boolean            @default(false, map: "DEFAULT_card_is_short_print")
-  print_run                                    Int?
-  series                                       BigInt?
-  color                                        Int?
-  notes                                        String?            @db.NVarChar(Max)
-  created                                      DateTime           @default(now(), map: "DEFAULT_card_created") @db.DateTime
-  created_month                                DateTime?          @db.Date
-  card_number_indexed                          String?            @db.NVarChar(100)
-  reference_user_card                          BigInt?
-  front_image_path                             String?            @db.NVarChar(Max)
-  back_image_path                              String?            @db.NVarChar(Max)
-  color_card_colorTocolor                      color?             @relation("card_colorTocolor", fields: [color], references: [color_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_card_color")
-  user_card_card_reference_user_cardTouser_card user_card?       @relation("card_reference_user_cardTouser_card", fields: [reference_user_card], references: [user_card_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_card_reference_user_card")
-  card_player_team_card_player_team_cardTocard card_player_team[] @relation("card_player_team_cardTocard")
-  card_variation_card_variation_cardTocard     card_variation[]   @relation("card_variation_cardTocard")
-  player_player_display_cardTocard             player[]           @relation("player_display_cardTocard")
-  user_card_user_card_cardTocard               user_card[]        @relation("user_card_cardTocard")
+  card_id                                       BigInt             @id(map: "PK_card") @default(autoincrement())
+  sort_order                                    Int?
+  card_number                                   String?            @db.NVarChar(Max)
+  is_rookie                                     Boolean            @default(false, map: "DEFAULT_card_is_rookie")
+  is_autograph                                  Boolean            @default(false, map: "DEFAULT_card_is_autograph")
+  is_relic                                      Boolean            @default(false, map: "DEFAULT_card_is_relic")
+  print_run                                     Int?
+  series                                        BigInt?
+  color                                         Int?
+  notes                                         String?            @db.NVarChar(Max)
+  created                                       DateTime           @default(now(), map: "DEFAULT_card_created") @db.DateTime
+  created_month                                 DateTime?          @db.Date
+  card_number_indexed                           String?            @db.NVarChar(100)
+  reference_user_card                           BigInt?
+  is_short_print                                Boolean            @default(false, map: "DF__card__is_short_p__1C1D2798")
+  front_image_path                              String?            @db.NVarChar(Max)
+  back_image_path                               String?            @db.NVarChar(Max)
+  color_card_colorTocolor                       color?             @relation("card_colorTocolor", fields: [color], references: [color_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_card_color")
+  user_card_card_reference_user_cardTouser_card user_card?         @relation("card_reference_user_cardTouser_card", fields: [reference_user_card], references: [user_card_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_card_reference_user_card")
+  card_player_team_card_player_team_cardTocard  card_player_team[] @relation("card_player_team_cardTocard")
+  card_variation_card_variation_cardTocard      card_variation[]   @relation("card_variation_cardTocard")
+  player_player_display_cardTocard              player[]           @relation("player_display_cardTocard")
+  user_card_user_card_cardTocard                user_card[]        @relation("user_card_cardTocard")
 
   @@index([created_month], map: "idx_card_created_month")
   @@index([series], map: "IX_card_series_optimized")
-  @@index([is_rookie, is_autograph, is_relic, is_short_print], map: "IX_card_attributes")
+  @@index([is_rookie, is_autograph, is_relic], map: "IX_card_attributes")
   @@index([card_number_indexed], map: "IX_card_number")
   @@index([reference_user_card], map: "IX_card_reference_user_card")
 }
@@ -375,6 +375,8 @@ model series {
   card_entered_count        Int?                     @default(0, map: "DF__series__card_ent__3493CFA7")
   is_base                   Boolean?                 @default(false, map: "DEFAULT_series_is_base")
   parallel_of_series        BigInt?
+  front_image_path          String?                  @db.NVarChar(Max)
+  back_image_path           String?                  @db.NVarChar(Max)
   min_print_run             Int?
   max_print_run             Int?
   print_run_variations      Int?
@@ -560,11 +562,11 @@ model user_card {
   random_code                                                  String?               @db.NVarChar(Max)
   created                                                      DateTime?             @default(now(), map: "DEFAULT_user_card_created") @db.DateTime
   ebay_purchase_id                                             BigInt?
+  card_card_reference_user_cardTouser_card                     card[]                @relation("card_reference_user_cardTouser_card")
   card_user_card_cardTocard                                    card?                 @relation("user_card_cardTocard", fields: [card], references: [card_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_user_card_card")
   card_variation_user_card_card_variationTocard_variation      card_variation?       @relation("user_card_card_variationTocard_variation", fields: [card_variation], references: [card_variation_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_user_card_card_variation")
   user_user_card_userTouser                                    user?                 @relation("user_card_userTouser", fields: [user], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_user_card_user")
   user_location_user_card_user_locationTouser_location         user_location?        @relation("user_card_user_locationTouser_location", fields: [user_location], references: [user_location_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_user_card_user_location")
-  card_card_reference_user_cardTouser_card                     card[]                @relation("card_reference_user_cardTouser_card")
   user_card_photo_user_card_photo_user_cardTouser_card         user_card_photo[]     @relation("user_card_photo_user_cardTouser_card")
   user_favorite_cards_user_favorite_cards_user_cardTouser_card user_favorite_cards[] @relation("user_favorite_cards_user_cardTouser_card")
 

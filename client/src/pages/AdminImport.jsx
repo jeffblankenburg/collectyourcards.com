@@ -187,7 +187,7 @@ const AdminImport = () => {
   const [selectedFile, setSelectedFile] = useState(null)
   const [uploading, setUploading] = useState(false)
   const [pastedData, setPastedData] = useState('')
-  const [inputMethod, setInputMethod] = useState('file') // 'file' or 'paste'
+  const [inputMethod, setInputMethod] = useState('paste') // 'file' or 'paste' - default to paste
   
   // Step 3: Review parsed data
   const [parsedCards, setParsedCards] = useState([])
