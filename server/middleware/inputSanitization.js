@@ -78,10 +78,13 @@ function sanitizeString(value, fieldName, options = {}) {
     throw new Error(`${fieldName} exceeds maximum length of ${maxLength} characters`)
   }
 
-  // Check for dangerous patterns
-  for (const pattern of DANGEROUS_PATTERNS) {
-    if (pattern.test(sanitized)) {
-      throw new Error(`${fieldName} contains invalid characters`)
+  // Check for dangerous patterns (skip for notes and bio fields since they use parameterized queries)
+  const skipDangerousCheck = ['notes', 'bio'].includes(fieldName)
+  if (!skipDangerousCheck) {
+    for (const pattern of DANGEROUS_PATTERNS) {
+      if (pattern.test(sanitized)) {
+        throw new Error(`${fieldName} contains invalid characters`)
+      }
     }
   }
 
