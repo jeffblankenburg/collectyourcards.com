@@ -6,7 +6,6 @@ const { BlobServiceClient } = require('@azure/storage-blob')
 const { extractBlobNameFromUrl } = require('../utils/azure-storage')
 const { onCardAdded, onCardUpdated, onCardRemoved } = require('../middleware/achievementHooks')
 const { updateUserSeriesCompletion } = require('../utils/updateSeriesCompletion')
-const { searchCache } = require('./cards')
 const router = express.Router()
 const prisma = new PrismaClient({ log: ['error'] }) // Only log errors, not queries
 
@@ -320,10 +319,6 @@ router.post('/', async (req, res, next) => {
       aftermarket_autograph
     }
 
-    // Clear cards cache to invalidate series detail page cache
-    searchCache.clear()
-    console.log('Cleared cards cache after adding card to collection')
-
     res.status(201).json({
       message: 'Card added to collection successfully'
     })
@@ -548,10 +543,6 @@ router.put('/:userCardId', async (req, res, next) => {
       responseCard.is_special = updateData.is_special === 1
     }
 
-    // Clear cards cache to invalidate series detail page cache
-    searchCache.clear()
-    console.log('Cleared cards cache after updating card in collection')
-
     res.json({
       message: 'Card updated successfully',
       user_card_id: parseInt(userCardId),
@@ -655,10 +646,6 @@ router.delete('/:userCardId', async (req, res, next) => {
       updateUserSeriesCompletion(userId, Number(seriesId))
         .catch(err => console.error('Error updating series completion:', err))
     }
-
-    // Clear cards cache to invalidate series detail page cache
-    searchCache.clear()
-    console.log('Cleared cards cache after removing card from collection')
 
     res.json({
       message: 'Card and associated photos removed from collection successfully'

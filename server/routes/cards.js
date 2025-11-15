@@ -188,36 +188,8 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
     // Parse search query if provided
     const searchParsed = search ? parseSearchQuery(search) : null
 
-    // Create cache key for this specific query
+    // Caching disabled for series detail pages to show real-time updates
     const userId = req.user?.userId
-    const cacheKey = JSON.stringify({
-      player_name,
-      team_id,
-      team_ids,
-      series_name,
-      series_id,
-      card_number,
-      search,
-      limit,
-      page,
-      userId: userId || 'anonymous'
-    })
-
-    // Check cache first
-    const cached = searchCache.get(cacheKey)
-    if (cached) {
-      cacheHits++
-      const searchTime = Date.now() - startTime
-      console.log(`[Cards API] Cache HIT - ${searchTime}ms`)
-      return res.json({
-        ...cached,
-        searchTime,
-        cached: true,
-        cacheStats: { hits: cacheHits, misses: cacheMisses, hitRate: `${Math.round((cacheHits / (cacheHits + cacheMisses)) * 100)}%` }
-      })
-    }
-
-    cacheMisses++
 
     const limitNum = Math.min(parseInt(limit) || 100, 10000) // Cap at 10000 for loading all data
     const pageNum = parseInt(page) || 1
@@ -484,28 +456,18 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
       }
     })
 
-    // Prepare response object
-    const responseData = {
-      cards,
-      total,
-      page: pageNum,
-      limit: limitNum,
-      hasMore: offsetNum + limitNum < total
-    }
-
-    // Cache the result for future requests
-    searchCache.set(cacheKey, responseData)
-
     // Calculate search time
     const searchTime = Date.now() - startTime
     console.log(`[Cards API] Search complete - ${searchTime}ms (${searchParsed ? 'with search' : 'browse mode'})`)
 
-    // Send response with timing
+    // Send response
     res.json({
-      ...responseData,
-      searchTime,
-      cached: false,
-      cacheStats: { hits: cacheHits, misses: cacheMisses, hitRate: `${Math.round((cacheHits / (cacheHits + cacheMisses)) * 100)}%` }
+      cards,
+      total,
+      page: pageNum,
+      limit: limitNum,
+      hasMore: offsetNum + limitNum < total,
+      searchTime
     })
 
   } catch (error) {
@@ -828,6 +790,36 @@ router.get('/parallel-series', async (req, res) => {
       error: 'Database error',
       message: 'Failed to fetch parallel series',
       details: error.message
+    })
+  }
+})
+
+// POST /api/cards/clear-cache - Admin endpoint to clear the search cache
+router.post('/clear-cache', authMiddleware, async (req, res) => {
+  try {
+    // Check if user is admin
+    if (!req.user || !['admin', 'superadmin'].includes(req.user.role)) {
+      return res.status(403).json({
+        error: 'Forbidden',
+        message: 'Only admins can clear the cache'
+      })
+    }
+
+    const cacheSizeBefore = searchCache.size()
+    searchCache.clear()
+
+    console.log(`🗑️ Cache cleared by ${req.user.email} (was ${cacheSizeBefore} entries)`)
+
+    res.json({
+      success: true,
+      message: 'Search cache cleared successfully',
+      entriesCleared: cacheSizeBefore
+    })
+  } catch (error) {
+    console.error('Error clearing cache:', error)
+    res.status(500).json({
+      error: 'Server error',
+      message: 'Failed to clear cache'
     })
   }
 })
