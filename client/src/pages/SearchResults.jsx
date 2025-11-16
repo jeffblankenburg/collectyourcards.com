@@ -466,15 +466,16 @@ function SearchResults() {
   const getFilteredResults = () => {
     if (activeTab === 'all') {
       // Combine all results for "All" tab
+      // Priority order: players, teams, series, sets, years, cards (cards last!)
       const allResults = []
-      
+
       results.players.forEach(player => allResults.push({ ...player, type: 'player' }))
       results.teams.forEach(team => allResults.push({ ...team, type: 'team' }))
-      results.cards.forEach(card => allResults.push({ ...card, type: 'card' }))
-      results.sets.forEach(set => allResults.push({ ...set, type: 'set' }))
       results.series.forEach(series => allResults.push({ ...series, type: 'series' }))
+      results.sets.forEach(set => allResults.push({ ...set, type: 'set' }))
       results.years.forEach(year => allResults.push({ ...year, type: 'year' }))
-      
+      results.cards.forEach(card => allResults.push({ ...card, type: 'card' }))
+
       // Sort by relevance or name
       if (sortBy === 'name') {
         allResults.sort((a, b) => {
@@ -483,7 +484,7 @@ function SearchResults() {
           return aName.localeCompare(bName)
         })
       }
-      
+
       return allResults
     } else {
       // Return specific category
