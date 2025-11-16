@@ -26,6 +26,7 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
         s.print_run_variations,
         s.min_print_run,
         s.max_print_run,
+        s.production_code,
         s.color as color_id,
         c.name as color_name,
         c.hex_value as color_hex_value,
@@ -79,6 +80,7 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
         color_id: series.color_id ? Number(series.color_id) : null,
         color_name: series.color_name,
         color_hex_value: series.color_hex_value,
+        production_code: series.production_code,
         front_image_path: series.front_image_path,
         back_image_path: series.back_image_path
       }

@@ -415,7 +415,7 @@ function SeriesDetail() {
               <div className="series-title-section">
                 <div className="series-title-line">
                   {year && setSlug ? (
-                    <Link 
+                    <Link
                       to={`/sets/${year}/${setSlug}`}
                       className="back-button"
                       title="Back to series list"
@@ -423,7 +423,7 @@ function SeriesDetail() {
                       <Icon name="arrow-left" size={24} />
                     </Link>
                   ) : (
-                    <Link 
+                    <Link
                       to="/sets"
                       className="back-button"
                       title="Back to sets"
@@ -431,7 +431,14 @@ function SeriesDetail() {
                       <Icon name="arrow-left" size={24} />
                     </Link>
                   )}
-                  <h1 className="series-name">{series.name}</h1>
+                  <div className="series-name-container">
+                    <h1 className="series-name">{series.name}</h1>
+                    {series.production_code && (
+                      <span className="series-production-code" title="Production Code">
+                        {series.production_code}
+                      </span>
+                    )}
+                  </div>
                 </div>
                 
                 {/* Card Images in same column as title */}
