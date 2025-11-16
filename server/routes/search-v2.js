@@ -1630,7 +1630,7 @@ async function executeCardNumberOnlyQuery(tokens, limit) {
 
 /**
  * Strategy: PRODUCTION_CODE_ONLY
- * Returns cards from series matching the production code
+ * Returns the series matching the production code (not individual cards)
  */
 async function executeProductionCodeOnlyQuery(tokens, limit) {
   if (!tokens.productionCode || tokens.productionCode.length === 0) {
@@ -1642,34 +1642,27 @@ async function executeProductionCodeOnlyQuery(tokens, limit) {
 
   const sql = `
     SELECT TOP ${limit}
-      c.card_id,
-      c.card_number,
-      c.is_rookie,
-      c.is_autograph,
-      c.is_relic,
-      c.print_run,
       s.series_id,
       s.name as series_name,
-      s.slug as series_slug,
+      s.slug,
       s.production_code,
+      s.is_base,
+      s.parallel_of_series as parallel_of,
+      s.print_run_display,
+      st.set_id,
       st.name as set_name,
       st.slug as set_slug,
       st.year as set_year,
       m.name as manufacturer_name,
+      col.color_id,
       col.name as color_name,
-      STRING_AGG(CONCAT(p.first_name, ' ', p.last_name), ', ') as player_names
-    FROM card c
-    JOIN series s ON c.series = s.series_id
+      col.hex_value as color_hex
+    FROM series s
     JOIN [set] st ON s.[set] = st.set_id
     LEFT JOIN manufacturer m ON st.manufacturer = m.manufacturer_id
     LEFT JOIN color col ON s.color = col.color_id
-    LEFT JOIN card_player_team cpt ON c.card_id = cpt.card
-    LEFT JOIN player_team pt ON cpt.player_team = pt.player_team_id
-    LEFT JOIN player p ON pt.player = p.player_id
     WHERE s.production_code = '${escapeSqlLike(productionCode)}'
-    GROUP BY c.card_id, c.card_number, c.is_rookie, c.is_autograph, c.is_relic, c.print_run,
-             s.series_id, s.name, s.slug, s.production_code, st.name, st.slug, st.year, m.name, col.name
-    ORDER BY st.year DESC, c.card_number
+    ORDER BY st.year DESC
   `
 
   console.log('SQL Query:', sql.substring(0, 500))
@@ -1678,24 +1671,29 @@ async function executeProductionCodeOnlyQuery(tokens, limit) {
 
   console.log('  Query returned', results.length, 'results')
 
-  return results.map(card => ({
-    type: 'card',
-    id: Number(card.card_id),
-    card_number: card.card_number,
-    year: card.set_year,
-    player_names: card.player_names,
-    series_id: Number(card.series_id),
-    series_name: card.series_name,
-    series_slug: card.series_slug,
-    production_code: card.production_code,
-    set_name: card.set_name,
-    set_slug: card.set_slug,
-    manufacturer_name: card.manufacturer_name,
-    color_name: card.color_name,
-    is_rookie: card.is_rookie,
-    is_autograph: card.is_autograph,
-    is_relic: card.is_relic,
-    print_run: card.print_run ? Number(card.print_run) : null,
+  return results.map(series => ({
+    type: 'series',
+    id: Number(series.series_id),
+    series_id: Number(series.series_id),
+    name: series.series_name,
+    series_name: series.series_name,
+    slug: series.slug,
+    production_code: series.production_code,
+    set_id: Number(series.set_id),
+    set_name: series.set_name || '',
+    set_slug: series.set_slug || '',
+    set_year: series.set_year || null,
+    year: series.set_year || null,
+    manufacturer_name: series.manufacturer_name || '',
+    color_id: series.color_id ? Number(series.color_id) : null,
+    color_name: series.color_name || null,
+    color_hex: series.color_hex || null,
+    print_run_display: series.print_run_display || null,
+    card_count: 0,
+    rc_count: 0,
+    parallel_count: 0,
+    is_base: series.is_base || false,
+    parallel_of: series.parallel_of ? Number(series.parallel_of) : null,
     confidence: tokens.productionCode[0].confidence,
     relevance: tokens.productionCode[0].confidence
   }))
