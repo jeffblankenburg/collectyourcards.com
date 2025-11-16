@@ -135,6 +135,7 @@ async function extractAllTokens(query) {
     parallel: [],
     serial: [],
     insert: [],
+    productionCode: [],
     cardTypes: {
       rookie: false,
       autograph: false,
@@ -150,6 +151,7 @@ async function extractAllTokens(query) {
     extractYears(query, tokens),
     extractCardTypeIndicators(query, tokens),
     extractSerialNumbers(query, tokens),
+    extractProductionCodes(query, tokens),
     extractPlayerNames(query, tokens),
     extractSetNames(query, tokens),
     extractTeamNames(query, tokens),
@@ -343,6 +345,29 @@ async function extractSerialNumbers(query, tokens) {
 }
 
 // ============================================================================
+// TOKEN EXTRACTOR: Production Code
+// ============================================================================
+
+async function extractProductionCodes(query, tokens) {
+  // Match production code patterns: CMP followed by 6 digits
+  // Example: CMP000123, CMP123456
+  const productionCodeRegex = /\b(CMP\d{6})\b/gi
+  const matches = [...query.matchAll(productionCodeRegex)]
+
+  for (const match of matches) {
+    const productionCode = match[1].toUpperCase() // Normalize to uppercase
+
+    tokens.productionCode.push({
+      code: productionCode,
+      confidence: 98,
+      pattern: match[0]
+    })
+
+    console.log(`  [Production Code] Found: "${productionCode}" (confidence: 98)`)
+  }
+}
+
+// ============================================================================
 // TOKEN EXTRACTOR: Player Name
 // ============================================================================
 
@@ -364,6 +389,11 @@ async function extractPlayerNames(query, tokens) {
     // Remove serial numbers
     for (const s of tokens.serial) {
       cleanQuery = removeTokenFromQuery(cleanQuery, s.pattern)
+    }
+
+    // Remove production codes
+    for (const pc of tokens.productionCode) {
+      cleanQuery = removeTokenFromQuery(cleanQuery, pc.pattern)
     }
 
     // Remove card type keywords
@@ -1134,6 +1164,7 @@ function countActiveTokens(tokens) {
     parallel: tokens.parallel.length > 0 ? 1 : 0,
     serial: tokens.serial.length > 0 ? 1 : 0,
     insert: tokens.insert.length > 0 ? 1 : 0,
+    productionCode: tokens.productionCode.length > 0 ? 1 : 0,
     cardTypes: 0,
     keywords: tokens.keywords.length > 0 ? 1 : 0
   }
@@ -1154,6 +1185,7 @@ function countActiveTokens(tokens) {
     counts.parallel +
     counts.serial +
     counts.insert +
+    counts.productionCode +
     counts.cardTypes +
     counts.keywords
 
@@ -1167,6 +1199,7 @@ function countActiveTokens(tokens) {
     parallels: tokens.parallel.length,
     serials: tokens.serial.length,
     inserts: tokens.insert.length,
+    productionCodes: tokens.productionCode.length,
     keywords: tokens.keywords.length
   }
 
@@ -1200,6 +1233,7 @@ function selectSearchStrategy(tokens, activeTokens, patternType) {
 
   // SINGLE TOKEN patterns
   if (patternType === 'SINGLE_TOKEN') {
+    if (activeTokens.productionCode > 0) return 'PRODUCTION_CODE_ONLY'
     if (activeTokens.player > 0) return 'PLAYER_ONLY'
     if (activeTokens.cardNumber > 0) return 'CARD_NUMBER_ONLY'
     if (activeTokens.year > 0) return 'YEAR_BROWSE'
@@ -1244,7 +1278,10 @@ function calculatePatternConfidence(tokens, activeTokens, patternType) {
 
   // Single token patterns - confidence based on token type
   if (patternType === 'SINGLE_TOKEN') {
-    if (activeTokens.player > 0) {
+    if (activeTokens.productionCode > 0) {
+      // Production codes are very specific and unique
+      confidence = tokens.productionCode[0]?.confidence || 98
+    } else if (activeTokens.player > 0) {
       // Use highest player confidence
       confidence = tokens.player[0]?.confidence || 70
     } else if (activeTokens.cardNumber > 0) {
@@ -1336,6 +1373,10 @@ async function buildAndExecuteQuery(tokens, pattern, limit = 50) {
 
       case 'CARD_NUMBER_ONLY':
         results = await executeCardNumberOnlyQuery(tokens, limit)
+        break
+
+      case 'PRODUCTION_CODE_ONLY':
+        results = await executeProductionCodeOnlyQuery(tokens, limit)
         break
 
       case 'YEAR_BROWSE':
@@ -1584,6 +1625,79 @@ async function executeCardNumberOnlyQuery(tokens, limit) {
     print_run: card.print_run ? Number(card.print_run) : null,
     confidence: tokens.cardNumber[0].confidence,
     relevance: tokens.cardNumber[0].confidence
+  }))
+}
+
+/**
+ * Strategy: PRODUCTION_CODE_ONLY
+ * Returns cards from series matching the production code
+ */
+async function executeProductionCodeOnlyQuery(tokens, limit) {
+  if (!tokens.productionCode || tokens.productionCode.length === 0) {
+    return []
+  }
+
+  const productionCode = tokens.productionCode[0].code
+  console.log(`  [PRODUCTION_CODE_ONLY] Searching for production code: ${productionCode}`)
+
+  const sql = `
+    SELECT TOP ${limit}
+      c.card_id,
+      c.card_number,
+      c.is_rookie,
+      c.is_autograph,
+      c.is_relic,
+      c.print_run,
+      s.series_id,
+      s.name as series_name,
+      s.slug as series_slug,
+      s.production_code,
+      st.name as set_name,
+      st.slug as set_slug,
+      st.year as set_year,
+      m.name as manufacturer_name,
+      col.name as color_name,
+      STRING_AGG(CONCAT(p.first_name, ' ', p.last_name), ', ') as player_names
+    FROM card c
+    JOIN series s ON c.series = s.series_id
+    JOIN [set] st ON s.[set] = st.set_id
+    LEFT JOIN manufacturer m ON st.manufacturer = m.manufacturer_id
+    LEFT JOIN color col ON s.color = col.color_id
+    LEFT JOIN card_player_team cpt ON c.card_id = cpt.card
+    LEFT JOIN player_team pt ON cpt.player_team = pt.player_team_id
+    LEFT JOIN player p ON pt.player = p.player_id
+    WHERE s.production_code = '${escapeSqlLike(productionCode)}'
+    GROUP BY c.card_id, c.card_number, c.is_rookie, c.is_autograph, c.is_relic, c.print_run,
+             s.series_id, s.name, s.slug, s.production_code, st.name, st.slug, st.year, m.name, col.name
+    ORDER BY st.year DESC, c.card_number
+  `
+
+  console.log('SQL Query:', sql.substring(0, 500))
+
+  const results = await prisma.$queryRawUnsafe(sql)
+
+  console.log('  Query returned', results.length, 'results')
+
+  return results.map(card => ({
+    type: 'card',
+    id: Number(card.card_id),
+    card_number: card.card_number,
+    year: card.set_year,
+    player_names: card.player_names,
+    series_id: Number(card.series_id),
+    series_name: card.series_name,
+    series_slug: card.series_slug,
+    production_code: card.production_code,
+    set_name: card.set_name,
+    set_slug: card.set_slug,
+    manufacturer_name: card.manufacturer_name,
+    color_name: card.color_name,
+    is_rookie: card.is_rookie,
+    is_autograph: card.is_autograph,
+    is_relic: card.is_relic,
+    print_run: card.print_run ? Number(card.print_run) : null,
+    confidence: tokens.productionCode[0].confidence,
+    relevance: tokens.productionCode[0].confidence
   }))
 }
 
