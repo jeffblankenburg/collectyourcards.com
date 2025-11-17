@@ -14,3 +14,7 @@
   padding-top: 0; /* No extra padding needed since admin nav is now in document flow */
 }
 
+.app-main.with-user-nav {
+  padding-top: 0; /* No extra padding needed since user nav is now in document flow */
+}
+

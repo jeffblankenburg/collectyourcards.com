@@ -249,58 +249,18 @@ function Header() {
           <h1>🎴 Collect Your Cards</h1>
         </Link>
 
-        {/* Desktop Navigation */}
-        <nav className="header-nav desktop-nav">
-          <Link 
-            to="/players" 
-            className={`nav-link ${location.pathname.startsWith('/players') ? 'active' : ''}`}
-          >
-            <Icon name="player" size={18} className="nav-icon" />
-            <span className="nav-text">Players</span>
-          </Link>
-          <Link 
-            to="/teams" 
-            className={`nav-link ${location.pathname.startsWith('/teams') ? 'active' : ''}`}
-          >
-            <Icon name="team" size={18} className="nav-icon" />
-            <span className="nav-text">Teams</span>
-          </Link>
-          <Link
-            to="/sets"
-            className={`nav-link ${location.pathname.startsWith('/sets') ? 'active' : ''}`}
-          >
-            <Icon name="series" size={18} className="nav-icon" />
-            <span className="nav-text">Sets</span>
-          </Link>
-        </nav>
+        {/* Universal Search - Hidden on home page, moved from right side */}
+        {!hideNavSearch() && (
+          <div className="header-search">
+            <UniversalSearch />
+          </div>
+        )}
 
         {/* Mobile Navigation Menu */}
         {showMobileMenu && (
           <nav className="mobile-nav" ref={mobileMenuRef}>
-            <Link 
-              to="/players" 
-              className={`mobile-nav-link ${location.pathname.startsWith('/players') ? 'active' : ''}`}
-            >
-              <Icon name="player" size={20} />
-              <span>Players</span>
-            </Link>
-            <Link 
-              to="/teams" 
-              className={`mobile-nav-link ${location.pathname.startsWith('/teams') ? 'active' : ''}`}
-            >
-              <Icon name="team" size={20} />
-              <span>Teams</span>
-            </Link>
-            <Link
-              to="/sets"
-              className={`mobile-nav-link ${location.pathname.startsWith('/sets') ? 'active' : ''}`}
-            >
-              <Icon name="series" size={20} />
-              <span>Sets</span>
-            </Link>
             {!isAuthenticated && (
               <>
-                <div className="mobile-nav-divider"></div>
                 <Link to="/auth/login" className="mobile-nav-link primary">
                   <Icon name="user" size={20} />
                   <span>Sign In</span>
@@ -308,13 +268,6 @@ function Header() {
               </>
             )}
           </nav>
-        )}
-
-        {/* Universal Search - Hidden on pages with prominent search */}
-        {!hideNavSearch() && (
-          <div className="header-search">
-            <UniversalSearch />
-          </div>
         )}
 
         {/* User Section */}

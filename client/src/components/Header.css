@@ -742,17 +742,18 @@
   opacity: 1;
 }
 
-/* Search Section */
+/* Search Section - Now takes center stage */
 .header-search {
   flex: 1;
-  min-width: 300px;
-  max-width: 500px;
+  min-width: 0;
+  max-width: 600px;
   margin: 0 auto;
 }
 
 /* User Section */
 .header-user {
   position: relative;
+  flex-shrink: 0;
 }
 
 /* Auth Buttons */
@@ -1177,8 +1178,7 @@
   }
   
   .header-search {
-    min-width: 300px;
-    max-width: 450px;
+    max-width: 500px;
   }
 }
 
@@ -1187,25 +1187,11 @@
     gap: 1rem;
     padding: 0 1rem;
   }
-  
-  .desktop-nav {
-    gap: 0.5rem;
-  }
-  
-  .nav-link {
-    padding: 0.5rem 0.75rem;
-    font-size: 0.9rem;
-  }
-  
-  .nav-icon {
-    display: none;
-  }
-  
+
   .header-search {
-    min-width: 300px;
-    max-width: 350px;
+    max-width: 400px;
   }
-  
+
   .header-logo h1 {
     font-size: 1.4rem;
   }
@@ -1233,11 +1219,7 @@
   .header-logo h1 {
     font-size: 1.3rem;
   }
-  
-  .desktop-nav {
-    display: none;
-  }
-  
+
   .mobile-nav {
     display: flex;
     flex-direction: column;
