@@ -407,6 +407,18 @@ async function extractPlayerNames(query, tokens) {
       cleanQuery = cleanQuery.replace(new RegExp(`\\b${keyword}\\b`, 'gi'), '')
     }
 
+    // Remove parallel/color keywords to avoid false matches
+    // This ensures "pink steven kwan" and "steven kwan pink" both extract the same player
+    const parallelKeywords = [
+      'refractor', 'prizm', 'shimmer', 'xfractor', 'superfractor',
+      'red', 'blue', 'green', 'gold', 'silver', 'orange', 'purple', 'black', 'white',
+      'wave', 'atomic', 'sepia', 'negative', 'camo', 'pink', 'yellow', 'teal', 'bronze',
+      'platinum', 'emerald', 'sapphire', 'ruby', 'rainbow', 'prism', 'chrome'
+    ]
+    for (const keyword of parallelKeywords) {
+      cleanQuery = cleanQuery.replace(new RegExp(`\\b${keyword}\\b`, 'gi'), '')
+    }
+
     cleanQuery = cleanQuery.replace(/\s+/g, ' ').trim()
 
     if (cleanQuery.length < 2) {
@@ -415,12 +427,9 @@ async function extractPlayerNames(query, tokens) {
     }
 
     // N-gram entity extraction approach
-    // For "pink evan white" or "blue red sox", try ALL possible word combinations
-    // Let the database tell us which combinations are actual players/teams
-    // Examples:
-    //   "pink evan white" → try ["pink evan white", "pink evan", "evan white", "pink", "evan", "white"]
-    //   "blue red sox" → try ["blue red sox", "blue red", "red sox", "blue", "red", "sox"]
-    //   "whitey ford blue" → try ["whitey ford blue", "whitey ford", "ford blue", "whitey", "ford", "blue"]
+    // After removing parallel keywords, we extract clean player/team names
+    // This makes extraction order-agnostic: "pink steven kwan" and "steven kwan pink"
+    // both become "steven kwan" and extract the same player
 
     const words = cleanQuery.trim().split(/\s+/)
     const nGrams = []
@@ -627,9 +636,61 @@ async function extractPlayerNames(query, tokens) {
 
 async function extractSetNames(query, tokens) {
   try {
+    // Remove already-identified tokens to avoid false matches
+    let cleanQuery = query
+
+    // Remove card numbers
+    for (const cn of tokens.cardNumber) {
+      cleanQuery = removeTokenFromQuery(cleanQuery, cn.pattern)
+    }
+
+    // Remove years (but we may want years for set matching, so be careful)
+    // Skip year removal for sets as years are useful: "2024 bowman chrome"
+
+    // Remove serial numbers
+    for (const s of tokens.serial) {
+      cleanQuery = removeTokenFromQuery(cleanQuery, s.pattern)
+    }
+
+    // Remove production codes
+    for (const pc of tokens.productionCode) {
+      cleanQuery = removeTokenFromQuery(cleanQuery, pc.pattern)
+    }
+
+    // Remove card type keywords
+    const cardTypeKeywords = [
+      'rookie', 'rc', 'rcs', 'rookies', '1st bowman', 'first bowman', 'prospect',
+      'autograph', 'auto', 'autos', 'autographed', 'signed', 'sig',
+      'sp', 'ssp', 'short print', 'super short', 'variation', 'var', 'variant',
+      'relic', 'jersey', 'patch', 'memorabilia', 'game-used', 'game used'
+    ]
+    for (const keyword of cardTypeKeywords) {
+      cleanQuery = cleanQuery.replace(new RegExp(`\\b${keyword}\\b`, 'gi'), '')
+    }
+
+    // Remove parallel/color keywords to avoid false matches
+    // BUT exclude keywords commonly used in set names (chrome, prism, prizm, etc.)
+    const parallelKeywordsForSetCleaning = [
+      'refractor', 'xfractor', 'superfractor', 'shimmer',
+      'red', 'blue', 'green', 'gold', 'silver', 'orange', 'purple', 'black', 'white',
+      'wave', 'atomic', 'sepia', 'negative', 'camo', 'pink', 'yellow', 'teal', 'bronze',
+      'platinum', 'emerald', 'sapphire', 'ruby', 'rainbow'
+      // NOTE: Omitted 'chrome', 'prism', 'prizm' as these are commonly part of set names
+      // (Bowman Chrome, Topps Chrome, Panini Prizm, etc.)
+    ]
+    for (const keyword of parallelKeywordsForSetCleaning) {
+      cleanQuery = cleanQuery.replace(new RegExp(`\\b${keyword}\\b`, 'gi'), '')
+    }
+
+    cleanQuery = cleanQuery.replace(/\s+/g, ' ').trim()
+
+    if (cleanQuery.length < 2) {
+      console.log(`  [Set Name] Skipping: query too short after token removal`)
+      return
+    }
+
     // N-gram extraction for sets
-    // Examples: "bieber topps" → ["bieber topps", "topps"], "2024 bowman chrome" → all combinations
-    const words = query.trim().split(/\s+/)
+    const words = cleanQuery.trim().split(/\s+/)
     const nGrams = []
 
     // For 3+ word queries, skip 1-word n-grams to avoid noise
@@ -644,7 +705,7 @@ async function extractSetNames(query, tokens) {
       }
     }
 
-    console.log(`  [Set Name] Generated ${nGrams.length} n-grams from "${query}"`)
+    console.log(`  [Set Name] Generated ${nGrams.length} n-grams from "${cleanQuery}"`)
 
     // Search for each n-gram in parallel
     const searchPromises = nGrams.map(async (ngram) => {
@@ -770,9 +831,60 @@ async function extractSetNames(query, tokens) {
 
 async function extractTeamNames(query, tokens) {
   try {
-    // N-gram extraction for teams (same approach as players)
-    // Examples: "bieber akron" → ["bieber akron", "akron"], "cleveland" → ["cleveland"]
-    const words = query.trim().split(/\s+/)
+    // Remove already-identified tokens to avoid false matches (same approach as players)
+    let cleanQuery = query
+
+    // Remove card numbers
+    for (const cn of tokens.cardNumber) {
+      cleanQuery = removeTokenFromQuery(cleanQuery, cn.pattern)
+    }
+
+    // Remove years
+    for (const y of tokens.year) {
+      cleanQuery = removeTokenFromQuery(cleanQuery, y.year.toString())
+    }
+
+    // Remove serial numbers
+    for (const s of tokens.serial) {
+      cleanQuery = removeTokenFromQuery(cleanQuery, s.pattern)
+    }
+
+    // Remove production codes
+    for (const pc of tokens.productionCode) {
+      cleanQuery = removeTokenFromQuery(cleanQuery, pc.pattern)
+    }
+
+    // Remove card type keywords
+    const cardTypeKeywords = [
+      'rookie', 'rc', 'rcs', 'rookies', '1st bowman', 'first bowman', 'prospect',
+      'autograph', 'auto', 'autos', 'autographed', 'signed', 'sig',
+      'sp', 'ssp', 'short print', 'super short', 'variation', 'var', 'variant',
+      'relic', 'jersey', 'patch', 'memorabilia', 'game-used', 'game used'
+    ]
+    for (const keyword of cardTypeKeywords) {
+      cleanQuery = cleanQuery.replace(new RegExp(`\\b${keyword}\\b`, 'gi'), '')
+    }
+
+    // Remove parallel/color keywords to avoid false matches
+    const parallelKeywords = [
+      'refractor', 'prizm', 'shimmer', 'xfractor', 'superfractor',
+      'red', 'blue', 'green', 'gold', 'silver', 'orange', 'purple', 'black', 'white',
+      'wave', 'atomic', 'sepia', 'negative', 'camo', 'pink', 'yellow', 'teal', 'bronze',
+      'platinum', 'emerald', 'sapphire', 'ruby', 'rainbow', 'prism', 'chrome'
+    ]
+    for (const keyword of parallelKeywords) {
+      cleanQuery = cleanQuery.replace(new RegExp(`\\b${keyword}\\b`, 'gi'), '')
+    }
+
+    cleanQuery = cleanQuery.replace(/\s+/g, ' ').trim()
+
+    if (cleanQuery.length < 2) {
+      console.log(`  [Team Name] Skipping: query too short after token removal`)
+      return
+    }
+
+    // N-gram extraction for teams
+    const words = cleanQuery.trim().split(/\s+/)
     const nGrams = []
 
     // For 3+ word queries, skip 1-word n-grams to avoid noise
@@ -787,7 +899,7 @@ async function extractTeamNames(query, tokens) {
       }
     }
 
-    console.log(`  [Team Name] Generated ${nGrams.length} n-grams from "${query}"`)
+    console.log(`  [Team Name] Generated ${nGrams.length} n-grams from "${cleanQuery}"`)
 
     // Search for each n-gram in parallel
     const searchPromises = nGrams.map(async (ngram) => {
