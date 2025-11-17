@@ -1,11 +1,15 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import Icon from './Icon'
 import './AdminNavigation.css'
 
 function AdminNavigation() {
   const location = useLocation()
-  
+  const [isVisible, setIsVisible] = useState(true)
+
+  // Don't render if hidden
+  if (!isVisible) return null
+
   const adminRoutes = [
     {
       path: '/admin',
@@ -61,7 +65,7 @@ function AdminNavigation() {
           <Icon name="warning" size={16} />
           <span>Admin Zone</span>
         </div>
-        
+
         <div className="admin-nav-items">
           {adminRoutes.map(route => (
             <Link
@@ -74,10 +78,16 @@ function AdminNavigation() {
             </Link>
           ))}
         </div>
-        
-        <div className="admin-zone-label">
-          <span>Admin Zone</span>
-          <Icon name="warning" size={16} />
+
+        <div className="admin-zone-actions">
+          <button
+            className="admin-nav-close"
+            onClick={() => setIsVisible(false)}
+            aria-label="Hide admin navigation"
+            title="Hide admin navigation (returns on page refresh)"
+          >
+            <Icon name="close" size={16} />
+          </button>
         </div>
       </div>
     </nav>
