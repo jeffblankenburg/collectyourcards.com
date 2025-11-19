@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
+import { trackSearch, trackSearchResultClick } from '../utils/analytics'
 import Icon from './Icon'
 import axios from 'axios'
 // import './UniversalSearch.css' // Styles moved to Header.css for independent stylesheets
@@ -80,6 +81,9 @@ function UniversalSearch({ className = '' }) {
       setSearchTime(response.data.searchTime)
       setShowDropdown(true)
       setSelectedIndex(-1)
+
+      // Track search in Google Analytics
+      trackSearch(searchQuery, response.data.results?.length || 0)
     } catch (err) {
       console.error('Search error:', err)
       error('Search failed. Please try again.')
@@ -166,14 +170,23 @@ function UniversalSearch({ className = '' }) {
   }
   
   // Handle result click
-  const handleResultClick = (result) => {
+  const handleResultClick = (result, position = 0) => {
     setShowDropdown(false)
+    const searchTerm = query
     setQuery('')
-    
+
+    // Track search result click in Google Analytics
+    trackSearchResultClick(
+      searchTerm,
+      result.type,
+      result.id?.toString() || 'unknown',
+      position + 1 // Convert to 1-indexed
+    )
+
     // Add to search history (only for authenticated users)
     if (isAuthenticated && user) {
-      const searchTerm = getResultTitle(result)
-      const newHistory = [searchTerm, ...searchHistory.filter(h => h !== searchTerm)].slice(0, 10)
+      const resultTitle = getResultTitle(result)
+      const newHistory = [resultTitle, ...searchHistory.filter(h => h !== resultTitle)].slice(0, 10)
       setSearchHistory(newHistory)
       const userHistoryKey = `searchHistory_${user.id}`
       localStorage.setItem(userHistoryKey, JSON.stringify(newHistory))
@@ -401,7 +414,7 @@ function UniversalSearch({ className = '' }) {
                   setQuery(result.title)
                   performSearch(result.title)
                 } else {
-                  handleResultClick(result)
+                  handleResultClick(result, index)
                 }
               }}
             >

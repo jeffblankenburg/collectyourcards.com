@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import axios from 'axios'
+import { trackLogin, trackLogout, trackSignup } from '../utils/analytics'
 
 const AuthContext = createContext()
 
@@ -65,6 +66,9 @@ export const AuthProvider = ({ children }) => {
       setUser(userData)
       setIsAuthenticated(true)
 
+      // Track login in Google Analytics
+      trackLogin('email')
+
       return { success: true, user: userData }
     } catch (error) {
       console.error('Login failed:', error)
@@ -76,9 +80,12 @@ export const AuthProvider = ({ children }) => {
   const register = async (userData) => {
     try {
       const response = await axios.post('/api/auth/register', userData)
-      
-      return { 
-        success: true, 
+
+      // Track signup in Google Analytics
+      trackSignup('email')
+
+      return {
+        success: true,
         message: response.data.message || 'Registration successful! Please check your email to verify your account.'
       }
     } catch (error) {
@@ -89,6 +96,9 @@ export const AuthProvider = ({ children }) => {
   }
 
   const logout = () => {
+    // Track logout in Google Analytics (before clearing state)
+    trackLogout()
+
     // Remove token and user
     localStorage.removeItem('token')
     localStorage.removeItem('user')
