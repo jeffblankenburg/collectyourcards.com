@@ -261,8 +261,8 @@ router.post('/', async (req, res, next) => {
       })
     }
 
-    // Insert user card
-    await prisma.$queryRaw`
+    // Insert user card and get the new user_card_id
+    const insertResult = await prisma.$queryRaw`
       INSERT INTO user_card (
         [user],
         card,
@@ -278,6 +278,7 @@ router.post('/', async (req, res, next) => {
         notes,
         created
       )
+      OUTPUT INSERTED.user_card_id
       VALUES (
         ${BigInt(parseInt(userId))},
         ${card_id},
@@ -294,6 +295,9 @@ router.post('/', async (req, res, next) => {
         GETDATE()
       )
     `
+
+    const newUserCardId = Number(insertResult[0].user_card_id)
+    console.log('Created user card with ID:', newUserCardId)
 
     // Get series_id for the card to update series completion
     const cardSeries = await prisma.$queryRaw`
@@ -320,7 +324,8 @@ router.post('/', async (req, res, next) => {
     }
 
     res.status(201).json({
-      message: 'Card added to collection successfully'
+      message: 'Card added to collection successfully',
+      user_card_id: newUserCardId
     })
 
     // Call achievement hook after successful response

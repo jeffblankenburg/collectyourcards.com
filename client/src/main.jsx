@@ -67,6 +67,7 @@ const RainbowView = lazy(() => import('./pages/RainbowView.jsx'))
 const PublicProfile = lazy(() => import('./pages/PublicProfile.jsx'))
 const ProfileManagement = lazy(() => import('./pages/ProfileManagement.jsx'))
 const DesignSystemDemo = lazy(() => import('./pages/DesignSystemDemo.jsx'))
+const PWADemo = lazy(() => import('./pages/PWADemo.jsx'))
 const Achievements = lazy(() => import('./pages/Achievements.jsx'))
 const Notifications = lazy(() => import('./pages/Notifications.jsx'))
 const AdminAchievements = lazy(() => import('./pages/AdminAchievements.jsx'))
@@ -138,7 +139,10 @@ createRoot(document.getElementById('root')).render(
               
               {/* Design System Demo - Testing new CSS system */}
               <Route path="/design-system-demo" element={<DesignSystemDemo />} />
-              
+
+              {/* PWA Demo - Mobile UI Components */}
+              <Route path="/pwa-demo" element={<PWADemo />} />
+
               {/* Achievements routes - MUST BE BEFORE username route */}
               <Route path="/achievements" element={<ProtectedRoute><Achievements /></ProtectedRoute>} />
               <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
