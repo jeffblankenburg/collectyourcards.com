@@ -261,46 +261,50 @@ router.post('/', async (req, res, next) => {
       })
     }
 
-    // Insert user card
-    await prisma.$queryRaw`
-      INSERT INTO user_card (
-        [user],
-        card,
-        random_code,
-        serial_number,
-        purchase_price,
-        estimated_value,
-        grading_agency,
-        grade,
-        grade_id,
-        aftermarket_autograph,
-        user_location,
-        notes,
-        created
-      )
-      VALUES (
-        ${BigInt(parseInt(userId))},
-        ${card_id},
-        ${random_code},
-        ${serial_number},
-        ${purchase_price},
-        ${estimated_value},
-        ${grading_agency},
-        ${grade},
-        ${grade_id || null},
-        ${aftermarket_autograph || false},
-        ${user_location},
-        ${notes || null},
-        GETDATE()
-      )
-    `
+    // Insert user card and get the ID in a single transaction
+    const result = await prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`
+        INSERT INTO user_card (
+          [user],
+          card,
+          random_code,
+          serial_number,
+          purchase_price,
+          estimated_value,
+          grading_agency,
+          grade,
+          grade_id,
+          aftermarket_autograph,
+          user_location,
+          notes,
+          created
+        )
+        VALUES (
+          ${BigInt(parseInt(userId))},
+          ${card_id},
+          ${random_code},
+          ${serial_number},
+          ${purchase_price},
+          ${estimated_value},
+          ${grading_agency},
+          ${grade},
+          ${grade_id || null},
+          ${aftermarket_autograph || false},
+          ${user_location},
+          ${notes || null},
+          GETDATE()
+        )
+      `
 
-    // Get the newly created user_card_id using SCOPE_IDENTITY()
-    const idResult = await prisma.$queryRaw`
-      SELECT CAST(SCOPE_IDENTITY() AS BIGINT) as user_card_id
-    `
+      // Get the newly created user_card_id using SCOPE_IDENTITY() in same transaction
+      const idResult = await tx.$queryRaw`
+        SELECT CAST(SCOPE_IDENTITY() AS BIGINT) as user_card_id
+      `
 
-    const newUserCardId = Number(idResult[0].user_card_id)
+      return idResult[0]
+    })
+
+    const newUserCardId = Number(result.user_card_id)
     console.log('Created user card with ID:', newUserCardId)
 
     // Get series_id for the card to update series completion
