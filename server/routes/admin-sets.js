@@ -859,12 +859,20 @@ router.put('/series/:id', async (req, res) => {
     }
 
     // Prepare update data - excluding fields that need special handling
+    // Helper function to safely parse integers (handles empty strings, null, undefined)
+    const safeParseInt = (value, fallback) => {
+      if (value === undefined) return fallback
+      if (value === null || value === '') return fallback
+      const parsed = parseInt(value)
+      return isNaN(parsed) ? fallback : parsed
+    }
+
     const trimmedName = name?.trim()
     const updateData = {
       name: trimmedName || null,
       slug: trimmedName ? generateSlug(trimmedName) : existingSeries.slug, // Regenerate slug if name changed
-      card_count: card_count !== undefined ? parseInt(card_count) : existingSeries.card_count,
-      card_entered_count: card_entered_count !== undefined ? parseInt(card_entered_count) : existingSeries.card_entered_count,
+      card_count: safeParseInt(card_count, existingSeries.card_count || 0),
+      card_entered_count: safeParseInt(card_entered_count, existingSeries.card_entered_count || 0),
       is_base: is_base !== undefined ? is_base : existingSeries.is_base,
       parallel_of_series: parallel_of_series ? BigInt(parallel_of_series) : null,
       min_print_run: min_print_run !== undefined ? (min_print_run ? parseInt(min_print_run) : null) : existingSeries.min_print_run,
