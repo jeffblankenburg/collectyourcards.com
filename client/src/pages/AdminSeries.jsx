@@ -95,14 +95,30 @@ function AdminSeries() {
 
   // Memoized series row component to prevent unnecessary re-renders
   const SeriesRow = React.memo(({ seriesItem, onEdit, onDuplicate, onViewCards, onUpload }) => {
-    // Check if card counts don't match
+    // Check highlighting conditions:
+    // 1. Zero cards entered
+    // 2. Zero cards
+    // 3. Card counts don't match
+    const zeroCardsEntered = (seriesItem.card_entered_count || 0) === 0
+    const zeroCards = (seriesItem.card_count || 0) === 0
     const cardCountMismatch = seriesItem.card_count !== seriesItem.card_entered_count
+    const shouldHighlight = zeroCardsEntered || zeroCards || cardCountMismatch
+
+    // Generate tooltip message based on conditions
+    let tooltipMessage = "Double-click to edit series"
+    if (shouldHighlight) {
+      const reasons = []
+      if (zeroCardsEntered) reasons.push("0 cards entered")
+      if (zeroCards) reasons.push("0 cards")
+      if (cardCountMismatch && !zeroCardsEntered && !zeroCards) reasons.push("card count mismatch")
+      tooltipMessage = `${reasons.join(", ")} - Double-click to edit`
+    }
 
     return (
       <div
-        className={`series-row ${cardCountMismatch ? 'card-count-mismatch' : ''}`}
+        className={`series-row ${shouldHighlight ? 'card-count-mismatch' : ''}`}
         onDoubleClick={() => onEdit(seriesItem)}
-        title={cardCountMismatch ? "Card count mismatch - Double-click to edit" : "Double-click to edit series"}
+        title={tooltipMessage}
       >
         <div className="col-actions">
           <button 
