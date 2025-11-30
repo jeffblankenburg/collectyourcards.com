@@ -261,8 +261,8 @@ router.post('/', async (req, res, next) => {
       })
     }
 
-    // Insert user card and get the new user_card_id
-    const insertResult = await prisma.$queryRaw`
+    // Insert user card
+    await prisma.$queryRaw`
       INSERT INTO user_card (
         [user],
         card,
@@ -278,7 +278,6 @@ router.post('/', async (req, res, next) => {
         notes,
         created
       )
-      OUTPUT INSERTED.user_card_id
       VALUES (
         ${BigInt(parseInt(userId))},
         ${card_id},
@@ -296,7 +295,12 @@ router.post('/', async (req, res, next) => {
       )
     `
 
-    const newUserCardId = Number(insertResult[0].user_card_id)
+    // Get the newly created user_card_id using SCOPE_IDENTITY()
+    const idResult = await prisma.$queryRaw`
+      SELECT CAST(SCOPE_IDENTITY() AS BIGINT) as user_card_id
+    `
+
+    const newUserCardId = Number(idResult[0].user_card_id)
     console.log('Created user card with ID:', newUserCardId)
 
     // Get series_id for the card to update series completion
