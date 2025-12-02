@@ -1,0 +1,287 @@
+/* Edit Set Modal - Matches non-admin modal styling */
+.edit-set-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  animation: editSetFadeIn 0.2s ease;
+}
+
+@keyframes editSetFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.edit-set-modal {
+  background: #1e293b;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  width: 90%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: editSetSlideUp 0.3s ease;
+}
+
+@keyframes editSetSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.edit-set-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.edit-set-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: #f1f5f9;
+  font-weight: 600;
+}
+
+.edit-set-close {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.edit-set-close:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #f1f5f9;
+}
+
+.edit-set-form {
+  padding: 1.25rem;
+}
+
+.edit-set-row {
+  margin-bottom: 1.25rem;
+}
+
+.edit-set-row label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  color: #cbd5e1;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.edit-set-row input,
+.edit-set-row select {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  padding: 0.625rem;
+  color: #f1f5f9;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+  width: 100%;
+}
+
+.edit-set-row input:focus,
+.edit-set-row select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.edit-set-row input::placeholder {
+  color: #64748b;
+}
+
+.edit-set-row select option {
+  background: #1e293b;
+  color: #f1f5f9;
+}
+
+/* Complete toggle button */
+.edit-set-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: all 0.2s;
+  width: 100%;
+  font-size: 0.875rem;
+  text-align: left;
+}
+
+.edit-set-toggle:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.edit-set-toggle.active {
+  background: rgba(34, 197, 94, 0.15);
+  border-color: rgba(34, 197, 94, 0.3);
+  color: #86efac;
+}
+
+.edit-set-toggle .toggle-check {
+  margin-left: auto;
+  color: #22c55e;
+}
+
+/* Thumbnail section */
+.edit-set-thumbnail-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.edit-set-current-thumbnail {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.edit-set-current-thumbnail img {
+  max-width: 200px;
+  max-height: 150px;
+  object-fit: contain;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.edit-set-thumbnail-label {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.edit-set-thumbnail-upload {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.875rem;
+}
+
+.edit-set-thumbnail-upload:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #cbd5e1;
+}
+
+.edit-set-upload-status {
+  margin-left: 0.5rem;
+  color: #3b82f6;
+}
+
+/* Actions */
+.edit-set-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  padding: 1.25rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.edit-set-actions button {
+  padding: 0.625rem 1.25rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.edit-set-cancel {
+  background: rgba(255, 255, 255, 0.1);
+  color: #cbd5e1;
+}
+
+.edit-set-cancel:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #f1f5f9;
+}
+
+.edit-set-save {
+  background: #3b82f6;
+  color: white;
+}
+
+.edit-set-save:hover:not(:disabled) {
+  background: #2563eb;
+}
+
+.edit-set-save:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Card spinner */
+.edit-set-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 21px;
+  background: white;
+  border-radius: 3px;
+  animation: editSetSpin 1s linear infinite;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+@keyframes editSetSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Mobile responsiveness */
+@media (max-width: 480px) {
+  .edit-set-modal {
+    width: 95%;
+    max-height: 95vh;
+  }
+
+  .edit-set-form {
+    padding: 1rem;
+  }
+
+  .edit-set-actions {
+    flex-direction: column;
+    padding: 1rem;
+  }
+
+  .edit-set-actions button {
+    width: 100%;
+    justify-content: center;
+  }
+}

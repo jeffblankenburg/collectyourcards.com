@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import axios from 'axios'
 import { useToast } from '../../contexts/ToastContext'
 import Icon from '../Icon'
+import './EditSetModal.css'
 
 function EditSetModal({ 
   isOpen, 
@@ -198,146 +199,157 @@ function EditSetModal({
   if (!isOpen) return null
 
   return (
-    <div className="modal-overlay" onClick={handleClose}>
-      <div className="edit-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
+    <div className="edit-set-overlay" onClick={handleClose}>
+      <div className="edit-set-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="edit-set-header">
           <h3>{set ? `Edit Set #${set.set_id}` : 'Add New Set'}</h3>
-          <button className="close-btn" onClick={handleClose}>
+          <button className="edit-set-close" onClick={handleClose}>
             <Icon name="x" size={20} />
           </button>
         </div>
-        
-        <div className="modal-body">
-          <div className="form-row">
-            <label className="form-label">Name</label>
-            <input
-              type="text"
-              className="form-input"
-              value={editForm.name}
-              onChange={(e) => handleFormChange('name', e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Set name"
-            />
+
+        <div className="edit-set-form">
+          <div className="edit-set-row">
+            <label>
+              Name
+              <input
+                type="text"
+                value={editForm.name}
+                onChange={(e) => handleFormChange('name', e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Set name"
+              />
+            </label>
           </div>
 
-          <div className="form-row">
-            <label className="form-label">Year</label>
-            <input
-              type="number"
-              className="form-input"
-              value={editForm.year}
-              onChange={(e) => handleFormChange('year', e.target.value)}
-              onKeyDown={handleKeyDown}
-              min="1900"
-              max="2100"
-            />
+          <div className="edit-set-row">
+            <label>
+              Year
+              <input
+                type="number"
+                value={editForm.year}
+                onChange={(e) => handleFormChange('year', e.target.value)}
+                onKeyDown={handleKeyDown}
+                min="1900"
+                max="2100"
+                placeholder="e.g. 2024"
+              />
+            </label>
           </div>
 
-          <div className="form-row">
-            <label className="form-label">Organization</label>
-            <select
-              className="form-input"
-              value={editForm.organization}
-              onChange={(e) => handleFormChange('organization', e.target.value)}
-              onKeyDown={handleKeyDown}
-            >
-                    <option value="">Select organization...</option>
-                    {organizations.map(org => (
-                      <option key={org.organization_id} value={org.organization_id}>
-                        {org.name} ({org.abbreviation})
-                      </option>
-                    ))}
-                  </select>
-                </div>
+          <div className="edit-set-row">
+            <label>
+              Organization
+              <select
+                value={editForm.organization}
+                onChange={(e) => handleFormChange('organization', e.target.value)}
+                onKeyDown={handleKeyDown}
+              >
+                <option value="">Select organization...</option>
+                {organizations.map(org => (
+                  <option key={org.organization_id} value={org.organization_id}>
+                    {org.name} ({org.abbreviation})
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
 
-                <div className="form-row">
-                  <label className="form-label">Manufacturer</label>
-                  <select
-                    className="form-input"
-                    value={editForm.manufacturer}
-                    onChange={(e) => handleFormChange('manufacturer', e.target.value)}
-                    onKeyDown={handleKeyDown}
-                  >
-                    <option value="">Select manufacturer...</option>
-                    {manufacturers.map(mfg => (
-                      <option key={mfg.manufacturer_id} value={mfg.manufacturer_id}>
-                        {mfg.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+          <div className="edit-set-row">
+            <label>
+              Manufacturer
+              <select
+                value={editForm.manufacturer}
+                onChange={(e) => handleFormChange('manufacturer', e.target.value)}
+                onKeyDown={handleKeyDown}
+              >
+                <option value="">Select manufacturer...</option>
+                {manufacturers.map(mfg => (
+                  <option key={mfg.manufacturer_id} value={mfg.manufacturer_id}>
+                    {mfg.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
 
-                <div className="form-row">
-                  <label className="form-label">Complete</label>
-                  <button
-                    type="button"
-                    className={`hof-toggle ${editForm.is_complete ? 'hof-active' : ''}`}
-                    onClick={() => handleFormChange('is_complete', !editForm.is_complete)}
-                  >
-                    <Icon name="check-circle" size={16} />
-                    <span>Set is complete</span>
-                    {editForm.is_complete && <Icon name="check" size={16} className="hof-check" />}
-                  </button>
-                </div>
+          <div className="edit-set-row">
+            <label>
+              Status
+              <button
+                type="button"
+                className={`edit-set-toggle ${editForm.is_complete ? 'active' : ''}`}
+                onClick={() => handleFormChange('is_complete', !editForm.is_complete)}
+              >
+                <Icon name="check-circle" size={16} />
+                <span>Set is complete</span>
+                {editForm.is_complete && <Icon name="check" size={16} className="toggle-check" />}
+              </button>
+            </label>
+          </div>
 
-                <div className="form-row">
-                  <label className="form-label">Thumbnail</label>
-                  <div className="thumbnail-section">
-                    {editForm.thumbnail && (
-                      <div className="current-thumbnail">
-                        <img 
-                          src={editForm.thumbnail} 
-                          alt="Current thumbnail"
-                        />
-                        <span className="thumbnail-label">Current thumbnail</span>
-                      </div>
-                    )}
-                    <div className="thumbnail-upload" onClick={() => document.getElementById('thumbnail-input').click()}>
-                      <input
-                        id="thumbnail-input"
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => {
-                          const file = e.target.files[0]
-                          setSelectedFile(file)
-                          if (file) {
-                            const previewUrl = URL.createObjectURL(file)
-                            handleFormChange('thumbnail', previewUrl)
-                          }
-                        }}
-                        className="file-input"
-                        style={{ display: 'none' }}
-                      />
-                      <span className="upload-text">
-                        {selectedFile ? selectedFile.name : (editForm.thumbnail ? 'Change thumbnail...' : 'Choose image file...')}
-                      </span>
-                      {uploadingThumbnail && <span className="upload-status">Uploading...</span>}
-                    </div>
+          <div className="edit-set-row">
+            <label>
+              Thumbnail
+              <div className="edit-set-thumbnail-section">
+                {editForm.thumbnail && (
+                  <div className="edit-set-current-thumbnail">
+                    <img
+                      src={editForm.thumbnail}
+                      alt="Current thumbnail"
+                    />
+                    <span className="edit-set-thumbnail-label">Current thumbnail</span>
+                  </div>
+                )}
+                <div
+                  className="edit-set-thumbnail-upload"
+                  onClick={() => document.getElementById('thumbnail-input').click()}
+                >
+                  <input
+                    id="thumbnail-input"
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files[0]
+                      setSelectedFile(file)
+                      if (file) {
+                        const previewUrl = URL.createObjectURL(file)
+                        handleFormChange('thumbnail', previewUrl)
+                      }
+                    }}
+                    style={{ display: 'none' }}
+                  />
+                  <span>
+                    {selectedFile ? selectedFile.name : (editForm.thumbnail ? 'Change thumbnail...' : 'Choose image file...')}
+                  </span>
+                  {uploadingThumbnail && <span className="edit-set-upload-status">Uploading...</span>}
+                </div>
+              </div>
+            </label>
           </div>
         </div>
-          
-          <div className="modal-actions">
-            <button className="cancel-btn" onClick={handleClose} disabled={saving}>
-              Cancel
-            </button>
-            <button 
-              className="save-btn" 
-              onClick={handleSave}
-              disabled={saving}
-            >
-              {saving ? (
-                <>
-                  <div className="card-icon-spinner small"></div>
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Icon name="check" size={16} />
-                  {set ? 'Save Changes' : 'Create Set'}
-                </>
-              )}
-            </button>
-          </div>
+
+        <div className="edit-set-actions">
+          <button className="edit-set-cancel" onClick={handleClose} disabled={saving}>
+            Cancel
+          </button>
+          <button
+            className="edit-set-save"
+            onClick={handleSave}
+            disabled={saving}
+          >
+            {saving ? (
+              <>
+                <div className="edit-set-spinner"></div>
+                Saving...
+              </>
+            ) : (
+              <>
+                <Icon name="check" size={16} />
+                {set ? 'Save Changes' : 'Create Set'}
+              </>
+            )}
+          </button>
         </div>
       </div>
     </div>

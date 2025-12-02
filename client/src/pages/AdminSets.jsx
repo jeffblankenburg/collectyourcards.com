@@ -20,6 +20,9 @@ function AdminSets() {
   const [lastUpdated, setLastUpdated] = useState(null)
   const [sortField, setSortField] = useState('last_viewed')
   const [sortDirection, setSortDirection] = useState('desc')
+  const [viewMode, setViewMode] = useState('list') // 'list' or 'years'
+  const [years, setYears] = useState([])
+  const [selectedYear, setSelectedYear] = useState(null)
   const [showEditModal, setShowEditModal] = useState(false)
   const [showAddModal, setShowAddModal] = useState(false)
   const [editingItem, setEditingItem] = useState(null)
@@ -60,6 +63,7 @@ function AdminSets() {
     loadOrganizations()
     loadManufacturers()
     loadColors()
+    loadYears()
     // Load with initial search if provided in URL
     loadSets(searchParams.get('search') || '')
   }, [])
@@ -170,10 +174,74 @@ function AdminSets() {
     }
   }
 
+  const loadYears = async () => {
+    try {
+      const response = await axios.get('/api/sets-list')
+      const setsData = response.data.sets || []
+
+      // Group sets by year and count series and cards
+      const yearStats = {}
+      setsData.forEach(set => {
+        const setYear = set.year || parseInt(set.name.split(' ')[0])
+        if (setYear && setYear >= 1900 && setYear <= new Date().getFullYear() + 10) {
+          if (!yearStats[setYear]) {
+            yearStats[setYear] = { year: setYear, setCount: 0, seriesCount: 0, cardCount: 0 }
+          }
+          yearStats[setYear].setCount += 1
+          yearStats[setYear].seriesCount += set.series_count || 0
+          yearStats[setYear].cardCount += set.total_card_count || set.card_count || 0
+        }
+      })
+
+      const yearsData = Object.values(yearStats).sort((a, b) => b.year - a.year)
+      setYears(yearsData)
+    } catch (error) {
+      console.error('Error loading years:', error)
+    }
+  }
+
+  const loadSetsForYear = async (yearValue) => {
+    try {
+      setLoading(true)
+      const response = await axios.get('/api/sets-list')
+      const allSets = response.data.sets || []
+
+      // Filter sets by year
+      const yearSets = allSets.filter(set => {
+        const setYear = set.year || parseInt(set.name.split(' ')[0])
+        return setYear === parseInt(yearValue)
+      })
+
+      setSets(yearSets)
+      setIsSearchMode(false)
+    } catch (error) {
+      console.error('Error loading sets for year:', error)
+      addToast(`Failed to load sets: ${error.response?.data?.message || error.message}`, 'error')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleYearClick = (yearValue) => {
+    setSelectedYear(yearValue)
+    loadSetsForYear(yearValue)
+  }
+
+  const handleBackToYears = () => {
+    setSelectedYear(null)
+    loadSets(searchTerm)
+  }
+
   const handleSearch = (e) => {
     const value = e.target.value
     setSearchTerm(value)
-    
+
+    // If we're in year view and user searches, switch to list view
+    if (viewMode === 'years' && value.trim()) {
+      setViewMode('list')
+      setSelectedYear(null)
+    }
+
     // Debounce search
     clearTimeout(window.setsSearchTimeout)
     window.setsSearchTimeout = setTimeout(() => {
@@ -641,6 +709,29 @@ function AdminSets() {
         </div>
 
         <div className="admin-controls">
+          <div className="view-toggle">
+            <button
+              className={`view-toggle-btn ${viewMode === 'list' ? 'active' : ''}`}
+              onClick={() => {
+                setViewMode('list')
+                setSelectedYear(null)
+                loadSets(searchTerm)
+              }}
+              title="List view"
+            >
+              <Icon name="list" size={18} />
+            </button>
+            <button
+              className={`view-toggle-btn ${viewMode === 'years' ? 'active' : ''}`}
+              onClick={() => {
+                setViewMode('years')
+                setSelectedYear(null)
+              }}
+              title="Browse by year"
+            >
+              <Icon name="calendar" size={18} />
+            </button>
+          </div>
           <button
             className="add-set-btn"
             onClick={() => setShowAddModal(true)}
@@ -668,13 +759,212 @@ function AdminSets() {
             <div className="card-icon-spinner"></div>
             <span>Loading sets...</span>
           </div>
+        ) : viewMode === 'years' && !selectedYear ? (
+          /* Year Grid View */
+          <>
+            <div className="section-header">
+              <div className="section-info">
+                <h2>Browse Sets by Year ({years.length} years)</h2>
+              </div>
+            </div>
+
+            <div className="years-grid">
+              {years.map(y => (
+                <div
+                  key={y.year}
+                  className="year-card"
+                  onClick={() => handleYearClick(y.year)}
+                >
+                  <div className="year-number">{y.year}</div>
+                  <div className="year-stats">
+                    <div className="year-stat-box">
+                      <div className="year-stat-number">{y.setCount.toLocaleString()}</div>
+                      <div className="year-stat-label">Sets</div>
+                    </div>
+                    <div className="year-stat-box">
+                      <div className="year-stat-number">{y.cardCount.toLocaleString()}</div>
+                      <div className="year-stat-label">Cards</div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        ) : viewMode === 'years' && selectedYear ? (
+          /* Sets for Selected Year */
+          <>
+            <div className="section-header">
+              <div className="section-info year-header">
+                <button className="back-btn" onClick={handleBackToYears} title="Back to years">
+                  <Icon name="arrow-left" size={20} />
+                </button>
+                <h2>{selectedYear} Sets ({sets.length})</h2>
+              </div>
+            </div>
+
+            <div className="sets-table">
+              <div className="table-header">
+                <div className="col-header center">Actions</div>
+                <div
+                  className={`col-header sortable ${sortField === 'set_id' ? 'active' : ''}`}
+                  onClick={() => handleSort('set_id')}
+                >
+                  ID
+                  {sortField === 'set_id' && (
+                    <Icon
+                      name={sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'}
+                      size={14}
+                      className="sort-icon"
+                    />
+                  )}
+                </div>
+                <div className="col-header center">Thumb</div>
+                <div
+                  className={`col-header sortable ${sortField === 'name' ? 'active' : ''}`}
+                  onClick={() => handleSort('name')}
+                >
+                  Set Name
+                  {sortField === 'name' && (
+                    <Icon
+                      name={sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'}
+                      size={14}
+                      className="sort-icon"
+                    />
+                  )}
+                </div>
+                <div
+                  className={`col-header center sortable ${sortField === 'year' ? 'active' : ''}`}
+                  onClick={() => handleSort('year')}
+                >
+                  Year
+                  {sortField === 'year' && (
+                    <Icon
+                      name={sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'}
+                      size={14}
+                      className="sort-icon"
+                    />
+                  )}
+                </div>
+                <div
+                  className={`col-header center sortable ${sortField === 'organization' ? 'active' : ''}`}
+                  onClick={() => handleSort('organization')}
+                >
+                  Org
+                  {sortField === 'organization' && (
+                    <Icon
+                      name={sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'}
+                      size={14}
+                      className="sort-icon"
+                    />
+                  )}
+                </div>
+                <div
+                  className={`col-header center sortable ${sortField === 'manufacturer' ? 'active' : ''}`}
+                  onClick={() => handleSort('manufacturer')}
+                >
+                  Manufacturer
+                  {sortField === 'manufacturer' && (
+                    <Icon
+                      name={sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'}
+                      size={14}
+                      className="sort-icon"
+                    />
+                  )}
+                </div>
+                <div
+                  className={`col-header center sortable ${sortField === 'series_count' ? 'active' : ''}`}
+                  onClick={() => handleSort('series_count')}
+                >
+                  Series
+                  {sortField === 'series_count' && (
+                    <Icon
+                      name={sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'}
+                      size={14}
+                      className="sort-icon"
+                    />
+                  )}
+                </div>
+                <div
+                  className={`col-header center sortable ${sortField === 'card_count' ? 'active' : ''}`}
+                  onClick={() => handleSort('card_count')}
+                >
+                  Cards
+                  {sortField === 'card_count' && (
+                    <Icon
+                      name={sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'}
+                      size={14}
+                      className="sort-icon"
+                    />
+                  )}
+                </div>
+              </div>
+
+              {getSortedSets().map(set => (
+                <div
+                  key={set.set_id}
+                  className="set-row"
+                  onDoubleClick={() => handleEditSet(set)}
+                  title="Double-click to edit set"
+                >
+                  <div className="col-actions">
+                    <button
+                      className="edit-btn"
+                      title="Edit set"
+                      onClick={() => handleEditSet(set)}
+                    >
+                      <Icon name="edit" size={16} />
+                    </button>
+                    <button
+                      className="view-btn"
+                      title="View series"
+                      onClick={() => navigate(`/admin/series?set=${set.set_id}`)}
+                    >
+                      <Icon name="layers" size={16} />
+                    </button>
+                  </div>
+                  <div className="col-id">{set.set_id}</div>
+                  <div className="col-thumb">
+                    {set.thumbnail ? (
+                      <img
+                        src={set.thumbnail}
+                        alt=""
+                        className="set-thumbnail"
+                      />
+                    ) : (
+                      <div className="no-thumbnail">
+                        <Icon name="image" size={16} />
+                      </div>
+                    )}
+                  </div>
+                  <div className="col-name">
+                    <span className="set-name">{set.name}</span>
+                    {set.is_complete && <span className="complete-badge">Complete</span>}
+                  </div>
+                  <div className="col-year">{set.year}</div>
+                  <div className="col-organization">{set.organization}</div>
+                  <div className="col-manufacturer">{set.manufacturer}</div>
+                  <div className="col-series">{(set.series_count || 0).toLocaleString()}</div>
+                  <div className="col-cards">{(set.card_count || 0).toLocaleString()}</div>
+                </div>
+              ))}
+
+              {sets.length === 0 && (
+                <div className="empty-state">
+                  <Icon name="search" size={48} />
+                  <h3>No sets found</h3>
+                  <p>No sets found for {selectedYear}.</p>
+                </div>
+              )}
+            </div>
+          </>
         ) : (
+          /* List View (default) */
           <>
             <div className="section-header">
               <div className="section-info">
                 <h2>
-                  {isSearchMode 
-                    ? `Search Results (${sets.length})` 
+                  {isSearchMode
+                    ? `Search Results (${sets.length})`
                     : `Most Recently Viewed Sets (${sets.length})`
                   }
                 </h2>
@@ -684,115 +974,116 @@ function AdminSets() {
             <div className="sets-table">
               <div className="table-header">
                 <div className="col-header center">Actions</div>
-                <div 
+                <div
                   className={`col-header sortable ${sortField === 'set_id' ? 'active' : ''}`}
                   onClick={() => handleSort('set_id')}
                 >
                   ID
                   {sortField === 'set_id' && (
-                    <Icon 
-                      name={sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'} 
-                      size={14} 
-                      className="sort-icon" 
+                    <Icon
+                      name={sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'}
+                      size={14}
+                      className="sort-icon"
                     />
                   )}
                 </div>
-                <div 
+                <div className="col-header center">Thumb</div>
+                <div
                   className={`col-header sortable ${sortField === 'name' ? 'active' : ''}`}
                   onClick={() => handleSort('name')}
                 >
                   Set Name
                   {sortField === 'name' && (
-                    <Icon 
-                      name={sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'} 
-                      size={14} 
-                      className="sort-icon" 
+                    <Icon
+                      name={sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'}
+                      size={14}
+                      className="sort-icon"
                     />
                   )}
                 </div>
-                <div 
+                <div
                   className={`col-header center sortable ${sortField === 'year' ? 'active' : ''}`}
                   onClick={() => handleSort('year')}
                 >
                   Year
                   {sortField === 'year' && (
-                    <Icon 
-                      name={sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'} 
-                      size={14} 
-                      className="sort-icon" 
+                    <Icon
+                      name={sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'}
+                      size={14}
+                      className="sort-icon"
                     />
                   )}
                 </div>
-                <div 
+                <div
                   className={`col-header center sortable ${sortField === 'organization' ? 'active' : ''}`}
                   onClick={() => handleSort('organization')}
                 >
                   Org
                   {sortField === 'organization' && (
-                    <Icon 
-                      name={sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'} 
-                      size={14} 
-                      className="sort-icon" 
+                    <Icon
+                      name={sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'}
+                      size={14}
+                      className="sort-icon"
                     />
                   )}
                 </div>
-                <div 
+                <div
                   className={`col-header center sortable ${sortField === 'manufacturer' ? 'active' : ''}`}
                   onClick={() => handleSort('manufacturer')}
                 >
                   Manufacturer
                   {sortField === 'manufacturer' && (
-                    <Icon 
-                      name={sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'} 
-                      size={14} 
-                      className="sort-icon" 
+                    <Icon
+                      name={sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'}
+                      size={14}
+                      className="sort-icon"
                     />
                   )}
                 </div>
-                <div 
+                <div
                   className={`col-header center sortable ${sortField === 'series_count' ? 'active' : ''}`}
                   onClick={() => handleSort('series_count')}
                 >
                   Series
                   {sortField === 'series_count' && (
-                    <Icon 
-                      name={sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'} 
-                      size={14} 
-                      className="sort-icon" 
+                    <Icon
+                      name={sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'}
+                      size={14}
+                      className="sort-icon"
                     />
                   )}
                 </div>
-                <div 
+                <div
                   className={`col-header center sortable ${sortField === 'card_count' ? 'active' : ''}`}
                   onClick={() => handleSort('card_count')}
                 >
                   Cards
                   {sortField === 'card_count' && (
-                    <Icon 
-                      name={sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'} 
-                      size={14} 
-                      className="sort-icon" 
+                    <Icon
+                      name={sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'}
+                      size={14}
+                      className="sort-icon"
                     />
                   )}
                 </div>
               </div>
-              
+
               {getSortedSets().map(set => (
-                <div 
-                  key={set.set_id} 
+                <div
+                  key={set.set_id}
                   className="set-row"
                   onDoubleClick={() => handleEditSet(set)}
                   title="Double-click to edit set"
                 >
                   <div className="col-actions">
-                    <button 
+                    <button
                       className="edit-btn"
                       title="Edit set"
                       onClick={() => handleEditSet(set)}
                     >
                       <Icon name="edit" size={16} />
                     </button>
-                    <button 
+                    <button
                       className="view-btn"
                       title="View series"
                       onClick={() => navigate(`/admin/series?set=${set.set_id}`)}
@@ -801,6 +1092,19 @@ function AdminSets() {
                     </button>
                   </div>
                   <div className="col-id">{set.set_id}</div>
+                  <div className="col-thumb">
+                    {set.thumbnail ? (
+                      <img
+                        src={set.thumbnail}
+                        alt=""
+                        className="set-thumbnail"
+                      />
+                    ) : (
+                      <div className="no-thumbnail">
+                        <Icon name="image" size={16} />
+                      </div>
+                    )}
+                  </div>
                   <div className="col-name">
                     <span className="set-name">{set.name}</span>
                     {set.is_complete && <span className="complete-badge">Complete</span>}
@@ -818,7 +1122,7 @@ function AdminSets() {
                   <Icon name="search" size={48} />
                   <h3>No sets found</h3>
                   <p>
-                    {isSearchMode 
+                    {isSearchMode
                       ? `No sets match "${searchTerm}". Try a different search term.`
                       : 'No recently viewed sets found. Sets will appear here after users visit their detail pages.'
                     }

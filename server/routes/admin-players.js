@@ -36,112 +36,79 @@ router.get('/', async (req, res) => {
       console.log('Admin: Starting duplicates query...')
       const startTime = Date.now()
       try {
+        // Optimized query using persisted SOUNDEX columns (last_name_soundex, first_name_soundex)
         players = await prisma.$queryRawUnsafe(`
-        WITH PlayerNames AS (
-          SELECT
-            p.player_id,
-            p.first_name,
-            p.last_name,
-            p.nick_name,
-            p.birthdate,
-            p.is_hof,
-            p.card_count,
-            SOUNDEX(p.last_name) as last_soundex,
-            SOUNDEX(p.first_name) as first_soundex,
-            SOUNDEX(p.nick_name) as nick_soundex
-          FROM player p
-        ),
-        DuplicatePairs AS (
+        WITH DuplicatePairs AS (
           SELECT
             p1.player_id as player1_id,
             p2.player_id as player2_id,
-            p1.last_name as last_name,
-            MIN(p1.player_id) OVER (PARTITION BY
-              CASE WHEN p1.player_id < p2.player_id THEN p1.player_id ELSE p2.player_id END,
-              CASE WHEN p1.player_id < p2.player_id THEN p2.player_id ELSE p1.player_id END
-            ) as group_id
-          FROM PlayerNames p1
-          INNER JOIN PlayerNames p2 ON p1.player_id <> p2.player_id
+            p1.last_name as last_name
+          FROM player p1
+          INNER JOIN player p2 ON p1.player_id < p2.player_id
+            AND p1.last_name_soundex = p2.last_name_soundex
+            AND p1.last_name_soundex IS NOT NULL
           WHERE (
-            -- Same last name (phonetically)
-            p1.last_soundex = p2.last_soundex
-            AND (
-              -- Same first name (phonetically)
-              p1.first_soundex = p2.first_soundex
-              -- First name matches other's nickname
-              OR p1.first_name = p2.nick_name
-              OR p1.nick_name = p2.first_name
-              -- Nickname matches nickname
-              OR (p1.nick_name IS NOT NULL AND p2.nick_name IS NOT NULL AND p1.nick_soundex = p2.nick_soundex)
-              -- Similar first names (prefix matching with length check)
-              OR (
-                LEN(p1.first_name) > 3
-                AND LEN(p2.first_name) > 3
-                AND ABS(LEN(p1.first_name) - LEN(p2.first_name)) <= 2
-                AND (
-                  LEFT(p1.first_name, 3) = LEFT(p2.first_name, 3)
-                  OR p1.first_soundex = p2.first_soundex
-                )
-              )
-              -- Common diminutives (e.g., Mike/Michael, Bill/William, Bob/Robert)
-              OR (
-                p1.first_name IN ('Mike', 'Michael') AND p2.first_name IN ('Mike', 'Michael')
-                OR p1.first_name IN ('Bill', 'Billy', 'William') AND p2.first_name IN ('Bill', 'Billy', 'William')
-                OR p1.first_name IN ('Bob', 'Bobby', 'Robert') AND p2.first_name IN ('Bob', 'Bobby', 'Robert')
-                OR p1.first_name IN ('Jim', 'Jimmy', 'James') AND p2.first_name IN ('Jim', 'Jimmy', 'James')
-                OR p1.first_name IN ('Tom', 'Tommy', 'Thomas') AND p2.first_name IN ('Tom', 'Tommy', 'Thomas')
-                OR p1.first_name IN ('Joe', 'Joey', 'Joseph') AND p2.first_name IN ('Joe', 'Joey', 'Joseph')
-                OR p1.first_name IN ('Jack', 'John', 'Johnny') AND p2.first_name IN ('Jack', 'John', 'Johnny')
-                OR p1.first_name IN ('Dick', 'Rich', 'Richard', 'Richie') AND p2.first_name IN ('Dick', 'Rich', 'Richard', 'Richie')
-                OR p1.first_name IN ('Ed', 'Eddie', 'Edward', 'Ted', 'Teddy') AND p2.first_name IN ('Ed', 'Eddie', 'Edward', 'Ted', 'Teddy')
-                OR p1.first_name IN ('Al', 'Albert', 'Bert') AND p2.first_name IN ('Al', 'Albert', 'Bert')
-                OR p1.first_name IN ('Dan', 'Danny', 'Daniel') AND p2.first_name IN ('Dan', 'Danny', 'Daniel')
-                OR p1.first_name IN ('Dave', 'Davey', 'David') AND p2.first_name IN ('Dave', 'Davey', 'David')
-                OR p1.first_name IN ('Chris', 'Christopher') AND p2.first_name IN ('Chris', 'Christopher')
-                OR p1.first_name IN ('Matt', 'Matthew') AND p2.first_name IN ('Matt', 'Matthew')
-                OR p1.first_name IN ('Nick', 'Nicholas', 'Nicky') AND p2.first_name IN ('Nick', 'Nicholas', 'Nicky')
-                OR p1.first_name IN ('Pat', 'Patrick') AND p2.first_name IN ('Pat', 'Patrick')
-                OR p1.first_name IN ('Tony', 'Anthony') AND p2.first_name IN ('Tony', 'Anthony')
-                OR p1.first_name IN ('Andy', 'Andrew') AND p2.first_name IN ('Andy', 'Andrew')
-                OR p1.first_name IN ('Steve', 'Steven', 'Stephen') AND p2.first_name IN ('Steve', 'Steven', 'Stephen')
-                OR p1.first_name IN ('Pete', 'Peter') AND p2.first_name IN ('Pete', 'Peter')
-                OR p1.first_name IN ('Ken', 'Kenny', 'Kenneth') AND p2.first_name IN ('Ken', 'Kenny', 'Kenneth')
-                OR p1.first_name IN ('Ron', 'Ronnie', 'Ronald') AND p2.first_name IN ('Ron', 'Ronnie', 'Ronald')
-                OR p1.first_name IN ('Don', 'Donnie', 'Donald') AND p2.first_name IN ('Don', 'Donnie', 'Donald')
-                OR p1.first_name IN ('Larry', 'Lawrence') AND p2.first_name IN ('Larry', 'Lawrence')
-                OR p1.first_name IN ('Sam', 'Sammy', 'Samuel') AND p2.first_name IN ('Sam', 'Sammy', 'Samuel')
-                OR p1.first_name IN ('Hank', 'Henry') AND p2.first_name IN ('Hank', 'Henry')
-                OR p1.first_name IN ('Chuck', 'Charlie', 'Charles') AND p2.first_name IN ('Chuck', 'Charlie', 'Charles')
-                OR p1.first_name IN ('Willy', 'Willie', 'Will', 'William') AND p2.first_name IN ('Willy', 'Willie', 'Will', 'William')
-                OR p1.first_name IN ('Jeff', 'Jeffrey', 'Geoffrey') AND p2.first_name IN ('Jeff', 'Jeffrey', 'Geoffrey')
-                OR p1.first_name IN ('Greg', 'Gregory') AND p2.first_name IN ('Greg', 'Gregory')
-                OR p1.first_name IN ('Tim', 'Timmy', 'Timothy') AND p2.first_name IN ('Tim', 'Timmy', 'Timothy')
-                OR p1.first_name IN ('Ben', 'Benny', 'Benjamin') AND p2.first_name IN ('Ben', 'Benny', 'Benjamin')
-                OR p1.first_name IN ('Alex', 'Alexander') AND p2.first_name IN ('Alex', 'Alexander')
-              )
+            -- Same first name (phonetically)
+            p1.first_name_soundex = p2.first_name_soundex
+            -- First name matches other's nickname
+            OR p1.first_name = p2.nick_name
+            OR p1.nick_name = p2.first_name
+            -- Similar first names (prefix matching)
+            OR (
+              LEN(p1.first_name) > 3
+              AND LEN(p2.first_name) > 3
+              AND LEFT(p1.first_name, 3) = LEFT(p2.first_name, 3)
+            )
+            -- Common diminutives
+            OR (
+              (p1.first_name IN ('Mike', 'Michael') AND p2.first_name IN ('Mike', 'Michael'))
+              OR (p1.first_name IN ('Bill', 'Billy', 'William', 'Will', 'Willie', 'Willy') AND p2.first_name IN ('Bill', 'Billy', 'William', 'Will', 'Willie', 'Willy'))
+              OR (p1.first_name IN ('Bob', 'Bobby', 'Robert', 'Rob', 'Robbie') AND p2.first_name IN ('Bob', 'Bobby', 'Robert', 'Rob', 'Robbie'))
+              OR (p1.first_name IN ('Jim', 'Jimmy', 'James', 'Jamie') AND p2.first_name IN ('Jim', 'Jimmy', 'James', 'Jamie'))
+              OR (p1.first_name IN ('Tom', 'Tommy', 'Thomas') AND p2.first_name IN ('Tom', 'Tommy', 'Thomas'))
+              OR (p1.first_name IN ('Joe', 'Joey', 'Joseph') AND p2.first_name IN ('Joe', 'Joey', 'Joseph'))
+              OR (p1.first_name IN ('Jack', 'John', 'Johnny', 'Jon') AND p2.first_name IN ('Jack', 'John', 'Johnny', 'Jon'))
+              OR (p1.first_name IN ('Dick', 'Rich', 'Richard', 'Richie', 'Rick', 'Ricky') AND p2.first_name IN ('Dick', 'Rich', 'Richard', 'Richie', 'Rick', 'Ricky'))
+              OR (p1.first_name IN ('Ed', 'Eddie', 'Edward', 'Ted', 'Teddy') AND p2.first_name IN ('Ed', 'Eddie', 'Edward', 'Ted', 'Teddy'))
+              OR (p1.first_name IN ('Al', 'Albert', 'Bert', 'Alberto') AND p2.first_name IN ('Al', 'Albert', 'Bert', 'Alberto'))
+              OR (p1.first_name IN ('Dan', 'Danny', 'Daniel') AND p2.first_name IN ('Dan', 'Danny', 'Daniel'))
+              OR (p1.first_name IN ('Dave', 'Davey', 'David') AND p2.first_name IN ('Dave', 'Davey', 'David'))
+              OR (p1.first_name IN ('Chris', 'Christopher') AND p2.first_name IN ('Chris', 'Christopher'))
+              OR (p1.first_name IN ('Matt', 'Matthew', 'Matty') AND p2.first_name IN ('Matt', 'Matthew', 'Matty'))
+              OR (p1.first_name IN ('Nick', 'Nicholas', 'Nicky') AND p2.first_name IN ('Nick', 'Nicholas', 'Nicky'))
+              OR (p1.first_name IN ('Tony', 'Anthony') AND p2.first_name IN ('Tony', 'Anthony'))
+              OR (p1.first_name IN ('Steve', 'Steven', 'Stephen') AND p2.first_name IN ('Steve', 'Steven', 'Stephen'))
+              OR (p1.first_name IN ('Pete', 'Peter') AND p2.first_name IN ('Pete', 'Peter'))
+              OR (p1.first_name IN ('Ken', 'Kenny', 'Kenneth') AND p2.first_name IN ('Ken', 'Kenny', 'Kenneth'))
+              OR (p1.first_name IN ('Ron', 'Ronnie', 'Ronald') AND p2.first_name IN ('Ron', 'Ronnie', 'Ronald'))
+              OR (p1.first_name IN ('Don', 'Donnie', 'Donald') AND p2.first_name IN ('Don', 'Donnie', 'Donald'))
+              OR (p1.first_name IN ('Sam', 'Sammy', 'Samuel') AND p2.first_name IN ('Sam', 'Sammy', 'Samuel'))
+              OR (p1.first_name IN ('Hank', 'Henry') AND p2.first_name IN ('Hank', 'Henry'))
+              OR (p1.first_name IN ('Chuck', 'Charlie', 'Charles') AND p2.first_name IN ('Chuck', 'Charlie', 'Charles'))
+              OR (p1.first_name IN ('Jeff', 'Jeffrey', 'Geoffrey') AND p2.first_name IN ('Jeff', 'Jeffrey', 'Geoffrey'))
+              OR (p1.first_name IN ('Greg', 'Gregory') AND p2.first_name IN ('Greg', 'Gregory'))
+              OR (p1.first_name IN ('Tim', 'Timmy', 'Timothy') AND p2.first_name IN ('Tim', 'Timmy', 'Timothy'))
+              OR (p1.first_name IN ('Ben', 'Benny', 'Benjamin') AND p2.first_name IN ('Ben', 'Benny', 'Benjamin'))
+              OR (p1.first_name IN ('Alex', 'Alexander') AND p2.first_name IN ('Alex', 'Alexander'))
+              OR (p1.first_name IN ('Andy', 'Andrew') AND p2.first_name IN ('Andy', 'Andrew'))
+              OR (p1.first_name IN ('Pat', 'Patrick') AND p2.first_name IN ('Pat', 'Patrick'))
+              OR (p1.first_name IN ('Larry', 'Lawrence') AND p2.first_name IN ('Larry', 'Lawrence'))
             )
           )
         ),
-        -- Filter out pairs that have been marked as "not duplicates"
-        FilteredDuplicatePairs AS (
+        -- Filter out pairs marked as "not duplicates"
+        FilteredPairs AS (
           SELECT dp.*
           FROM DuplicatePairs dp
           WHERE NOT EXISTS (
             SELECT 1 FROM duplicate_exclusion de
-            WHERE de.player1_id = CASE WHEN dp.player1_id < dp.player2_id THEN dp.player1_id ELSE dp.player2_id END
-              AND de.player2_id = CASE WHEN dp.player1_id < dp.player2_id THEN dp.player2_id ELSE dp.player1_id END
+            WHERE de.player1_id = dp.player1_id AND de.player2_id = dp.player2_id
           )
         ),
         AllDuplicatePlayers AS (
-          SELECT DISTINCT
-            player1_id as player_id,
-            last_name
-          FROM FilteredDuplicatePairs
+          SELECT DISTINCT player1_id as player_id FROM FilteredPairs
           UNION
-          SELECT DISTINCT
-            player2_id as player_id,
-            last_name
-          FROM FilteredDuplicatePairs
+          SELECT DISTINCT player2_id as player_id FROM FilteredPairs
         )
         SELECT
           p.player_id,
@@ -156,9 +123,9 @@ router.get('/', async (req, res) => {
           STRING_AGG(CAST(pt.player_team_id as varchar(20)) + '|' + CAST(t.team_Id as varchar(10)) + '|' + ISNULL(t.abbreviation, '?') + '|' + ISNULL(t.primary_color, '#666') + '|' + ISNULL(t.secondary_color, '#999') + '|' + ISNULL(t.name, 'Unknown'), '~') as teams_data,
           (
             SELECT STRING_AGG(CAST(p2.player_id as varchar(20)) + ':' + ISNULL(p2.first_name, '') + ':' + ISNULL(p2.last_name, '') + ':' + ISNULL(p2.nick_name, ''), '|')
-            FROM FilteredDuplicatePairs dp
-            JOIN player p2 ON (dp.player2_id = p2.player_id AND dp.player1_id = p.player_id)
-            WHERE dp.player1_id = p.player_id
+            FROM FilteredPairs fp
+            JOIN player p2 ON fp.player2_id = p2.player_id
+            WHERE fp.player1_id = p.player_id
           ) as duplicate_matches
         FROM AllDuplicatePlayers adp
         JOIN player p ON adp.player_id = p.player_id
@@ -168,7 +135,6 @@ router.get('/', async (req, res) => {
           p.first_name LIKE '%${search.trim()}%' COLLATE Latin1_General_CI_AI
           OR p.last_name LIKE '%${search.trim()}%' COLLATE Latin1_General_CI_AI
           OR p.nick_name LIKE '%${search.trim()}%' COLLATE Latin1_General_CI_AI
-          OR CONCAT(p.first_name, ' ', p.last_name) LIKE '%${search.trim()}%' COLLATE Latin1_General_CI_AI
         )` : ''}
         GROUP BY p.player_id, p.first_name, p.last_name, p.nick_name, p.birthdate, p.is_hof, p.card_count, p.display_card
         ORDER BY p.last_name, p.first_name

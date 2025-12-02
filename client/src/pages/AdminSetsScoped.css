@@ -120,6 +120,40 @@
   border-color: rgba(156, 163, 175, 0.5);
 }
 
+/* View Toggle */
+.admin-sets-page .view-toggle {
+  display: flex;
+  gap: 0;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  padding: 4px;
+}
+
+.admin-sets-page .view-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  width: 32px;
+  height: 32px;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.admin-sets-page .view-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.admin-sets-page .view-toggle-btn.active {
+  background: rgba(59, 130, 246, 0.3);
+  color: #93c5fd;
+}
+
 .admin-sets-page .add-set-btn {
   display: flex;
   align-items: center;
@@ -209,10 +243,42 @@
   margin-bottom: 1.5rem;
 }
 
+.admin-sets-page .section-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.admin-sets-page .section-info.year-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
 .admin-sets-page .section-info h2 {
   margin: 0;
   font-size: 1.25rem;
   font-weight: 600;
+  color: white;
+}
+
+.admin-sets-page .back-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.admin-sets-page .back-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
   color: white;
 }
 
@@ -228,7 +294,7 @@
 
 .admin-sets-page .table-header {
   display: grid;
-  grid-template-columns: 100px 80px 1fr 100px 120px 140px 120px 120px;
+  grid-template-columns: 100px 80px 50px 1fr 100px 120px 140px 120px 120px;
   gap: 1rem;
   padding: 1rem;
   background: rgba(255, 255, 255, 0.1);
@@ -242,7 +308,7 @@
 
 .admin-sets-page .set-row {
   display: grid;
-  grid-template-columns: 100px 80px 1fr 100px 120px 140px 120px 120px;
+  grid-template-columns: 100px 80px 50px 1fr 100px 120px 140px 120px 120px;
   gap: 1rem;
   padding: 1rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
@@ -291,6 +357,32 @@
   font-size: 0.8rem;
   color: rgba(255, 255, 255, 0.6);
   text-align: left;
+}
+
+.admin-sets-page .col-thumb {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.admin-sets-page .set-thumbnail {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.admin-sets-page .no-thumbnail {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  color: rgba(255, 255, 255, 0.3);
 }
 
 .admin-sets-page .col-name {
@@ -1417,7 +1509,7 @@
 
   .admin-sets-page .table-header,
   .admin-sets-page .set-row {
-    grid-template-columns: 80px 60px 1fr 80px 100px 120px 100px 100px;
+    grid-template-columns: 80px 60px 50px 1fr 80px 100px 120px 100px 100px;
     gap: 0.75rem;
     padding: 0.75rem;
   }
@@ -1483,6 +1575,7 @@
 
   /* Hide some columns on mobile */
   .admin-sets-page .col-id,
+  .admin-sets-page .col-thumb,
   .admin-sets-page .col-year,
   .admin-sets-page .col-organization,
   .admin-sets-page .col-manufacturer {

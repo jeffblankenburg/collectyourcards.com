@@ -148,55 +148,148 @@ router.use(requireAdmin)
 router.get('/sets', async (req, res) => {
   try {
     const { search, set_id, limit = 20, all } = req.query
+    const userId = req.user?.userId
     // If 'all' parameter is provided, get all sets (for dropdowns)
     const limitInt = all === 'true' ? 10000 : Math.min(parseInt(limit) || 20, 100) // Cap at 100 unless 'all' is requested
 
-    let whereClause = {}
-    let orderBy = [{ created: 'desc' }]
-    
+    let sets = []
+
     // Filter by specific set ID if provided
     if (set_id && set_id.trim()) {
       const setIdInt = parseInt(set_id)
       if (setIdInt) {
-        whereClause.set_id = setIdInt
+        sets = await prisma.set.findMany({
+          where: { set_id: setIdInt },
+          take: limitInt,
+          include: {
+            organization_set_organizationToorganization: {
+              select: { name: true, abbreviation: true }
+            },
+            manufacturer_set_manufacturerTomanufacturer: {
+              select: { name: true }
+            },
+            _count: {
+              select: { series_series_setToset: true }
+            }
+          }
+        })
       }
     }
-    // Add search if provided
+    // Search mode
     else if (search && search.trim()) {
-      whereClause = {
-        OR: [
-          { name: { contains: search.trim() } },
-          { organization_set_organizationToorganization: { name: { contains: search.trim() } } },
-          { organization_set_organizationToorganization: { abbreviation: { contains: search.trim() } } },
-          { manufacturer_set_manufacturerTomanufacturer: { name: { contains: search.trim() } } }
-        ]
-      }
-      orderBy = [{ name: 'asc' }]
-    }
-
-    const sets = await prisma.set.findMany({
-      where: whereClause,
-      take: limitInt,
-      orderBy,
-      include: {
-        organization_set_organizationToorganization: {
-          select: {
-            name: true,
-            abbreviation: true
-          }
+      sets = await prisma.set.findMany({
+        where: {
+          OR: [
+            { name: { contains: search.trim() } },
+            { organization_set_organizationToorganization: { name: { contains: search.trim() } } },
+            { organization_set_organizationToorganization: { abbreviation: { contains: search.trim() } } },
+            { manufacturer_set_manufacturerTomanufacturer: { name: { contains: search.trim() } } }
+          ]
         },
-        manufacturer_set_manufacturerTomanufacturer: {
-          select: {
-            name: true
-          }
-        },
-        _count: {
-          select: {
-            series_series_setToset: true
+        take: limitInt,
+        orderBy: [{ name: 'asc' }],
+        include: {
+          organization_set_organizationToorganization: {
+            select: { name: true, abbreviation: true }
+          },
+          manufacturer_set_manufacturerTomanufacturer: {
+            select: { name: true }
+          },
+          _count: {
+            select: { series_series_setToset: true }
           }
         }
+      })
+    }
+    // Default: most recently viewed by this admin user
+    else if (userId) {
+      // Get recently viewed sets using raw query for join
+      const recentlyViewed = await prisma.$queryRawUnsafe(`
+        SELECT TOP ${limitInt}
+          s.set_id,
+          s.name,
+          s.year,
+          s.organization,
+          s.manufacturer,
+          s.card_count,
+          s.series_count,
+          s.is_complete,
+          s.thumbnail,
+          s.slug,
+          s.created,
+          o.name as org_name,
+          o.abbreviation as org_abbr,
+          m.name as mfr_name,
+          asv.last_viewed
+        FROM admin_set_view asv
+        JOIN [set] s ON asv.set_id = s.set_id
+        LEFT JOIN organization o ON s.organization = o.organization_id
+        LEFT JOIN manufacturer m ON s.manufacturer = m.manufacturer_id
+        WHERE asv.user_id = ${userId}
+        ORDER BY asv.last_viewed DESC
+      `)
+
+      if (recentlyViewed.length > 0) {
+        // Format the recently viewed sets
+        const formattedSets = recentlyViewed.map(set => ({
+          set_id: Number(set.set_id),
+          name: set.name,
+          year: set.year,
+          organization_id: Number(set.organization || 0),
+          organization: set.org_abbr || '',
+          manufacturer_id: Number(set.manufacturer || 0),
+          manufacturer: set.mfr_name || '',
+          series_count: set.series_count || 0,
+          card_count: set.card_count || 0,
+          is_complete: set.is_complete,
+          thumbnail: set.thumbnail,
+          slug: set.slug || generateSlug(set.name || ''),
+          created: set.created,
+          last_viewed: set.last_viewed
+        }))
+
+        return res.json({
+          sets: formattedSets,
+          total: formattedSets.length,
+          mode: 'recently_viewed'
+        })
       }
-    })
+
+      // Fall back to created desc if no view history
+      sets = await prisma.set.findMany({
+        take: limitInt,
+        orderBy: [{ created: 'desc' }],
+        include: {
+          organization_set_organizationToorganization: {
+            select: { name: true, abbreviation: true }
+          },
+          manufacturer_set_manufacturerTomanufacturer: {
+            select: { name: true }
+          },
+          _count: {
+            select: { series_series_setToset: true }
+          }
+        }
+      })
+    }
+    // No user ID, fall back to created desc
+    else {
+      sets = await prisma.set.findMany({
+        take: limitInt,
+        orderBy: [{ created: 'desc' }],
+        include: {
+          organization_set_organizationToorganization: {
+            select: { name: true, abbreviation: true }
+          },
+          manufacturer_set_manufacturerTomanufacturer: {
+            select: { name: true }
+          },
+          _count: {
+            select: { series_series_setToset: true }
+          }
+        }
+      })
+    }
 
     // Format the response data
     const formattedSets = sets.map(set => ({
@@ -207,11 +300,11 @@ router.get('/sets', async (req, res) => {
       organization: set.organization_set_organizationToorganization?.abbreviation || '',
       manufacturer_id: Number(set.manufacturer || 0),
       manufacturer: set.manufacturer_set_manufacturerTomanufacturer?.name || '',
-      series_count: set._count.series_series_setToset || 0,
+      series_count: set._count?.series_series_setToset || 0,
       card_count: set.card_count || 0,
       is_complete: set.is_complete,
       thumbnail: set.thumbnail,
-      slug: generateSlug(set.name || ''),
+      slug: set.slug || generateSlug(set.name || ''),
       created: set.created
     }))
 
@@ -368,18 +461,32 @@ router.get('/sets/by-year/:year', async (req, res) => {
 router.get('/series/by-set/:year/:setSlug', async (req, res) => {
   try {
     const { year, setSlug } = req.params
-    
+    const userId = req.user?.userId
+
     // Find the set by slug
     const set = await findSetBySlug(year, setSlug)
-    
+
     if (!set) {
       return res.status(404).json({
         error: 'Set not found',
         message: `Set with slug '${setSlug}' not found in year ${year}`
       })
     }
-    
+
     const setIdInt = set.set_id
+
+    // Track this set view for the admin user (fire and forget)
+    if (userId) {
+      prisma.$executeRawUnsafe(`
+        MERGE admin_set_view AS target
+        USING (SELECT ${userId} as user_id, ${setIdInt} as set_id) AS source
+        ON target.user_id = source.user_id AND target.set_id = source.set_id
+        WHEN MATCHED THEN
+          UPDATE SET last_viewed = GETDATE(), view_count = target.view_count + 1
+        WHEN NOT MATCHED THEN
+          INSERT (user_id, set_id, last_viewed, view_count) VALUES (source.user_id, source.set_id, GETDATE(), 1);
+      `).catch(err => console.error('Error tracking set view:', err))
+    }
 
     const series = await prisma.series.findMany({
       where: {
