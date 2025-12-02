@@ -33,7 +33,10 @@ router.get('/', async (req, res) => {
 
     if (showDuplicatesOnly) {
       // Duplicates mode: find players with similar names and show their matches
-      players = await prisma.$queryRawUnsafe(`
+      console.log('Admin: Starting duplicates query...')
+      const startTime = Date.now()
+      try {
+        players = await prisma.$queryRawUnsafe(`
         WITH PlayerNames AS (
           SELECT
             p.player_id,
@@ -125,8 +128,8 @@ router.get('/', async (req, res) => {
           FROM DuplicatePairs dp
           WHERE NOT EXISTS (
             SELECT 1 FROM duplicate_exclusion de
-            WHERE (de.player1_id = CASE WHEN dp.player1_id < dp.player2_id THEN dp.player1_id ELSE dp.player2_id END
-               AND de.player2_id = CASE WHEN dp.player1_id < dp.player2_id THEN dp.player2_id ELSE dp.player1_id END)
+            WHERE de.player1_id = CASE WHEN dp.player1_id < dp.player2_id THEN dp.player1_id ELSE dp.player2_id END
+              AND de.player2_id = CASE WHEN dp.player1_id < dp.player2_id THEN dp.player2_id ELSE dp.player1_id END
           )
         ),
         AllDuplicatePlayers AS (
@@ -172,6 +175,12 @@ router.get('/', async (req, res) => {
         OFFSET ${offsetNum} ROWS
         FETCH NEXT ${limitNum} ROWS ONLY
       `)
+        console.log(`Admin: Duplicates query completed in ${Date.now() - startTime}ms, found ${players?.length || 0} players`)
+      } catch (queryError) {
+        console.error('Admin: Duplicates query FAILED:', queryError.message)
+        console.error('Full error:', queryError)
+        throw queryError
+      }
     } else if (showZeroCardsOnly) {
       // Zero cards mode: show only players with 0 cards
       const normalizedSearch = search ? search.trim().replace(/[.''\-]/g, '') : ''
