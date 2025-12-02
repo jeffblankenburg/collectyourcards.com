@@ -48,7 +48,8 @@ function AdminSeries() {
     name: '',
     color_id: '',
     print_run: '',
-    parallel_of_series: ''
+    parallel_of_series: '',
+    card_numbers: '' // Optional: specific card numbers to include (e.g., "1-100" or "1,5,10,25")
   })
   const [colorDropdownOpen, setColorDropdownOpen] = useState(false)
   const [colorSearchTerm, setColorSearchTerm] = useState('')
@@ -451,7 +452,8 @@ function AdminSeries() {
       name: seriesItem.name + ' 2',
       color_id: '',
       print_run: '',
-      parallel_of_series: seriesItem.series_id // Default to the series being duplicated
+      parallel_of_series: seriesItem.series_id, // Default to the series being duplicated
+      card_numbers: '' // All cards by default
     })
     setColorSearchTerm('') // Reset color search term
     setHighlightedColorIndex(-1) // Reset highlighted index
@@ -472,14 +474,15 @@ function AdminSeries() {
         name: duplicateForm.name,
         color_id: duplicateForm.color_id || null,
         print_run: duplicateForm.print_run || null,
-        parallel_of_series: duplicateForm.parallel_of_series ? Number(duplicateForm.parallel_of_series) : null
+        parallel_of_series: duplicateForm.parallel_of_series ? Number(duplicateForm.parallel_of_series) : null,
+        card_range: duplicateForm.card_numbers.trim() || null // Optional: specific cards to include (e.g., "1-100" or "1,5,10")
       })
 
       if (response.data.success) {
         addToast(`Successfully created parallel series with ${response.data.cards_created} cards`, 'success')
         setShowDuplicateModal(false)
         setDuplicatingSeries(null)
-        setDuplicateForm({ name: '', color_id: '', print_run: '', parallel_of_series: '' })
+        setDuplicateForm({ name: '', color_id: '', print_run: '', parallel_of_series: '', card_numbers: '' })
         setColorSearchTerm('') // Reset color search term
         setColorDropdownOpen(false) // Close dropdown
         loadSeries(searchTerm)
@@ -757,12 +760,18 @@ function AdminSeries() {
         <div className="set-context">
           <button
             className="back-btn-icon"
-            onClick={() => navigate('/admin/sets')}
+            onClick={() => {
+              // Preserve any search state when going back to sets
+              const setsUrl = searchTerm
+                ? `/admin/sets?search=${encodeURIComponent(searchTerm)}`
+                : '/admin/sets'
+              navigate(setsUrl)
+            }}
             title="Back to Sets"
           >
             <Icon name="chevron-left" size={20} />
           </button>
-          <strong>{setInfo.name}</strong>
+          <span className="set-name">{setInfo.name}</span>
         </div>
       )}
 
@@ -1437,9 +1446,26 @@ function AdminSeries() {
                   />
                 </div>
 
+                <div className="form-field-row">
+                  <label className="field-label">Card Numbers to Include</label>
+                  <input
+                    type="text"
+                    className="field-input"
+                    value={duplicateForm.card_numbers}
+                    onChange={(e) => setDuplicateForm({...duplicateForm, card_numbers: e.target.value})}
+                    placeholder="Leave empty for all cards, or enter: 1-100, 1,5,10, etc."
+                  />
+                  <span className="field-hint">Examples: "1-100" for range, "1,5,10,25" for specific cards, or combine: "1-50,75,100"</span>
+                </div>
+
                 <div className="form-info">
                   <Icon name="info" size={16} />
-                  <span>This will create a new parallel series and duplicate all {duplicatingSeries.card_entered_count || 0} cards from the original series.</span>
+                  <span>
+                    {duplicateForm.card_numbers.trim()
+                      ? `This will create a new parallel series with the specified cards from the original series.`
+                      : `This will create a new parallel series and duplicate all ${duplicatingSeries.card_entered_count || 0} cards from the original series.`
+                    }
+                  </span>
                 </div>
             
             <div className="modal-actions">

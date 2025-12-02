@@ -973,6 +973,14 @@
   color: rgba(255, 255, 255, 0.4);
 }
 
+.admin-series-page .field-hint {
+  display: block;
+  margin-top: 0.375rem;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.5);
+  font-style: italic;
+}
+
 .admin-series-page .hof-toggle {
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.2);
