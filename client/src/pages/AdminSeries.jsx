@@ -47,7 +47,8 @@ function AdminSeries() {
   const [duplicateForm, setDuplicateForm] = useState({
     name: '',
     color_id: '',
-    print_run: ''
+    print_run: '',
+    parallel_of_series: ''
   })
   const [colorDropdownOpen, setColorDropdownOpen] = useState(false)
   const [colorSearchTerm, setColorSearchTerm] = useState('')
@@ -341,6 +342,17 @@ function AdminSeries() {
     loadColors()
   }, [loadSets, loadColors])
 
+  // Update page title based on context
+  useEffect(() => {
+    if (setInfo) {
+      document.title = `Admin Series: ${setInfo.name} - Collect Your Cards`
+    } else if (isSearchMode && searchTerm) {
+      document.title = `Search Series: "${searchTerm}" - Collect Your Cards`
+    } else {
+      document.title = 'Admin Series - Collect Your Cards'
+    }
+  }, [setInfo, isSearchMode, searchTerm])
+
   const loadSeriesForSet = useCallback(async (setId) => {
     if (!setId) {
       setSeriesForSet([])
@@ -427,18 +439,25 @@ function AdminSeries() {
   }, [setInfo, setId, loadSeriesForSet])
 
   // Memoized duplicate modal handler
-  const handleShowDuplicateModal = useCallback((seriesItem) => {
+  const handleShowDuplicateModal = useCallback(async (seriesItem) => {
     setDuplicatingSeries(seriesItem)
+
+    // Load series for the set
+    if (seriesItem.set_id) {
+      await loadSeriesForSet(seriesItem.set_id)
+    }
+
     setDuplicateForm({
       name: seriesItem.name + ' 2',
       color_id: '',
-      print_run: ''
+      print_run: '',
+      parallel_of_series: seriesItem.series_id // Default to the series being duplicated
     })
     setColorSearchTerm('') // Reset color search term
     setHighlightedColorIndex(-1) // Reset highlighted index
     setColorDropdownOpen(false) // Ensure dropdown is closed
     setShowDuplicateModal(true)
-  }, [])
+  }, [loadSeriesForSet])
 
   const handleDuplicateSeries = async () => {
     if (!duplicatingSeries || !duplicateForm.name.trim()) {
@@ -448,18 +467,19 @@ function AdminSeries() {
 
     try {
       setDuplicating(true)
-      
+
       const response = await axios.post(`/api/admin/series/${duplicatingSeries.series_id}/duplicate`, {
         name: duplicateForm.name,
         color_id: duplicateForm.color_id || null,
-        print_run: duplicateForm.print_run || null
+        print_run: duplicateForm.print_run || null,
+        parallel_of_series: duplicateForm.parallel_of_series ? Number(duplicateForm.parallel_of_series) : null
       })
 
       if (response.data.success) {
         addToast(`Successfully created parallel series with ${response.data.cards_created} cards`, 'success')
         setShowDuplicateModal(false)
         setDuplicatingSeries(null)
-        setDuplicateForm({ name: '', color_id: '', print_run: '' })
+        setDuplicateForm({ name: '', color_id: '', print_run: '', parallel_of_series: '' })
         setColorSearchTerm('') // Reset color search term
         setColorDropdownOpen(false) // Close dropdown
         loadSeries(searchTerm)
@@ -735,15 +755,14 @@ function AdminSeries() {
       
       {setInfo && (
         <div className="set-context">
-          <span>Viewing series for: </span>
-          <strong>{setInfo.name} ({setInfo.year})</strong>
-          <button 
-            className="back-btn"
+          <button
+            className="back-btn-icon"
             onClick={() => navigate('/admin/sets')}
+            title="Back to Sets"
           >
-            <Icon name="arrow-left" size={16} />
-            Back to Sets
+            <Icon name="chevron-left" size={20} />
           </button>
+          <strong>{setInfo.name}</strong>
         </div>
       )}
 
@@ -1217,7 +1236,7 @@ function AdminSeries() {
               <Icon name="info" size={16} />
               <span>Creating parallel in set: <strong>{duplicatingSeries.set_name}</strong></span>
             </div>
-            
+
                 <div className="form-field-row">
                   <label className="field-label">Series Name</label>
                   <input
@@ -1234,6 +1253,22 @@ function AdminSeries() {
                     placeholder="Enter parallel series name"
                     autoFocus
                     required
+                  />
+                </div>
+
+                <div className="form-field-row">
+                  <label className="field-label">Parallel Parent</label>
+                  <SearchableDropdown
+                    options={seriesForSet.filter(s =>
+                      s.series_id !== duplicatingSeries?.series_id &&
+                      !s.parallel_of_series
+                    )}
+                    value={duplicateForm.parallel_of_series}
+                    onChange={(value) => setDuplicateForm({...duplicateForm, parallel_of_series: value})}
+                    placeholder="Select parallel parent..."
+                    emptyMessage="No available series for parallel (all series in this set already have parents)"
+                    getOptionLabel={(series) => series.name}
+                    getOptionValue={(series) => series.series_id}
                   />
                 </div>
 

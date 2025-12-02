@@ -309,6 +309,39 @@ Each entry should include:
 
 ---
 
+### 2025-12-02: Duplicate Exclusion Table
+- **Date**: 2025-12-02
+- **Change Type**: Schema (CREATE TABLE)
+- **Description**:
+  - Created `duplicate_exclusion` table to store player pairs marked as "not duplicates"
+  - Allows admin users to dismiss false positive duplicate matches
+  - Dismissed pairs will not appear in future duplicate detection results
+  - Supports bidirectional pair storage with constraint ensuring player1_id < player2_id
+- **Tables Affected**: `duplicate_exclusion` (NEW)
+- **SQL Script**:
+  ```sql
+  CREATE TABLE duplicate_exclusion (
+      player1_id BIGINT NOT NULL,
+      player2_id BIGINT NOT NULL,
+      created DATETIME2 DEFAULT GETDATE(),
+      created_by BIGINT NULL,
+      CONSTRAINT PK_duplicate_exclusion PRIMARY KEY (player1_id, player2_id),
+      CONSTRAINT FK_duplicate_exclusion_player1 FOREIGN KEY (player1_id) REFERENCES player(player_id),
+      CONSTRAINT FK_duplicate_exclusion_player2 FOREIGN KEY (player2_id) REFERENCES player(player_id),
+      CONSTRAINT FK_duplicate_exclusion_user FOREIGN KEY (created_by) REFERENCES [user](user_id),
+      CONSTRAINT CK_duplicate_exclusion_order CHECK (player1_id < player2_id)
+  );
+
+  CREATE INDEX IX_duplicate_exclusion_lookup ON duplicate_exclusion (player1_id, player2_id);
+  ```
+- **Status**: ✅ Applied to Dev, ⏳ Pending Production
+- **Verification Query**:
+  ```sql
+  SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'duplicate_exclusion';
+  ```
+
+---
+
 ## Notes
 
 - Always test changes in development before applying to production

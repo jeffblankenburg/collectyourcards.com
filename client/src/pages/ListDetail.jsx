@@ -51,6 +51,15 @@ function ListDetail() {
     }
   }, [user, viewingSlug, viewingUsername, navigate])
 
+  // Update page title based on list name
+  useEffect(() => {
+    if (list) {
+      document.title = `${list.name} - Collect Your Cards`
+    } else {
+      document.title = 'List - Collect Your Cards'
+    }
+  }, [list])
+
   const loadListDetails = async () => {
     try {
       setLoading(true)

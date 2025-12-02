@@ -54,10 +54,10 @@ function SeriesDetail() {
   useEffect(() => {
     if (series?.name) {
       document.title = `${series.name} - Collect Your Cards`
-    } else if (loading) {
-      document.title = 'Loading Series... - Collect Your Cards'
+    } else {
+      document.title = 'Series Details - Collect Your Cards'
     }
-  }, [series?.name, loading])
+  }, [series?.name])
 
   // Close parallels dropdown when clicking outside
   useEffect(() => {

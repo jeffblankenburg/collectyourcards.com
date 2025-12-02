@@ -81,6 +81,9 @@ function AdminCards() {
   useEffect(() => {
     if (selectedSeries) {
       loadCardsForSeries(selectedSeries.series_id)
+      document.title = `Admin Cards: ${selectedSeries.name} - Collect Your Cards`
+    } else {
+      document.title = 'Admin Cards - Collect Your Cards'
     }
   }, [selectedSeries])
 
@@ -543,12 +546,12 @@ function AdminCards() {
 
   // Compute back URL based on available data
   const getBackUrl = () => {
-    if (year) {
-      // Navigate to year-specific sets page
-      return `/admin/sets/${year}`
-    } else if (selectedSet) {
-      // We loaded set data, use the year from set data
-      return `/admin/sets/${selectedSet.year}`
+    if (selectedSet && selectedSet.set_id) {
+      // Navigate to series list for this set
+      return `/admin/series?set=${selectedSet.set_id}`
+    } else if (selectedSeries && selectedSeries.set_id) {
+      // Use series data if set data not available
+      return `/admin/series?set=${selectedSeries.set_id}`
     } else {
       // Fallback to admin sets index
       return '/admin/sets'

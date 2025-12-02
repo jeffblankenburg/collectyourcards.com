@@ -62,6 +62,11 @@ function AdminAchievements() {
     loadData()
   }, [])
 
+  // Update page title
+  useEffect(() => {
+    document.title = 'Admin Achievements - Collect Your Cards'
+  }, [])
+
   // Query testing functions
   const validateQuery = (query) => {
     const cleanQuery = query.trim().toUpperCase()

@@ -28,6 +28,11 @@ function Lists() {
     loadLists()
   }, [user, navigate])
 
+  // Update page title
+  useEffect(() => {
+    document.title = 'My Lists - Collect Your Cards'
+  }, [])
+
   const loadLists = async () => {
     try {
       setLoading(true)

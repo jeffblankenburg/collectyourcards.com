@@ -26,6 +26,11 @@ function Notifications() {
     fetchNotifications()
   }, [isAuthenticated])
 
+  // Update page title
+  useEffect(() => {
+    document.title = 'Notifications - Collect Your Cards'
+  }, [])
+
   const fetchNotifications = async () => {
     try {
       setLoading(true)

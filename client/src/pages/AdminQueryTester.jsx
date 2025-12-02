@@ -22,6 +22,11 @@ function AdminQueryTester() {
     loadQueryHistory()
   }, [])
 
+  // Update page title
+  useEffect(() => {
+    document.title = 'Admin Query Tester - Collect Your Cards'
+  }, [])
+
   const fetchUsers = async () => {
     try {
       const response = await axios.get('/api/admin/users')

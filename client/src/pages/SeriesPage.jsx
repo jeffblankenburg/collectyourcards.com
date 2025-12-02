@@ -59,10 +59,10 @@ function SeriesPage() {
   useEffect(() => {
     if (selectedSet?.name) {
       document.title = `${selectedSet.name} Series - Collect Your Cards`
-    } else if (loading) {
-      document.title = 'Loading Series... - Collect Your Cards'
+    } else {
+      document.title = 'Series - Collect Your Cards'
     }
-  }, [selectedSet?.name, loading])
+  }, [selectedSet?.name])
 
   // Keep ref synchronized with state
   useEffect(() => {

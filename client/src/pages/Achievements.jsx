@@ -29,6 +29,11 @@ function Achievements() {
     loadAchievements()
   }, [user, navigate])
 
+  // Update page title
+  useEffect(() => {
+    document.title = 'Achievements - Collect Your Cards'
+  }, [])
+
   const loadAchievements = async () => {
     try {
       setLoading(true)

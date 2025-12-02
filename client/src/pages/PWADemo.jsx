@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useIsMobile, isMobileDevice, isStandalone } from '../hooks/useIsMobile'
 import Icon from '../components/Icon'
 import './PWADemo.css'
@@ -8,6 +8,11 @@ function PWADemo() {
   const [activeTab, setActiveTab] = useState('components')
   const [showSheet, setShowSheet] = useState(false)
   const [selectedCard, setSelectedCard] = useState(null)
+
+  // Update page title
+  useEffect(() => {
+    document.title = 'PWA Demo - Collect Your Cards'
+  }, [])
 
   // Mock card data
   const mockCards = [

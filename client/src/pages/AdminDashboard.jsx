@@ -458,8 +458,8 @@ function AdminDashboard() {
   }
 
   const updateAllAggregates = async () => {
-    const types = ['rookie_count', 'card_entered_count', 'card_count', 'player_card_count', 'team_card_count']
-    
+    const types = ['rookie_count', 'card_entered_count', 'card_count', 'player_card_count', 'team_card_count', 'series_print_run']
+
     for (const type of types) {
       await updateAggregates(type)
     }
@@ -653,7 +653,7 @@ function AdminDashboard() {
               Update Player Card Counts
             </button>
             
-            <button 
+            <button
               className="aggregate-btn"
               onClick={() => updateAggregates('team_card_count')}
               disabled={aggregateUpdates.updating}
@@ -661,8 +661,17 @@ function AdminDashboard() {
               <Icon name="flag" size={16} />
               Update Team Card Counts
             </button>
-            
-            <button 
+
+            <button
+              className="aggregate-btn"
+              onClick={() => updateAggregates('series_print_run')}
+              disabled={aggregateUpdates.updating}
+            >
+              <Icon name="hash" size={16} />
+              Update Series Print Runs
+            </button>
+
+            <button
               className="aggregate-btn update-all"
               onClick={updateAllAggregates}
               disabled={aggregateUpdates.updating}

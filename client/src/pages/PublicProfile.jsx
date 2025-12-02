@@ -39,6 +39,8 @@ function PublicProfile() {
   useEffect(() => {
     if (profile) {
       document.title = `${profile.display_name || profile.username} (@${profile.username}) - Collect Your Cards`
+    } else {
+      document.title = 'Profile - Collect Your Cards'
     }
   }, [profile])
 

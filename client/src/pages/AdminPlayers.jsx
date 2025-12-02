@@ -121,6 +121,8 @@ function AdminPlayers() {
   const [displayCardOptions, setDisplayCardOptions] = useState([])
   const [selectedDisplayCard, setSelectedDisplayCard] = useState(null)
   const [settingDisplayCard, setSettingDisplayCard] = useState(false)
+  const [duplicatePairs, setDuplicatePairs] = useState([])
+  const [dismissingPair, setDismissingPair] = useState(null)
   const addButtonRef = useRef(null)
   const { addToast } = useToast()
 
@@ -183,6 +185,45 @@ function AdminPlayers() {
       setPlayers(playersData)
       setLastUpdated(new Date())
       setIsSearchMode(!!searchQuery.trim())
+
+      // Process duplicate pairs for the pairs view
+      if (duplicatesFilter && playersData.length > 0) {
+        const pairs = []
+        const processedPairIds = new Set()
+
+        playersData.forEach(player => {
+          if (player.duplicate_matches && player.duplicate_matches.length > 0) {
+            player.duplicate_matches.forEach(match => {
+              // Create a unique pair ID to avoid duplicates
+              const pairId = [player.player_id, match.player_id].sort((a, b) => a - b).join('-')
+
+              if (!processedPairIds.has(pairId)) {
+                processedPairIds.add(pairId)
+
+                // Find the full match player data from playersData
+                const matchPlayer = playersData.find(p => p.player_id === match.player_id) || {
+                  player_id: match.player_id,
+                  first_name: match.first_name,
+                  last_name: match.last_name,
+                  nick_name: match.nick_name,
+                  teams: [],
+                  card_count: 0
+                }
+
+                pairs.push({
+                  pairId,
+                  player1: player,
+                  player2: matchPlayer
+                })
+              }
+            })
+          }
+        })
+
+        setDuplicatePairs(pairs)
+      } else {
+        setDuplicatePairs([])
+      }
       
       // Get total count from database if not searching
       if (!searchQuery.trim()) {
@@ -758,6 +799,30 @@ function AdminPlayers() {
     return `${firstName} ${lastName}`.trim() || 'Unknown Player'
   }, [])
 
+  // Dismiss duplicate pair handler
+  const handleDismissDuplicate = async (player1Id, player2Id) => {
+    const pairId = [player1Id, player2Id].sort((a, b) => a - b).join('-')
+    setDismissingPair(pairId)
+
+    try {
+      await axios.post('/api/admin/players/duplicates/dismiss', {
+        player1_id: player1Id,
+        player2_id: player2Id
+      })
+
+      addToast('Pair marked as not duplicates', 'success')
+
+      // Remove the pair from the local state
+      setDuplicatePairs(prev => prev.filter(p => p.pairId !== pairId))
+
+    } catch (error) {
+      console.error('Error dismissing duplicate pair:', error)
+      addToast(error.response?.data?.message || 'Failed to dismiss duplicate pair', 'error')
+    } finally {
+      setDismissingPair(null)
+    }
+  }
+
   // Card reassignment handlers
   const handleShowCardReassignModal = async () => {
     if (!editingPlayer) return
@@ -1006,13 +1071,138 @@ function AdminPlayers() {
             <div className="card-icon-spinner"></div>
             <span>Loading players...</span>
           </div>
+        ) : showDuplicatesOnly ? (
+          /* Duplicates Pairs View */
+          <div className="players-section">
+            <div className="section-header">
+              <div className="section-info">
+                <h2>Potential Duplicate Pairs ({duplicatePairs.length})</h2>
+              </div>
+            </div>
+
+            <div className="duplicate-pairs-container">
+              {duplicatePairs.length === 0 ? (
+                <div className="empty-state">
+                  <Icon name="check-circle" size={48} />
+                  <h3>No duplicates found</h3>
+                  <p>No potential duplicate players were detected in the database.</p>
+                </div>
+              ) : (
+                duplicatePairs.map(pair => (
+                  <div key={pair.pairId} className="duplicate-pair-card">
+                    {/* Player 1 */}
+                    <div className="duplicate-player">
+                      <div className="duplicate-player-header">
+                        <span className="player-id">ID: {pair.player1.player_id}</span>
+                        <span className="player-cards">{(pair.player1.card_count || 0).toLocaleString()} cards</span>
+                      </div>
+                      <div className="duplicate-player-name">
+                        <PlayerName player={pair.player1} />
+                        {pair.player1.is_hof && (
+                          <span className="hof-indicator" title="Hall of Fame">
+                            <Icon name="star" size={14} />
+                          </span>
+                        )}
+                      </div>
+                      <div className="duplicate-player-teams">
+                        <TeamCircles player={pair.player1} />
+                      </div>
+                      <div className="duplicate-player-actions">
+                        <button
+                          className="merge-direction-btn"
+                          title={`Merge into ${pair.player1.first_name} ${pair.player1.last_name} (keep this one)`}
+                          onClick={() => {
+                            setPlayerToMerge(pair.player2)
+                            setSelectedMergeTarget({
+                              player_id: pair.player1.player_id,
+                              first_name: pair.player1.first_name,
+                              last_name: pair.player1.last_name,
+                              nick_name: pair.player1.nick_name,
+                              card_count: pair.player1.card_count,
+                              team: pair.player1.teams?.[0] || null,
+                              all_teams: pair.player1.teams || []
+                            })
+                            setShowMergeModal(true)
+                          }}
+                        >
+                          <Icon name="arrow-left" size={16} />
+                          Keep This
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Merge indicator */}
+                    <div className="duplicate-merge-indicator">
+                      <Icon name="combine" size={24} />
+                    </div>
+
+                    {/* Player 2 */}
+                    <div className="duplicate-player">
+                      <div className="duplicate-player-header">
+                        <span className="player-id">ID: {pair.player2.player_id}</span>
+                        <span className="player-cards">{(pair.player2.card_count || 0).toLocaleString()} cards</span>
+                      </div>
+                      <div className="duplicate-player-name">
+                        <PlayerName player={pair.player2} />
+                        {pair.player2.is_hof && (
+                          <span className="hof-indicator" title="Hall of Fame">
+                            <Icon name="star" size={14} />
+                          </span>
+                        )}
+                      </div>
+                      <div className="duplicate-player-teams">
+                        <TeamCircles player={pair.player2} />
+                      </div>
+                      <div className="duplicate-player-actions">
+                        <button
+                          className="merge-direction-btn"
+                          title={`Merge into ${pair.player2.first_name} ${pair.player2.last_name} (keep this one)`}
+                          onClick={() => {
+                            setPlayerToMerge(pair.player1)
+                            setSelectedMergeTarget({
+                              player_id: pair.player2.player_id,
+                              first_name: pair.player2.first_name,
+                              last_name: pair.player2.last_name,
+                              nick_name: pair.player2.nick_name,
+                              card_count: pair.player2.card_count,
+                              team: pair.player2.teams?.[0] || null,
+                              all_teams: pair.player2.teams || []
+                            })
+                            setShowMergeModal(true)
+                          }}
+                        >
+                          Keep This
+                          <Icon name="arrow-right" size={16} />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Not a Duplicate button */}
+                    <button
+                      className="dismiss-duplicate-btn"
+                      onClick={() => handleDismissDuplicate(pair.player1.player_id, pair.player2.player_id)}
+                      disabled={dismissingPair === pair.pairId}
+                      title="Mark as not duplicates - this pair won't appear again"
+                    >
+                      {dismissingPair === pair.pairId ? (
+                        <div className="spinner small"></div>
+                      ) : (
+                        <Icon name="x" size={16} />
+                      )}
+                      Not a Duplicate
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
         ) : (
           <div className="players-section">
             <div className="section-header">
               <div className="section-info">
                 <h2>
-                  {isSearchMode 
-                    ? `Search Results (${players.length})` 
+                  {isSearchMode
+                    ? `Search Results (${players.length})`
                     : `Most Recently Viewed Players (${players.length})`
                   }
                 </h2>

@@ -123,20 +123,14 @@ const SearchableSeriesDropdown = ({ series, onSelect, placeholder, selectedSerie
           placeholder={selectedSeries ? `${selectedSeries.name} (${selectedSeries.set_name})` : placeholder}
         />
         {selectedSeries && !isOpen && (
-          <Icon 
-            name="x" 
-            size={16} 
+          <Icon
+            name="x"
+            size={16}
             className="dropdown-clear-icon"
             onClick={handleClear}
             title="Clear selection"
           />
         )}
-        <Icon 
-          name={isOpen ? "chevron-up" : "chevron-down"} 
-          size={20} 
-          className="dropdown-icon"
-          onClick={() => setIsOpen(!isOpen)}
-        />
       </div>
       
       {isOpen && (
@@ -251,6 +245,21 @@ const AdminImport = () => {
       handleSqlPreview()
     }
   }, [currentStep, generatedSql, generatingSql, matchedCards.length])
+
+  // Update page title based on current step and series
+  useEffect(() => {
+    if (selectedSeries) {
+      const stepNames = {
+        1: 'Select Series',
+        2: 'Upload File',
+        3: 'Review Cards',
+        4: 'Import'
+      }
+      document.title = `Admin Import: ${stepNames[currentStep]} - ${selectedSeries.name} - Collect Your Cards`
+    } else {
+      document.title = 'Admin Import Card Checklist - Collect Your Cards'
+    }
+  }, [currentStep, selectedSeries])
 
   const loadSeries = async (searchQuery = '', seriesId = null) => {
     try {
@@ -739,10 +748,32 @@ const AdminImport = () => {
           Back to Upload
         </button>
         {!processing && (matchedCards || []).length > 0 && (
-          <button className="continue-btn" onClick={() => setCurrentStep(4)}>
-            Continue to Import
-            <Icon name="arrow-right" size={16} />
-          </button>
+          <>
+            <button
+              className="preview-sql-btn"
+              onClick={async () => {
+                await handleSqlPreview()
+                setCurrentStep(4)
+              }}
+              disabled={generatingSql}
+            >
+              {generatingSql ? (
+                <>
+                  <Icon name="loader" size={16} className="spinner" />
+                  Generating SQL...
+                </>
+              ) : (
+                <>
+                  <Icon name="code" size={16} />
+                  Preview SQL
+                </>
+              )}
+            </button>
+            <button className="continue-btn" onClick={() => setCurrentStep(4)}>
+              Continue to Import
+              <Icon name="arrow-right" size={16} />
+            </button>
+          </>
         )}
       </div>
     </div>

@@ -32,6 +32,11 @@ function Profile() {
     }
   }, [user])
 
+  // Update page title
+  useEffect(() => {
+    document.title = 'Profile - Collect Your Cards'
+  }, [])
+
   const handleProfileChange = (e) => {
     const { name, value } = e.target
     setProfileData(prev => ({

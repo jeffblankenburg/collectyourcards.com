@@ -38,10 +38,10 @@ function RainbowView() {
   useEffect(() => {
     if (cardInfo) {
       document.title = `Rainbow: #${cardInfo.card_number} ${cardInfo.player_names} - Collect Your Cards`
-    } else if (loading) {
-      document.title = 'Loading Rainbow View... - Collect Your Cards'
+    } else {
+      document.title = 'Rainbow View - Collect Your Cards'
     }
-  }, [cardInfo, loading])
+  }, [cardInfo])
 
   // Keyboard navigation for image viewer
   useEffect(() => {

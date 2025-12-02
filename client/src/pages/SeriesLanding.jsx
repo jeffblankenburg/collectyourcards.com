@@ -26,7 +26,7 @@ function SeriesLanding() {
     if (isAuthenticated) {
       loadRecentVisits()
     }
-    
+
     // Load data based on URL parameters
     if (setSlug) {
       // We're viewing series for a specific set
@@ -40,6 +40,17 @@ function SeriesLanding() {
       loadYears()
     }
   }, [year, setSlug, isAuthenticated])
+
+  // Update page title based on current view
+  useEffect(() => {
+    if (setSlug && selectedSet) {
+      document.title = `${selectedSet.name} - Collect Your Cards`
+    } else if (year) {
+      document.title = `${year} Sets - Collect Your Cards`
+    } else {
+      document.title = 'Browse Sets by Year - Collect Your Cards'
+    }
+  }, [year, setSlug, selectedSet])
 
   const loadYears = async () => {
     try {

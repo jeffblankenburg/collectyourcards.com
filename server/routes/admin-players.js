@@ -60,11 +60,17 @@ router.get('/', async (req, res) => {
           FROM PlayerNames p1
           INNER JOIN PlayerNames p2 ON p1.player_id <> p2.player_id
           WHERE (
+            -- Same last name (phonetically)
             p1.last_soundex = p2.last_soundex
             AND (
+              -- Same first name (phonetically)
               p1.first_soundex = p2.first_soundex
+              -- First name matches other's nickname
               OR p1.first_name = p2.nick_name
               OR p1.nick_name = p2.first_name
+              -- Nickname matches nickname
+              OR (p1.nick_name IS NOT NULL AND p2.nick_name IS NOT NULL AND p1.nick_soundex = p2.nick_soundex)
+              -- Similar first names (prefix matching with length check)
               OR (
                 LEN(p1.first_name) > 3
                 AND LEN(p2.first_name) > 3
@@ -74,19 +80,65 @@ router.get('/', async (req, res) => {
                   OR p1.first_soundex = p2.first_soundex
                 )
               )
+              -- Common diminutives (e.g., Mike/Michael, Bill/William, Bob/Robert)
+              OR (
+                p1.first_name IN ('Mike', 'Michael') AND p2.first_name IN ('Mike', 'Michael')
+                OR p1.first_name IN ('Bill', 'Billy', 'William') AND p2.first_name IN ('Bill', 'Billy', 'William')
+                OR p1.first_name IN ('Bob', 'Bobby', 'Robert') AND p2.first_name IN ('Bob', 'Bobby', 'Robert')
+                OR p1.first_name IN ('Jim', 'Jimmy', 'James') AND p2.first_name IN ('Jim', 'Jimmy', 'James')
+                OR p1.first_name IN ('Tom', 'Tommy', 'Thomas') AND p2.first_name IN ('Tom', 'Tommy', 'Thomas')
+                OR p1.first_name IN ('Joe', 'Joey', 'Joseph') AND p2.first_name IN ('Joe', 'Joey', 'Joseph')
+                OR p1.first_name IN ('Jack', 'John', 'Johnny') AND p2.first_name IN ('Jack', 'John', 'Johnny')
+                OR p1.first_name IN ('Dick', 'Rich', 'Richard', 'Richie') AND p2.first_name IN ('Dick', 'Rich', 'Richard', 'Richie')
+                OR p1.first_name IN ('Ed', 'Eddie', 'Edward', 'Ted', 'Teddy') AND p2.first_name IN ('Ed', 'Eddie', 'Edward', 'Ted', 'Teddy')
+                OR p1.first_name IN ('Al', 'Albert', 'Bert') AND p2.first_name IN ('Al', 'Albert', 'Bert')
+                OR p1.first_name IN ('Dan', 'Danny', 'Daniel') AND p2.first_name IN ('Dan', 'Danny', 'Daniel')
+                OR p1.first_name IN ('Dave', 'Davey', 'David') AND p2.first_name IN ('Dave', 'Davey', 'David')
+                OR p1.first_name IN ('Chris', 'Christopher') AND p2.first_name IN ('Chris', 'Christopher')
+                OR p1.first_name IN ('Matt', 'Matthew') AND p2.first_name IN ('Matt', 'Matthew')
+                OR p1.first_name IN ('Nick', 'Nicholas', 'Nicky') AND p2.first_name IN ('Nick', 'Nicholas', 'Nicky')
+                OR p1.first_name IN ('Pat', 'Patrick') AND p2.first_name IN ('Pat', 'Patrick')
+                OR p1.first_name IN ('Tony', 'Anthony') AND p2.first_name IN ('Tony', 'Anthony')
+                OR p1.first_name IN ('Andy', 'Andrew') AND p2.first_name IN ('Andy', 'Andrew')
+                OR p1.first_name IN ('Steve', 'Steven', 'Stephen') AND p2.first_name IN ('Steve', 'Steven', 'Stephen')
+                OR p1.first_name IN ('Pete', 'Peter') AND p2.first_name IN ('Pete', 'Peter')
+                OR p1.first_name IN ('Ken', 'Kenny', 'Kenneth') AND p2.first_name IN ('Ken', 'Kenny', 'Kenneth')
+                OR p1.first_name IN ('Ron', 'Ronnie', 'Ronald') AND p2.first_name IN ('Ron', 'Ronnie', 'Ronald')
+                OR p1.first_name IN ('Don', 'Donnie', 'Donald') AND p2.first_name IN ('Don', 'Donnie', 'Donald')
+                OR p1.first_name IN ('Larry', 'Lawrence') AND p2.first_name IN ('Larry', 'Lawrence')
+                OR p1.first_name IN ('Sam', 'Sammy', 'Samuel') AND p2.first_name IN ('Sam', 'Sammy', 'Samuel')
+                OR p1.first_name IN ('Hank', 'Henry') AND p2.first_name IN ('Hank', 'Henry')
+                OR p1.first_name IN ('Chuck', 'Charlie', 'Charles') AND p2.first_name IN ('Chuck', 'Charlie', 'Charles')
+                OR p1.first_name IN ('Willy', 'Willie', 'Will', 'William') AND p2.first_name IN ('Willy', 'Willie', 'Will', 'William')
+                OR p1.first_name IN ('Jeff', 'Jeffrey', 'Geoffrey') AND p2.first_name IN ('Jeff', 'Jeffrey', 'Geoffrey')
+                OR p1.first_name IN ('Greg', 'Gregory') AND p2.first_name IN ('Greg', 'Gregory')
+                OR p1.first_name IN ('Tim', 'Timmy', 'Timothy') AND p2.first_name IN ('Tim', 'Timmy', 'Timothy')
+                OR p1.first_name IN ('Ben', 'Benny', 'Benjamin') AND p2.first_name IN ('Ben', 'Benny', 'Benjamin')
+                OR p1.first_name IN ('Alex', 'Alexander') AND p2.first_name IN ('Alex', 'Alexander')
+              )
             )
+          )
+        ),
+        -- Filter out pairs that have been marked as "not duplicates"
+        FilteredDuplicatePairs AS (
+          SELECT dp.*
+          FROM DuplicatePairs dp
+          WHERE NOT EXISTS (
+            SELECT 1 FROM duplicate_exclusion de
+            WHERE (de.player1_id = CASE WHEN dp.player1_id < dp.player2_id THEN dp.player1_id ELSE dp.player2_id END
+               AND de.player2_id = CASE WHEN dp.player1_id < dp.player2_id THEN dp.player2_id ELSE dp.player1_id END)
           )
         ),
         AllDuplicatePlayers AS (
           SELECT DISTINCT
             player1_id as player_id,
             last_name
-          FROM DuplicatePairs
+          FROM FilteredDuplicatePairs
           UNION
           SELECT DISTINCT
             player2_id as player_id,
             last_name
-          FROM DuplicatePairs
+          FROM FilteredDuplicatePairs
         )
         SELECT
           p.player_id,
@@ -101,7 +153,7 @@ router.get('/', async (req, res) => {
           STRING_AGG(CAST(pt.player_team_id as varchar(20)) + '|' + CAST(t.team_Id as varchar(10)) + '|' + ISNULL(t.abbreviation, '?') + '|' + ISNULL(t.primary_color, '#666') + '|' + ISNULL(t.secondary_color, '#999') + '|' + ISNULL(t.name, 'Unknown'), '~') as teams_data,
           (
             SELECT STRING_AGG(CAST(p2.player_id as varchar(20)) + ':' + ISNULL(p2.first_name, '') + ':' + ISNULL(p2.last_name, '') + ':' + ISNULL(p2.nick_name, ''), '|')
-            FROM DuplicatePairs dp
+            FROM FilteredDuplicatePairs dp
             JOIN player p2 ON (dp.player2_id = p2.player_id AND dp.player1_id = p.player_id)
             WHERE dp.player1_id = p.player_id
           ) as duplicate_matches
@@ -1404,6 +1456,96 @@ router.put('/:id/display-card', async (req, res) => {
     res.status(500).json({
       error: 'Database error',
       message: 'Failed to update display card',
+      details: error.message
+    })
+  }
+})
+
+// POST /api/admin/players/duplicates/dismiss - Mark a pair as "not duplicates"
+router.post('/duplicates/dismiss', async (req, res) => {
+  try {
+    const { player1_id, player2_id } = req.body
+    const userId = req.user?.userId || null
+
+    if (!player1_id || !player2_id) {
+      return res.status(400).json({
+        error: 'Missing required fields',
+        message: 'Both player1_id and player2_id are required'
+      })
+    }
+
+    // Ensure player1_id < player2_id for the constraint
+    const smallerId = Math.min(player1_id, player2_id)
+    const largerId = Math.max(player1_id, player2_id)
+
+    // Check if already dismissed
+    const existing = await prisma.$queryRawUnsafe(`
+      SELECT 1 FROM duplicate_exclusion
+      WHERE player1_id = ${smallerId} AND player2_id = ${largerId}
+    `)
+
+    if (existing.length > 0) {
+      return res.json({
+        success: true,
+        message: 'Pair was already marked as not duplicates'
+      })
+    }
+
+    // Insert the exclusion
+    await prisma.$executeRawUnsafe(`
+      INSERT INTO duplicate_exclusion (player1_id, player2_id, created_by)
+      VALUES (${smallerId}, ${largerId}, ${userId ? userId : 'NULL'})
+    `)
+
+    console.log(`Admin: Dismissed duplicate pair ${smallerId} - ${largerId}`)
+
+    res.json({
+      success: true,
+      message: 'Pair marked as not duplicates'
+    })
+
+  } catch (error) {
+    console.error('Error dismissing duplicate pair:', error)
+    res.status(500).json({
+      error: 'Database error',
+      message: 'Failed to dismiss duplicate pair',
+      details: error.message
+    })
+  }
+})
+
+// DELETE /api/admin/players/duplicates/dismiss - Restore a dismissed pair
+router.delete('/duplicates/dismiss', async (req, res) => {
+  try {
+    const { player1_id, player2_id } = req.body
+
+    if (!player1_id || !player2_id) {
+      return res.status(400).json({
+        error: 'Missing required fields',
+        message: 'Both player1_id and player2_id are required'
+      })
+    }
+
+    const smallerId = Math.min(player1_id, player2_id)
+    const largerId = Math.max(player1_id, player2_id)
+
+    await prisma.$executeRawUnsafe(`
+      DELETE FROM duplicate_exclusion
+      WHERE player1_id = ${smallerId} AND player2_id = ${largerId}
+    `)
+
+    console.log(`Admin: Restored duplicate pair ${smallerId} - ${largerId}`)
+
+    res.json({
+      success: true,
+      message: 'Pair restored to duplicates list'
+    })
+
+  } catch (error) {
+    console.error('Error restoring duplicate pair:', error)
+    res.status(500).json({
+      error: 'Database error',
+      message: 'Failed to restore duplicate pair',
       details: error.message
     })
   }

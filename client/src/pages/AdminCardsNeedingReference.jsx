@@ -25,6 +25,11 @@ function AdminCardsNeedingReference() {
     loadCards()
   }, [])
 
+  // Update page title
+  useEffect(() => {
+    document.title = 'Admin Cards Needing Reference - Collect Your Cards'
+  }, [])
+
   const loadCards = async () => {
     try {
       setLoading(true)

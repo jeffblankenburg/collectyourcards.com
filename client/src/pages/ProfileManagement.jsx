@@ -43,6 +43,11 @@ function ProfileManagement() {
     }
   }, [isAuthenticated])
 
+  // Update page title
+  useEffect(() => {
+    document.title = 'Profile Settings - Collect Your Cards'
+  }, [])
+
   useEffect(() => {
     if (profile) {
       setFormData({

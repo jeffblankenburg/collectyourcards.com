@@ -32,6 +32,8 @@ function SharedCollectionView() {
   useEffect(() => {
     if (view) {
       document.title = `${view.name} - ${view.owner.username}'s Collection - Collect Your Cards`
+    } else {
+      document.title = 'Shared Collection - Collect Your Cards'
     }
   }, [view])
 

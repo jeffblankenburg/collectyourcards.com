@@ -68,8 +68,10 @@ function SetsPage() {
     if (year) {
       loadSetsForYear(year)
       document.title = `${year} Card Sets - Collect Your Cards`
+    } else {
+      document.title = 'Card Sets - Collect Your Cards'
     }
-    
+
     // Load dropdown data for modal
     if (isAdmin) {
       loadOrganizations()

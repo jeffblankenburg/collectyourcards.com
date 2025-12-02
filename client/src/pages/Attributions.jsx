@@ -1,7 +1,12 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import './Attributions.css'
 
 function Attributions() {
+  // Update page title
+  useEffect(() => {
+    document.title = 'Icon Attributions - Collect Your Cards'
+  }, [])
+
   return (
     <div className="attributions-page">
       <div className="attributions-container">

@@ -30,7 +30,12 @@ function SpreadsheetIngestion() {
   // Mapping configuration
   const [columnMapping, setColumnMapping] = useState({})
   const [detectedFormat, setDetectedFormat] = useState(null)
-  
+
+  // Update page title
+  useEffect(() => {
+    document.title = 'Spreadsheet Ingestion - Collect Your Cards'
+  }, [])
+
   // Known format patterns
   const FORMAT_PATTERNS = {
     TOPPS_STANDARD: {

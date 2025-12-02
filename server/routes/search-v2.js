@@ -435,9 +435,9 @@ async function extractPlayerNames(query, tokens) {
     const nGrams = []
 
     // Generate all contiguous n-grams (from longest to shortest)
-    // Only use 2+ word n-grams to avoid partial name matches
-    // Exception: If query is only 1-2 words, also include 1-word n-grams
-    const minNgramLength = words.length <= 2 ? 1 : 2
+    // ALWAYS include single-word n-grams for player searches to catch last names like "Trout"
+    // This is critical for queries like "trout 2022 topps update" to find Mike Trout
+    const minNgramLength = 1
 
     for (let length = words.length; length >= minNgramLength; length--) {
       for (let start = 0; start <= words.length - length; start++) {
@@ -728,6 +728,7 @@ async function extractSetNames(query, tokens) {
         SELECT TOP 5
           s.series_id,
           s.name as series_name,
+          st.set_id,
           st.name as set_name,
           st.slug as set_slug,
           m.name as manufacturer_name,
@@ -795,11 +796,13 @@ async function extractSetNames(query, tokens) {
       else if (lowerManufacturer.includes(lowerNgram)) confidence = 70
 
       // Boost for longer n-gram matches (more specific)
-      if (ngramLength >= 3) confidence += 10
-      else if (ngramLength === 2) confidence += 5
+      // Multi-word matches are more intentional and should score higher
+      if (ngramLength >= 3) confidence += 15
+      else if (ngramLength === 2) confidence += 10
 
       tokens.set.push({
         series_id: Number(series.series_id),
+        set_id: Number(series.set_id),
         series_name: series.series_name,
         set_name: series.set_name,
         set_slug: series.set_slug,
@@ -1370,12 +1373,15 @@ function selectSearchStrategy(tokens, activeTokens, patternType) {
       return 'PLAYER_CARD_NUMBER'
     }
 
-    // Special case: Year + set without player (browsing a specific set/year)
-    if (activeTokens.year > 0 && activeTokens.set > 0 && activeTokens.player === 0 && activeTokens.cardNumber === 0) {
+    // Special case: Year + set without player/team (browsing a specific set/year)
+    // Only use SET_YEAR_BROWSE if there are NO entity tokens (player/team)
+    if (activeTokens.year > 0 && activeTokens.set > 0 &&
+        activeTokens.player === 0 && activeTokens.team === 0 && activeTokens.cardNumber === 0) {
       return 'SET_YEAR_BROWSE'
     }
 
     // Default multi-filter strategy for all other combinations
+    // This includes player + set + year queries like "Trout 2022 Topps Update"
     return 'CARDS_WITH_MULTI_FILTERS'
   }
 
@@ -1500,8 +1506,20 @@ async function buildAndExecuteQuery(tokens, pattern, limit = 50) {
         break
 
       case 'CARDS_WITH_MULTI_FILTERS':
-        // When there are multiple filters, prioritize CARD results (not just entities)
-        // This handles queries like "steven kwan pink" (player + color), "trout 2020" (player + year), etc.
+        // When there are multiple filters, return ENTITIES + CARDS for better discovery
+        // Example: "Trout 2022 Topps Update" returns:
+        //   1. Mike Trout (player entity)
+        //   2. 2022 Topps Update (set entity)
+        //   3. Matching cards
+
+        console.log(`  [CARDS_WITH_MULTI_FILTERS] Token counts:`, {
+          player: tokens.player.length,
+          team: tokens.team.length,
+          set: tokens.set.length,
+          year: tokens.year.length,
+          parallel: tokens.parallel.length,
+          cardNumber: tokens.cardNumber.length
+        })
 
         // Check if we have filtering tokens beyond just entity names (player/team/set)
         const hasFilteringTokens =
@@ -1515,12 +1533,77 @@ async function buildAndExecuteQuery(tokens, pattern, limit = 50) {
           tokens.cardTypes.shortPrint ||
           tokens.cardTypes.relic
 
-        // If we have entity tokens WITH filtering tokens, return cards
+        console.log(`  [CARDS_WITH_MULTI_FILTERS] hasFilteringTokens:`, hasFilteringTokens)
+
+        // If we have entity tokens WITH filtering tokens, return ENTITIES + CARDS
         if (hasFilteringTokens && (tokens.player.length > 0 || tokens.team.length > 0 || tokens.set.length > 0)) {
-          console.log(`  [CARDS_WITH_MULTI_FILTERS] Have filtering tokens - returning CARDS`)
-          results = await executeCardsWithMultiFiltersQuery(tokens, limit)
+          console.log(`  [CARDS_WITH_MULTI_FILTERS] Have filtering tokens - returning ENTITIES + CARDS`)
+
+          const entityQueries = []
+
+          // Add player entity query if player tokens exist
+          if (tokens.player && tokens.player.length > 0) {
+            entityQueries.push(executePlayerOnlyQuery(tokens, 5)) // Limit to 5 players
+          }
+
+          // Add team entity query if team tokens exist
+          if (tokens.team && tokens.team.length > 0) {
+            entityQueries.push(executeTeamBrowseQuery(tokens, 3)) // Limit to 3 teams
+          }
+
+          // Add set entity query if set tokens exist
+          // For set tokens, we want to return the SET entity, not just series
+          if (tokens.set && tokens.set.length > 0) {
+            entityQueries.push(executeSetEntityQuery(tokens, 5)) // Limit to 5 sets (returns SET + child SERIES)
+          }
+
+          // Execute entity queries in parallel
+          const entityResults = await Promise.all(entityQueries)
+          let entities = entityResults.flat()
+
+          console.log(`  [CARDS_WITH_MULTI_FILTERS] Retrieved ${entities.length} entities`)
+
+          // Get matching cards
+          const cards = await executeCardsWithMultiFiltersQuery(tokens, Math.max(10, limit - entities.length))
+
+          console.log(`  [CARDS_WITH_MULTI_FILTERS] Retrieved ${cards.length} cards`)
+
+          // Filter player entities to only include players who have cards in the results
+          // Example: "trout 2022 topps update" should only show Mike Trout if only he has cards
+          // in 2022 Topps Update, not Dizzy Trout or Steve Trout
+          if (cards.length > 0) {
+            const playerNamesInCards = new Set(
+              cards
+                .filter(c => c.player_names)
+                .flatMap(c => c.player_names.split(', ').map(name => name.toLowerCase().trim()))
+            )
+
+            const originalPlayerCount = entities.filter(e => e.type === 'player').length
+            entities = entities.filter(entity => {
+              if (entity.type !== 'player') return true // Keep non-player entities
+
+              // Check if this player appears in any of the matching cards
+              const playerFullName = `${entity.first_name} ${entity.last_name}`.toLowerCase()
+              const isInCards = playerNamesInCards.has(playerFullName)
+
+              if (!isInCards) {
+                console.log(`  [CARDS_WITH_MULTI_FILTERS] Filtering out player "${entity.name}" - no matching cards in results`)
+              }
+              return isInCards
+            })
+
+            const filteredPlayerCount = entities.filter(e => e.type === 'player').length
+            if (filteredPlayerCount < originalPlayerCount) {
+              console.log(`  [CARDS_WITH_MULTI_FILTERS] Filtered players: ${originalPlayerCount} -> ${filteredPlayerCount}`)
+            }
+          }
+
+          // Combine: entities first (sorted by relevance), then cards
+          results = [...entities, ...cards]
+
+          console.log(`  [CARDS_WITH_MULTI_FILTERS] Returning ${results.length} total results (${entities.length} entities + ${cards.length} cards)`)
         } else {
-          // No filtering tokens, return entities
+          // No filtering tokens, return entities only
           const entityQueries = []
 
           // Add player entity query if player tokens exist
@@ -1543,6 +1626,14 @@ async function buildAndExecuteQuery(tokens, pattern, limit = 50) {
             console.log(`  [CARDS_WITH_MULTI_FILTERS] Executing ${entityQueries.length} entity queries in parallel`)
             const entityResults = await Promise.all(entityQueries)
             results = entityResults.flat()
+
+            // Sort combined results by relevance/confidence
+            results.sort((a, b) => {
+              const relevanceA = a.relevance || a.confidence || 0
+              const relevanceB = b.relevance || b.confidence || 0
+              return relevanceB - relevanceA
+            })
+
             console.log(`  [CARDS_WITH_MULTI_FILTERS] Combined ${results.length} entity results`)
           } else {
             // No entity tokens either, fall back to card results
@@ -1886,6 +1977,22 @@ async function executePlayerCardNumberQuery(tokens, limit) {
 
   console.log(`  [PLAYER_CARD_NUMBER] Player: ${player.name}, Card #: ${cardNumberPattern}`)
 
+  // First, add the player entity to results (so user can click to see all their cards)
+  const playerEntity = {
+    type: 'player',
+    id: player.player_id,
+    name: `${player.first_name} ${player.last_name}`,
+    first_name: player.first_name,
+    last_name: player.last_name,
+    nick_name: player.nick_name,
+    slug: player.slug,
+    card_count: player.card_count,
+    is_hof: player.is_hof,
+    teams: player.teams || [],
+    confidence: player.confidence,
+    relevance: player.confidence + 5 // Boost to appear first
+  }
+
   // Add wildcards for LIKE pattern
   const likePattern = `%${escapeSqlLike(cardNumberPattern)}%`
 
@@ -1925,7 +2032,7 @@ async function executePlayerCardNumberQuery(tokens, limit) {
   // Calculate relevance based on combined confidence
   const avgConfidence = Math.round((player.confidence + tokens.cardNumber[0].confidence) / 2)
 
-  return results.map(card => ({
+  const cardResults = results.map(card => ({
     type: 'card',
     id: Number(card.card_id),
     card_number: card.card_number,
@@ -1942,6 +2049,9 @@ async function executePlayerCardNumberQuery(tokens, limit) {
     confidence: avgConfidence,
     relevance: avgConfidence
   }))
+
+  // Return player entity first, then cards
+  return [playerEntity, ...cardResults]
 }
 
 /**
@@ -2010,11 +2120,73 @@ async function executeCardsWithMultiFiltersQuery(tokens, limit) {
   }
 
   // Filter by set/series
+  // If we have a year token, filter set tokens to only those matching the year
+  // This improves precision for queries like "trout 2022 topps update"
   if (tokens.set && tokens.set.length > 0) {
-    const seriesIds = tokens.set.map(s => s.series_id).join(', ')
-    whereClauses.push(`s.series_id IN (${seriesIds})`)
-    confidenceScores.push(tokens.set[0].confidence)
-    console.log(`    - Set filter: IDs [${seriesIds}]`)
+    let relevantSets = tokens.set
+    let skipSetFilter = false
+
+    // If set tokens appear to be player-themed (contain player names) AND we have card type filters,
+    // skip the set filter to avoid over-restriction
+    // Example: "Acuna rookie autograph" should search ALL series for Acuna rookie autos,
+    // not just "Ronald Acuna Jr. Highlights" themed sets
+    const hasCardTypeFilters = tokens.cardTypes.rookie || tokens.cardTypes.autograph ||
+                               tokens.cardTypes.shortPrint || tokens.cardTypes.relic
+    if (hasCardTypeFilters && tokens.player && tokens.player.length > 0) {
+      const playerNames = tokens.player.flatMap(p =>
+        [p.first_name, p.last_name].filter(Boolean).map(n => n.toLowerCase())
+      )
+
+      const playerThemedSets = relevantSets.filter(s => {
+        const seriesLower = (s.series_name || '').toLowerCase()
+        return playerNames.some(name => seriesLower.includes(name))
+      })
+
+      // If ALL sets are player-themed, skip set filter entirely
+      if (playerThemedSets.length === relevantSets.length) {
+        console.log(`    - Skipping set filter: all ${relevantSets.length} sets are player-themed, using card type filters only`)
+        skipSetFilter = true
+      }
+    }
+
+    if (!skipSetFilter) {
+      // If year is specified, prefer sets from that year with high confidence
+      if (tokens.year && tokens.year.length > 0) {
+        const targetYear = tokens.year[0].year
+        const yearMatchingSets = tokens.set.filter(s => s.year === targetYear)
+
+        // Use year-matching sets if we have any, otherwise fall back to all sets
+        if (yearMatchingSets.length > 0) {
+          relevantSets = yearMatchingSets
+          console.log(`    - Filtering to ${relevantSets.length} sets matching year ${targetYear}`)
+        }
+      }
+
+      // Filter to best confidence matches
+      // If we have very high confidence matches (95+), prefer those over lower matches
+      // This prevents "2022 Topps Finest" (90) cards from appearing when searching for "2022 Topps Update" (100)
+      const maxConfidence = Math.max(...relevantSets.map(s => s.confidence))
+      if (maxConfidence >= 95) {
+        // Only keep sets within 5 points of the max confidence
+        const bestSets = relevantSets.filter(s => s.confidence >= maxConfidence - 5)
+        if (bestSets.length > 0) {
+          console.log(`    - Filtering to ${bestSets.length} best-match sets (confidence >= ${maxConfidence - 5})`)
+          relevantSets = bestSets
+        }
+      } else if (relevantSets.length > 5) {
+        // Fall back to 90+ threshold if no high-confidence matches
+        const highConfidenceSets = relevantSets.filter(s => s.confidence >= 90)
+        if (highConfidenceSets.length > 0) {
+          relevantSets = highConfidenceSets
+          console.log(`    - Filtering to ${relevantSets.length} high-confidence sets`)
+        }
+      }
+
+      const seriesIds = relevantSets.map(s => s.series_id).join(', ')
+      whereClauses.push(`s.series_id IN (${seriesIds})`)
+      confidenceScores.push(relevantSets[0].confidence)
+      console.log(`    - Set filter: IDs [${seriesIds}]`)
+    }
   }
 
   // Filter by team
@@ -2095,30 +2267,39 @@ async function executeCardsWithMultiFiltersQuery(tokens, limit) {
 
   console.log(`    Results found: ${results.length}`)
 
-  return results.map(card => ({
-    type: 'card',
-    id: Number(card.card_id),
-    card_number: card.card_number,
-    year: card.set_year,
-    player_names: card.player_names,
-    series_name: card.series_name,
-    series_slug: card.series_slug,
-    set_name: card.set_name,
-    set_slug: card.set_slug,
-    manufacturer_name: card.manufacturer_name,
-    color_name: card.color_name,
-    color_hex: card.color_hex,
-    team_name: card.team_name,
-    team_abbreviation: card.team_abbreviation,
-    team_primary_color: card.team_primary_color,
-    team_secondary_color: card.team_secondary_color,
-    is_rookie: card.is_rookie,
-    is_autograph: card.is_autograph,
-    is_relic: card.is_relic,
-    print_run: card.print_run ? Number(card.print_run) : null,
-    confidence: avgConfidence,
-    relevance: avgConfidence
-  }))
+  return results.map(card => {
+    // Build a descriptive name for the card
+    // Format: "#CardNumber Player Name - Series Name /PrintRun"
+    const cardNumberDisplay = card.card_number ? `#${card.card_number}` : ''
+    const printRunDisplay = card.print_run ? ` /${Number(card.print_run)}` : ''
+    const name = `${cardNumberDisplay} ${card.player_names || 'Unknown'} - ${card.series_name || card.set_name || 'Unknown Set'}${printRunDisplay}`.trim()
+
+    return {
+      type: 'card',
+      id: Number(card.card_id),
+      name: name,
+      card_number: card.card_number,
+      year: card.set_year,
+      player_names: card.player_names,
+      series_name: card.series_name,
+      series_slug: card.series_slug,
+      set_name: card.set_name,
+      set_slug: card.set_slug,
+      manufacturer_name: card.manufacturer_name,
+      color_name: card.color_name,
+      color_hex: card.color_hex,
+      team_name: card.team_name,
+      team_abbreviation: card.team_abbreviation,
+      team_primary_color: card.team_primary_color,
+      team_secondary_color: card.team_secondary_color,
+      is_rookie: card.is_rookie,
+      is_autograph: card.is_autograph,
+      is_relic: card.is_relic,
+      print_run: card.print_run ? Number(card.print_run) : null,
+      confidence: avgConfidence,
+      relevance: avgConfidence
+    }
+  })
 }
 
 /**
@@ -2136,8 +2317,34 @@ async function executeSetBrowseQuery(tokens, limit) {
   console.log(`  [SET_BROWSE] Returning series entities for ${tokens.set.length} series`)
 
   try {
+    // If we have player tokens, deprioritize sets that contain player names
+    // This prevents "Mike Trout" themed sets from appearing before "Update" sets
+    // when searching "Trout Update"
+    let sortedSets = [...tokens.set]
+    if (tokens.player && tokens.player.length > 0) {
+      const playerNames = tokens.player.flatMap(p =>
+        [p.first_name, p.last_name, p.nick_name]
+          .filter(Boolean)
+          .map(n => n.toLowerCase())
+      )
+
+      sortedSets.sort((a, b) => {
+        const aSeriesLower = (a.series_name || '').toLowerCase()
+        const bSeriesLower = (b.series_name || '').toLowerCase()
+        const aHasPlayerName = playerNames.some(name => aSeriesLower.includes(name))
+        const bHasPlayerName = playerNames.some(name => bSeriesLower.includes(name))
+
+        // Prioritize sets that DON'T contain player names
+        if (aHasPlayerName && !bHasPlayerName) return 1
+        if (!aHasPlayerName && bHasPlayerName) return -1
+
+        // Then by confidence
+        return (b.confidence || 0) - (a.confidence || 0)
+      })
+    }
+
     // Get full series data with counts
-    const seriesIds = tokens.set.slice(0, limit).map(s => Number(s.series_id))
+    const seriesIds = sortedSets.slice(0, limit).map(s => Number(s.series_id))
 
     if (seriesIds.length === 0) {
       return []
@@ -2186,39 +2393,156 @@ async function executeSetBrowseQuery(tokens, limit) {
     }
 
     console.log(`  [SET_BROWSE] Mapping ${results.length} results...`)
-    const mapped = results.map((series, index) => ({
-      type: 'series',
-      id: series.series_id,
-      series_id: series.series_id,
-      name: series.series_name,
-      series_name: series.series_name,
-      slug: series.slug,
-      set_id: series.set_id || null,
-      set_name: series.set_name || '',
-      set_slug: series.set_slug || '',
-      set_year: series.set_year || null,
-      year: series.set_year || null,
-      manufacturer_name: series.manufacturer_name || '',
-      color_id: series.color_id || null,
-      color_name: series.color_name || null,
-      color_hex: series.color_hex || null,
-      print_run_display: series.print_run_display || null,
-      card_count: series.card_count || 0,
-      rc_count: 0,
-      parallel_count: 0,
-      is_base: series.is_base || false,
-      parallel_of: series.parallel_of || null,
-      confidence: tokens.set[index]?.confidence || 80,
-      relevance: tokens.set[index]?.confidence || 80
-    }))
 
-    console.log(`  [SET_BROWSE] Successfully mapped ${mapped.length} series, returning...`)
-    return mapped
+    // Create a lookup map for the sorted token data by series_id
+    const tokenBySeries = new Map(sortedSets.map((t, idx) => [t.series_id, { ...t, sortIndex: idx }]))
+
+    const mapped = results.map((series) => {
+      const tokenData = tokenBySeries.get(series.series_id) || {}
+      return {
+        type: 'series',
+        id: series.series_id,
+        series_id: series.series_id,
+        name: series.series_name,
+        series_name: series.series_name,
+        slug: series.slug,
+        set_id: series.set_id || null,
+        set_name: series.set_name || '',
+        set_slug: series.set_slug || '',
+        set_year: series.set_year || null,
+        year: series.set_year || null,
+        manufacturer_name: series.manufacturer_name || '',
+        color_id: series.color_id || null,
+        color_name: series.color_name || null,
+        color_hex: series.color_hex || null,
+        print_run_display: series.print_run_display || null,
+        card_count: series.card_count || 0,
+        rc_count: 0,
+        parallel_count: 0,
+        is_base: series.is_base || false,
+        parallel_of: series.parallel_of || null,
+        confidence: tokenData.confidence || 80,
+        relevance: tokenData.confidence || 80,
+        _sortIndex: tokenData.sortIndex ?? 999
+      }
+    })
+
+    // Re-sort by original sorted order
+    mapped.sort((a, b) => a._sortIndex - b._sortIndex)
+
+    // Remove internal sort field
+    const finalMapped = mapped.map(({ _sortIndex, ...rest }) => rest)
+
+    console.log(`  [SET_BROWSE] Successfully mapped ${finalMapped.length} series, returning...`)
+    return finalMapped
   } catch (error) {
     console.error('  [SET_BROWSE] Outer try-catch error:', error.message)
     console.error('  [SET_BROWSE] Stack:', error.stack)
     return []
   }
+}
+
+/**
+ * Strategy: SET_ENTITY_QUERY
+ * Returns SET entities (parents) for multi-entity enrichment
+ * Used when we want to show the SET along with cards in multi-filter queries
+ */
+async function executeSetEntityQuery(tokens, limit) {
+  if (!tokens.set || tokens.set.length === 0) {
+    return []
+  }
+
+  console.log(`  [SET_ENTITY_QUERY] Returning set entities for ${tokens.set.length} sets`)
+
+  const results = []
+
+  // Filter set tokens by year if year is specified (same logic as card query)
+  let relevantSets = tokens.set
+  if (tokens.year && tokens.year.length > 0) {
+    const targetYear = tokens.year[0].year
+    const yearMatchingSets = tokens.set.filter(s => s.year === targetYear)
+
+    if (yearMatchingSets.length > 0) {
+      relevantSets = yearMatchingSets
+      console.log(`  [SET_ENTITY_QUERY] Filtering to ${relevantSets.length} sets matching year ${targetYear}`)
+    }
+  }
+
+  // Filter to best confidence matches
+  // If we have very high confidence matches (95+), prefer those over lower matches
+  // This prevents "2022 Topps Finest" (90) from appearing when "2022 Topps Update" (100) is the real match
+  const maxConfidence = Math.max(...relevantSets.map(s => s.confidence))
+  if (maxConfidence >= 95) {
+    // Only keep sets within 5 points of the max confidence
+    const bestSets = relevantSets.filter(s => s.confidence >= maxConfidence - 5)
+    if (bestSets.length > 0) {
+      console.log(`  [SET_ENTITY_QUERY] Filtering to ${bestSets.length} best-match sets (confidence >= ${maxConfidence - 5})`)
+      relevantSets = bestSets
+    }
+  } else if (relevantSets.length > 5) {
+    // Fall back to 90+ threshold if no high-confidence matches
+    const highConfidenceSets = relevantSets.filter(s => s.confidence >= 90)
+    if (highConfidenceSets.length > 0) {
+      relevantSets = highConfidenceSets
+      console.log(`  [SET_ENTITY_QUERY] Filtering to ${relevantSets.length} high-confidence sets`)
+    }
+  }
+
+  // Get unique set IDs from filtered tokens (multiple series may belong to same set)
+  const setIds = new Set()
+  for (const setToken of relevantSets) {
+    if (setToken.set_id) {
+      setIds.add(Number(setToken.set_id))
+    }
+  }
+
+  if (setIds.size === 0) {
+    return []
+  }
+
+  // Query for SET entities
+  const setIdsArray = Array.from(setIds).slice(0, limit)
+  const sql = `
+    SELECT TOP ${limit}
+      CAST(st.set_id AS INT) as set_id,
+      st.name as set_name,
+      st.slug as set_slug,
+      st.year as set_year,
+      st.card_count,
+      st.series_count,
+      st.thumbnail,
+      m.name as manufacturer_name,
+      o.name as organization_name
+    FROM [set] st
+    LEFT JOIN manufacturer m ON st.manufacturer = m.manufacturer_id
+    LEFT JOIN organization o ON st.organization = o.organization_id
+    WHERE st.set_id IN (${setIdsArray.join(',')})
+    ORDER BY st.year DESC, st.card_count DESC
+  `
+
+  const setResults = await prisma.$queryRawUnsafe(sql)
+
+  // Map to standardized format
+  setResults.forEach(setEntity => {
+    results.push({
+      type: 'set',
+      id: setEntity.set_id,
+      set_id: setEntity.set_id,
+      name: setEntity.set_name,
+      slug: setEntity.set_slug,
+      year: setEntity.set_year,
+      card_count: setEntity.card_count || 0,
+      series_count: setEntity.series_count || 0,
+      thumbnail: setEntity.thumbnail || null,
+      manufacturer_name: setEntity.manufacturer_name || '',
+      organization_name: setEntity.organization_name || '',
+      confidence: 90,
+      relevance: 95 // Boost to appear before cards
+    })
+  })
+
+  console.log(`  [SET_ENTITY_QUERY] Returning ${results.length} set entities`)
+  return results
 }
 
 /**
@@ -2417,9 +2741,8 @@ async function executeParallelBrowseQuery(tokens, limit) {
 
 /**
  * Strategy: SET_YEAR_BROWSE
- * Browse cards from a specific set + year combination
- * NOTE: Uses set/manufacturer name pattern matching, not specific series_id,
- * because the user might search "2020 topps" but token extraction found "2025 Topps"
+ * Browse series from a specific set + year combination
+ * Returns: SET entity first, then child SERIES entities (sorted alphabetically)
  */
 async function executeSetYearBrowseQuery(tokens, limit) {
   if (!tokens.set || tokens.set.length === 0 || !tokens.year || tokens.year.length === 0) {
@@ -2434,74 +2757,111 @@ async function executeSetYearBrowseQuery(tokens, limit) {
   // Build search pattern from set name (use manufacturer + set name pattern)
   const searchPattern = `%${escapeSqlLike(setInfo.matched)}%`
 
-  const sql = `
-    SELECT TOP ${limit}
-      c.card_id,
-      c.card_number,
-      c.is_rookie,
-      c.is_autograph,
-      c.is_relic,
-      c.print_run,
-      s.name as series_name,
-      s.slug as series_slug,
+  const avgConfidence = Math.round((setInfo.confidence + tokens.year[0].confidence) / 2)
+  const results = []
+
+  // STEP 1: Query and return the SET entity (parent)
+  const setQuery = `
+    SELECT TOP 1
+      CAST(st.set_id AS INT) as set_id,
       st.name as set_name,
       st.slug as set_slug,
       st.year as set_year,
+      st.card_count,
+      st.series_count,
+      st.thumbnail,
       m.name as manufacturer_name,
-      col.name as color_name,
-      col.hex_value as color_hex,
-      STRING_AGG(CONCAT(p.first_name, ' ', p.last_name), ', ') as player_names,
-      MAX(p.card_count) as max_card_count,
-      MAX(t.name) as team_name,
-      MAX(t.abbreviation) as team_abbreviation,
-      MAX(t.primary_color) as team_primary_color,
-      MAX(t.secondary_color) as team_secondary_color
-    FROM card c
-    JOIN series s ON c.series = s.series_id
-    JOIN [set] st ON s.[set] = st.set_id
+      o.name as organization_name
+    FROM [set] st
     LEFT JOIN manufacturer m ON st.manufacturer = m.manufacturer_id
-    LEFT JOIN color col ON s.color = col.color_id
-    LEFT JOIN card_player_team cpt ON c.card_id = cpt.card
-    LEFT JOIN player_team pt ON cpt.player_team = pt.player_team_id
-    LEFT JOIN player p ON pt.player = p.player_id
-    LEFT JOIN team t ON pt.team = t.team_id
+    LEFT JOIN organization o ON st.organization = o.organization_id
     WHERE st.year = ${year}
       AND (st.name LIKE '${searchPattern}' COLLATE Latin1_General_CI_AI
-           OR m.name LIKE '${searchPattern}' COLLATE Latin1_General_CI_AI
-           OR s.name LIKE '${searchPattern}' COLLATE Latin1_General_CI_AI)
-    GROUP BY c.card_id, c.card_number, c.is_rookie, c.is_autograph, c.is_relic, c.print_run,
-             s.name, s.slug, st.name, st.slug, st.year, m.name, col.name, col.hex_value
-    ORDER BY max_card_count DESC, c.card_number
+           OR m.name LIKE '${searchPattern}' COLLATE Latin1_General_CI_AI)
+    ORDER BY st.card_count DESC
   `
 
-  const results = await prisma.$queryRawUnsafe(sql)
+  const setResults = await prisma.$queryRawUnsafe(setQuery)
 
-  const avgConfidence = Math.round((setInfo.confidence + tokens.year[0].confidence) / 2)
+  // Add SET entity as first result
+  if (setResults && setResults.length > 0) {
+    const setEntity = setResults[0]
+    results.push({
+      type: 'set',
+      id: setEntity.set_id,
+      set_id: setEntity.set_id,
+      name: setEntity.set_name,
+      slug: setEntity.set_slug,
+      year: setEntity.set_year,
+      card_count: setEntity.card_count || 0,
+      series_count: setEntity.series_count || 0,
+      thumbnail: setEntity.thumbnail || null,
+      manufacturer_name: setEntity.manufacturer_name || '',
+      organization_name: setEntity.organization_name || '',
+      confidence: avgConfidence,
+      relevance: avgConfidence + 10 // Boost set entity to appear first
+    })
 
-  return results.map(card => ({
-    type: 'card',
-    id: Number(card.card_id),
-    card_number: card.card_number,
-    year: card.set_year,
-    player_names: card.player_names,
-    series_name: card.series_name,
-    series_slug: card.series_slug,
-    set_name: card.set_name,
-    set_slug: card.set_slug,
-    manufacturer_name: card.manufacturer_name,
-    color_name: card.color_name,
-    color_hex: card.color_hex,
-    team_name: card.team_name,
-    team_abbreviation: card.team_abbreviation,
-    team_primary_color: card.team_primary_color,
-    team_secondary_color: card.team_secondary_color,
-    is_rookie: card.is_rookie,
-    is_autograph: card.is_autograph,
-    is_relic: card.is_relic,
-    print_run: card.print_run ? Number(card.print_run) : null,
-    confidence: avgConfidence,
-    relevance: avgConfidence
-  }))
+    // STEP 2: Query and return child SERIES entities (sorted alphabetically)
+    const seriesQuery = `
+      SELECT
+        CAST(s.series_id AS INT) as series_id,
+        s.name as series_name,
+        s.slug,
+        s.card_count,
+        s.card_entered_count,
+        s.is_base,
+        CAST(s.parallel_of_series AS INT) as parallel_of,
+        s.print_run_display,
+        CAST(st.set_id AS INT) as set_id,
+        st.name as set_name,
+        st.slug as set_slug,
+        st.year as set_year,
+        m.name as manufacturer_name,
+        CAST(col.color_id AS INT) as color_id,
+        col.name as color_name,
+        col.hex_value as color_hex
+      FROM series s
+      JOIN [set] st ON s.[set] = st.set_id
+      LEFT JOIN manufacturer m ON st.manufacturer = m.manufacturer_id
+      LEFT JOIN color col ON s.color = col.color_id
+      WHERE st.set_id = ${setEntity.set_id}
+      ORDER BY s.name ASC
+    `
+
+    const seriesResults = await prisma.$queryRawUnsafe(seriesQuery)
+
+    // Add SERIES entities (children of the set)
+    seriesResults.forEach(series => {
+      results.push({
+        type: 'series',
+        id: series.series_id,
+        series_id: series.series_id,
+        name: series.series_name,
+        series_name: series.series_name,
+        slug: series.slug,
+        set_id: series.set_id || null,
+        set_name: series.set_name || '',
+        set_slug: series.set_slug || '',
+        set_year: series.set_year || null,
+        year: series.set_year || null,
+        manufacturer_name: series.manufacturer_name || '',
+        color_id: series.color_id || null,
+        color_name: series.color_name || null,
+        color_hex: series.color_hex || null,
+        print_run_display: series.print_run_display || null,
+        card_count: series.card_count || 0,
+        rc_count: 0,
+        parallel_count: 0,
+        is_base: series.is_base || false,
+        parallel_of: series.parallel_of || null,
+        confidence: avgConfidence,
+        relevance: avgConfidence
+      })
+    })
+  }
+
+  return results
 }
 
 /**
@@ -3188,6 +3548,63 @@ router.get('/universal-v2', async (req, res) => {
       })
     }
 
+    // PHASE 4.2: Clean up insert tokens that overlap with set tokens
+    // When "update" matches both a SET name (2022 Topps Update) and an INSERT keyword,
+    // prefer the set interpretation and remove conflicting insert tokens
+    if (tokens.set.length > 0 && tokens.insert.length > 0) {
+      // Get all matched keywords from sets
+      const setMatchedWords = new Set(
+        tokens.set.flatMap(s => (s.matched || '').toLowerCase().split(/\s+/))
+      )
+
+      const originalInsertCount = tokens.insert.length
+      tokens.insert = tokens.insert.filter(insert => {
+        const insertKeyword = (insert.matched || '').toLowerCase()
+        // Remove insert if its keyword is part of a set match
+        const isPartOfSetMatch = setMatchedWords.has(insertKeyword) ||
+          [...setMatchedWords].some(setWord => setWord.includes(insertKeyword))
+
+        if (isPartOfSetMatch) {
+          console.log(`  [Token Cleanup] Removing insert "${insert.series_name}" because "${insertKeyword}" is part of set name match`)
+        }
+        return !isPartOfSetMatch
+      })
+
+      if (tokens.insert.length < originalInsertCount) {
+        console.log(`  [Token Cleanup] Removed ${originalInsertCount - tokens.insert.length} conflicting insert tokens`)
+      }
+    }
+
+    // PHASE 4.3: Deprioritize player tokens when they match known brand/manufacturer names
+    // For queries like "Bowman Chrome", player "Bowman" should rank below the Bowman Chrome sets
+    // because the user is more likely looking for the set than a player with that name
+    if (tokens.player.length > 0 && tokens.set.length > 0) {
+      const knownBrands = ['bowman', 'topps', 'panini', 'fleer', 'donruss', 'upper deck', 'leaf', 'score']
+
+      tokens.player = tokens.player.map(player => {
+        const lastName = (player.last_name || '').toLowerCase()
+        const firstName = (player.first_name || '').toLowerCase()
+
+        // If player's last name matches a known brand and we have set tokens matching it
+        if (knownBrands.includes(lastName) || knownBrands.includes(firstName)) {
+          const matchingSetTokens = tokens.set.filter(s =>
+            (s.matched || '').toLowerCase().includes(lastName) ||
+            (s.matched || '').toLowerCase().includes(firstName)
+          )
+
+          if (matchingSetTokens.length > 0) {
+            // Reduce confidence so sets appear first
+            const originalConfidence = player.confidence
+            player.confidence = Math.max(60, player.confidence - 20)
+            player.relevance = player.confidence
+            console.log(`  [Token Cleanup] Deprioritizing player "${player.first_name} ${player.last_name}" (${originalConfidence} -> ${player.confidence}) - matches brand name with set tokens`)
+          }
+        }
+
+        return player
+      })
+    }
+
     // PHASE 2: Recognize pattern (after fuzzy matching for best results)
     const pattern = recognizePattern(tokens)
 
@@ -3242,6 +3659,41 @@ router.get('/universal-v2', async (req, res) => {
       totalResults: results.length,
       searchTime: searchTime,
       phase: 'Phase 6 complete - fuzzy matching enabled!'
+    }
+
+    // Add debug info if requested
+    if (req.query.debug === 'true') {
+      response.debug = {
+        tokens: {
+          player: tokens.player.length,
+          set: tokens.set.length,
+          year: tokens.year.length,
+          team: tokens.team.length,
+          cardNumber: tokens.cardNumber.length,
+          parallel: tokens.parallel.length,
+          serial: tokens.serial.length,
+          insert: tokens.insert.length,
+          cardTypes: tokens.cardTypes,
+          keywords: tokens.keywords.length
+        },
+        tokenDetails: {
+          players: tokens.player.map(p => ({ name: p.first_name + ' ' + p.last_name, confidence: p.confidence })),
+          sets: tokens.set.map(s => ({ name: s.series_name, confidence: s.confidence })),
+          years: tokens.year.map(y => ({ year: y.year, confidence: y.confidence })),
+          teams: tokens.team.map(t => ({ name: t.name, confidence: t.confidence })),
+          inserts: tokens.insert.map(i => ({ name: i.name || i.matched, confidence: i.confidence }))
+        },
+        hasFilteringTokens:
+          tokens.parallel.length > 0 ||
+          tokens.year.length > 0 ||
+          tokens.cardNumber.length > 0 ||
+          tokens.serial.length > 0 ||
+          tokens.insert.length > 0 ||
+          tokens.cardTypes.rookie ||
+          tokens.cardTypes.autograph ||
+          tokens.cardTypes.shortPrint ||
+          tokens.cardTypes.relic
+      }
     }
 
     // Add relaxation info if applicable

@@ -19,6 +19,8 @@ function BlogPost() {
   useEffect(() => {
     if (post) {
       document.title = `${post.title} - Feature Discussions - Collect Your Cards`
+    } else {
+      document.title = 'Feature Discussions - Collect Your Cards'
     }
   }, [post])
 

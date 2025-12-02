@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import Icon from '../components/Icon'
@@ -6,6 +6,11 @@ import './Dashboard.css'
 
 function Dashboard() {
   const { user } = useAuth()
+
+  // Update page title
+  useEffect(() => {
+    document.title = 'Dashboard - Collect Your Cards'
+  }, [])
 
   if (!user) {
     return (

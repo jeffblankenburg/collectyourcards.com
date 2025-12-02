@@ -400,6 +400,12 @@ function SearchResults() {
                 type: 'team'
               })
               break
+            case 'set':
+              organizedResults.sets.push({
+                ...result,
+                type: 'set'
+              })
+              break
             case 'series':
               organizedResults.series.push({
                 ...result,
@@ -466,13 +472,13 @@ function SearchResults() {
   const getFilteredResults = () => {
     if (activeTab === 'all') {
       // Combine all results for "All" tab
-      // Priority order: players, teams, series, sets, years, cards (cards last!)
+      // Priority order: players, teams, sets, series, years, cards (cards last!)
       const allResults = []
 
       results.players.forEach(player => allResults.push({ ...player, type: 'player' }))
       results.teams.forEach(team => allResults.push({ ...team, type: 'team' }))
-      results.series.forEach(series => allResults.push({ ...series, type: 'series' }))
       results.sets.forEach(set => allResults.push({ ...set, type: 'set' }))
+      results.series.forEach(series => allResults.push({ ...series, type: 'series' }))
       results.years.forEach(year => allResults.push({ ...year, type: 'year' }))
       results.cards.forEach(card => allResults.push({ ...card, type: 'card' }))
 

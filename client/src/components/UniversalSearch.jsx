@@ -229,6 +229,14 @@ function UniversalSearch({ className = '' }) {
       case 'team':
         navigate(`/teams/${result.id}`)
         break
+      case 'set':
+        // Navigate to set page using year and slug
+        if (result.slug && result.year) {
+          navigate(`/sets/${result.year}/${result.slug}`)
+        } else {
+          console.error('Set data missing for navigation:', result)
+        }
+        break
       case 'series':
         // Create series slug from series name
         const seriesName = result.series_name || result.name || ''
@@ -265,7 +273,7 @@ function UniversalSearch({ className = '' }) {
   // Get icon for result type
   const getResultIcon = (type, result) => {
     switch (type) {
-      case 'card': return <Icon name="layers" size={24} />
+      case 'card': return <Icon name="card" size={24} />
       case 'player': return <Icon name="player" size={24} />
       case 'team': {
         // Get sport-specific ball icon based on organization
@@ -275,6 +283,7 @@ function UniversalSearch({ className = '' }) {
         if (org.includes('basketball')) return <Icon name="basketball" size={24} />
         return <Icon name="team" size={24} />
       }
+      case 'set': return <Icon name="layers" size={24} />
       case 'series': return <Icon name="series" size={24} />
       case 'collection': return <Icon name="collections" size={24} />
       default: return <Icon name="search" size={24} />
@@ -284,10 +293,12 @@ function UniversalSearch({ className = '' }) {
   // Get entity count for display
   const getEntityCount = (result) => {
     switch (result.type) {
-      case 'player': 
+      case 'player':
         return result.data?.card_count || 'N/A'
       case 'team':
         return result.data?.card_count || 'N/A'
+      case 'set':
+        return result.series_count || 'N/A'
       case 'series':
         return result.data?.card_count || 'N/A'
       case 'card':
@@ -296,16 +307,18 @@ function UniversalSearch({ className = '' }) {
         return 'N/A'
     }
   }
-  
+
   // Get display title for a result based on type
   const getResultTitle = (result) => {
     switch (result.type) {
       case 'player':
         return result.name || `${result.first_name || ''} ${result.last_name || ''}`.trim()
       case 'card':
-        return result.player_names || result.card_number || 'Unknown Card'
+        return result.name || result.player_names || result.card_number || 'Unknown Card'
       case 'team':
         return result.name || 'Unknown Team'
+      case 'set':
+        return result.name || 'Unknown Set'
       case 'series':
         return result.series_name || result.name || 'Unknown Series'
       case 'history':
@@ -409,6 +422,7 @@ function UniversalSearch({ className = '' }) {
             <div
               key={`${result.type}-${result.id}-${index}`}
               className={`search-result ${selectedIndex === index ? 'selected' : ''} ${result.type === 'history' ? 'history-item' : ''}`}
+              style={result.type === 'card' && result.color_hex ? { position: 'relative' } : undefined}
               onClick={() => {
                 if (result.type === 'history') {
                   setQuery(result.title)
@@ -442,6 +456,39 @@ function UniversalSearch({ className = '' }) {
                     </div>
                   )}
                 </div>
+                {result.type === 'set' && result.manufacturer_name && (
+                  <div className="result-subtitle">
+                    <span className="set-manufacturer">{result.manufacturer_name}</span>
+                  </div>
+                )}
+                {result.type === 'series' && (result.set_name || result.color_name) && (
+                  <div className="result-subtitle">
+                    {result.set_name && <span className="series-set">{result.set_name}</span>}
+                    {result.color_name && (
+                      <>
+                        <span className="separator"> • </span>
+                        <span
+                          className="series-color-badge"
+                          style={{
+                            backgroundColor: result.color_hex || '#999',
+                            color: '#fff',
+                            padding: '2px 6px',
+                            borderRadius: '3px',
+                            fontSize: '0.85em',
+                            fontWeight: '500'
+                          }}
+                        >
+                          {result.color_name}
+                        </span>
+                      </>
+                    )}
+                  </div>
+                )}
+                {result.type === 'team' && result.data?.organization_name && (
+                  <div className="result-subtitle">
+                    {result.data.organization_name}
+                  </div>
+                )}
               </div>
               {result.type === 'player' && (
                 <div className="result-card-count">
@@ -455,11 +502,31 @@ function UniversalSearch({ className = '' }) {
                   <span className="card-count-label">players</span>
                 </div>
               )}
+              {result.type === 'set' && (
+                <div className="result-card-count">
+                  <span className="card-count-number">{result.series_count || 0}</span>
+                  <span className="card-count-label">series</span>
+                </div>
+              )}
               {result.type === 'series' && (
                 <div className="result-card-count">
                   <span className="card-count-number">{result.card_count || 0}</span>
                   <span className="card-count-label">cards</span>
                 </div>
+              )}
+              {result.type === 'card' && result.color_hex && (
+                <div
+                  className="result-color-stripe"
+                  style={{
+                    position: 'absolute',
+                    right: 0,
+                    top: 0,
+                    bottom: 0,
+                    width: '4px',
+                    backgroundColor: result.color_hex
+                  }}
+                  title={result.color_name}
+                />
               )}
               {result.type === 'history' && (
                 <button
@@ -521,7 +588,7 @@ function highlightQuery(text, query) {
   const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi')
   const parts = text.split(regex)
   
-  return parts.map((part, index) => 
+  return parts.map((part, index) =>
     regex.test(part) ? (
       <mark key={index} className="search-highlight">{part}</mark>
     ) : part

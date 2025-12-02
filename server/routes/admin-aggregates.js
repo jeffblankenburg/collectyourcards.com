@@ -175,12 +175,12 @@ router.post('/aggregates/update', async (req, res) => {
       case 'team_card_count':
         // OPTIMIZED: Update team card counts using CTE in a single query
         console.log('🚀 Starting optimized team card count update...')
-        
+
         // Use a CTE to calculate and update in one query
         const teamResult = await pool.request().query(`
           -- Calculate counts and update in a single operation
           WITH TeamCardCounts AS (
-            SELECT 
+            SELECT
               pt.team as team_id,
               COUNT(DISTINCT c.card_id) as card_count
             FROM player_team pt
@@ -193,9 +193,48 @@ router.post('/aggregates/update', async (req, res) => {
           FROM team t
           LEFT JOIN TeamCardCounts tcc ON t.team_Id = tcc.team_id
         `)
-        
+
         rowsUpdated = teamResult.rowsAffected[0]
         console.log(`✅ Updated card counts for ${rowsUpdated} teams`)
+        break
+
+      case 'series_print_run':
+        // Update series print_run fields based on card data
+        console.log('🚀 Starting series print_run aggregation...')
+
+        // Use a CTE to calculate print_run statistics for each series
+        const printRunResult = await pool.request().query(`
+          -- Calculate print_run statistics and update in a single operation
+          WITH SeriesPrintRunStats AS (
+            SELECT
+              c.series as series_id,
+              MIN(c.print_run) as min_pr,
+              MAX(c.print_run) as max_pr,
+              COUNT(DISTINCT c.print_run) as variations,
+              -- Generate display string:
+              -- If all cards have same print_run: "/{value}"
+              -- If cards have different print_runs: "up to /{max_value}"
+              CASE
+                WHEN COUNT(DISTINCT c.print_run) = 1 THEN '/' + CAST(MAX(c.print_run) AS NVARCHAR(50))
+                WHEN COUNT(DISTINCT c.print_run) > 1 THEN 'up to /' + CAST(MAX(c.print_run) AS NVARCHAR(50))
+                ELSE NULL
+              END as display_string
+            FROM card c
+            WHERE c.print_run IS NOT NULL
+            GROUP BY c.series
+          )
+          UPDATE s
+          SET
+            s.min_print_run = sprs.min_pr,
+            s.max_print_run = sprs.max_pr,
+            s.print_run_variations = sprs.variations,
+            s.print_run_display = sprs.display_string
+          FROM series s
+          INNER JOIN SeriesPrintRunStats sprs ON s.series_id = sprs.series_id
+        `)
+
+        rowsUpdated = printRunResult.rowsAffected[0]
+        console.log(`✅ Updated print_run data for ${rowsUpdated} series`)
         break
 
       default:

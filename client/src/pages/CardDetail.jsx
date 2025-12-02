@@ -102,10 +102,10 @@ function CardDetail() {
     if (card) {
       const playerNames = card.player_names || getPlayerNamesFromCard(card)
       document.title = `#${card.card_number} ${playerNames} - ${card.series_name} - Collect Your Cards`
-    } else if (loading) {
-      document.title = 'Loading Card... - Collect Your Cards'
+    } else {
+      document.title = 'Card Details - Collect Your Cards'
     }
-  }, [card, loading])
+  }, [card])
 
   useEffect(() => {
     if (isAuthenticated && card) {

@@ -25,6 +25,11 @@ function Status() {
     return () => clearInterval(interval)
   }, [])
 
+  // Update page title
+  useEffect(() => {
+    document.title = 'System Status - Collect Your Cards'
+  }, [])
+
   const checkAllSystems = async () => {
     const startTime = Date.now()
     const status = {
