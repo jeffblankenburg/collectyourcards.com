@@ -461,6 +461,34 @@
   border: 1px solid rgba(239, 68, 68, 0.2);
 }
 
+.import-stat-clickable {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.import-stat-clickable:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.4);
+  transform: translateY(-1px);
+}
+
+/* Row highlight animation for scroll-to-problem */
+.import-row-highlight {
+  animation: import-row-pulse 2s ease;
+}
+
+@keyframes import-row-pulse {
+  0%, 100% {
+    background: transparent;
+  }
+  25%, 75% {
+    background: rgba(239, 68, 68, 0.15);
+  }
+  50% {
+    background: rgba(239, 68, 68, 0.25);
+  }
+}
+
 /* Expand/Collapse functionality */
 .expand-cell {
   text-align: center;

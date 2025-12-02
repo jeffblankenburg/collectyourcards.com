@@ -496,26 +496,24 @@ const AdminImport = () => {
   const handleFinalImport = async () => {
     try {
       setImporting(true)
-      
+
       const response = await axios.post('/api/admin/import/create-cards', {
         matchedCards,
         seriesId: selectedSeries.series_id
       })
-      
+
       addToast(`Successfully imported ${response.data.created} cards!`, 'success')
-      
+
       // Navigate to admin cards page to show the imported cards
+      // Use a small delay to let the success toast be visible, but don't reset state
+      // to avoid flashing the data import screen during navigation
       setTimeout(() => {
         navigate(`/admin/cards?series=${selectedSeries.series_id}`)
-      }, 1500) // Small delay to let the success toast be visible
-      
-      // Reset to start
-      setCurrentStep(1)
-      setSelectedSeries(null)
-      setSelectedFile(null)
-      setParsedCards([])
-      setMatchedCards([])
-      
+      }, 1500)
+
+      // Note: We intentionally do NOT reset state here to prevent flash
+      // The state will be naturally reset when we navigate away from this page
+
     } catch (error) {
       console.error('Error importing cards:', error)
       addToast(error.response?.data?.message || 'Failed to import cards', 'error')
@@ -769,9 +767,22 @@ const AdminImport = () => {
                 </>
               )}
             </button>
-            <button className="continue-btn" onClick={() => setCurrentStep(4)}>
-              Continue to Import
-              <Icon name="arrow-right" size={16} />
+            <button
+              className="import-btn"
+              onClick={handleFinalImport}
+              disabled={importing}
+            >
+              {importing ? (
+                <>
+                  <Icon name="loader" size={16} className="spinner" />
+                  Importing...
+                </>
+              ) : (
+                <>
+                  <Icon name="database" size={16} />
+                  Import Cards
+                </>
+              )}
             </button>
           </>
         )}

@@ -35,6 +35,7 @@ const ImportTable = ({
   const [showBulkModal, setShowBulkModal] = useState(false)
   const [openColorDropdown, setOpenColorDropdown] = useState(null) // Track which color dropdown is open (by sortOrder)
   const colorDropdownRef = useRef(null)
+  const tableWrapperRef = useRef(null)
 
   // Fetch colors on mount
   useEffect(() => {
@@ -134,13 +135,38 @@ const ImportTable = ({
   // Filter cards based on search query
   const filteredCards = useMemo(() => {
     if (!searchQuery.trim()) return cards
-    
+
     const query = searchQuery.toLowerCase()
     return cards.filter(card => {
-      if (card.cardNumber?.toLowerCase().includes(query)) return true
-      if (card.playerNames?.toLowerCase().includes(query)) return true
-      if (card.teamNames?.toLowerCase().includes(query)) return true
-      if (card.notes?.toLowerCase().includes(query)) return true
+      // Card number - ensure string
+      if (card.cardNumber && String(card.cardNumber).toLowerCase().includes(query)) return true
+
+      // Player names - could be string or array
+      if (card.playerNames) {
+        if (Array.isArray(card.playerNames)) {
+          if (card.playerNames.some(name => name && String(name).toLowerCase().includes(query))) return true
+        } else if (String(card.playerNames).toLowerCase().includes(query)) {
+          return true
+        }
+      }
+
+      // Also check players array for names
+      if (card.players && Array.isArray(card.players)) {
+        if (card.players.some(p => p.name && String(p.name).toLowerCase().includes(query))) return true
+      }
+
+      // Team names - could be string or array
+      if (card.teamNames) {
+        if (Array.isArray(card.teamNames)) {
+          if (card.teamNames.some(name => name && String(name).toLowerCase().includes(query))) return true
+        } else if (String(card.teamNames).toLowerCase().includes(query)) {
+          return true
+        }
+      }
+
+      // Notes - ensure string
+      if (card.notes && String(card.notes).toLowerCase().includes(query)) return true
+
       return false
     })
   }, [cards, searchQuery])
@@ -966,13 +992,65 @@ const ImportTable = ({
   }
 
 
+  // Helper function to check if a card needs work
+  const cardNeedsWork = (card) => {
+    // 1. Check all players have matches
+    if (!card.players?.every(player => player.selectedPlayer)) {
+      return true
+    }
+
+    // 2. Check all card-level teams have matches
+    if (card.teamNames?.length > 0) {
+      const allTeamsMatched = card.teamNames.every(teamName =>
+        card.teamMatches?.exact?.some(match =>
+          match.teamName.toLowerCase().includes(teamName.toLowerCase())
+        )
+      )
+      if (!allTeamsMatched) return true
+    }
+
+    // 3. Check all players have player_team records
+    for (const player of (card.players || [])) {
+      if (!player.selectedPlayer) continue
+
+      // Get the teams this player should have based on playerTeamCheckTeams
+      const requiredTeams = player.playerTeamCheckTeams?.exact || []
+
+      // Check if player has player_team records for all required teams
+      for (const team of requiredTeams) {
+        const hasPlayerTeam = player.playerTeamMatches?.some(pt =>
+          pt.playerId === player.selectedPlayer.playerId && pt.teamId === team.teamId
+        )
+        if (!hasPlayerTeam) return true
+      }
+    }
+
+    return false
+  }
+
+  // Scroll to first card that needs work
+  const scrollToFirstProblem = () => {
+    // Find first card that needs work in the sorted list
+    const firstProblemIndex = sortedCards.findIndex(card => cardNeedsWork(card))
+
+    if (firstProblemIndex >= 0 && tableWrapperRef.current) {
+      const problemRow = tableWrapperRef.current.querySelector(`tr[data-card-index="${firstProblemIndex}"]`)
+      if (problemRow) {
+        problemRow.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        // Briefly highlight the row
+        problemRow.classList.add('import-row-highlight')
+        setTimeout(() => problemRow.classList.remove('import-row-highlight'), 2000)
+      }
+    }
+  }
+
   const SortIcon = ({ field }) => {
     if (sortField !== field) return null
-    
+
     return (
-      <Icon 
-        name={sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'} 
-        size={14} 
+      <Icon
+        name={sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'}
+        size={14}
         className={`import-table-sort-icon ${sortDirection}`}
       />
     )
@@ -1074,9 +1152,10 @@ const ImportTable = ({
       )}
 
       {/* Table */}
-      <div 
+      <div
+        ref={tableWrapperRef}
         className="import-table-wrapper"
-        style={{ 
+        style={{
           maxHeight: maxHeight,
           overflowY: maxHeight === 'none' ? 'hidden' : 'auto'
         }}
@@ -1084,11 +1163,6 @@ const ImportTable = ({
         <table className="import-table">
           <thead>
             <tr>
-              <th className="expand-header">
-                <div className="import-table-header-content">
-                  <Icon name="chevron-down" size={14} />
-                </div>
-              </th>
               <th className="sortable sort-order-header">
                 <div className="import-table-header-content" onClick={() => handleSort('sortOrder')}>
                   # <SortIcon field="sortOrder" />
@@ -1172,18 +1246,7 @@ const ImportTable = ({
               
               return (
                 <React.Fragment key={cardIndex}>
-                  <tr className="import-row">
-                    <td className="expand-cell">
-                      <button 
-                        className="expand-button"
-                        onClick={() => toggleCardExpansion(cardIndex)}
-                      >
-                        <Icon 
-                          name={isExpanded ? "chevron-up" : "chevron-down"} 
-                          size={16} 
-                        />
-                      </button>
-                    </td>
+                  <tr className="import-row" data-card-index={cardIndex}>
                     <td className="sort-order-cell">
                       <span className="import-sort-order">
                         {card.sortOrder}
@@ -1543,9 +1606,14 @@ const ImportTable = ({
                           // Determine which teams to show:
                           // - If player has position-matched teams (playerTeamCheckTeams), show only those
                           // - If no position match (ambiguous), show ALL card teams as options
-                          const teamsToShow = (player.playerTeamCheckTeams?.exact?.length > 0)
+                          const rawTeamsToShow = (player.playerTeamCheckTeams?.exact?.length > 0)
                             ? player.playerTeamCheckTeams.exact
                             : card.teamMatches?.exact || []
+
+                          // Deduplicate teams by teamId to prevent duplicate entries
+                          const teamsToShow = rawTeamsToShow.filter((team, index, self) =>
+                            index === self.findIndex(t => t.teamId === team.teamId)
+                          )
 
                           if (teamsToShow.length === 0) {
                             return <div key={playerIdx} className="incomplete-combo">-</div>
@@ -1688,195 +1756,6 @@ const ImportTable = ({
                       />
                     </td>
                   </tr>
-                  
-                  {/* Expanded Details Row */}
-                  {isExpanded && (
-                    <tr className="import-details-row">
-                      <td colSpan="11" className="import-details-cell">
-                        <div className="import-details-content">
-                          {(card.players || []).map((player, playerIndex) => (
-                            <div key={playerIndex} className="import-player-details">
-                              <h4 className="import-player-title">
-                                Player: {player.name}
-                                {player.selectedPlayer && (
-                                  <span className="import-selected-indicator">
-                                    → {player.selectedPlayer.playerName}
-                                  </span>
-                                )}
-                              </h4>
-                              
-                              {/* Player Matching Section */}
-                              <div className="import-matching-section">
-                                <div className="import-section-title">
-                                  <Icon name="user" size={16} />
-                                  Player Matches
-                                </div>
-                                
-                                {/* Exact Player Matches - Dropdown Style */}
-                                {player.playerMatches?.exact?.length > 0 && (
-                                  <div className="import-matches-group">
-                                    <h5>Exact Matches:</h5>
-                                    <select 
-                                      value={player.selectedPlayer?.playerId || ''}
-                                      onChange={(e) => handlePlayerSelection(cardIndex, playerIndex, e.target.value)}
-                                      className="import-match-select"
-                                    >
-                                      <option value="">Choose player...</option>
-                                      {player.playerMatches.exact.map(match => (
-                                        <option key={match.playerId} value={match.playerId}>
-                                          {match.playerName}
-                                        </option>
-                                      ))}
-                                    </select>
-                                  </div>
-                                )}
-                                
-                                {/* Fuzzy Player Matches */}
-                                {player.playerMatches?.fuzzy?.length > 0 && (
-                                  <div className="import-matches-group">
-                                    <h5>Similar Names (possible typos):</h5>
-                                    <select 
-                                      value={player.selectedPlayer?.playerId || ''}
-                                      onChange={(e) => handlePlayerSelection(cardIndex, playerIndex, e.target.value)}
-                                      className="import-match-select fuzzy"
-                                    >
-                                      <option value="">Choose similar name...</option>
-                                      {player.playerMatches.fuzzy.map(match => (
-                                        <option key={match.playerId} value={match.playerId}>
-                                          {match.playerName} (possible typo)
-                                        </option>
-                                      ))}
-                                    </select>
-                                  </div>
-                                )}
-                                
-                                {/* Create New Player */}
-                                {(!player.playerMatches?.exact?.length && !player.selectedPlayer) && (
-                                  <div className="import-create-section">
-                                    <button 
-                                      className="import-create-button"
-                                      onClick={(e) => {
-                                        e.preventDefault()
-                                        console.log('🖱️ Create Player button clicked!', {
-                                          cardIndex,
-                                          playerIndex, 
-                                          playerName: player.name,
-                                          player
-                                        })
-                                        createNewPlayer(cardIndex, playerIndex, player.name)
-                                      }}
-                                    >
-                                      <Icon name="plus-circle" size={14} />
-                                      Create New Player: "{player.name}"
-                                    </button>
-                                  </div>
-                                )}
-                              </div>
-                              
-                              {/* Team Matching Section */}
-                              <div className="import-matching-section">
-                                <div className="import-section-title">
-                                  <Icon name="shield" size={16} />
-                                  Team Matches
-                                </div>
-                                
-                                {player.teamNames?.map((teamName, teamIndex) => (
-                                  <div key={teamIndex} className="import-team-matching">
-                                    <h5>Team: {teamName}</h5>
-
-                                    {(player.teamMatches?.exact?.length > 0 || player.teamMatches?.fuzzy?.length > 0) ? (
-                                      <select
-                                        value={player.selectedTeams?.[teamIndex]?.teamId || ''}
-                                        onChange={(e) => handleTeamSelection(cardIndex, playerIndex, teamIndex, e.target.value)}
-                                        className="import-match-select"
-                                      >
-                                        <option value="">Choose team...</option>
-                                        {player.teamMatches.exact?.length > 0 && (
-                                          <optgroup label="Exact Matches">
-                                            {player.teamMatches.exact.map(team => (
-                                              <option key={team.teamId} value={team.teamId}>
-                                                {team.teamName}
-                                              </option>
-                                            ))}
-                                          </optgroup>
-                                        )}
-                                        {player.teamMatches.fuzzy?.length > 0 && (
-                                          <optgroup label="Suggestions">
-                                            {player.teamMatches.fuzzy.map(team => (
-                                              <option key={team.teamId} value={team.teamId}>
-                                                {team.teamName}
-                                              </option>
-                                            ))}
-                                          </optgroup>
-                                        )}
-                                      </select>
-                                    ) : (
-                                      <div className="import-create-section">
-                                        <button 
-                                          className="import-create-button"
-                                          onClick={() => createNewTeam(cardIndex, playerIndex, teamIndex, teamName)}
-                                        >
-                                          <Icon name="plus-circle" size={14} />
-                                          Create New Team: "{teamName}"
-                                        </button>
-                                      </div>
-                                    )}
-                                  </div>
-                                ))}
-                              </div>
-                              
-                              {/* Player-Team Combination Section */}
-                              {player.selectedPlayer && player.selectedTeams?.some(t => t) && (
-                                <div className="import-matching-section">
-                                  <div className="import-section-title">
-                                    <Icon name="link" size={16} />
-                                    Player-Team Combinations
-                                  </div>
-                                  
-                                  {player.selectedTeams?.map((selectedTeam, teamIndex) => {
-                                    if (!selectedTeam) return null
-                                    
-                                    const existingPlayerTeam = player.playerTeamMatches?.find(
-                                      pt => pt.playerId === player.selectedPlayer.playerId && 
-                                           pt.teamId === selectedTeam.teamId
-                                    )
-                                    
-                                    return (
-                                      <div key={teamIndex} className="import-player-team-combo">
-                                        <span className="import-combo-text">
-                                          {player.selectedPlayer.playerName} ↔ {selectedTeam.teamName}
-                                        </span>
-                                        
-                                        {existingPlayerTeam ? (
-                                          <div className="import-combo-exists">
-                                            <Icon name="check-circle" size={14} />
-                                            Combination exists
-                                          </div>
-                                        ) : (
-                                          <button 
-                                            className="import-create-button small"
-                                            onClick={() => createPlayerTeam(
-                                              cardIndex, 
-                                              playerIndex, 
-                                              player.selectedPlayer.playerId, 
-                                              selectedTeam.teamId
-                                            )}
-                                          >
-                                            <Icon name="plus-circle" size={14} />
-                                            Create Combination
-                                          </button>
-                                        )}
-                                      </div>
-                                    )
-                                  })}
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </td>
-                    </tr>
-                  )}
                 </React.Fragment>
               )
             })}
@@ -1890,55 +1769,30 @@ const ImportTable = ({
           Showing {sortedCards.length} of {cards.length} cards for import
           {searchQuery && ` (filtered by "${searchQuery}")`}
         </div>
-        
+
         <div className="import-table-stats">
           {(() => {
             let ready = 0, needsWork = 0
             sortedCards.forEach(card => {
-              // Check if card is ready (all validations pass)
-              let isReady = true
-
-              // 1. Check all players have matches
-              if (!card.players?.every(player => player.selectedPlayer)) {
-                isReady = false
+              if (cardNeedsWork(card)) {
+                needsWork++
+              } else {
+                ready++
               }
-
-              // 2. Check all card-level teams have matches
-              if (card.teamNames?.length > 0) {
-                const allTeamsMatched = card.teamNames.every(teamName =>
-                  card.teamMatches?.exact?.some(match =>
-                    match.teamName.toLowerCase().includes(teamName.toLowerCase())
-                  )
-                )
-                if (!allTeamsMatched) isReady = false
-              }
-
-              // 3. Check all players have player_team records
-              if (isReady) {
-                card.players?.forEach(player => {
-                  if (!player.selectedPlayer) return
-
-                  // Get the teams this player should have based on playerTeamCheckTeams
-                  const requiredTeams = player.playerTeamCheckTeams?.exact || []
-
-                  // Check if player has player_team records for all required teams
-                  requiredTeams.forEach(team => {
-                    const hasPlayerTeam = player.playerTeamMatches?.some(pt =>
-                      pt.playerId === player.selectedPlayer.playerId && pt.teamId === team.teamId
-                    )
-                    if (!hasPlayerTeam) isReady = false
-                  })
-                })
-              }
-
-              if (isReady) ready++
-              else needsWork++
             })
 
             return (
               <>
                 <span className="import-stat-ready">{ready} Ready</span>
-                {needsWork > 0 && <span className="import-stat-needs-work">{needsWork} Need Work</span>}
+                {needsWork > 0 && (
+                  <span
+                    className="import-stat-needs-work import-stat-clickable"
+                    onClick={scrollToFirstProblem}
+                    title="Click to scroll to first card that needs attention"
+                  >
+                    {needsWork} Need Work
+                  </span>
+                )}
               </>
             )
           })()}
