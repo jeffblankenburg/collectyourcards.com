@@ -150,7 +150,8 @@ router.get('/sets', async (req, res) => {
     const { search, set_id, limit = 20, all } = req.query
     const userId = req.user?.userId
     // If 'all' parameter is provided, get all sets (for dropdowns)
-    const limitInt = all === 'true' ? 10000 : Math.min(parseInt(limit) || 20, 100) // Cap at 100 unless 'all' is requested
+    // Using 5000 as reasonable max - enough for all sets but won't overload memory
+    const limitInt = all === 'true' ? 5000 : Math.min(parseInt(limit) || 20, 100)
 
     let sets = []
 

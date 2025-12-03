@@ -337,11 +337,10 @@ function AdminSeries() {
     }
   }, [])
 
-  // Load sets and colors on mount so they're always available for dropdowns
+  // Load colors on mount (sets are loaded on-demand when opening edit modal)
   useEffect(() => {
-    loadSets()
     loadColors()
-  }, [loadSets, loadColors])
+  }, [loadColors])
 
   // Update page title based on context
   useEffect(() => {
@@ -374,6 +373,9 @@ function AdminSeries() {
   const handleEditSeries = useCallback(async (seriesItem) => {
     setEditingSeries(seriesItem)
     const setId = seriesItem.set_id ? Number(seriesItem.set_id) : ''
+
+    // Load all sets for the dropdown (needed for reassigning series to different set)
+    loadSets()
 
     // Load series for the current set if one is selected
     if (seriesItem.set_id) {
@@ -908,18 +910,11 @@ function AdminSeries() {
 
                   <div className="form-field-row">
                     <label className="field-label">Set</label>
-                    <SearchableDropdown
-                      options={availableSets}
-                      value={addForm.set_id}
-                      onChange={(value) => {
-                        setAddForm({...addForm, set_id: Number(value), parallel_of_series: ''})
-                        loadSeriesForSet(value)
-                      }}
-                      placeholder="Select set..."
-                      emptyMessage="No sets available"
-                      getOptionLabel={(set) => set.name}
-                      getOptionValue={(set) => Number(set.set_id)}
-                    />
+                    {setInfo ? (
+                      <div className="field-value-readonly">{setInfo.name}</div>
+                    ) : (
+                      <div className="field-value-readonly field-value-error">No set selected - navigate to a set first</div>
+                    )}
                   </div>
 
                   <div className="form-field-row">
