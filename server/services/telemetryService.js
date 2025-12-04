@@ -15,9 +15,10 @@
 
 const { NodeSDK } = require('@opentelemetry/sdk-node')
 const { getNodeAutoInstrumentations } = require('@opentelemetry/auto-instrumentations-node')
-const { OTLPTraceExporter } = require('@opentelemetry/exporter-trace-otlp-http')
-const { OTLPMetricExporter } = require('@opentelemetry/exporter-metrics-otlp-http')
-const { OTLPLogExporter } = require('@opentelemetry/exporter-logs-otlp-http')
+// Use protobuf exporters - Dynatrace requires binary protobuf format, not JSON
+const { OTLPTraceExporter } = require('@opentelemetry/exporter-trace-otlp-proto')
+const { OTLPMetricExporter } = require('@opentelemetry/exporter-metrics-otlp-proto')
+const { OTLPLogExporter } = require('@opentelemetry/exporter-logs-otlp-proto')
 const { resourceFromAttributes } = require('@opentelemetry/resources')
 const { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION, ATTR_DEPLOYMENT_ENVIRONMENT } = require('@opentelemetry/semantic-conventions')
 const { metrics, trace } = require('@opentelemetry/api')
