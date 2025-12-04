@@ -1,4 +1,5 @@
 const { EmailClient } = require('@azure/communication-email')
+const telemetryService = require('./telemetryService')
 
 class EmailService {
   constructor() {
@@ -48,12 +49,24 @@ class EmailService {
 
       const poller = await this.client.beginSend(emailMessage)
       const result = await poller.pollUntilDone()
-      
+
       console.log('Email sent successfully:', result.id)
+
+      // Track successful email event
+      telemetryService.trackEmailEvent('sent', to, subject, true, {
+        email_id: result.id
+      })
+
       return result
 
     } catch (error) {
       console.error('Email sending failed:', error)
+
+      // Track failed email event
+      telemetryService.trackEmailEvent('failed', to, subject, false, {
+        error: error.message
+      })
+
       throw new Error(`Failed to send email: ${error.message}`)
     }
   }

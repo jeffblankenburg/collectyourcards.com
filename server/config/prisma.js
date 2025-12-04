@@ -88,4 +88,8 @@ ensureConnection().catch(error => {
   process.exit(1)
 })
 
+// Note: Prisma 6.x no longer supports $use middleware
+// Database operations are tracked via Express middleware (API-level tracking)
+// and through Prisma's built-in logging in development mode
+
 module.exports = prisma

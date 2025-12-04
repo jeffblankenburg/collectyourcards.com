@@ -6,6 +6,7 @@ const { BlobServiceClient } = require('@azure/storage-blob')
 const { extractBlobNameFromUrl } = require('../utils/azure-storage')
 const { onCardAdded, onCardUpdated, onCardRemoved } = require('../middleware/achievementHooks')
 const { updateUserSeriesCompletion } = require('../utils/updateSeriesCompletion')
+const telemetryService = require('../services/telemetryService')
 const router = express.Router()
 const prisma = new PrismaClient({ log: ['error'] }) // Only log errors, not queries
 
@@ -330,6 +331,14 @@ router.post('/', async (req, res, next) => {
       grade,
       aftermarket_autograph
     }
+
+    // Track collection event
+    telemetryService.trackCollectionEvent('card_added', userId, card_id, {
+      user_card_id: newUserCardId,
+      has_serial: !!serial_number,
+      has_grade: !!grade,
+      has_price: !!purchase_price
+    })
 
     res.status(201).json({
       message: 'Card added to collection successfully',
@@ -659,6 +668,12 @@ router.delete('/:userCardId', async (req, res, next) => {
       updateUserSeriesCompletion(userId, Number(seriesId))
         .catch(err => console.error('Error updating series completion:', err))
     }
+
+    // Track collection event
+    telemetryService.trackCollectionEvent('card_removed', userId, null, {
+      user_card_id: parseInt(userCardId),
+      photos_deleted: photos.length
+    })
 
     res.json({
       message: 'Card and associated photos removed from collection successfully'

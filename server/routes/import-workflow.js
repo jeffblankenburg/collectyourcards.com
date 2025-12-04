@@ -14,6 +14,7 @@ const router = express.Router()
 
 // Middleware
 const { authMiddleware: requireAuth, requireAdmin } = require('../middleware/auth')
+const telemetryService = require('../services/telemetryService')
 
 // Services
 const excelParser = require('../services/import/excel-parser')
@@ -626,6 +627,15 @@ router.post('/create-cards', requireAuth, requireAdmin, async (req, res) => {
 
       await transaction.commit()
       console.log(`🎉 Successfully imported ${result.created} cards`)
+
+      // Track import event
+      telemetryService.trackImportProgress(
+        `import-${Date.now()}`,
+        'completed',
+        matchedCards.length,
+        result.created,
+        result.errors || 0
+      )
 
       res.json(result)
     } catch (transactionError) {
