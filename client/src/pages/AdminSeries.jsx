@@ -375,7 +375,8 @@ function AdminSeries() {
     const setId = seriesItem.set_id ? Number(seriesItem.set_id) : ''
 
     // Load all sets for the dropdown (needed for reassigning series to different set)
-    loadSets()
+    // Must await so the dropdown has options before the form value is set
+    await loadSets()
 
     // Load series for the current set if one is selected
     if (seriesItem.set_id) {
