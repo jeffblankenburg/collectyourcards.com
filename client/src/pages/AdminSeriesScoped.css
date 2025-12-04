@@ -973,6 +973,17 @@
   color: rgba(255, 255, 255, 0.4);
 }
 
+.admin-series-page .read-only-field {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  padding: 0.625rem 0.75rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.875rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
 .admin-series-page .field-hint {
   display: block;
   margin-top: 0.375rem;

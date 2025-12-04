@@ -1262,18 +1262,9 @@ function AdminSeries() {
 
                 <div className="form-field-row">
                   <label className="field-label">Parallel Parent</label>
-                  <SearchableDropdown
-                    options={seriesForSet.filter(s =>
-                      s.series_id !== duplicatingSeries?.series_id &&
-                      !s.parallel_of_series
-                    )}
-                    value={duplicateForm.parallel_of_series}
-                    onChange={(value) => setDuplicateForm({...duplicateForm, parallel_of_series: value})}
-                    placeholder="Select parallel parent..."
-                    emptyMessage="No available series for parallel (all series in this set already have parents)"
-                    getOptionLabel={(series) => series.name}
-                    getOptionValue={(series) => series.series_id}
-                  />
+                  <div className="read-only-field">
+                    {duplicatingSeries?.name}
+                  </div>
                 </div>
 
                 <div className="form-field-row">
@@ -1450,7 +1441,6 @@ function AdminSeries() {
                     onChange={(e) => setDuplicateForm({...duplicateForm, card_numbers: e.target.value})}
                     placeholder="Leave empty for all cards, or enter: 1-100, 1,5,10, etc."
                   />
-                  <span className="field-hint">Examples: "1-100" for range, "1,5,10,25" for specific cards, or combine: "1-50,75,100"</span>
                 </div>
 
                 <div className="form-info">
