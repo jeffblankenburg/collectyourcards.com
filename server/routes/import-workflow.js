@@ -493,8 +493,8 @@ router.post('/preview-sql', requireAuth, requireAdmin, async (req, res) => {
 
       // Card insertion
       sqlStatements.push(`DECLARE ${cardVar} BIGINT;`)
-      sqlStatements.push(`INSERT INTO card (card_number, series, is_rookie, is_autograph, is_relic, notes, sort_order, created)`)
-      sqlStatements.push(`VALUES ('${card.cardNumber.replace(/'/g, "''")}', ${seriesId}, ${card.isRC ? 1 : 0}, ${card.isAutograph ? 1 : 0}, ${card.isRelic ? 1 : 0}, ${card.notes ? `'${card.notes.replace(/'/g, "''")}'` : 'NULL'}, ${card.sortOrder}, GETDATE());`)
+      sqlStatements.push(`INSERT INTO card (card_number, series, is_rookie, is_autograph, is_relic, is_short_print, notes, sort_order, created)`)
+      sqlStatements.push(`VALUES ('${card.cardNumber.replace(/'/g, "''")}', ${seriesId}, ${card.isRC ? 1 : 0}, ${card.isAutograph ? 1 : 0}, ${card.isRelic ? 1 : 0}, ${card.isShortPrint ? 1 : 0}, ${card.notes ? `'${card.notes.replace(/'/g, "''")}'` : 'NULL'}, ${card.sortOrder}, GETDATE());`)
       sqlStatements.push(`SET ${cardVar} = SCOPE_IDENTITY();`)
       sqlStatements.push('')
 

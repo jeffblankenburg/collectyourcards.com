@@ -32,7 +32,8 @@ const ImportTable = ({
   const [loadingColors, setLoadingColors] = useState(true)
   const [bulkPrintRun, setBulkPrintRun] = useState('')
   const [bulkColorId, setBulkColorId] = useState('')
-  const [showBulkModal, setShowBulkModal] = useState(false)
+  const [bulkNotes, setBulkNotes] = useState('')
+  const [showBulkModal, setShowBulkModal] = useState(false) // false, 'printRun', 'color', or 'notes'
   const [openColorDropdown, setOpenColorDropdown] = useState(null) // Track which color dropdown is open (by sortOrder)
   const colorDropdownRef = useRef(null)
   const tableWrapperRef = useRef(null)
@@ -251,9 +252,20 @@ const ImportTable = ({
     if (onCardUpdate) {
       const cardIndex = cards.findIndex(card => card.sortOrder === cardSortOrder)
       if (cardIndex === -1) return
-      
+
       const updatedCards = [...cards]
       updatedCards[cardIndex].isRelic = !updatedCards[cardIndex].isRelic
+      onCardUpdate(updatedCards)
+    }
+  }
+
+  const handleShortPrintToggle = (cardSortOrder) => {
+    if (onCardUpdate) {
+      const cardIndex = cards.findIndex(card => card.sortOrder === cardSortOrder)
+      if (cardIndex === -1) return
+
+      const updatedCards = [...cards]
+      updatedCards[cardIndex].isShortPrint = !updatedCards[cardIndex].isShortPrint
       onCardUpdate(updatedCards)
     }
   }
@@ -288,6 +300,31 @@ const ImportTable = ({
         isRelic: !currentlyAllRelic
       }))
       onCardUpdate(updatedCards)
+    }
+  }
+
+  const handleToggleAllShortPrint = () => {
+    if (onCardUpdate) {
+      const currentlyAllSP = cards.every(card => card.isShortPrint)
+      const updatedCards = cards.map(card => ({
+        ...card,
+        isShortPrint: !currentlyAllSP
+      }))
+      onCardUpdate(updatedCards)
+    }
+  }
+
+  const handleBulkNotesApply = () => {
+    if (onCardUpdate) {
+      const updatedCards = cards.map(card => ({
+        ...card,
+        notes: bulkNotes
+      }))
+      onCardUpdate(updatedCards)
+      if (showToast) {
+        showToast(`Applied notes to all ${cards.length} cards`, 'success')
+      }
+      setShowBulkModal(false)
     }
   }
 
@@ -1073,14 +1110,16 @@ const ImportTable = ({
           <div className="bulk-edit-modal" onClick={(e) => e.stopPropagation()}>
             <div className="bulk-edit-header">
               <h3>
-                {showBulkModal === 'printRun' ? 'Set Print Run for All Cards' : 'Set Color for All Cards'}
+                {showBulkModal === 'printRun' && 'Set Print Run for All Cards'}
+                {showBulkModal === 'color' && 'Set Color for All Cards'}
+                {showBulkModal === 'notes' && 'Set Notes for All Cards'}
               </h3>
               <button className="modal-close-btn" onClick={() => setShowBulkModal(false)}>
                 <Icon name="x" size={20} />
               </button>
             </div>
             <div className="bulk-edit-content">
-              {showBulkModal === 'printRun' ? (
+              {showBulkModal === 'printRun' && (
                 <>
                   <label htmlFor="bulk-print-run">Print Run:</label>
                   <input
@@ -1097,7 +1136,8 @@ const ImportTable = ({
                     This will apply the same print run to all {cards.length} cards in this import.
                   </p>
                 </>
-              ) : (
+              )}
+              {showBulkModal === 'color' && (
                 <>
                   <label htmlFor="bulk-color">Color:</label>
                   <select
@@ -1119,6 +1159,23 @@ const ImportTable = ({
                   </p>
                 </>
               )}
+              {showBulkModal === 'notes' && (
+                <>
+                  <label htmlFor="bulk-notes">Notes:</label>
+                  <input
+                    id="bulk-notes"
+                    type="text"
+                    className="bulk-input"
+                    value={bulkNotes}
+                    onChange={(e) => setBulkNotes(e.target.value)}
+                    placeholder="Enter notes to apply to all cards"
+                    autoFocus
+                  />
+                  <p className="bulk-help-text">
+                    This will replace the notes on all {cards.length} cards in this import.
+                  </p>
+                </>
+              )}
             </div>
             <div className="bulk-edit-actions">
               <button className="bulk-cancel-btn" onClick={() => setShowBulkModal(false)}>
@@ -1126,7 +1183,11 @@ const ImportTable = ({
               </button>
               <button
                 className="bulk-apply-btn"
-                onClick={showBulkModal === 'printRun' ? handleBulkPrintRunApply : handleBulkColorApply}
+                onClick={
+                  showBulkModal === 'printRun' ? handleBulkPrintRunApply :
+                  showBulkModal === 'color' ? handleBulkColorApply :
+                  handleBulkNotesApply
+                }
               >
                 Apply to All Cards
               </button>
@@ -1210,6 +1271,15 @@ const ImportTable = ({
                   RELIC
                 </div>
               </th>
+              <th className="sp-header">
+                <div
+                  className="import-table-header-content clickable-header"
+                  onClick={handleToggleAllShortPrint}
+                  title="Click to toggle all SP"
+                >
+                  SP
+                </div>
+              </th>
               <th className="print-run-header">
                 <div
                   className="import-table-header-content clickable-header"
@@ -1234,7 +1304,11 @@ const ImportTable = ({
                 </div>
               </th>
               <th className="notes-header">
-                <div className="import-table-header-content">
+                <div
+                  className="import-table-header-content clickable-header"
+                  onClick={() => setShowBulkModal('notes')}
+                  title="Click to set notes for all cards"
+                >
                   NOTES
                 </div>
               </th>
@@ -1511,6 +1585,14 @@ const ImportTable = ({
                         {card.isRelic ? 'RELIC' : '—'}
                       </button>
                     </td>
+                    <td className="sp-cell">
+                      <button
+                        className={`import-sp-toggle ${card.isShortPrint ? 'active' : ''}`}
+                        onClick={() => handleShortPrintToggle(card.sortOrder)}
+                      >
+                        {card.isShortPrint ? 'SP' : '—'}
+                      </button>
+                    </td>
                     <td className="print-run-cell">
                       <input
                         type="number"
@@ -1519,6 +1601,7 @@ const ImportTable = ({
                         onChange={(e) => handlePrintRunChange(card.sortOrder, e.target.value)}
                         placeholder="—"
                         min="1"
+                        tabIndex={1000 + cardIndex}
                       />
                     </td>
                     <td className="color-cell">
@@ -1753,6 +1836,7 @@ const ImportTable = ({
                         value={card.notes || ''}
                         onChange={(e) => handleNotesChange(cardIndex, e.target.value)}
                         placeholder="Add notes..."
+                        tabIndex={2000 + cardIndex}
                       />
                     </td>
                   </tr>

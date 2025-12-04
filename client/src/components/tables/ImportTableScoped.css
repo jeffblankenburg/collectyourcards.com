@@ -590,10 +590,38 @@
   box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
 }
 
+/* SP Toggle */
+.import-sp-toggle {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.25rem 0.5rem;
+  text-transform: uppercase;
+  transition: all 0.2s ease;
+  min-width: 40px;
+  max-width: 100px;
+}
+
+.import-sp-toggle:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.import-sp-toggle.active {
+  background: rgba(236, 72, 153, 0.1);
+  border-color: rgba(236, 72, 153, 0.2);
+  color: #f472b6;
+  box-shadow: 0 2px 4px rgba(236, 72, 153, 0.3);
+}
+
 /* Column width controls */
 .rc-header { width: 60px; }
 .auto-header { width: 60px; }
 .relic-header { width: 60px; }
+.sp-header { width: 60px; }
 
 /* Clickable header styling */
 .clickable-header {

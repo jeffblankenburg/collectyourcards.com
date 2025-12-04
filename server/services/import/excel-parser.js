@@ -137,6 +137,7 @@ class ExcelParserService {
         rcIndicator: rcIndicator, // Keep original value for display
         isAutograph: false, // Default to false - can be toggled in UI
         isRelic: false, // Default to false - can be toggled in UI
+        isShortPrint: false, // Default to false - can be toggled in UI
         notes: notes || '' // Ensure notes is always a string
       }
     }).filter(card => card && card.cardNumber) // Only include valid rows with card numbers
@@ -199,6 +200,9 @@ class ExcelParserService {
 
         // Merge RC status (if any row has RC, mark as RC)
         previousCard.isRC = previousCard.isRC || card.isRC
+
+        // Merge short print status (if any row has SP, mark as SP)
+        previousCard.isShortPrint = previousCard.isShortPrint || card.isShortPrint
 
         // Merge notes - but deduplicate if they're the same
         if (card.notes && card.notes !== previousCard.notes) {
