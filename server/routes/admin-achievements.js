@@ -1,11 +1,10 @@
 const express = require('express')
-const { PrismaClient } = require('@prisma/client')
+const prisma = require('../config/prisma')
 const { authMiddleware, requireAdmin } = require('../middleware/auth')
 const rateLimit = require('express-rate-limit')
 const { escapeLikePattern, sanitizeSearchTerm, validateNumericId } = require('../utils/sql-security')
 
 const router = express.Router()
-const prisma = new PrismaClient({ log: ['error'] })
 
 // Rate limiting
 const adminAchievementRateLimit = rateLimit({

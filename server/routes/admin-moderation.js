@@ -5,8 +5,7 @@
 
 const express = require('express')
 const router = express.Router()
-const { PrismaClient } = require('@prisma/client')
-const prisma = new PrismaClient({ log: ['error'] }) // Only log errors, not queries
+const prisma = require('../config/prisma')
 const { authMiddleware, requireAdmin } = require('../middleware/auth')
 
 // GET /api/admin/moderation/recent-comments - Get recent comments for moderation (last 7 days)

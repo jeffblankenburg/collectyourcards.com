@@ -1,9 +1,8 @@
 const express = require('express')
-const { PrismaClient } = require('@prisma/client')
+const prisma = require('../config/prisma')
 const { sanitizeParams } = require('../middleware/inputSanitization')
 const { optionalAuthMiddleware } = require('../middleware/auth')
 const router = express.Router()
-const prisma = new PrismaClient()
 
 // Helper function to create slug from list name
 function createListSlug(name) {

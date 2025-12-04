@@ -250,15 +250,12 @@ const commentModerationMiddleware = contentModerationMiddleware({
  */
 const isUserMuted = async (userId) => {
   try {
-    const { PrismaClient } = require('@prisma/client')
-    const prisma = new PrismaClient({ log: ['error'] }) // Only log errors, not queries
+    const prisma = require('../config/prisma')
 
     const user = await prisma.user.findUnique({
       where: { user_id: BigInt(userId) },
       select: { is_muted: true, muted_at: true }
     })
-
-    await prisma.$disconnect()
 
     return user?.is_muted === true
   } catch (error) {

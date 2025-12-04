@@ -1,8 +1,7 @@
 const express = require('express')
 const router = express.Router()
 const { authMiddleware: authenticateToken } = require('../middleware/auth')
-const { PrismaClient } = require('@prisma/client')
-const prisma = new PrismaClient()
+const prisma = require('../config/prisma')
 
 // Get notifications for the authenticated user
 router.get('/', authenticateToken, async (req, res) => {

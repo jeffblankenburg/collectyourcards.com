@@ -1,28 +1,8 @@
-const { PrismaClient } = require('@prisma/client')
-
-// Global Prisma instance with optimized connection settings
-let globalPrisma = null
+// Use the global Prisma instance from config/prisma.js
+// This file now just re-exports that instance for backwards compatibility
 
 function getPrismaClient() {
-  if (!globalPrisma) {
-    globalPrisma = new PrismaClient({
-      log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error']
-      // Connection pool is configured via DATABASE_URL parameters
-    })
-
-    // Ensure connection pool is configured properly
-    globalPrisma.$connect().catch(err => {
-      console.error('Failed to connect to database:', err)
-      process.exit(1)
-    })
-
-    // Handle graceful shutdown
-    process.on('beforeExit', async () => {
-      await globalPrisma.$disconnect()
-    })
-  }
-
-  return globalPrisma
+  return require('../config/prisma')
 }
 
 // Helper function to run queries in batches to avoid connection exhaustion

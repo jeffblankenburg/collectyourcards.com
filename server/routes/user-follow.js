@@ -1,8 +1,7 @@
 const express = require('express')
-const { PrismaClient } = require('@prisma/client')
+const prisma = require('../config/prisma')
 const { authMiddleware, optionalAuthMiddleware } = require('../middleware/auth')
 const router = express.Router()
-const prisma = new PrismaClient({ log: ['error'] })
 
 // =============================================
 // POST /api/follow/:userId - Follow a user

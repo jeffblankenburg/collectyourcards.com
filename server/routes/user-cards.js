@@ -1,5 +1,5 @@
 const express = require('express')
-const { PrismaClient, Prisma } = require('@prisma/client')
+const prisma = require('../config/prisma')
 const { authMiddleware } = require('../middleware/auth')
 const { sanitizeInput, sanitizeParams } = require('../middleware/inputSanitization')
 const { BlobServiceClient } = require('@azure/storage-blob')
@@ -8,7 +8,6 @@ const { onCardAdded, onCardUpdated, onCardRemoved } = require('../middleware/ach
 const { updateUserSeriesCompletion } = require('../utils/updateSeriesCompletion')
 const telemetryService = require('../services/telemetryService')
 const router = express.Router()
-const prisma = new PrismaClient({ log: ['error'] }) // Only log errors, not queries
 
 // All routes require authentication and input sanitization
 router.use(authMiddleware)

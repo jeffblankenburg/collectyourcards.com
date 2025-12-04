@@ -1,9 +1,7 @@
 const express = require('express')
 const router = express.Router()
-const { PrismaClient } = require('@prisma/client')
+const prisma = require('../config/prisma')
 const { authMiddleware, requireAdmin } = require('../middleware/auth')
-
-const prisma = new PrismaClient()
 
 // Test SQL query execution (SELECT only)
 router.post('/test-query', authMiddleware, requireAdmin, async (req, res) => {

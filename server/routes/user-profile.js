@@ -1,7 +1,6 @@
 const express = require('express')
 const router = express.Router()
-const { PrismaClient } = require('@prisma/client')
-const prisma = new PrismaClient({ log: ['error'] }) // Only log errors, not queries
+const prisma = require('../config/prisma')
 const { authMiddleware, optionalAuthMiddleware } = require('../middleware/auth')
 const { sanitizeInput, sanitizeParams } = require('../middleware/inputSanitization')
 const { isReserved, suggestAlternatives} = require('../config/reserved-usernames')

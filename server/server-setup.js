@@ -316,14 +316,11 @@ app.get('/api/test', (req, res) => {
 // Database connection test endpoint
 app.get('/api/db-test', async (req, res) => {
   try {
-    // Test Prisma connection
-    const { PrismaClient } = require('@prisma/client')
-    const prisma = new PrismaClient()
-    
-    await prisma.$connect()
+    // Test Prisma connection using global instance
+    const prisma = require('./config/prisma')
+
     const result = await prisma.$queryRaw`SELECT 1 as test`
-    await prisma.$disconnect()
-    
+
     res.json({
       status: 'success',
       message: 'Database connected successfully',

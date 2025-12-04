@@ -1,7 +1,6 @@
 const express = require('express')
 const router = express.Router()
-const { PrismaClient } = require('@prisma/client')
-const prisma = new PrismaClient({ log: ['error'] }) // Only log errors, not queries
+const prisma = require('../config/prisma')
 const { authMiddleware } = require('../middleware/auth')
 const { commentModerationMiddleware, mutedUserMiddleware } = require('../middleware/contentModeration')
 const { onCommentAdded } = require('../middleware/achievementHooks')

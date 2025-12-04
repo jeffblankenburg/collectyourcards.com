@@ -1,4 +1,4 @@
-const { PrismaClient } = require('@prisma/client')
+const prisma = require('../config/prisma')
 const sql = require('mssql')
 
 /**
@@ -10,7 +10,7 @@ const sql = require('mssql')
  */
 class AchievementEngine {
   constructor() {
-    this.prisma = new PrismaClient()
+    this.prisma = prisma
     this.sqlPool = null
   }
 
