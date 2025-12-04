@@ -936,7 +936,18 @@ router.delete('/:id', async (req, res) => {
       })
     }
 
-    // Delete player-team relationships first
+    // Delete duplicate exclusion records (raw SQL - table not in Prisma schema)
+    await prisma.$executeRaw`
+      DELETE FROM duplicate_exclusion
+      WHERE player1_id = ${playerId} OR player2_id = ${playerId}
+    `
+
+    // Delete duplicate player member records
+    await prisma.duplicate_player_member.deleteMany({
+      where: { player_id: playerId }
+    })
+
+    // Delete player-team relationships
     await prisma.player_team.deleteMany({
       where: { player: playerId }
     })
