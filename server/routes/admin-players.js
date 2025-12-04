@@ -917,11 +917,7 @@ router.post('/:id/reassign-cards', async (req, res) => {
 // DELETE /api/admin/players/:id - Delete player (only if no cards)
 router.delete('/:id', async (req, res) => {
   try {
-    const playerId = parseInt(req.params.id)
-
-    if (isNaN(playerId)) {
-      return res.status(400).json({ error: 'Invalid player ID' })
-    }
+    const playerId = BigInt(req.params.id)
 
     // Check if player has cards
     const player = await prisma.player.findUnique({
