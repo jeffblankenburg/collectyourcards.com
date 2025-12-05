@@ -378,3 +378,30 @@ BEGIN
     PRINT 'shipping_config_item table already exists';
 END
 GO
+
+-- ============================================================================
+-- SEED GLOBAL PRODUCT TYPES
+-- Added: 2025-12-05
+-- Purpose: Insert default global product types (user_id = NULL)
+--          These are shared across all sellers
+-- ============================================================================
+
+IF NOT EXISTS (SELECT 1 FROM product_type WHERE user_id IS NULL)
+BEGIN
+    INSERT INTO product_type (user_id, name, slug, description, is_active, display_order, created)
+    VALUES
+        (NULL, 'Hobby Box', 'hobby_box', NULL, 1, 0, GETDATE()),
+        (NULL, 'Hobby Case', 'hobby_case', NULL, 1, 1, GETDATE()),
+        (NULL, 'Retail Blaster', 'retail_blaster', NULL, 1, 2, GETDATE()),
+        (NULL, 'Retail Hanger', 'retail_hanger', NULL, 1, 3, GETDATE()),
+        (NULL, 'Retail Mega', 'retail_mega', NULL, 1, 4, GETDATE()),
+        (NULL, 'Retail Cello', 'retail_cello', NULL, 1, 5, GETDATE()),
+        (NULL, 'Other', 'other', NULL, 1, 99, GETDATE());
+
+    PRINT 'Inserted 7 global product types';
+END
+ELSE
+BEGIN
+    PRINT 'Global product types already exist - skipping';
+END
+GO

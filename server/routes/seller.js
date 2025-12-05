@@ -1450,12 +1450,12 @@ router.post('/product-purchases', requireAuth, requireSeller, async (req, res) =
       return res.status(400).json({ error: 'product_type is required' })
     }
 
-    // Check user's product types first, fallback to hardcoded defaults
-    const userProductTypes = await prisma.product_type.findMany({
-      where: { user_id: userId, is_active: true }
+    // Check global product types, fallback to hardcoded defaults
+    const globalProductTypes = await prisma.product_type.findMany({
+      where: { user_id: null, is_active: true }
     })
-    const validProductTypes = userProductTypes.length > 0
-      ? userProductTypes.map(pt => pt.slug)
+    const validProductTypes = globalProductTypes.length > 0
+      ? globalProductTypes.map(pt => pt.slug)
       : Object.keys(PRODUCT_TYPES)
 
     if (!validProductTypes.includes(product_type)) {
@@ -1550,11 +1550,11 @@ router.put('/product-purchases/:id', requireAuth, requireSeller, async (req, res
 
     // Validate product_type if provided
     if (product_type) {
-      const userProductTypes = await prisma.product_type.findMany({
-        where: { user_id: userId, is_active: true }
+      const globalProductTypes = await prisma.product_type.findMany({
+        where: { user_id: null, is_active: true }
       })
-      const validProductTypes = userProductTypes.length > 0
-        ? userProductTypes.map(pt => pt.slug)
+      const validProductTypes = globalProductTypes.length > 0
+        ? globalProductTypes.map(pt => pt.slug)
         : Object.keys(PRODUCT_TYPES)
 
       if (!validProductTypes.includes(product_type)) {
@@ -1803,15 +1803,15 @@ router.get('/set-investments', requireAuth, requireSeller, async (req, res) => {
       ? ((totals.total_sales_revenue / totals.total_investment) * 100)
       : 0
 
-    // Get user's product types (or fallback to defaults)
-    let userProductTypes = await prisma.product_type.findMany({
-      where: { user_id: userId, is_active: true },
+    // Get global product types, fallback to hardcoded defaults
+    const globalProductTypes = await prisma.product_type.findMany({
+      where: { user_id: null, is_active: true },
       orderBy: [{ display_order: 'asc' }, { name: 'asc' }]
     })
 
     // Convert to object format for backwards compatibility
-    const productTypesObj = userProductTypes.length > 0
-      ? Object.fromEntries(userProductTypes.map(pt => [pt.slug, pt.name]))
+    const productTypesObj = globalProductTypes.length > 0
+      ? Object.fromEntries(globalProductTypes.map(pt => [pt.slug, pt.name]))
       : PRODUCT_TYPES
 
     res.json({
@@ -1923,15 +1923,15 @@ router.get('/set-investments/:setId', requireAuth, requireSeller, async (req, re
       }
     })
 
-    // Get user's product types (or fallback to defaults)
-    let userProductTypes = await prisma.product_type.findMany({
-      where: { user_id: userId, is_active: true },
+    // Get global product types, fallback to hardcoded defaults
+    const globalProductTypes = await prisma.product_type.findMany({
+      where: { user_id: null, is_active: true },
       orderBy: [{ display_order: 'asc' }, { name: 'asc' }]
     })
 
     // Convert to object format for backwards compatibility
-    const productTypesObj = userProductTypes.length > 0
-      ? Object.fromEntries(userProductTypes.map(pt => [pt.slug, pt.name]))
+    const productTypesObj = globalProductTypes.length > 0
+      ? Object.fromEntries(globalProductTypes.map(pt => [pt.slug, pt.name]))
       : PRODUCT_TYPES
 
     res.json({
@@ -2021,194 +2021,9 @@ router.get('/summary', requireAuth, requireSeller, async (req, res) => {
 
 // ============================================
 // SELLER ADMIN ENDPOINTS
-// Manage dropdown data: product types, platforms, supply types
+// Manage dropdown data: platforms, supply types
+// Note: Product types are managed globally via /api/admin/seller/product-types
 // ============================================
-
-// Helper to generate slug from name
-const slugify = (text) => {
-  return text
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '_')
-    .replace(/^_+|_+$/g, '')
-    .substring(0, 50)
-}
-
-// ---- PRODUCT TYPES ----
-
-/**
- * GET /api/seller/admin/product-types
- * Get all product types for the current user
- */
-router.get('/admin/product-types', requireAuth, requireSeller, async (req, res) => {
-  try {
-    const userId = BigInt(req.user.userId)
-    const { include_inactive } = req.query
-
-    const where = { user_id: userId }
-    if (!include_inactive) {
-      where.is_active = true
-    }
-
-    const productTypes = await prisma.product_type.findMany({
-      where,
-      orderBy: [{ display_order: 'asc' }, { name: 'asc' }]
-    })
-
-    res.json({
-      product_types: serializeBigInt(productTypes)
-    })
-  } catch (error) {
-    console.error('Error fetching product types:', error)
-    res.status(500).json({ error: 'Failed to fetch product types' })
-  }
-})
-
-/**
- * POST /api/seller/admin/product-types
- * Create a new product type
- */
-router.post('/admin/product-types', requireAuth, requireSeller, async (req, res) => {
-  try {
-    const userId = BigInt(req.user.userId)
-    const { name, description, display_order } = req.body
-
-    if (!name || !name.trim()) {
-      return res.status(400).json({ error: 'Name is required' })
-    }
-
-    const slug = slugify(name)
-
-    // Check for duplicate slug
-    const existing = await prisma.product_type.findFirst({
-      where: { user_id: userId, slug }
-    })
-    if (existing) {
-      return res.status(400).json({ error: 'A product type with a similar name already exists' })
-    }
-
-    const productType = await prisma.product_type.create({
-      data: {
-        user_id: userId,
-        name: name.trim(),
-        slug,
-        description: description?.trim() || null,
-        display_order: display_order ?? 0
-      }
-    })
-
-    console.log(`Seller Admin: Created product type ${productType.product_type_id}`)
-
-    res.status(201).json({
-      message: 'Product type created successfully',
-      product_type: serializeBigInt(productType)
-    })
-  } catch (error) {
-    console.error('Error creating product type:', error)
-    res.status(500).json({ error: 'Failed to create product type' })
-  }
-})
-
-/**
- * PUT /api/seller/admin/product-types/:id
- * Update a product type
- */
-router.put('/admin/product-types/:id', requireAuth, requireSeller, async (req, res) => {
-  try {
-    const userId = BigInt(req.user.userId)
-    const productTypeId = parseInt(req.params.id)
-
-    const existing = await prisma.product_type.findFirst({
-      where: { product_type_id: productTypeId, user_id: userId }
-    })
-
-    if (!existing) {
-      return res.status(404).json({ error: 'Product type not found' })
-    }
-
-    const { name, description, is_active, display_order } = req.body
-
-    const updateData = {}
-    if (name !== undefined) {
-      updateData.name = name.trim()
-      updateData.slug = slugify(name)
-
-      // Check for duplicate slug (excluding self)
-      const duplicate = await prisma.product_type.findFirst({
-        where: {
-          user_id: userId,
-          slug: updateData.slug,
-          product_type_id: { not: productTypeId }
-        }
-      })
-      if (duplicate) {
-        return res.status(400).json({ error: 'A product type with a similar name already exists' })
-      }
-    }
-    if (description !== undefined) updateData.description = description?.trim() || null
-    if (is_active !== undefined) updateData.is_active = is_active
-    if (display_order !== undefined) updateData.display_order = display_order
-
-    const productType = await prisma.product_type.update({
-      where: { product_type_id: productTypeId },
-      data: updateData
-    })
-
-    console.log(`Seller Admin: Updated product type ${productTypeId}`)
-
-    res.json({
-      message: 'Product type updated successfully',
-      product_type: serializeBigInt(productType)
-    })
-  } catch (error) {
-    console.error('Error updating product type:', error)
-    res.status(500).json({ error: 'Failed to update product type' })
-  }
-})
-
-/**
- * DELETE /api/seller/admin/product-types/:id
- * Delete a product type (or deactivate if in use)
- */
-router.delete('/admin/product-types/:id', requireAuth, requireSeller, async (req, res) => {
-  try {
-    const userId = BigInt(req.user.userId)
-    const productTypeId = parseInt(req.params.id)
-
-    const existing = await prisma.product_type.findFirst({
-      where: { product_type_id: productTypeId, user_id: userId }
-    })
-
-    if (!existing) {
-      return res.status(404).json({ error: 'Product type not found' })
-    }
-
-    // Check if in use (by product_purchase table using slug match)
-    const inUse = await prisma.product_purchase.findFirst({
-      where: { user_id: userId, product_type: existing.slug }
-    })
-
-    if (inUse) {
-      // Deactivate instead of delete
-      await prisma.product_type.update({
-        where: { product_type_id: productTypeId },
-        data: { is_active: false }
-      })
-      console.log(`Seller Admin: Deactivated product type ${productTypeId} (in use)`)
-      return res.json({ message: 'Product type deactivated (in use by purchases)' })
-    }
-
-    await prisma.product_type.delete({
-      where: { product_type_id: productTypeId }
-    })
-
-    console.log(`Seller Admin: Deleted product type ${productTypeId}`)
-
-    res.json({ message: 'Product type deleted successfully' })
-  } catch (error) {
-    console.error('Error deleting product type:', error)
-    res.status(500).json({ error: 'Failed to delete product type' })
-  }
-})
 
 // ---- SELLING PLATFORMS ----
 
@@ -2549,52 +2364,6 @@ router.delete('/admin/supply-types/:id', requireAuth, requireSeller, async (req,
   } catch (error) {
     console.error('Error deleting supply type:', error)
     res.status(500).json({ error: 'Failed to delete supply type' })
-  }
-})
-
-/**
- * POST /api/seller/admin/seed-defaults
- * Seed default product types for a new user
- */
-router.post('/admin/seed-defaults', requireAuth, requireSeller, async (req, res) => {
-  try {
-    const userId = BigInt(req.user.userId)
-
-    // Check if user already has product types
-    const existingTypes = await prisma.product_type.findFirst({
-      where: { user_id: userId }
-    })
-
-    if (existingTypes) {
-      return res.status(400).json({ error: 'User already has product types configured' })
-    }
-
-    // Seed default product types from PRODUCT_TYPES constant
-    const defaultTypes = Object.entries(PRODUCT_TYPES).map(([slug, name], index) => ({
-      user_id: userId,
-      name,
-      slug,
-      display_order: index
-    }))
-
-    await prisma.product_type.createMany({
-      data: defaultTypes
-    })
-
-    console.log(`Seller Admin: Seeded ${defaultTypes.length} default product types for user ${userId}`)
-
-    const productTypes = await prisma.product_type.findMany({
-      where: { user_id: userId },
-      orderBy: { display_order: 'asc' }
-    })
-
-    res.status(201).json({
-      message: 'Default product types created successfully',
-      product_types: serializeBigInt(productTypes)
-    })
-  } catch (error) {
-    console.error('Error seeding defaults:', error)
-    res.status(500).json({ error: 'Failed to seed defaults' })
   }
 })
 

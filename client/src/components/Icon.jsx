@@ -113,7 +113,8 @@ import {
   Clipboard,
   Bookmark,
   Save,
-  SlidersHorizontal
+  SlidersHorizontal,
+  Tag
 } from 'lucide-react'
 
 // Icon mapping for consistent usage across the app
@@ -226,6 +227,7 @@ const iconMap = {
   'image': Image,
   'refresh': RefreshCw,
   'shopping': ShoppingCart,
+  'shopping-cart': ShoppingCart,
   'color': Palette,
   'filter': Filter,
   'copy': Copy,
@@ -280,7 +282,8 @@ const iconMap = {
   'folder': Folder,
   'award': Award,
   'package': Package,
-  'play': Play
+  'play': Play,
+  'tag': Tag
 }
 
 // Custom RC tag icon for rookies - matches the RC tags used throughout the site
