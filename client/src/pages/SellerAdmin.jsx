@@ -13,7 +13,7 @@ import { useToast } from '../contexts/ToastContext'
 import './SellerAdminScoped.css'
 
 const SellerAdmin = () => {
-  const { showToast } = useToast()
+  const { addToast } = useToast()
   const [activeTab, setActiveTab] = useState('product-types')
   const [loading, setLoading] = useState(true)
 
@@ -51,7 +51,7 @@ const SellerAdmin = () => {
       }
     } catch (error) {
       console.error('Error fetching data:', error)
-      showToast('Failed to load data', 'error')
+      addToast('Failed to load data', 'error')
     } finally {
       setLoading(false)
     }
@@ -107,17 +107,17 @@ const SellerAdmin = () => {
       if (editingItem) {
         const idField = getIdField()
         await axios.put(`${apiPath}/${editingItem[idField]}`, formData)
-        showToast('Updated successfully', 'success')
+        addToast('Updated successfully', 'success')
       } else {
         await axios.post(apiPath, formData)
-        showToast('Created successfully', 'success')
+        addToast('Created successfully', 'success')
       }
 
       handleCancel()
       fetchData()
     } catch (error) {
       console.error('Error saving:', error)
-      showToast(error.response?.data?.error || 'Failed to save', 'error')
+      addToast(error.response?.data?.error || 'Failed to save', 'error')
     } finally {
       setSaving(false)
     }
@@ -134,11 +134,11 @@ const SellerAdmin = () => {
 
     try {
       await axios.delete(`${getApiPath()}/${deleteConfirm[idField]}`)
-      showToast('Deleted successfully', 'success')
+      addToast('Deleted successfully', 'success')
       fetchData()
     } catch (error) {
       console.error('Error deleting:', error)
-      showToast(error.response?.data?.error || 'Failed to delete', 'error')
+      addToast(error.response?.data?.error || 'Failed to delete', 'error')
     } finally {
       setDeleteConfirm(null)
     }
@@ -151,22 +151,22 @@ const SellerAdmin = () => {
       await axios.put(`${getApiPath()}/${item[idField]}`, {
         is_active: !item.is_active
       })
-      showToast(item.is_active ? 'Deactivated' : 'Activated', 'success')
+      addToast(item.is_active ? 'Deactivated' : 'Activated', 'success')
       fetchData()
     } catch (error) {
       console.error('Error toggling:', error)
-      showToast('Failed to update', 'error')
+      addToast('Failed to update', 'error')
     }
   }
 
   const handleSeedDefaults = async () => {
     try {
       await axios.post('/api/admin/seller/seed-defaults')
-      showToast('Default values created', 'success')
+      addToast('Default values created', 'success')
       fetchData()
     } catch (error) {
       console.error('Error seeding:', error)
-      showToast(error.response?.data?.error || 'Failed to seed defaults', 'error')
+      addToast(error.response?.data?.error || 'Failed to seed defaults', 'error')
     }
   }
 
