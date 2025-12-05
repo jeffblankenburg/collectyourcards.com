@@ -416,6 +416,43 @@
   color: rgba(255, 255, 255, 0.4);
 }
 
+.shipping-configs-page .shipping-config-cost {
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+  margin-right: 1rem;
+}
+
+.shipping-configs-page .shipping-cost-value {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.375rem 0.75rem;
+  background: rgba(34, 197, 94, 0.15);
+  border: 1px solid rgba(34, 197, 94, 0.25);
+  border-radius: 6px;
+  color: #86efac;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.shipping-configs-page .shipping-cost-error {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.375rem 0.75rem;
+  background: rgba(234, 179, 8, 0.15);
+  border: 1px solid rgba(234, 179, 8, 0.25);
+  border-radius: 6px;
+  color: #fde047;
+  font-size: 0.75rem;
+}
+
+.shipping-configs-page .shipping-cost-loading {
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.875rem;
+}
+
 .shipping-configs-page .shipping-config-actions {
   display: flex;
   align-items: center;
@@ -472,6 +509,51 @@
 
 .shipping-configs-page .shipping-item-name {
   color: rgba(255, 255, 255, 0.8);
+}
+
+.shipping-configs-page .shipping-item-cost {
+  margin-left: auto;
+  padding-left: 0.75rem;
+  font-weight: 600;
+  color: #86efac;
+  font-size: 0.8125rem;
+}
+
+.shipping-configs-page .shipping-item-cost-error {
+  margin-left: auto;
+  padding-left: 0.75rem;
+  font-size: 0.75rem;
+  color: #fde047;
+  font-style: italic;
+}
+
+.shipping-configs-page .shipping-cost-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.shipping-configs-page .shipping-cost-total strong {
+  font-size: 1rem;
+  color: #86efac;
+}
+
+.shipping-configs-page .shipping-cost-warning {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  background: rgba(234, 179, 8, 0.1);
+  border: 1px solid rgba(234, 179, 8, 0.2);
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  color: #fde047;
 }
 
 /* Edit Form */

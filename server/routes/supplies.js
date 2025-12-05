@@ -1022,9 +1022,20 @@ router.post('/calculate-cost', requireAuth, requireSeller, async (req, res) => {
       return res.status(404).json({ error: 'Shipping config not found' })
     }
 
+    // If no items, return zero cost
+    if (!config.shipping_config_items || config.shipping_config_items.length === 0) {
+      return res.json({
+        shipping_config_id: config.shipping_config_id,
+        shipping_config_name: config.name,
+        total_cost: 0,
+        items: []
+      })
+    }
+
     // Calculate cost for each item using FIFO
     let totalCost = 0
     const itemDetails = []
+    let insufficientInventory = null
 
     for (const item of config.shipping_config_items) {
       const allocation = await allocateSuppliesFIFO(
@@ -1034,9 +1045,17 @@ router.post('/calculate-cost', requireAuth, requireSeller, async (req, res) => {
       )
 
       if (!allocation.success) {
-        return res.status(400).json({
-          error: `Insufficient ${item.supply_type.name}: ${allocation.error}`
+        // Store the error but continue to show partial results
+        insufficientInventory = `Insufficient ${item.supply_type?.name || 'Unknown'}: ${allocation.error}`
+        itemDetails.push({
+          supply_type_id: item.supply_type_id,
+          supply_type_name: item.supply_type?.name || 'Unknown',
+          quantity_needed: item.quantity,
+          cost: null,
+          error: allocation.error,
+          allocations: []
         })
+        continue
       }
 
       const itemCost = allocation.allocations.reduce((sum, a) => sum + a.total_cost, 0)
@@ -1051,12 +1070,20 @@ router.post('/calculate-cost', requireAuth, requireSeller, async (req, res) => {
       })
     }
 
-    res.json({
+    const response = {
       shipping_config_id: config.shipping_config_id,
       shipping_config_name: config.name,
-      total_cost: totalCost,
+      total_cost: insufficientInventory ? null : totalCost,
       items: itemDetails
-    })
+    }
+
+    // Include error info if there was insufficient inventory
+    if (insufficientInventory) {
+      response.error = insufficientInventory
+      response.partial = true
+    }
+
+    res.json(serializeBigInt(response))
   } catch (error) {
     console.error('Error calculating supply cost:', error)
     res.status(500).json({ error: 'Failed to calculate supply cost' })

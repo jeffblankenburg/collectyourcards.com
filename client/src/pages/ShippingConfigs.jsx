@@ -3,7 +3,7 @@ import axios from 'axios'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
 import { Link } from 'react-router-dom'
-import { Settings, Plus, Trash2, Edit2, Check, X, RefreshCw, AlertCircle, ChevronDown, ChevronUp, ArrowLeft, Package } from 'lucide-react'
+import { Settings, Plus, Trash2, Edit2, Check, X, RefreshCw, AlertCircle, ChevronDown, ChevronUp, ArrowLeft, Package, DollarSign } from 'lucide-react'
 import './ShippingConfigsScoped.css'
 
 function ShippingConfigs() {
@@ -14,6 +14,7 @@ function ShippingConfigs() {
   // State
   const [configs, setConfigs] = useState([])
   const [supplyTypes, setSupplyTypes] = useState([])
+  const [configCosts, setConfigCosts] = useState({}) // { configId: { total_cost, items, error } }
   const [loading, setLoading] = useState(true)
 
   // Form state for new config
@@ -29,6 +30,39 @@ function ShippingConfigs() {
   const [editingConfig, setEditingConfig] = useState(null)
   const [expandedConfig, setExpandedConfig] = useState(null)
 
+  // Fetch cost for a single config
+  const fetchConfigCost = async (configId) => {
+    try {
+      const res = await axios.post('/api/supplies/calculate-cost', {
+        shipping_config_id: configId
+      })
+      return {
+        total_cost: res.data.total_cost,
+        items: res.data.items || [],
+        error: res.data.error || null,
+        partial: res.data.partial || false
+      }
+    } catch (error) {
+      return {
+        total_cost: null,
+        items: [],
+        error: error.response?.data?.error || 'Unable to calculate cost',
+        partial: false
+      }
+    }
+  }
+
+  // Fetch costs for all configs
+  const fetchAllCosts = async (configsList) => {
+    const costs = {}
+    await Promise.all(
+      configsList.map(async (config) => {
+        costs[config.shipping_config_id] = await fetchConfigCost(config.shipping_config_id)
+      })
+    )
+    setConfigCosts(costs)
+  }
+
   // Fetch data
   const fetchData = useCallback(async () => {
     if (!isAuthenticated || !isAdmin) return
@@ -40,15 +74,18 @@ function ShippingConfigs() {
         axios.get('/api/supplies/types')
       ])
 
-      setConfigs(configsRes.data.shipping_configs || [])
+      const configsList = configsRes.data.shipping_configs || []
+      setConfigs(configsList)
       setSupplyTypes(typesRes.data.supply_types || [])
+
+      // Fetch costs for all configs
+      await fetchAllCosts(configsList)
     } catch (error) {
       console.error('Error fetching data:', error)
-      showError('Failed to load shipping configs')
     } finally {
       setLoading(false)
     }
-  }, [isAuthenticated, isAdmin, showError])
+  }, [isAuthenticated, isAdmin])
 
   useEffect(() => {
     fetchData()
@@ -186,6 +223,17 @@ function ShippingConfigs() {
   const getSupplyTypeName = (typeId) => {
     const type = supplyTypes.find(t => t.supply_type_id === typeId)
     return type?.name || 'Unknown'
+  }
+
+  // Format currency
+  const formatCurrency = (value) => {
+    if (value === null || value === undefined) return '-'
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 4
+    }).format(value)
   }
 
   if (!isAdmin) {
@@ -351,6 +399,7 @@ function ShippingConfigs() {
           {configs.map(config => {
             const isEditing = editingConfig?.shipping_config_id === config.shipping_config_id
             const isExpanded = expandedConfig === config.shipping_config_id
+            const costData = configCosts[config.shipping_config_id]
 
             return (
               <div key={config.shipping_config_id} className="shipping-config-card">
@@ -364,6 +413,31 @@ function ShippingConfigs() {
                     <span className="shipping-config-count">
                       {config.shipping_config_items.length} supplies
                     </span>
+                  </div>
+                  <div className="shipping-config-cost">
+                    {costData?.error && costData?.total_cost === null ? (
+                      <span className="shipping-cost-error" title={costData.error}>
+                        <AlertCircle size={14} />
+                        No inventory
+                      </span>
+                    ) : costData?.total_cost !== undefined && costData?.total_cost !== null ? (
+                      <span className="shipping-cost-value">
+                        <DollarSign size={14} />
+                        {formatCurrency(costData.total_cost)}
+                      </span>
+                    ) : costData?.total_cost === 0 ? (
+                      <span className="shipping-cost-value">
+                        <DollarSign size={14} />
+                        {formatCurrency(0)}
+                      </span>
+                    ) : costData ? (
+                      <span className="shipping-cost-error" title={costData.error || 'Unable to calculate'}>
+                        <AlertCircle size={14} />
+                        Incomplete
+                      </span>
+                    ) : (
+                      <span className="shipping-cost-loading">...</span>
+                    )}
                   </div>
                   <div className="shipping-config-actions">
                     {!isEditing && (
@@ -487,13 +561,36 @@ function ShippingConfigs() {
                           <p className="shipping-no-items">No supplies configured</p>
                         ) : (
                           <ul className="shipping-items-ul">
-                            {config.shipping_config_items.map(item => (
-                              <li key={item.shipping_config_item_id}>
-                                <span className="shipping-item-qty">{item.quantity}x</span>
-                                <span className="shipping-item-name">{item.supply_type?.name || 'Unknown'}</span>
-                              </li>
-                            ))}
+                            {config.shipping_config_items.map(item => {
+                              // Find cost data for this supply type
+                              const itemCost = costData?.items?.find(
+                                i => i.supply_type_id === item.supply_type_id
+                              )
+                              return (
+                                <li key={item.shipping_config_item_id}>
+                                  <span className="shipping-item-qty">{item.quantity}x</span>
+                                  <span className="shipping-item-name">{item.supply_type?.name || 'Unknown'}</span>
+                                  {itemCost ? (
+                                    <span className="shipping-item-cost">{formatCurrency(itemCost.cost)}</span>
+                                  ) : costData?.error ? (
+                                    <span className="shipping-item-cost-error">No stock</span>
+                                  ) : null}
+                                </li>
+                              )
+                            })}
                           </ul>
+                        )}
+                        {costData && !costData.error && (
+                          <div className="shipping-cost-total">
+                            <span>Total Supply Cost:</span>
+                            <strong>{formatCurrency(costData.total_cost)}</strong>
+                          </div>
+                        )}
+                        {costData?.error && (
+                          <div className="shipping-cost-warning">
+                            <AlertCircle size={14} />
+                            <span>{costData.error}</span>
+                          </div>
                         )}
                       </div>
                     )}
