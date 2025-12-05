@@ -504,6 +504,66 @@
   }
 }
 
+/* Drag and Drop */
+.seller-admin-drag-col {
+  width: 32px;
+  padding: 0.75rem 0.5rem !important;
+}
+
+.seller-admin-drag-handle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  color: rgba(255, 255, 255, 0.4);
+  padding: 0.75rem 0.5rem !important;
+}
+
+.seller-admin-drag-handle:hover {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.seller-admin-drag-handle:active {
+  cursor: grabbing;
+}
+
+.seller-admin-table tr[draggable="true"] {
+  cursor: grab;
+}
+
+.seller-admin-table tr[draggable="true"]:active {
+  cursor: grabbing;
+}
+
+.seller-admin-table tr.seller-admin-dragging {
+  opacity: 0.5;
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.seller-admin-table tr.seller-admin-drag-over {
+  background: rgba(59, 130, 246, 0.2);
+  border-top: 2px solid #60a5fa;
+}
+
+.seller-admin-table tr.seller-admin-drag-over td {
+  border-top-color: transparent;
+}
+
+.seller-admin-reorder-hint {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: rgba(59, 130, 246, 0.1);
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.75rem;
+}
+
+.seller-admin-reorder-hint svg {
+  color: rgba(255, 255, 255, 0.5);
+}
+
 /* Spinning animation */
 @keyframes spin {
   from { transform: rotate(0deg); }

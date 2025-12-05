@@ -4,7 +4,7 @@
  * These are system-wide settings managed by site admins
  */
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import axios from 'axios'
 import Icon from '../components/Icon'
@@ -30,6 +30,11 @@ const SellerAdmin = () => {
 
   // Delete confirmation
   const [deleteConfirm, setDeleteConfirm] = useState(null)
+
+  // Drag and drop state
+  const [draggedItem, setDraggedItem] = useState(null)
+  const [dragOverItem, setDragOverItem] = useState(null)
+  const dragCounter = useRef(0)
 
   // Fetch data based on active tab
   useEffect(() => {
@@ -77,11 +82,11 @@ const SellerAdmin = () => {
 
   const getDefaultFormData = () => {
     if (activeTab === 'product-types') {
-      return { name: '', description: '', display_order: 0 }
+      return { name: '', description: '' }
     } else if (activeTab === 'platforms') {
       return { name: '', fee_percentage: '', payment_fee_pct: '', fixed_fee: '' }
     } else {
-      return { name: '', description: '', display_order: 0, color: '#6b7280' }
+      return { name: '', description: '', color: '#6b7280' }
     }
   }
 
@@ -176,6 +181,94 @@ const SellerAdmin = () => {
     return saleStatuses
   }
 
+  const setData = (newData) => {
+    if (activeTab === 'product-types') setProductTypes(newData)
+    else if (activeTab === 'sale-statuses') setSaleStatuses(newData)
+  }
+
+  // Check if current tab supports reordering (has display_order)
+  const supportsReorder = () => {
+    return activeTab === 'product-types' || activeTab === 'sale-statuses'
+  }
+
+  // Drag and drop handlers
+  const handleDragStart = (e, item, index) => {
+    setDraggedItem({ item, index })
+    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('text/plain', index)
+    // Add a slight delay to allow the drag image to be set
+    setTimeout(() => {
+      e.target.closest('tr')?.classList.add('seller-admin-dragging')
+    }, 0)
+  }
+
+  const handleDragEnd = (e) => {
+    e.target.closest('tr')?.classList.remove('seller-admin-dragging')
+    setDraggedItem(null)
+    setDragOverItem(null)
+    dragCounter.current = 0
+  }
+
+  const handleDragEnter = (e, index) => {
+    e.preventDefault()
+    dragCounter.current++
+    if (draggedItem && draggedItem.index !== index) {
+      setDragOverItem(index)
+    }
+  }
+
+  const handleDragLeave = (e) => {
+    dragCounter.current--
+    if (dragCounter.current === 0) {
+      setDragOverItem(null)
+    }
+  }
+
+  const handleDragOver = (e) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+  }
+
+  const handleDrop = async (e, dropIndex) => {
+    e.preventDefault()
+
+    if (!draggedItem || draggedItem.index === dropIndex) {
+      setDraggedItem(null)
+      setDragOverItem(null)
+      return
+    }
+
+    const data = getData()
+    const idField = getIdField()
+    const newData = [...data]
+
+    // Remove dragged item and insert at new position
+    const [removed] = newData.splice(draggedItem.index, 1)
+    newData.splice(dropIndex, 0, removed)
+
+    // Update local state immediately for responsiveness
+    setData(newData)
+    setDraggedItem(null)
+    setDragOverItem(null)
+    dragCounter.current = 0
+
+    // Prepare reorder payload
+    const items = newData.map((item, index) => ({
+      id: item[idField],
+      display_order: index
+    }))
+
+    try {
+      await axios.put(`${getApiPath()}/reorder`, { items })
+      addToast('Order updated', 'success')
+    } catch (error) {
+      console.error('Error reordering:', error)
+      addToast('Failed to save order', 'error')
+      // Revert on error
+      fetchData()
+    }
+  }
+
   const renderForm = () => {
     if (activeTab === 'product-types') {
       return (
@@ -199,15 +292,6 @@ const SellerAdmin = () => {
               value={formData.description || ''}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               placeholder="Optional description"
-            />
-          </div>
-          <div className="seller-admin-form-group">
-            <label>Display Order</label>
-            <input
-              type="number"
-              className="seller-admin-input"
-              value={formData.display_order || 0}
-              onChange={(e) => setFormData({ ...formData, display_order: parseInt(e.target.value) || 0 })}
             />
           </div>
         </>
@@ -306,15 +390,6 @@ const SellerAdmin = () => {
             />
           </div>
         </div>
-        <div className="seller-admin-form-group">
-          <label>Display Order</label>
-          <input
-            type="number"
-            className="seller-admin-input"
-            value={formData.display_order || 0}
-            onChange={(e) => setFormData({ ...formData, display_order: parseInt(e.target.value) || 0 })}
-          />
-        </div>
       </>
     )
   }
@@ -322,6 +397,7 @@ const SellerAdmin = () => {
   const renderTable = () => {
     const data = getData()
     const idField = getIdField()
+    const canReorder = supportsReorder()
 
     if (loading) {
       return (
@@ -351,23 +427,35 @@ const SellerAdmin = () => {
         <table className="seller-admin-table">
           <thead>
             <tr>
+              <th className="seller-admin-drag-col"></th>
               <th>ID</th>
               <th>Name</th>
               <th>Slug</th>
               <th>Description</th>
-              <th>Order</th>
               <th>Status</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
-            {data.map(item => (
-              <tr key={item[idField]} className={!item.is_active ? 'seller-admin-inactive' : ''}>
+            {data.map((item, index) => (
+              <tr
+                key={item[idField]}
+                className={`${!item.is_active ? 'seller-admin-inactive' : ''} ${dragOverItem === index ? 'seller-admin-drag-over' : ''}`}
+                draggable={canReorder}
+                onDragStart={(e) => handleDragStart(e, item, index)}
+                onDragEnd={handleDragEnd}
+                onDragEnter={(e) => handleDragEnter(e, index)}
+                onDragLeave={handleDragLeave}
+                onDragOver={handleDragOver}
+                onDrop={(e) => handleDrop(e, index)}
+              >
+                <td className="seller-admin-drag-handle">
+                  <Icon name="grip-vertical" size={16} />
+                </td>
                 <td>{item[idField]}</td>
                 <td>{item.name}</td>
                 <td className="seller-admin-code">{item.slug}</td>
                 <td>{item.description || '-'}</td>
-                <td>{item.display_order}</td>
                 <td>
                   <span className={`seller-admin-status ${item.is_active ? 'active' : 'inactive'}`}>
                     {item.is_active ? 'Active' : 'Inactive'}
@@ -445,19 +533,32 @@ const SellerAdmin = () => {
       <table className="seller-admin-table">
         <thead>
           <tr>
+            <th className="seller-admin-drag-col"></th>
             <th>ID</th>
             <th>Name</th>
             <th>Slug</th>
             <th>Description</th>
             <th>Color</th>
-            <th>Order</th>
             <th>Status</th>
             <th>Actions</th>
           </tr>
         </thead>
         <tbody>
-          {data.map(item => (
-            <tr key={item[idField]} className={!item.is_active ? 'seller-admin-inactive' : ''}>
+          {data.map((item, index) => (
+            <tr
+              key={item[idField]}
+              className={`${!item.is_active ? 'seller-admin-inactive' : ''} ${dragOverItem === index ? 'seller-admin-drag-over' : ''}`}
+              draggable={canReorder}
+              onDragStart={(e) => handleDragStart(e, item, index)}
+              onDragEnd={handleDragEnd}
+              onDragEnter={(e) => handleDragEnter(e, index)}
+              onDragLeave={handleDragLeave}
+              onDragOver={handleDragOver}
+              onDrop={(e) => handleDrop(e, index)}
+            >
+              <td className="seller-admin-drag-handle">
+                <Icon name="grip-vertical" size={16} />
+              </td>
               <td>{item[idField]}</td>
               <td>{item.name}</td>
               <td className="seller-admin-code">{item.slug}</td>
@@ -469,7 +570,6 @@ const SellerAdmin = () => {
                   title={item.color}
                 />
               </td>
-              <td>{item.display_order}</td>
               <td>
                 <span className={`seller-admin-status ${item.is_active ? 'active' : 'inactive'}`}>
                   {item.is_active ? 'Active' : 'Inactive'}
@@ -560,6 +660,14 @@ const SellerAdmin = () => {
             Add New
           </button>
         </div>
+
+        {/* Reorder hint */}
+        {supportsReorder() && getData().length > 1 && (
+          <div className="seller-admin-reorder-hint">
+            <Icon name="grip-vertical" size={14} />
+            <span>Drag rows to reorder</span>
+          </div>
+        )}
 
         {/* Add/Edit Form */}
         {showAddForm && (

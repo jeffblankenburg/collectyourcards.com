@@ -106,6 +106,39 @@ router.post('/product-types', requireAuth, requireAdmin, async (req, res) => {
 })
 
 /**
+ * PUT /api/admin/seller/product-types/reorder
+ * Reorder product types by updating display_order values
+ * Request body: { items: [{ id: number, display_order: number }, ...] }
+ * NOTE: This route MUST come before /product-types/:id to avoid :id matching "reorder"
+ */
+router.put('/product-types/reorder', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const { items } = req.body
+
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ error: 'items array is required' })
+    }
+
+    // Update each item's display_order
+    await prisma.$transaction(
+      items.map(item =>
+        prisma.product_type.update({
+          where: { product_type_id: item.id },
+          data: { display_order: item.display_order }
+        })
+      )
+    )
+
+    console.log(`Admin Seller: Reordered ${items.length} product types`)
+
+    res.json({ message: 'Product types reordered successfully' })
+  } catch (error) {
+    console.error('Error reordering product types:', error)
+    res.status(500).json({ error: 'Failed to reorder product types' })
+  }
+})
+
+/**
  * PUT /api/admin/seller/product-types/:id
  * Update a global product type
  */
@@ -474,6 +507,39 @@ router.post('/sale-statuses', requireAuth, requireAdmin, async (req, res) => {
       return res.status(400).json({ error: 'Sale status table needs to be created. Please run database migrations.' })
     }
     res.status(500).json({ error: 'Failed to create sale status' })
+  }
+})
+
+/**
+ * PUT /api/admin/seller/sale-statuses/reorder
+ * Reorder sale statuses by updating display_order values
+ * Request body: { items: [{ id: number, display_order: number }, ...] }
+ * NOTE: This route MUST come before /sale-statuses/:id to avoid :id matching "reorder"
+ */
+router.put('/sale-statuses/reorder', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const { items } = req.body
+
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ error: 'items array is required' })
+    }
+
+    // Update each item's display_order
+    await prisma.$transaction(
+      items.map(item =>
+        prisma.sale_status.update({
+          where: { sale_status_id: item.id },
+          data: { display_order: item.display_order }
+        })
+      )
+    )
+
+    console.log(`Admin Seller: Reordered ${items.length} sale statuses`)
+
+    res.json({ message: 'Sale statuses reordered successfully' })
+  } catch (error) {
+    console.error('Error reordering sale statuses:', error)
+    res.status(500).json({ error: 'Failed to reorder sale statuses' })
   }
 })
 
