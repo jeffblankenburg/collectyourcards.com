@@ -156,21 +156,6 @@ function SetPurchases() {
     return `${num.toFixed(1)}%`
   }
 
-  const getHoleClass = (remainingHole) => {
-    if (remainingHole > 0) return 'purchase-hole-negative'
-    if (remainingHole < 0) return 'purchase-hole-positive'
-    return ''
-  }
-
-  const formatHole = (remainingHole) => {
-    if (remainingHole === null || remainingHole === undefined) return '-'
-    const num = parseFloat(remainingHole)
-    if (isNaN(num)) return '-'
-    if (num > 0) return `-$${num.toFixed(2)}`
-    if (num < 0) return `+$${Math.abs(num).toFixed(2)}`
-    return '$0.00'
-  }
-
   return (
     <div className="set-purchases-page">
       <div className="set-purchases-header">
@@ -216,12 +201,6 @@ function SetPurchases() {
             <div className="purchase-summary-label">Recovery</div>
             <div className="purchase-summary-value">
               {formatPercentage(totals.recovery_percentage)}
-            </div>
-          </div>
-          <div className="purchase-summary-card purchase-summary-hole">
-            <div className="purchase-summary-label">Remaining Hole</div>
-            <div className={`purchase-summary-value ${getHoleClass(totals.remaining_hole)}`}>
-              {formatHole(totals.remaining_hole)}
             </div>
           </div>
         </div>
@@ -490,8 +469,8 @@ function SetPurchases() {
                       <span className="purchase-mobile-year">{inv.set_year}</span>
                       <span className="purchase-mobile-name">{inv.set_name}</span>
                     </div>
-                    <span className={`purchase-mobile-hole ${getHoleClass(inv.remaining_hole)}`}>
-                      {formatHole(inv.remaining_hole)}
+                    <span className="purchase-mobile-recovery">
+                      {formatPercentage(inv.recovery_percentage)}
                     </span>
                   </div>
                   <div className="purchase-mobile-stats">
@@ -538,7 +517,6 @@ function SetPurchases() {
                     <th className="purchase-th-right">Revenue</th>
                     <th className="purchase-th-right">Sold</th>
                     <th className="purchase-th-right">Recovery</th>
-                    <th className="purchase-th-right">Remaining Hole</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -566,9 +544,6 @@ function SetPurchases() {
                       <td className="purchase-td-right">{inv.cards_sold}</td>
                       <td className="purchase-td-right">
                         {formatPercentage(inv.recovery_percentage)}
-                      </td>
-                      <td className={`purchase-td-right purchase-td-hole ${getHoleClass(inv.remaining_hole)}`}>
-                        {formatHole(inv.remaining_hole)}
                       </td>
                     </tr>
                   ))}

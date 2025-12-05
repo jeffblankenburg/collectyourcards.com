@@ -141,20 +141,6 @@ function SetPurchaseDetail() {
     return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
   }
 
-  const getHoleClass = (remainingHole) => {
-    if (remainingHole > 0) return 'detail-hole-negative'
-    if (remainingHole < 0) return 'detail-hole-positive'
-    return ''
-  }
-
-  const formatHole = (remainingHole) => {
-    if (remainingHole === null || remainingHole === undefined) return '-'
-    const num = parseFloat(remainingHole)
-    if (isNaN(num)) return '-'
-    if (num > 0) return `-$${num.toFixed(2)}`
-    if (num < 0) return `+$${Math.abs(num).toFixed(2)}`
-    return '$0.00'
-  }
 
   const getStatusClass = (status) => {
     switch (status) {
@@ -232,10 +218,6 @@ function SetPurchaseDetail() {
         <div className="detail-summary-card">
           <div className="detail-summary-label">Recovery</div>
           <div className="detail-summary-value">{formatPercentage(summary.recovery_percentage)}</div>
-        </div>
-        <div className="detail-summary-card detail-summary-hole">
-          <div className="detail-summary-label">Remaining Hole</div>
-          <div className={`detail-summary-value ${getHoleClass(summary.remaining_hole)}`}>{formatHole(summary.remaining_hole)}</div>
         </div>
       </div>
 
@@ -328,6 +310,7 @@ function SetPurchaseDetail() {
                     <div className="detail-sale-card-info">
                       <span className="detail-sale-number">#{sale.card_info?.card_number}</span>
                       <span className="detail-sale-player">{sale.card_info?.players || 'Unknown'}</span>
+                      {sale.card_info?.is_rookie && <span className="detail-tag detail-tag-rc">RC</span>}
                     </div>
                     <span className={`detail-sale-status ${getStatusClass(sale.status)}`}>{sale.status}</span>
                   </div>
@@ -341,18 +324,92 @@ function SetPurchaseDetail() {
             </div>
             <div className="detail-sales-table-wrapper">
               <table className="detail-sales-table">
-                <thead><tr><th>Card #</th><th>Player</th><th>Color</th><th>Status</th><th>Platform</th><th className="detail-th-right">Sale Price</th><th className="detail-th-right">Net Profit</th><th>Date</th></tr></thead>
+                <thead>
+                  <tr>
+                    <th>Card #</th>
+                    <th>Player</th>
+                    <th>Series</th>
+                    <th>Tags</th>
+                    <th>Status</th>
+                    <th>Platform</th>
+                    <th>Date</th>
+                    <th className="detail-th-right">Cost</th>
+                    <th className="detail-th-right">Sale $</th>
+                    <th className="detail-th-right">Ship $</th>
+                    <th className="detail-th-right">Fees</th>
+                    <th className="detail-th-right">Ship Cost</th>
+                    <th className="detail-th-right">Supplies</th>
+                    <th className="detail-th-right">Profit</th>
+                    <th className="detail-th-right">%</th>
+                  </tr>
+                </thead>
                 <tbody>
                   {sales.map(sale => (
                     <tr key={sale.sale_id}>
                       <td>{sale.card_info?.card_number || '-'}</td>
-                      <td>{sale.card_info?.players || 'Unknown'}</td>
-                      <td>{sale.card_info?.color || '-'}</td>
+                      <td className="detail-td-player">
+                        {sale.card_info ? (
+                          <div className="detail-player-info">
+                            {sale.card_info.player_data?.[0] && (
+                              <div
+                                className="team-circle-base team-circle-xs"
+                                style={{
+                                  background: sale.card_info.player_data[0].primary_color || '#666',
+                                  borderColor: sale.card_info.player_data[0].secondary_color || '#999'
+                                }}
+                                title={sale.card_info.player_data[0].team_name}
+                              >
+                                {sale.card_info.player_data[0].team_abbreviation || ''}
+                              </div>
+                            )}
+                            <span className="detail-player-name">{sale.card_info.players}</span>
+                            {sale.card_info.is_rookie && <span className="detail-tag detail-tag-rc">RC</span>}
+                          </div>
+                        ) : '-'}
+                      </td>
+                      <td className="detail-td-series">
+                        <div className="detail-series-info">
+                          <span className="detail-series-name" title={sale.card_info?.series_name || ''}>
+                            {sale.card_info?.series_name || '-'}
+                          </span>
+                          {sale.card_info?.print_run && (
+                            <span className="detail-print-info">/{sale.card_info.print_run}</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="detail-td-tags">
+                        <div className="detail-tags">
+                          {sale.card_info?.color && (
+                            <span
+                              className="detail-tag"
+                              style={{
+                                backgroundColor: sale.card_info.color_hex || '#666',
+                                borderColor: sale.card_info.color_hex || '#666'
+                              }}
+                            >
+                              {sale.card_info.color}
+                            </span>
+                          )}
+                          {sale.card_info?.is_autograph && <span className="detail-tag detail-tag-auto">Auto</span>}
+                          {sale.card_info?.is_relic && <span className="detail-tag detail-tag-relic">Relic</span>}
+                          {sale.card_info?.is_short_print && <span className="detail-tag detail-tag-sp">SP</span>}
+                        </div>
+                      </td>
                       <td><span className={`detail-sale-status ${getStatusClass(sale.status)}`}>{sale.status}</span></td>
                       <td>{sale.platform?.name || '-'}</td>
-                      <td className="detail-td-right">{formatCurrency(sale.sale_price)}</td>
-                      <td className="detail-td-right">{formatCurrency(sale.net_profit)}</td>
                       <td>{formatDate(sale.sale_date)}</td>
+                      <td className="detail-td-right">{formatCurrency(sale.purchase_price)}</td>
+                      <td className="detail-td-right">{formatCurrency(sale.sale_price)}</td>
+                      <td className="detail-td-right">{formatCurrency(sale.shipping_charged)}</td>
+                      <td className="detail-td-right">{formatCurrency(sale.platform_fees)}</td>
+                      <td className="detail-td-right">{formatCurrency(sale.shipping_cost)}</td>
+                      <td className="detail-td-right">{formatCurrency(sale.supply_cost)}</td>
+                      <td className={`detail-td-right detail-td-profit ${sale.net_profit > 0 ? 'detail-profit-positive' : sale.net_profit < 0 ? 'detail-profit-negative' : ''}`}>
+                        {formatCurrency(sale.net_profit)}
+                      </td>
+                      <td className={`detail-td-right detail-td-percent ${sale.net_profit > 0 ? 'detail-profit-positive' : sale.net_profit < 0 ? 'detail-profit-negative' : ''}`}>
+                        {sale.sale_price > 0 ? `${Math.round((sale.net_profit / sale.sale_price) * 100)}%` : '-'}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

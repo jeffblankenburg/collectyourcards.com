@@ -120,17 +120,6 @@
   color: #34d399;
 }
 
-.purchase-summary-hole {
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.purchase-hole-negative {
-  color: #f87171;
-}
-
-.purchase-hole-positive {
-  color: #34d399;
-}
 
 /* Add Purchase Form */
 .purchase-add-form-container {
@@ -461,10 +450,6 @@
   font-weight: 500;
 }
 
-.purchase-td-hole {
-  font-weight: 600;
-}
-
 /* Mobile Card View */
 .purchase-mobile-view {
   display: flex;
@@ -511,9 +496,10 @@
   color: white;
 }
 
-.purchase-mobile-hole {
-  font-size: 1rem;
-  font-weight: 700;
+.purchase-mobile-recovery {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .purchase-mobile-stats {
