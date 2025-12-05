@@ -229,6 +229,89 @@ function EditableSalesTable({
     return ''
   }
 
+  const handleDownloadCSV = () => {
+    // Define CSV columns
+    const headers = [
+      'Card #',
+      'Player',
+      'Series',
+      'Tags',
+      'Status',
+      'Platform',
+      'Date',
+      'Cost',
+      'Sale Price',
+      'Shipping Charged',
+      'Platform Fees',
+      'Shipping Cost',
+      'Supplies',
+      'Adjustment',
+      'Profit',
+      'Profit %',
+      'Notes'
+    ]
+
+    // Helper to escape CSV values
+    const escapeCSV = (value) => {
+      if (value === null || value === undefined) return ''
+      const str = String(value)
+      if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+        return `"${str.replace(/"/g, '""')}"`
+      }
+      return str
+    }
+
+    // Build rows from sorted sales
+    const rows = sortedSales.map(sale => {
+      const tags = []
+      if (sale.card_info?.color) tags.push(sale.card_info.color)
+      if (sale.card_info?.is_rookie) tags.push('RC')
+      if (sale.card_info?.is_autograph) tags.push('Auto')
+      if (sale.card_info?.is_relic) tags.push('Relic')
+      if (sale.card_info?.is_short_print) tags.push('SP')
+
+      const profitPercent = sale.sale_price > 0
+        ? Math.round((sale.net_profit / sale.sale_price) * 100)
+        : 0
+
+      return [
+        sale.card_info?.card_number || '',
+        sale.card_info?.players || '',
+        sale.card_info?.series_name || '',
+        tags.join(', '),
+        sale.status || '',
+        sale.platform?.name || '',
+        sale.sale_date ? sale.sale_date.split('T')[0] : '',
+        sale.purchase_price || '',
+        sale.sale_price || '',
+        sale.shipping_charged || '',
+        sale.platform_fees || '',
+        sale.shipping_cost || '',
+        sale.supply_cost || '',
+        sale.adjustment || '',
+        sale.net_profit || '',
+        profitPercent ? `${profitPercent}%` : '',
+        sale.notes || ''
+      ].map(escapeCSV).join(',')
+    })
+
+    // Combine headers and rows
+    const csv = [headers.join(','), ...rows].join('\n')
+
+    // Create and trigger download
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.setAttribute('href', url)
+    link.setAttribute('download', `sales-export-${new Date().toISOString().split('T')[0]}.csv`)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+
+    addToast(`Exported ${sortedSales.length} sales to CSV`, 'success')
+  }
+
   const handleSort = (key) => {
     setSortConfig(prev => ({
       key,
@@ -521,6 +604,15 @@ function EditableSalesTable({
 
   return (
     <div className="sales-table-container">
+      {/* Header with download button */}
+      <div className="sales-table-header">
+        <span className="sales-table-count">{sortedSales.length} sale{sortedSales.length !== 1 ? 's' : ''}</span>
+        <button className="sales-table-download-btn" onClick={handleDownloadCSV} title="Download as CSV for Excel">
+          <Icon name="download" size={16} />
+          <span>Export CSV</span>
+        </button>
+      </div>
+
       {/* Mobile Card View */}
       <div className="sales-table-mobile-view">
         {sortedSales.map(sale => renderMobileCard(sale))}

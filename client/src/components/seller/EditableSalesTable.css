@@ -7,6 +7,55 @@
   overflow: hidden;
 }
 
+/* Header with count and download button */
+.sales-table-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.sales-table-count {
+  font-size: 0.8125rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.sales-table-download-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  background: rgba(59, 130, 246, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 6px;
+  color: #60a5fa;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.sales-table-download-btn:hover {
+  background: rgba(59, 130, 246, 0.25);
+  border-color: rgba(59, 130, 246, 0.5);
+}
+
+.sales-table-download-btn:active {
+  transform: scale(0.98);
+}
+
+@media (max-width: 480px) {
+  .sales-table-download-btn span {
+    display: none;
+  }
+
+  .sales-table-download-btn {
+    padding: 0.5rem;
+  }
+}
+
 .sales-table-loading,
 .sales-table-empty {
   display: flex;
