@@ -1094,27 +1094,30 @@ model sale {
 
 // Order groups multiple sales for combined shipping
 model sale_order {
-  order_id         BigInt               @id(map: "PK_sale_order") @default(autoincrement())
-  user_id          BigInt
-  platform_id      Int?
-  order_reference  String?              @db.NVarChar(100)  // eBay order #, etc.
-  buyer_username   String?              @db.NVarChar(100)
-  status           String               @default("pending") @db.VarChar(20)
-  ship_date        DateTime?            @db.DateTime
-  shipping_charged Decimal?             @db.Decimal(10, 2)
-  shipping_cost    Decimal?             @db.Decimal(10, 2)
-  tracking_number  String?              @db.NVarChar(100)
-  notes            String?              @db.NVarChar(Max)
-  created          DateTime             @default(now()) @db.DateTime
-  updated          DateTime             @default(now()) @db.DateTime
-  user             user                 @relation("sale_order_userTouser", fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction, map: "FK_sale_order_user")
-  platform         selling_platform?    @relation("sale_order_platformToselling_platform", fields: [platform_id], references: [platform_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_sale_order_platform")
-  sales            sale[]               @relation("sale_orderTosale_order")
-  order_supplies   order_supply_usage[] @relation("order_supply_usage_orderToorder")
+  order_id           BigInt               @id(map: "PK_sale_order") @default(autoincrement())
+  user_id            BigInt
+  platform_id        Int?
+  shipping_config_id Int?
+  order_reference    String?              @db.NVarChar(100)  // eBay order #, etc.
+  buyer_username     String?              @db.NVarChar(100)
+  status             String               @default("pending") @db.VarChar(20)
+  ship_date          DateTime?            @db.DateTime
+  shipping_charged   Decimal?             @db.Decimal(10, 2)
+  shipping_cost      Decimal?             @db.Decimal(10, 2)
+  tracking_number    String?              @db.NVarChar(100)
+  notes              String?              @db.NVarChar(Max)
+  created            DateTime             @default(now()) @db.DateTime
+  updated            DateTime             @default(now()) @db.DateTime
+  user               user                 @relation("sale_order_userTouser", fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction, map: "FK_sale_order_user")
+  platform           selling_platform?    @relation("sale_order_platformToselling_platform", fields: [platform_id], references: [platform_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_sale_order_platform")
+  shipping_config    shipping_config?     @relation("sale_order_shipping_configToshipping_config", fields: [shipping_config_id], references: [shipping_config_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_sale_order_shipping_config")
+  sales              sale[]               @relation("sale_orderTosale_order")
+  order_supplies     order_supply_usage[] @relation("order_supply_usage_orderToorder")
 
   @@index([user_id], map: "IX_sale_order_user")
   @@index([user_id, status], map: "IX_sale_order_user_status")
   @@index([order_reference], map: "IX_sale_order_reference")
+  @@index([shipping_config_id], map: "IX_sale_order_shipping_config")
 }
 
 // Supply usage per order (for combined shipping)
@@ -1186,6 +1189,7 @@ model shipping_config {
   user                  user                   @relation("shipping_config_userTouser", fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction, map: "FK_shipping_config_user")
   shipping_config_items shipping_config_item[] @relation("shipping_config_item_shipping_configToshipping_config")
   sales                 sale[]                 @relation("sale_shipping_configToshipping_config")
+  sale_orders           sale_order[]           @relation("sale_order_shipping_configToshipping_config")
 
   @@index([user_id], map: "IX_shipping_config_user")
   @@index([user_id, is_active], map: "IX_shipping_config_user_active")

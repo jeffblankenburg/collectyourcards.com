@@ -145,7 +145,18 @@ router.get('/sales', requireAuth, requireSeller, async (req, res) => {
             }
           },
           platform: true,
-          order: true,
+          order: {
+            include: {
+              shipping_config: true,
+              order_supplies: {
+                include: {
+                  supply_batch: {
+                    include: { supply_type: true }
+                  }
+                }
+              }
+            }
+          },
           shipping_config: true
         },
         orderBy: { created: 'desc' },
@@ -249,6 +260,7 @@ router.get('/sales/:id', requireAuth, requireSeller, async (req, res) => {
         platform: true,
         order: {
           include: {
+            shipping_config: true,
             order_supplies: {
               include: {
                 supply_batch: {
@@ -515,14 +527,14 @@ router.put('/sales/:id', requireAuth, requireSeller, async (req, res) => {
         shipping_config_id: shipping_config_id !== undefined ? (shipping_config_id ? parseInt(shipping_config_id) : null) : undefined,
         status: status ?? undefined,
         sale_date: sale_date !== undefined ? (sale_date ? new Date(sale_date) : null) : undefined,
-        purchase_price: purchase_price !== undefined ? (purchase_price ? parseFloat(purchase_price) : null) : undefined,
-        sale_price: sale_price !== undefined ? (sale_price ? parseFloat(sale_price) : null) : undefined,
-        shipping_charged: shipping_charged !== undefined ? (shipping_charged ? parseFloat(shipping_charged) : null) : undefined,
-        shipping_cost: shipping_cost !== undefined ? (shipping_cost ? parseFloat(shipping_cost) : null) : undefined,
-        platform_fees: platform_fees !== undefined ? (platform_fees ? parseFloat(platform_fees) : null) : undefined,
-        other_fees: other_fees !== undefined ? (other_fees ? parseFloat(other_fees) : null) : undefined,
+        purchase_price: purchase_price !== undefined ? parseFloat(purchase_price) : undefined,
+        sale_price: sale_price !== undefined ? parseFloat(sale_price) : undefined,
+        shipping_charged: shipping_charged !== undefined ? parseFloat(shipping_charged) : undefined,
+        shipping_cost: shipping_cost !== undefined ? parseFloat(shipping_cost) : undefined,
+        platform_fees: platform_fees !== undefined ? parseFloat(platform_fees) : undefined,
+        other_fees: other_fees !== undefined ? parseFloat(other_fees) : undefined,
         supply_cost: newSupplyCost,
-        adjustment: adjustment !== undefined ? (adjustment ? parseFloat(adjustment) : null) : undefined,
+        adjustment: adjustment !== undefined ? parseFloat(adjustment) : undefined,
         total_revenue: profitFields.total_revenue,
         total_costs: profitFields.total_costs,
         net_profit: profitFields.net_profit,
@@ -768,18 +780,44 @@ router.post('/orders', requireAuth, requireSeller, async (req, res) => {
       }
     })
 
-    // If sale_ids provided, link them to this order
+    // If sale_ids provided, link them to this order and reset order-level values
     if (sale_ids && sale_ids.length > 0) {
-      await prisma.sale.updateMany({
+      // Get the sales to recalculate their profit fields
+      const salesToLink = await prisma.sale.findMany({
         where: {
           sale_id: { in: sale_ids.map(id => BigInt(id)) },
           user_id: userId
-        },
-        data: {
-          order_id: order.order_id,
-          updated: new Date()
         }
       })
+
+      // Reset order-level values on each sale and link to order
+      for (const sale of salesToLink) {
+        const profitFields = calculateProfitFields({
+          purchase_price: sale.purchase_price,
+          sale_price: sale.sale_price,
+          shipping_charged: 0,
+          shipping_cost: 0,
+          platform_fees: 0,
+          other_fees: sale.other_fees,
+          supply_cost: 0,
+          adjustment: sale.adjustment
+        })
+
+        await prisma.sale.update({
+          where: { sale_id: sale.sale_id },
+          data: {
+            order_id: order.order_id,
+            shipping_charged: 0,
+            shipping_cost: 0,
+            platform_fees: 0,
+            supply_cost: 0,
+            total_revenue: profitFields.total_revenue,
+            total_costs: profitFields.total_costs,
+            net_profit: profitFields.net_profit,
+            updated: new Date()
+          }
+        })
+      }
     }
 
     // Fetch the complete order with relations
@@ -827,6 +865,7 @@ router.put('/orders/:id', requireAuth, requireSeller, async (req, res) => {
 
     const {
       platform_id,
+      shipping_config_id,
       order_reference,
       buyer_username,
       status,
@@ -841,6 +880,7 @@ router.put('/orders/:id', requireAuth, requireSeller, async (req, res) => {
       where: { order_id: orderId },
       data: {
         platform_id: platform_id !== undefined ? (platform_id ? parseInt(platform_id) : null) : undefined,
+        shipping_config_id: shipping_config_id !== undefined ? (shipping_config_id ? parseInt(shipping_config_id) : null) : undefined,
         order_reference: order_reference ?? undefined,
         buyer_username: buyer_username ?? undefined,
         status: status ?? undefined,
@@ -853,16 +893,75 @@ router.put('/orders/:id', requireAuth, requireSeller, async (req, res) => {
       },
       include: {
         platform: true,
+        shipping_config: true,
+        sales: true,
+        order_supplies: {
+          include: {
+            supply_batch: true
+          }
+        }
+      }
+    })
+
+    // If shipping_config_id changed, recalculate and distribute total supply cost to sales
+    if (shipping_config_id !== undefined && order.sales.length > 0) {
+      // Calculate config cost
+      const configCost = shipping_config_id
+        ? await calculateSupplyCostFromConfig(prisma, userId, parseInt(shipping_config_id))
+        : 0
+
+      // Calculate extra supplies cost from order_supplies
+      const extraSuppliesCost = order.order_supplies.reduce(
+        (sum, s) => sum + parseFloat(s.total_cost || 0), 0
+      )
+
+      const totalSupplyCost = configCost + extraSuppliesCost
+      const costPerSale = totalSupplyCost / order.sales.length
+
+      // Update each sale with their share of supply cost
+      for (const sale of order.sales) {
+        const profitFields = calculateProfitFields({
+          purchase_price: sale.purchase_price,
+          sale_price: sale.sale_price,
+          shipping_charged: sale.shipping_charged,
+          shipping_cost: sale.shipping_cost,
+          platform_fees: sale.platform_fees,
+          other_fees: sale.other_fees,
+          supply_cost: costPerSale,
+          adjustment: sale.adjustment
+        })
+
+        await prisma.sale.update({
+          where: { sale_id: sale.sale_id },
+          data: {
+            supply_cost: costPerSale,
+            total_revenue: profitFields.total_revenue,
+            total_costs: profitFields.total_costs,
+            net_profit: profitFields.net_profit,
+            updated: new Date()
+          }
+        })
+      }
+
+      console.log(`Seller: Updated order ${orderId}, distributed supply cost $${totalSupplyCost.toFixed(2)} across ${order.sales.length} sales`)
+    } else {
+      console.log(`Seller: Updated order ${orderId}`)
+    }
+
+    // Re-fetch with updated sales
+    const updatedOrder = await prisma.sale_order.findUnique({
+      where: { order_id: orderId },
+      include: {
+        platform: true,
+        shipping_config: true,
         sales: true,
         order_supplies: true
       }
     })
 
-    console.log(`Seller: Updated order ${orderId}`)
-
     res.json({
       message: 'Order updated successfully',
-      order: serializeBigInt(order)
+      order: serializeBigInt(updatedOrder)
     })
   } catch (error) {
     console.error('Error updating order:', error)
@@ -896,14 +995,35 @@ router.delete('/orders/:id', requireAuth, requireSeller, async (req, res) => {
     }
 
     await prisma.$transaction(async (tx) => {
-      // Unlink all sales from this order
-      await tx.sale.updateMany({
-        where: { order_id: orderId },
-        data: {
-          order_id: null,
-          updated: new Date()
-        }
-      })
+      // Reset order-level values on all sales and unlink from order
+      for (const sale of existingOrder.sales) {
+        // Recalculate profit with zeroed order-level costs
+        const profitFields = calculateProfitFields({
+          purchase_price: sale.purchase_price,
+          sale_price: sale.sale_price,
+          shipping_charged: 0,
+          shipping_cost: 0,
+          platform_fees: 0,
+          other_fees: sale.other_fees,
+          supply_cost: 0,
+          adjustment: sale.adjustment
+        })
+
+        await tx.sale.update({
+          where: { sale_id: sale.sale_id },
+          data: {
+            order_id: null,
+            shipping_charged: 0,
+            shipping_cost: 0,
+            platform_fees: 0,
+            supply_cost: 0,
+            total_revenue: profitFields.total_revenue,
+            total_costs: profitFields.total_costs,
+            net_profit: profitFields.net_profit,
+            updated: new Date()
+          }
+        })
+      }
 
       // Return supplies to inventory (if allocated)
       for (const supply of existingOrder.order_supplies) {
@@ -1164,19 +1284,34 @@ router.post('/orders/:id/allocate-supplies', requireAuth, requireSeller, async (
       }
     })
 
-    console.log(`Seller: Allocated supplies for order ${orderId}, total cost: $${totalSupplyCost.toFixed(2)}`)
+    console.log(`Seller: Allocated extra supplies for order ${orderId}, extra cost: $${totalSupplyCost.toFixed(2)}`)
 
-    // Distribute supply cost across sales in the order
+    // Get config cost to include in total
+    const updatedOrderWithConfig = await prisma.sale_order.findUnique({
+      where: { order_id: orderId },
+      select: { shipping_config_id: true }
+    })
+    const configCost = updatedOrderWithConfig?.shipping_config_id
+      ? await calculateSupplyCostFromConfig(prisma, userId, updatedOrderWithConfig.shipping_config_id)
+      : 0
+
+    // Total supply cost = config cost + extra supplies cost
+    const combinedSupplyCost = configCost + totalSupplyCost
+    console.log(`Seller: Total supply cost for order ${orderId}: $${combinedSupplyCost.toFixed(2)} (config: $${configCost.toFixed(2)} + extra: $${totalSupplyCost.toFixed(2)})`)
+
+    // Distribute combined supply cost across sales in the order
     if (order.sales.length > 0) {
-      const costPerSale = totalSupplyCost / order.sales.length
+      const costPerSale = combinedSupplyCost / order.sales.length
       for (const sale of order.sales) {
         const profitFields = calculateProfitFields({
+          purchase_price: sale.purchase_price,
           sale_price: sale.sale_price,
           shipping_charged: sale.shipping_charged,
           shipping_cost: sale.shipping_cost,
           platform_fees: sale.platform_fees,
           other_fees: sale.other_fees,
-          supply_cost: costPerSale
+          supply_cost: costPerSale,
+          adjustment: sale.adjustment
         })
 
         await prisma.sale.update({
@@ -1268,22 +1403,36 @@ router.delete('/orders/:id/supplies', requireAuth, requireSeller, async (req, re
       await tx.order_supply_usage.deleteMany({
         where: { order_id: orderId }
       })
+    })
 
-      // Reset supply_cost on sales
+    // Recalculate supply cost - now only config cost remains (extra supplies removed)
+    const orderWithConfig = await prisma.sale_order.findUnique({
+      where: { order_id: orderId },
+      select: { shipping_config_id: true }
+    })
+    const configCost = orderWithConfig?.shipping_config_id
+      ? await calculateSupplyCostFromConfig(prisma, userId, orderWithConfig.shipping_config_id)
+      : 0
+
+    // Update sales with just the config cost (or 0 if no config)
+    if (order.sales.length > 0) {
+      const costPerSale = configCost / order.sales.length
       for (const sale of order.sales) {
         const profitFields = calculateProfitFields({
+          purchase_price: sale.purchase_price,
           sale_price: sale.sale_price,
           shipping_charged: sale.shipping_charged,
           shipping_cost: sale.shipping_cost,
           platform_fees: sale.platform_fees,
           other_fees: sale.other_fees,
-          supply_cost: 0
+          supply_cost: costPerSale,
+          adjustment: sale.adjustment
         })
 
-        await tx.sale.update({
+        await prisma.sale.update({
           where: { sale_id: sale.sale_id },
           data: {
-            supply_cost: 0,
+            supply_cost: costPerSale,
             total_revenue: profitFields.total_revenue,
             total_costs: profitFields.total_costs,
             net_profit: profitFields.net_profit,
@@ -1291,9 +1440,9 @@ router.delete('/orders/:id/supplies', requireAuth, requireSeller, async (req, re
           }
         })
       }
-    })
+    }
 
-    console.log(`Seller: Removed supply allocations from order ${orderId}`)
+    console.log(`Seller: Removed extra supply allocations from order ${orderId}, config cost remains: $${configCost.toFixed(2)}`)
 
     res.json({ message: 'Supply allocations removed and returned to inventory' })
   } catch (error) {

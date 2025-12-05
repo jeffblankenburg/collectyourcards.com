@@ -713,8 +713,35 @@ router.get('/shipping-configs', requireAuth, requireSeller, async (req, res) => 
       orderBy: { name: 'asc' }
     })
 
+    // Calculate cost for each config using FIFO pricing
+    const configsWithCost = await Promise.all(configs.map(async (config) => {
+      let calculatedCost = 0
+
+      for (const item of config.shipping_config_items) {
+        // Get the oldest non-depleted batch for FIFO costing
+        const batch = await prisma.supply_batch.findFirst({
+          where: {
+            user_id: userId,
+            supply_type_id: item.supply_type_id,
+            is_depleted: false,
+            quantity_remaining: { gt: 0 }
+          },
+          orderBy: { purchase_date: 'asc' }
+        })
+
+        if (batch) {
+          calculatedCost += item.quantity * parseFloat(batch.cost_per_unit)
+        }
+      }
+
+      return {
+        ...config,
+        calculated_cost: calculatedCost
+      }
+    }))
+
     res.json({
-      shipping_configs: serializeBigInt(configs)
+      shipping_configs: serializeBigInt(configsWithCost)
     })
   } catch (error) {
     console.error('Error fetching shipping configs:', error)

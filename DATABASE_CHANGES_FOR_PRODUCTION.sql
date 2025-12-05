@@ -405,3 +405,28 @@ BEGIN
     PRINT 'Global product types already exist - skipping';
 END
 GO
+
+-- ============================================================================
+-- SALE_ORDER TABLE - Add shipping_config_id
+-- Added: 2025-12-05
+-- Purpose: Allow orders (combined shipments) to have a shipping config
+--          for base supplies, with additional supplies added via order_supply_usage
+-- ============================================================================
+
+IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'sale_order' AND COLUMN_NAME = 'shipping_config_id')
+BEGIN
+    ALTER TABLE sale_order ADD shipping_config_id INT NULL;
+    
+    ALTER TABLE sale_order ADD CONSTRAINT FK_sale_order_shipping_config
+        FOREIGN KEY (shipping_config_id) REFERENCES shipping_config(shipping_config_id);
+    
+    CREATE INDEX IX_sale_order_shipping_config ON sale_order(shipping_config_id);
+    
+    PRINT 'Added shipping_config_id to sale_order table with FK and index';
+END
+ELSE
+BEGIN
+    PRINT 'shipping_config_id already exists on sale_order table';
+END
+GO
+

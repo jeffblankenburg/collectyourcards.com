@@ -47,6 +47,20 @@ function SellerDashboard() {
     axios.get('/api/seller/summary').then(res => setSummary(res.data))
   }
 
+  // Full sales data refresh (needed after grouping/ungrouping)
+  const refreshSalesData = async () => {
+    try {
+      const [salesRes, summaryRes] = await Promise.all([
+        axios.get('/api/seller/sales?limit=500'),
+        axios.get('/api/seller/summary')
+      ])
+      setSales(salesRes.data.sales || [])
+      setSummary(summaryRes.data)
+    } catch (error) {
+      console.error('Error refreshing sales data:', error)
+    }
+  }
+
   const formatCurrencyDisplay = (value) => {
     if (value === null || value === undefined || value === '') return '-'
     const num = parseFloat(value)
@@ -499,6 +513,7 @@ function SellerDashboard() {
         shippingConfigs={shippingConfigs}
         onSalesUpdate={setSales}
         onSummaryRefresh={refreshSummary}
+        onDataRefresh={refreshSalesData}
         loading={loading}
         showShippingConfig={true}
         showAdjustment={true}
