@@ -115,7 +115,8 @@ import {
   Save,
   SlidersHorizontal,
   Tag,
-  GripVertical
+  GripVertical,
+  Calculator
 } from 'lucide-react'
 
 // Icon mapping for consistent usage across the app
@@ -286,7 +287,8 @@ const iconMap = {
   'play': Play,
   'tag': Tag,
   'grip-vertical': GripVertical,
-  'drag-handle': GripVertical
+  'drag-handle': GripVertical,
+  'calculator': Calculator
 }
 
 // Custom RC tag icon for rookies - matches the RC tags used throughout the site

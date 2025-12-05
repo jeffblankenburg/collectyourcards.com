@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { useToast } from '../contexts/ToastContext'
 import Icon from '../components/Icon'
+import CardCalculatorModal from '../components/modals/CardCalculatorModal'
 import './SetPurchasesScoped.css'
 
 function SetPurchases() {
@@ -29,6 +30,7 @@ function SetPurchases() {
     notes: ''
   })
   const [formLoading, setFormLoading] = useState(false)
+  const [showCalculator, setShowCalculator] = useState(false)
 
   const { addToast } = useToast()
   const navigate = useNavigate()
@@ -134,6 +136,10 @@ function SetPurchases() {
     })
     setSelectedSet(null)
     setSetSearch('')
+  }
+
+  const handleCalculatorApply = (totalCards) => {
+    handleFormChange('estimated_cards', totalCards.toString())
   }
 
   const formatCurrency = (value) => {
@@ -377,7 +383,17 @@ function SetPurchases() {
 
               {/* Estimated Cards */}
               <div className="purchase-form-group">
-                <label>Estimated Cards</label>
+                <label className="purchase-label-with-action">
+                  Estimated Cards
+                  <button
+                    type="button"
+                    className="purchase-label-btn"
+                    onClick={() => setShowCalculator(true)}
+                    title="Open calculator"
+                  >
+                    <Icon name="calculator" size={14} />
+                  </button>
+                </label>
                 <input
                   type="number"
                   min="0"
@@ -562,6 +578,13 @@ function SetPurchases() {
           </>
         )}
       </div>
+
+      {/* Card Calculator Modal */}
+      <CardCalculatorModal
+        isOpen={showCalculator}
+        onClose={() => setShowCalculator(false)}
+        onApply={handleCalculatorApply}
+      />
     </div>
   )
 }
