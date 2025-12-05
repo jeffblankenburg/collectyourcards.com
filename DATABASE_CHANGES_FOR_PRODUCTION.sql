@@ -133,36 +133,216 @@ END
 GO
 
 -- ============================================================================
--- SUPPLY_BATCH TABLE - ADD IMAGE_URL AND SOURCE_URL FIELDS
+-- SHIPPING_CONFIG TABLE - ADD DESCRIPTION FIELD
 -- Added: 2025-12-05
--- Purpose: Add image_url for product photos and source_url for purchase links
+-- Purpose: Add optional description field for shipping configurations
 -- ============================================================================
 
-IF NOT EXISTS (
-    SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
-    WHERE TABLE_NAME = 'supply_batch' AND COLUMN_NAME = 'image_url'
-)
+IF EXISTS (SELECT * FROM sys.tables WHERE name = 'shipping_config')
 BEGIN
-    ALTER TABLE supply_batch ADD image_url NVARCHAR(500) NULL;
-    PRINT 'Added image_url column to supply_batch table';
+    IF NOT EXISTS (
+        SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_NAME = 'shipping_config' AND COLUMN_NAME = 'description'
+    )
+    BEGIN
+        ALTER TABLE shipping_config ADD description NVARCHAR(255) NULL;
+        PRINT 'Added description column to shipping_config table';
+    END
+    ELSE
+    BEGIN
+        PRINT 'description column already exists on shipping_config table';
+    END
 END
 ELSE
 BEGIN
-    PRINT 'image_url column already exists on supply_batch table';
+    PRINT 'shipping_config table does not exist - skipping';
 END
 GO
 
-IF NOT EXISTS (
-    SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
-    WHERE TABLE_NAME = 'supply_batch' AND COLUMN_NAME = 'source_url'
-)
+-- ============================================================================
+-- SELLING_PLATFORM TABLE - ADD PAYMENT_FEE_PCT FIELD
+-- Added: 2025-12-05
+-- Purpose: Add payment processing fee percentage (e.g., PayPal fees)
+-- ============================================================================
+
+IF EXISTS (SELECT * FROM sys.tables WHERE name = 'selling_platform')
 BEGIN
-    ALTER TABLE supply_batch ADD source_url NVARCHAR(500) NULL;
-    PRINT 'Added source_url column to supply_batch table';
+    IF NOT EXISTS (
+        SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_NAME = 'selling_platform' AND COLUMN_NAME = 'payment_fee_pct'
+    )
+    BEGIN
+        ALTER TABLE selling_platform ADD payment_fee_pct DECIMAL(5,2) NULL;
+        PRINT 'Added payment_fee_pct column to selling_platform table';
+    END
+    ELSE
+    BEGIN
+        PRINT 'payment_fee_pct column already exists on selling_platform table';
+    END
 END
 ELSE
 BEGIN
-    PRINT 'source_url column already exists on supply_batch table';
+    PRINT 'selling_platform table does not exist - skipping';
 END
 GO
 
+-- ============================================================================
+-- SUPPLY_TYPE TABLE - CREATE OR ADD MISSING COLUMNS
+-- Added: 2025-12-05
+-- Purpose: Supply types for sellers (penny sleeves, top loaders, etc.)
+-- ============================================================================
+
+IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'supply_type')
+BEGIN
+    CREATE TABLE supply_type (
+        supply_type_id INT IDENTITY(1,1) PRIMARY KEY,
+        user_id BIGINT NOT NULL,
+        name NVARCHAR(100) NOT NULL,
+        description NVARCHAR(255) NULL,
+        is_active BIT NOT NULL DEFAULT 1,
+        created DATETIME NOT NULL DEFAULT GETDATE(),
+
+        CONSTRAINT FK_supply_type_user FOREIGN KEY (user_id)
+            REFERENCES [user](user_id) ON DELETE CASCADE
+    );
+
+    CREATE INDEX IX_supply_type_user ON supply_type(user_id);
+    CREATE INDEX IX_supply_type_user_active ON supply_type(user_id, is_active);
+
+    PRINT 'Created supply_type table with indexes';
+END
+ELSE
+BEGIN
+    -- Add user_id if missing
+    IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'supply_type' AND COLUMN_NAME = 'user_id')
+    BEGIN
+        ALTER TABLE supply_type ADD user_id BIGINT NULL;
+        PRINT 'Added user_id column to supply_type table';
+    END
+    ELSE
+    BEGIN
+        PRINT 'user_id column already exists on supply_type table';
+    END
+
+    -- Add description if missing
+    IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'supply_type' AND COLUMN_NAME = 'description')
+    BEGIN
+        ALTER TABLE supply_type ADD description NVARCHAR(255) NULL;
+        PRINT 'Added description column to supply_type table';
+    END
+    ELSE
+    BEGIN
+        PRINT 'description column already exists on supply_type table';
+    END
+
+    -- Add is_active if missing
+    IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'supply_type' AND COLUMN_NAME = 'is_active')
+    BEGIN
+        ALTER TABLE supply_type ADD is_active BIT NOT NULL DEFAULT 1;
+        PRINT 'Added is_active column to supply_type table';
+    END
+    ELSE
+    BEGIN
+        PRINT 'is_active column already exists on supply_type table';
+    END
+
+    -- Add created if missing
+    IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'supply_type' AND COLUMN_NAME = 'created')
+    BEGIN
+        ALTER TABLE supply_type ADD created DATETIME NOT NULL DEFAULT GETDATE();
+        PRINT 'Added created column to supply_type table';
+    END
+    ELSE
+    BEGIN
+        PRINT 'created column already exists on supply_type table';
+    END
+
+    PRINT 'supply_type table already exists - checked for missing columns';
+END
+GO
+
+-- ============================================================================
+-- SUPPLY_BATCH TABLE - CREATE OR ADD MISSING COLUMNS
+-- Added: 2025-12-05
+-- Purpose: Supply batch purchases with FIFO tracking
+-- ============================================================================
+
+IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'supply_batch')
+BEGIN
+    CREATE TABLE supply_batch (
+        supply_batch_id BIGINT IDENTITY(1,1) PRIMARY KEY,
+        user_id BIGINT NOT NULL,
+        supply_type_id INT NOT NULL,
+        purchase_date DATETIME NOT NULL,
+        quantity_purchased INT NOT NULL,
+        total_cost DECIMAL(10,2) NOT NULL,
+        cost_per_unit DECIMAL(10,6) NOT NULL,
+        quantity_remaining INT NOT NULL,
+        is_depleted BIT NOT NULL DEFAULT 0,
+        notes NVARCHAR(255) NULL,
+        image_url NVARCHAR(500) NULL,
+        source_url NVARCHAR(500) NULL,
+        created DATETIME NOT NULL DEFAULT GETDATE(),
+        updated DATETIME NOT NULL DEFAULT GETDATE(),
+
+        CONSTRAINT FK_supply_batch_user FOREIGN KEY (user_id)
+            REFERENCES [user](user_id) ON DELETE CASCADE,
+        CONSTRAINT FK_supply_batch_supply_type FOREIGN KEY (supply_type_id)
+            REFERENCES supply_type(supply_type_id) ON DELETE NO ACTION
+    );
+
+    CREATE INDEX IX_supply_batch_user ON supply_batch(user_id);
+    CREATE INDEX IX_supply_batch_supply_type ON supply_batch(supply_type_id);
+    CREATE INDEX IX_supply_batch_fifo ON supply_batch(user_id, supply_type_id, is_depleted, purchase_date);
+
+    PRINT 'Created supply_batch table with indexes';
+END
+ELSE
+BEGIN
+    -- Add is_depleted if missing
+    IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'supply_batch' AND COLUMN_NAME = 'is_depleted')
+    BEGIN
+        ALTER TABLE supply_batch ADD is_depleted BIT NOT NULL DEFAULT 0;
+        PRINT 'Added is_depleted column to supply_batch table';
+    END
+    ELSE
+    BEGIN
+        PRINT 'is_depleted column already exists on supply_batch table';
+    END
+
+    -- Add updated if missing
+    IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'supply_batch' AND COLUMN_NAME = 'updated')
+    BEGIN
+        ALTER TABLE supply_batch ADD updated DATETIME NOT NULL DEFAULT GETDATE();
+        PRINT 'Added updated column to supply_batch table';
+    END
+    ELSE
+    BEGIN
+        PRINT 'updated column already exists on supply_batch table';
+    END
+
+    -- Add image_url if missing
+    IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'supply_batch' AND COLUMN_NAME = 'image_url')
+    BEGIN
+        ALTER TABLE supply_batch ADD image_url NVARCHAR(500) NULL;
+        PRINT 'Added image_url column to supply_batch table';
+    END
+    ELSE
+    BEGIN
+        PRINT 'image_url column already exists on supply_batch table';
+    END
+
+    -- Add source_url if missing
+    IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'supply_batch' AND COLUMN_NAME = 'source_url')
+    BEGIN
+        ALTER TABLE supply_batch ADD source_url NVARCHAR(500) NULL;
+        PRINT 'Added source_url column to supply_batch table';
+    END
+    ELSE
+    BEGIN
+        PRINT 'source_url column already exists on supply_batch table';
+    END
+
+    PRINT 'supply_batch table already exists - checked for missing columns';
+END
+GO

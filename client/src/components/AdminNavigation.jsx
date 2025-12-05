@@ -57,11 +57,6 @@ function AdminNavigation() {
       icon: 'search'
     },
     {
-      path: '/seller',
-      name: 'Seller',
-      icon: 'dollar-sign'
-    },
-    {
       path: '/admin/seller',
       name: 'Seller Admin',
       icon: 'sliders-horizontal'

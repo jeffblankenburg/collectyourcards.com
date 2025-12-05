@@ -53,7 +53,7 @@ function SuppliesManagement() {
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [imageModal])
 
-  // Fetch data
+  // Fetch data - only run once on mount and when explicitly called
   const fetchData = useCallback(async () => {
     if (!isAuthenticated || !isAdmin) return
 
@@ -70,11 +70,11 @@ function SuppliesManagement() {
       setSummary(summaryRes.data.summary || [])
     } catch (error) {
       console.error('Error fetching supplies data:', error)
-      showError('Failed to load supplies data')
     } finally {
       setLoading(false)
     }
-  }, [isAuthenticated, isAdmin, showError])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, isAdmin])
 
   useEffect(() => {
     fetchData()
