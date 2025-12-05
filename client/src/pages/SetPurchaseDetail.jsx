@@ -1,22 +1,11 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { useToast } from '../contexts/ToastContext'
 import Icon from '../components/Icon'
 import ConfirmModal from '../components/modals/ConfirmModal'
+import EditableSalesTable from '../components/seller/EditableSalesTable'
 import './SetPurchaseDetailScoped.css'
-
-// Helper to determine text color based on background
-const getContrastColor = (hexColor) => {
-  if (!hexColor) return '#ffffff'
-  const hex = hexColor.replace('#', '')
-  if (hex.length !== 6) return '#ffffff'
-  const r = parseInt(hex.substr(0, 2), 16)
-  const g = parseInt(hex.substr(2, 2), 16)
-  const b = parseInt(hex.substr(4, 2), 16)
-  const brightness = (r * 299 + g * 587 + b * 114) / 1000
-  return brightness > 128 ? '#000000' : '#ffffff'
-}
 
 function SetPurchaseDetail() {
   const { setId } = useParams()
@@ -25,16 +14,13 @@ function SetPurchaseDetail() {
 
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [platforms, setPlatforms] = useState([])
+  const [shippingConfigs, setShippingConfigs] = useState([])
   const [productTypes, setProductTypes] = useState({})
   const [showAddPurchase, setShowAddPurchase] = useState(false)
   const [editingPurchase, setEditingPurchase] = useState(null)
   const [deleteConfirm, setDeleteConfirm] = useState(null)
   const [formLoading, setFormLoading] = useState(false)
-
-  // Inline editing state
-  const [editingCell, setEditingCell] = useState(null) // { saleId, field }
-  const [editValue, setEditValue] = useState('')
-  const inputRef = useRef(null)
 
   const [formData, setFormData] = useState({
     product_type: 'hobby_box',
@@ -51,22 +37,20 @@ function SetPurchaseDetail() {
     fetchData()
   }, [setId])
 
-  // Focus input when editing starts
-  useEffect(() => {
-    if (editingCell && inputRef.current) {
-      inputRef.current.focus()
-      inputRef.current.select()
-    }
-  }, [editingCell])
-
   const fetchData = async () => {
     setLoading(true)
     try {
-      const response = await axios.get(`/api/seller/set-investments/${setId}`)
-      setData(response.data)
-      setProductTypes(response.data.product_types || {})
-      if (response.data.set) {
-        document.title = `${response.data.set.year} ${response.data.set.name} - Collect Your Cards`
+      const [dataRes, platformsRes, shippingRes] = await Promise.all([
+        axios.get(`/api/seller/set-investments/${setId}`),
+        axios.get('/api/seller/platforms'),
+        axios.get('/api/supplies/shipping-configs')
+      ])
+      setData(dataRes.data)
+      setPlatforms(platformsRes.data.platforms || [])
+      setShippingConfigs(shippingRes.data.shipping_configs || [])
+      setProductTypes(dataRes.data.product_types || {})
+      if (dataRes.data.set) {
+        document.title = `${dataRes.data.set.year} ${dataRes.data.set.name} - Collect Your Cards`
       }
     } catch (error) {
       console.error('Error fetching purchase detail:', error)
@@ -79,6 +63,10 @@ function SetPurchaseDetail() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleSalesUpdate = (updatedSales) => {
+    setData(prev => ({ ...prev, sales: updatedSales }))
   }
 
   const resetForm = () => {
@@ -164,155 +152,6 @@ function SetPurchaseDetail() {
   const formatDate = (dateStr) => {
     if (!dateStr) return '-'
     return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-  }
-
-
-  const getStatusClass = (status) => {
-    switch (status) {
-      case 'sold': return 'detail-status-sold'
-      case 'listed': return 'detail-status-listed'
-      default: return ''
-    }
-  }
-
-  // Inline editing functions
-  const startEditing = (saleId, field, currentValue) => {
-    setEditingCell({ saleId, field })
-    setEditValue(currentValue ?? '')
-  }
-
-  const cancelEditing = () => {
-    setEditingCell(null)
-    setEditValue('')
-  }
-
-  const saveEdit = async (saleId, field) => {
-    if (!editingCell) return
-
-    const sale = data.sales.find(s => s.sale_id === saleId)
-    if (!sale) return
-
-    // Check if value actually changed
-    const originalValue = sale[field]
-    let newValue = editValue
-
-    // Handle type conversions
-    if (['purchase_price', 'sale_price', 'shipping_charged', 'shipping_cost', 'platform_fees', 'other_fees', 'supply_cost', 'adjustment'].includes(field)) {
-      newValue = editValue === '' ? null : parseFloat(editValue)
-      if (newValue !== null && isNaN(newValue)) {
-        addToast('Please enter a valid number', 'error')
-        return
-      }
-    }
-
-    // If no change, just cancel
-    if (String(originalValue ?? '') === String(newValue ?? '')) {
-      cancelEditing()
-      return
-    }
-
-    try {
-      await axios.put(`/api/seller/sales/${saleId}`, {
-        [field]: newValue
-      })
-
-      // Update local state immediately for responsiveness
-      setData(prev => ({
-        ...prev,
-        sales: prev.sales.map(s => {
-          if (s.sale_id === saleId) {
-            const updated = { ...s, [field]: newValue }
-            // Recalculate profit fields
-            const purchasePrice = parseFloat(updated.purchase_price) || 0
-            const salePrice = parseFloat(updated.sale_price) || 0
-            const shippingCharged = parseFloat(updated.shipping_charged) || 0
-            const shippingCost = parseFloat(updated.shipping_cost) || 0
-            const platformFees = parseFloat(updated.platform_fees) || 0
-            const otherFees = parseFloat(updated.other_fees) || 0
-            const supplyCost = parseFloat(updated.supply_cost) || 0
-            const adjustment = parseFloat(updated.adjustment) || 0
-
-            updated.total_revenue = salePrice + shippingCharged
-            updated.total_costs = purchasePrice + shippingCost + platformFees + otherFees + supplyCost
-            updated.net_profit = updated.total_revenue - updated.total_costs + adjustment
-
-            return updated
-          }
-          return s
-        })
-      }))
-
-      cancelEditing()
-    } catch (error) {
-      console.error('Error updating sale:', error)
-      addToast('Failed to update', 'error')
-    }
-  }
-
-  const handleKeyDown = (e, saleId, field) => {
-    if (e.key === 'Enter') {
-      e.preventDefault()
-      saveEdit(saleId, field)
-    } else if (e.key === 'Escape') {
-      cancelEditing()
-    } else if (e.key === 'Tab') {
-      e.preventDefault()
-      saveEdit(saleId, field)
-      // Move to next editable field
-      const editableFields = ['purchase_price', 'sale_price', 'shipping_charged', 'platform_fees', 'shipping_cost', 'notes']
-      const currentIndex = editableFields.indexOf(field)
-      const nextField = editableFields[(currentIndex + 1) % editableFields.length]
-      const sale = data.sales.find(s => s.sale_id === saleId)
-      if (sale) {
-        setTimeout(() => startEditing(saleId, nextField, sale[nextField]), 50)
-      }
-    }
-  }
-
-  const handleStatusChange = async (saleId, newStatus) => {
-    try {
-      await axios.put(`/api/seller/sales/${saleId}`, { status: newStatus })
-      setData(prev => ({
-        ...prev,
-        sales: prev.sales.map(s => s.sale_id === saleId ? { ...s, status: newStatus } : s)
-      }))
-      addToast('Status updated', 'success')
-    } catch (error) {
-      console.error('Error updating status:', error)
-      addToast('Failed to update status', 'error')
-    }
-  }
-
-  const renderEditableCell = (sale, field, type = 'text') => {
-    const isEditing = editingCell?.saleId === sale.sale_id && editingCell?.field === field
-    const value = sale[field]
-
-    if (isEditing) {
-      return (
-        <input
-          ref={inputRef}
-          type={type === 'currency' ? 'number' : 'text'}
-          step={type === 'currency' ? '0.01' : undefined}
-          className="detail-inline-input"
-          value={editValue}
-          onChange={(e) => setEditValue(e.target.value)}
-          onBlur={() => saveEdit(sale.sale_id, field)}
-          onKeyDown={(e) => handleKeyDown(e, sale.sale_id, field)}
-        />
-      )
-    }
-
-    const displayValue = type === 'currency' ? formatCurrency(value) : (value || '-')
-
-    return (
-      <span
-        className="detail-editable-cell"
-        onClick={() => startEditing(sale.sale_id, field, type === 'currency' ? (value ?? '') : value)}
-        title="Click to edit"
-      >
-        {displayValue}
-      </span>
-    )
   }
 
   if (loading) {
@@ -464,134 +303,18 @@ function SetPurchaseDetail() {
 
       <div className="detail-section">
         <h2><Icon name="dollar-sign" size={20} /> Sales ({sales.length})</h2>
-        {sales.length === 0 ? (
-          <div className="detail-empty"><p>No cards from this set have been listed or sold yet.</p></div>
-        ) : (
-          <div className="detail-sales-table-container">
-            <div className="detail-sales-mobile">
-              {sales.map(sale => (
-                <div key={sale.sale_id} className="detail-sale-card">
-                  <div className="detail-sale-header">
-                    <div className="detail-sale-card-info">
-                      <span className="detail-sale-number">#{sale.card_info?.card_number}</span>
-                      <span className="detail-sale-player">{sale.card_info?.players || 'Unknown'}</span>
-                      {sale.card_info?.is_rookie && <span className="detail-tag detail-tag-rc">RC</span>}
-                    </div>
-                    <span className={`detail-sale-status ${getStatusClass(sale.status)}`}>{sale.status}</span>
-                  </div>
-                  <div className="detail-sale-stats">
-                    <div className="detail-sale-stat"><span className="detail-sale-label">Sale</span><span className="detail-sale-value">{formatCurrency(sale.sale_price)}</span></div>
-                    <div className="detail-sale-stat"><span className="detail-sale-label">Profit</span><span className="detail-sale-value">{formatCurrency(sale.net_profit)}</span></div>
-                    <div className="detail-sale-stat"><span className="detail-sale-label">Date</span><span className="detail-sale-value">{formatDate(sale.sale_date)}</span></div>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="detail-sales-table-wrapper">
-              <table className="detail-sales-table">
-                <thead>
-                  <tr>
-                    <th>Card #</th>
-                    <th>Player</th>
-                    <th>Series</th>
-                    <th>Tags</th>
-                    <th>Status</th>
-                    <th>Platform</th>
-                    <th>Date</th>
-                    <th className="detail-th-right">Cost</th>
-                    <th className="detail-th-right">Sale $</th>
-                    <th className="detail-th-right">Ship $</th>
-                    <th className="detail-th-right">Fees</th>
-                    <th className="detail-th-right">Ship Cost</th>
-                    <th className="detail-th-right">Supplies</th>
-                    <th className="detail-th-right">Profit</th>
-                    <th className="detail-th-right">%</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sales.map(sale => (
-                    <tr key={sale.sale_id}>
-                      <td>{sale.card_info?.card_number || '-'}</td>
-                      <td className="detail-td-player">
-                        {sale.card_info ? (
-                          <div className="detail-player-info">
-                            {sale.card_info.player_data?.[0] && (
-                              <div
-                                className="team-circle-base team-circle-xs"
-                                style={{
-                                  background: sale.card_info.player_data[0].primary_color || '#666',
-                                  borderColor: sale.card_info.player_data[0].secondary_color || '#999'
-                                }}
-                                title={sale.card_info.player_data[0].team_name}
-                              >
-                                {sale.card_info.player_data[0].team_abbreviation || ''}
-                              </div>
-                            )}
-                            <span className="detail-player-name">{sale.card_info.players}</span>
-                            {sale.card_info.is_rookie && <span className="detail-tag detail-tag-rc">RC</span>}
-                          </div>
-                        ) : '-'}
-                      </td>
-                      <td className="detail-td-series">
-                        <div className="detail-series-info">
-                          <span className="detail-series-name" title={sale.card_info?.series_name || ''}>
-                            {sale.card_info?.series_name || '-'}
-                          </span>
-                          {sale.card_info?.print_run && (
-                            <span className="detail-print-info">/{sale.card_info.print_run}</span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="detail-td-tags">
-                        <div className="detail-tags">
-                          {sale.card_info?.color && (
-                            <span
-                              className="detail-tag"
-                              style={{
-                                backgroundColor: sale.card_info.color_hex || '#666',
-                                color: getContrastColor(sale.card_info.color_hex),
-                                borderColor: sale.card_info.color_hex || '#666'
-                              }}
-                            >
-                              {sale.card_info.color}
-                            </span>
-                          )}
-                          {sale.card_info?.is_autograph && <span className="detail-tag detail-tag-auto">Auto</span>}
-                          {sale.card_info?.is_relic && <span className="detail-tag detail-tag-relic">Relic</span>}
-                          {sale.card_info?.is_short_print && <span className="detail-tag detail-tag-sp">SP</span>}
-                        </div>
-                      </td>
-                      <td>
-                        <select
-                          className={`detail-status-select ${getStatusClass(sale.status)}`}
-                          value={sale.status}
-                          onChange={(e) => handleStatusChange(sale.sale_id, e.target.value)}
-                        >
-                          <option value="listed">Listed</option>
-                          <option value="sold">Sold</option>
-                        </select>
-                      </td>
-                      <td>{sale.platform?.name || '-'}</td>
-                      <td>{formatDate(sale.sale_date)}</td>
-                      <td className="detail-td-right">{renderEditableCell(sale, 'purchase_price', 'currency')}</td>
-                      <td className="detail-td-right">{renderEditableCell(sale, 'sale_price', 'currency')}</td>
-                      <td className="detail-td-right">{renderEditableCell(sale, 'shipping_charged', 'currency')}</td>
-                      <td className="detail-td-right">{renderEditableCell(sale, 'platform_fees', 'currency')}</td>
-                      <td className="detail-td-right">{renderEditableCell(sale, 'shipping_cost', 'currency')}</td>
-                      <td className="detail-td-right">{formatCurrency(sale.supply_cost)}</td>
-                      <td className={`detail-td-right detail-td-profit ${sale.net_profit > 0 ? 'detail-profit-positive' : sale.net_profit < 0 ? 'detail-profit-negative' : ''}`}>
-                        {formatCurrency(sale.net_profit)}
-                      </td>
-                      <td className={`detail-td-right detail-td-percent ${sale.net_profit > 0 ? 'detail-profit-positive' : sale.net_profit < 0 ? 'detail-profit-negative' : ''}`}>
-                        {sale.sale_price > 0 ? `${Math.round((sale.net_profit / sale.sale_price) * 100)}%` : '-'}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
+        <EditableSalesTable
+          sales={sales}
+          platforms={platforms}
+          shippingConfigs={shippingConfigs}
+          onSalesUpdate={handleSalesUpdate}
+          onSummaryRefresh={fetchData}
+          loading={false}
+          showShippingConfig={true}
+          showAdjustment={true}
+          showDeleteButton={true}
+          emptyMessage="No cards from this set have been listed or sold yet."
+        />
       </div>
 
       <ConfirmModal isOpen={!!deleteConfirm} onClose={() => setDeleteConfirm(null)} onConfirm={handleDeletePurchase} title="Delete Purchase" message={`Are you sure you want to delete this ${deleteConfirm?.product_type_display || 'purchase'}? This action cannot be undone.`} confirmText="Delete" confirmVariant="danger" icon="trash-2" />

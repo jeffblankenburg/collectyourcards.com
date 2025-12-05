@@ -1,0 +1,482 @@
+/* EditableSalesTable - Shared Sales Table Component */
+
+.sales-table-container {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.sales-table-loading,
+.sales-table-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.sales-table-loading p,
+.sales-table-empty p {
+  margin: 0.75rem 0 0;
+}
+
+.sales-table-empty svg {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+/* Desktop Table */
+.sales-table-wrapper {
+  overflow-x: auto;
+  display: none;
+}
+
+.sales-table-editable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+  table-layout: fixed;
+}
+
+.sales-table-editable th,
+.sales-table-editable td {
+  padding: 0.5rem 0.5rem;
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  color: white;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sales-table-editable th {
+  background: rgba(255, 255, 255, 0.05);
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+/* Sortable Headers */
+.sales-table-sortable-th {
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s ease;
+}
+
+.sales-table-sortable-th:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.sales-table-sort-active {
+  background: rgba(59, 130, 246, 0.15) !important;
+  color: #60a5fa !important;
+}
+
+.sales-table-th-content {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.sales-table-sort-icon {
+  font-size: 0.625rem;
+  opacity: 0.5;
+}
+
+.sales-table-sort-active .sales-table-sort-icon {
+  opacity: 1;
+}
+
+/* Row Hover */
+.sales-table-editable tbody tr:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+/* Player Column */
+.sales-table-td-player {
+  max-width: 180px;
+}
+
+.sales-table-player-info {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+/* Team Circle */
+.sales-table-team-circle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  font-weight: 600;
+  font-size: 0.5rem;
+  flex-shrink: 0;
+  border: 2px solid;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.sales-table-player-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 120px;
+}
+
+/* Series Column */
+.sales-table-td-series {
+  max-width: 160px;
+}
+
+.sales-table-series-info {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.sales-table-series-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 120px;
+  font-size: 0.75rem;
+}
+
+.sales-table-print-info {
+  font-size: 0.6875rem;
+  color: #fbbf24;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+/* Tags Column */
+.sales-table-td-tags {
+  max-width: 100px;
+}
+
+.sales-table-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.sales-table-tag {
+  display: inline-block;
+  padding: 0.125rem 0.375rem;
+  border-radius: 3px;
+  font-size: 0.5625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: 1px solid transparent;
+}
+
+.sales-table-tag-rc {
+  background: rgba(251, 191, 36, 0.2);
+  color: #fbbf24;
+  border-color: rgba(251, 191, 36, 0.4);
+}
+
+.sales-table-tag-auto {
+  background: rgba(139, 92, 246, 0.2);
+  color: #a78bfa;
+  border-color: rgba(139, 92, 246, 0.4);
+}
+
+.sales-table-tag-relic {
+  background: rgba(236, 72, 153, 0.2);
+  color: #f472b6;
+  border-color: rgba(236, 72, 153, 0.4);
+}
+
+.sales-table-tag-sp {
+  background: rgba(34, 211, 238, 0.2);
+  color: #22d3ee;
+  border-color: rgba(34, 211, 238, 0.4);
+}
+
+/* Percent Column */
+.sales-table-td-percent {
+  font-size: 0.75rem;
+  text-align: right;
+}
+
+/* Inline Form Controls */
+.sales-table-inline-select,
+.sales-table-inline-input,
+.sales-table-inline-date {
+  padding: 0.25rem 0.375rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.3);
+  color: white;
+  font-size: 0.75rem;
+  font-family: inherit;
+  width: 100%;
+  max-width: 100%;
+}
+
+.sales-table-inline-select:focus,
+.sales-table-inline-input:focus,
+.sales-table-inline-date:focus {
+  outline: none;
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.2);
+}
+
+.sales-table-inline-select option {
+  background: #1e293b;
+  color: white;
+}
+
+.sales-table-inline-date {
+  width: 100px;
+}
+
+.sales-table-inline-date::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  opacity: 0.6;
+  cursor: pointer;
+}
+
+/* Status Select Colors */
+.sales-table-status-select[data-status="listed"] {
+  background: rgba(251, 191, 36, 0.15);
+  border-color: rgba(251, 191, 36, 0.3);
+  color: #fbbf24;
+}
+
+.sales-table-status-select[data-status="sold"] {
+  background: rgba(52, 211, 153, 0.15);
+  border-color: rgba(52, 211, 153, 0.3);
+  color: #34d399;
+}
+
+/* Editable Cell */
+.sales-table-editable-cell {
+  cursor: pointer;
+  padding: 0.25rem 0.375rem;
+  border-radius: 4px;
+  transition: background 0.15s ease;
+  display: inline-block;
+  min-width: 40px;
+}
+
+.sales-table-editable-cell:hover {
+  background: rgba(59, 130, 246, 0.15);
+}
+
+/* Currency Columns */
+.sales-table-td-currency {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.sales-table-td-currency .sales-table-editable-cell,
+.sales-table-td-currency .sales-table-inline-input {
+  text-align: right;
+}
+
+/* Profit Column */
+.sales-table-td-profit {
+  font-weight: 600;
+}
+
+/* Notes Column */
+.sales-table-td-notes {
+  max-width: 140px;
+}
+
+.sales-table-td-notes .sales-table-editable-cell {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Read-only Cell */
+.sales-table-td-readonly {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.sales-table-mobile-readonly {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.875rem;
+}
+
+/* Actions Column */
+.sales-table-td-actions {
+  text-align: center;
+}
+
+.sales-table-delete-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.sales-table-delete-btn:hover {
+  background: rgba(248, 113, 113, 0.15);
+  border-color: rgba(248, 113, 113, 0.4);
+  color: #f87171;
+}
+
+/* Profit Colors */
+.sales-table-profit-positive {
+  color: #34d399 !important;
+}
+
+.sales-table-profit-negative {
+  color: #f87171 !important;
+}
+
+/* Mobile View */
+.sales-table-mobile-view {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.75rem;
+}
+
+.sales-table-mobile-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.sales-table-mobile-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.75rem;
+}
+
+.sales-table-mobile-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.sales-table-mobile-card-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.sales-table-card-number {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.sales-table-card-player {
+  font-weight: 500;
+  color: white;
+}
+
+.sales-table-card-unknown {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.sales-table-mobile-percent {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.6);
+  margin-left: 0.25rem;
+}
+
+.sales-table-mobile-card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+}
+
+.sales-table-mobile-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.sales-table-mobile-field label {
+  font-size: 0.625rem;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.sales-table-mobile-field-profit {
+  background: rgba(255, 255, 255, 0.03);
+  padding: 0.5rem;
+  border-radius: 4px;
+}
+
+.sales-table-mobile-profit {
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.sales-table-mobile-field-full {
+  grid-column: 1 / -1;
+}
+
+.sales-table-mobile-card-footer {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sales-table-mobile-field .sales-table-inline-select,
+.sales-table-mobile-field .sales-table-inline-date,
+.sales-table-mobile-field .sales-table-inline-input,
+.sales-table-mobile-field .sales-table-editable-cell {
+  font-size: 0.875rem;
+  padding: 0.375rem 0.5rem;
+}
+
+/* Responsive */
+@media (min-width: 1024px) {
+  .sales-table-mobile-view {
+    display: none;
+  }
+
+  .sales-table-wrapper {
+    display: block;
+  }
+}
+
+@media (min-width: 640px) and (max-width: 1023px) {
+  .sales-table-mobile-card-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Spinning animation for loader */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+}
