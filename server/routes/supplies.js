@@ -336,8 +336,12 @@ router.put('/batches/:id', requireAuth, requireSeller, async (req, res) => {
     const userId = BigInt(req.user.userId)
     const batchId = BigInt(req.params.id)
     const {
+      supply_type_id,
       purchase_date,
+      quantity_purchased,
       quantity_remaining,
+      total_cost,
+      cost_per_unit,
       is_depleted,
       notes,
       image_url,
@@ -360,8 +364,31 @@ router.put('/batches/:id', requireAuth, requireSeller, async (req, res) => {
       updated: new Date()
     }
 
+    // Handle supply_type_id change - verify the new type belongs to the user
+    if (supply_type_id !== undefined) {
+      const supplyType = await prisma.supply_type.findFirst({
+        where: {
+          supply_type_id: parseInt(supply_type_id),
+          user_id: userId
+        }
+      })
+      if (!supplyType) {
+        return res.status(400).json({ error: 'Invalid supply type' })
+      }
+      updateData.supply_type_id = parseInt(supply_type_id)
+    }
+
     if (purchase_date !== undefined) {
       updateData.purchase_date = new Date(purchase_date)
+    }
+    if (quantity_purchased !== undefined) {
+      updateData.quantity_purchased = parseInt(quantity_purchased)
+    }
+    if (total_cost !== undefined) {
+      updateData.total_cost = parseFloat(total_cost)
+    }
+    if (cost_per_unit !== undefined) {
+      updateData.cost_per_unit = parseFloat(cost_per_unit)
     }
     if (quantity_remaining !== undefined) {
       updateData.quantity_remaining = parseInt(quantity_remaining)

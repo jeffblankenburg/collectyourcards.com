@@ -473,6 +473,31 @@
   width: 120px;
 }
 
+.supplies-management-page .supplies-inline-small {
+  width: 70px;
+}
+
+.supplies-management-page .supplies-inline-select {
+  padding: 0.25rem 0.5rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 3px;
+  color: white;
+  font-size: 0.8125rem;
+  min-width: 100px;
+  max-width: 140px;
+}
+
+.supplies-management-page .supplies-inline-select:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+.supplies-management-page .supplies-inline-select option {
+  background: #1e293b;
+  color: white;
+}
+
 /* Form Rows */
 .supplies-management-page .supplies-form-row {
   display: flex;

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import axios from 'axios'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
@@ -9,7 +9,8 @@ import './SuppliesManagementScoped.css'
 function SuppliesManagement() {
   const { user, isAuthenticated } = useAuth()
   const { success: showSuccess, error: showError } = useToast()
-  const isAdmin = user?.role === 'admin'
+  const isAdmin = useMemo(() => user?.role === 'admin', [user?.role])
+  const hasFetched = useRef(false)
 
   // State
   const [supplyTypes, setSupplyTypes] = useState([])
@@ -53,10 +54,12 @@ function SuppliesManagement() {
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [imageModal])
 
-  // Fetch data - only run once on mount and when explicitly called
-  const fetchData = useCallback(async () => {
+  // Fetch data - only run once on mount
+  const fetchData = useCallback(async (force = false) => {
     if (!isAuthenticated || !isAdmin) return
+    if (hasFetched.current && !force) return
 
+    hasFetched.current = true
     setLoading(true)
     try {
       const [typesRes, batchesRes, summaryRes] = await Promise.all([
@@ -73,12 +76,14 @@ function SuppliesManagement() {
     } finally {
       setLoading(false)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, isAdmin])
 
   useEffect(() => {
     fetchData()
   }, [fetchData])
+
+  // Wrapper for manual refresh that forces a fetch
+  const handleRefresh = () => fetchData(true)
 
   // Supply Type handlers
   const handleAddType = async (e) => {
@@ -94,7 +99,7 @@ function SuppliesManagement() {
       showSuccess('Supply type created')
       setNewTypeName('')
       setNewTypeDescription('')
-      fetchData()
+      fetchData(true)
     } catch (error) {
       showError(error.response?.data?.error || 'Failed to create supply type')
     } finally {
@@ -107,7 +112,7 @@ function SuppliesManagement() {
       await axios.put(`/api/supplies/types/${typeId}`, updates)
       showSuccess('Supply type updated')
       setEditingType(null)
-      fetchData()
+      fetchData(true)
     } catch (error) {
       showError(error.response?.data?.error || 'Failed to update supply type')
     }
@@ -119,7 +124,7 @@ function SuppliesManagement() {
     try {
       await axios.delete(`/api/supplies/types/${typeId}`)
       showSuccess('Supply type deleted')
-      fetchData()
+      fetchData(true)
     } catch (error) {
       showError(error.response?.data?.error || 'Failed to delete supply type')
     }
@@ -149,7 +154,7 @@ function SuppliesManagement() {
         notes: '',
         source_url: ''
       })
-      fetchData()
+      fetchData(true)
     } catch (error) {
       showError(error.response?.data?.error || 'Failed to add batch')
     } finally {
@@ -160,7 +165,11 @@ function SuppliesManagement() {
   const startEditingBatch = (batch) => {
     setEditingBatch(batch.supply_batch_id)
     setEditBatchData({
+      supply_type_id: batch.supply_type_id,
+      purchase_date: batch.purchase_date ? batch.purchase_date.split('T')[0] : '',
+      quantity_purchased: batch.quantity_purchased,
       quantity_remaining: batch.quantity_remaining,
+      total_cost: batch.total_cost,
       notes: batch.notes || '',
       source_url: batch.source_url || ''
     })
@@ -168,15 +177,23 @@ function SuppliesManagement() {
 
   const handleUpdateBatch = async (batchId) => {
     try {
+      // Recalculate cost per unit if quantity or total cost changed
+      const costPerUnit = parseFloat(editBatchData.total_cost) / parseInt(editBatchData.quantity_purchased)
+
       await axios.put(`/api/supplies/batches/${batchId}`, {
+        supply_type_id: parseInt(editBatchData.supply_type_id),
+        purchase_date: editBatchData.purchase_date,
+        quantity_purchased: parseInt(editBatchData.quantity_purchased),
         quantity_remaining: parseInt(editBatchData.quantity_remaining),
+        total_cost: parseFloat(editBatchData.total_cost),
+        cost_per_unit: costPerUnit,
         notes: editBatchData.notes.trim() || null,
         source_url: editBatchData.source_url.trim() || null
       })
       showSuccess('Batch updated')
       setEditingBatch(null)
       setEditBatchData(null)
-      fetchData()
+      fetchData(true)
     } catch (error) {
       showError(error.response?.data?.error || 'Failed to update batch')
     }
@@ -194,7 +211,7 @@ function SuppliesManagement() {
         headers: { 'Content-Type': 'multipart/form-data' }
       })
       showSuccess('Image uploaded')
-      fetchData()
+      fetchData(true)
     } catch (error) {
       showError(error.response?.data?.error || 'Failed to upload image')
     } finally {
@@ -208,7 +225,7 @@ function SuppliesManagement() {
     try {
       await axios.delete(`/api/supplies/batches/${batchId}/image`)
       showSuccess('Image deleted')
-      fetchData()
+      fetchData(true)
     } catch (error) {
       showError(error.response?.data?.error || 'Failed to delete image')
     }
@@ -220,7 +237,7 @@ function SuppliesManagement() {
     try {
       await axios.post(`/api/supplies/batches/${batchId}/deplete`)
       showSuccess('Batch marked as depleted')
-      fetchData()
+      fetchData(true)
     } catch (error) {
       showError(error.response?.data?.error || 'Failed to deplete batch')
     }
@@ -232,7 +249,7 @@ function SuppliesManagement() {
     try {
       await axios.delete(`/api/supplies/batches/${batchId}`)
       showSuccess('Batch deleted')
-      fetchData()
+      fetchData(true)
     } catch (error) {
       showError(error.response?.data?.error || 'Failed to delete batch')
     }
@@ -249,10 +266,14 @@ function SuppliesManagement() {
     }).format(value)
   }
 
-  // Format date
+  // Format date - parse as local date to avoid timezone shift
   const formatDate = (dateStr) => {
     if (!dateStr) return '-'
-    return new Date(dateStr).toLocaleDateString()
+    // If it's an ISO string with time, extract just the date part
+    const datePart = dateStr.split('T')[0]
+    // Parse as local date by using year, month, day components
+    const [year, month, day] = datePart.split('-').map(Number)
+    return new Date(year, month - 1, day).toLocaleDateString()
   }
 
   // Get image for a supply type from its batches (most recent batch with an image)
@@ -291,7 +312,7 @@ function SuppliesManagement() {
             <Settings size={16} />
             Shipping Configs
           </Link>
-          <button className="supplies-refresh-btn" onClick={fetchData} disabled={loading}>
+          <button className="supplies-refresh-btn" onClick={handleRefresh} disabled={loading}>
             <RefreshCw size={16} className={loading ? 'spinning' : ''} />
             Refresh
           </button>
@@ -609,24 +630,76 @@ function SuppliesManagement() {
                               </label>
                             )}
                           </td>
-                          <td>{batch.supply_type?.name || 'Unknown'}</td>
-                          <td>{formatDate(batch.purchase_date)}</td>
-                          <td>{batch.quantity_purchased}</td>
+                          <td>
+                            {editingBatch === batch.supply_batch_id ? (
+                              <select
+                                value={editBatchData.supply_type_id}
+                                onChange={(e) => setEditBatchData({ ...editBatchData, supply_type_id: e.target.value })}
+                                className="supplies-inline-select"
+                              >
+                                {supplyTypes.map(type => (
+                                  <option key={type.supply_type_id} value={type.supply_type_id}>
+                                    {type.name}
+                                  </option>
+                                ))}
+                              </select>
+                            ) : (
+                              batch.supply_type?.name || 'Unknown'
+                            )}
+                          </td>
+                          <td>
+                            {editingBatch === batch.supply_batch_id ? (
+                              <input
+                                type="date"
+                                value={editBatchData.purchase_date}
+                                onChange={(e) => setEditBatchData({ ...editBatchData, purchase_date: e.target.value })}
+                                className="supplies-inline-input"
+                              />
+                            ) : (
+                              formatDate(batch.purchase_date)
+                            )}
+                          </td>
+                          <td>
+                            {editingBatch === batch.supply_batch_id ? (
+                              <input
+                                type="number"
+                                value={editBatchData.quantity_purchased}
+                                onChange={(e) => setEditBatchData({ ...editBatchData, quantity_purchased: e.target.value })}
+                                className="supplies-inline-input supplies-inline-small"
+                                min="1"
+                              />
+                            ) : (
+                              batch.quantity_purchased
+                            )}
+                          </td>
                           <td>
                             {editingBatch === batch.supply_batch_id ? (
                               <input
                                 type="number"
                                 value={editBatchData.quantity_remaining}
                                 onChange={(e) => setEditBatchData({ ...editBatchData, quantity_remaining: e.target.value })}
-                                className="supplies-inline-input"
+                                className="supplies-inline-input supplies-inline-small"
                                 min="0"
-                                max={batch.quantity_purchased}
+                                max={editBatchData.quantity_purchased}
                               />
                             ) : (
                               batch.quantity_remaining
                             )}
                           </td>
-                          <td>{formatCurrency(batch.total_cost)}</td>
+                          <td>
+                            {editingBatch === batch.supply_batch_id ? (
+                              <input
+                                type="number"
+                                value={editBatchData.total_cost}
+                                onChange={(e) => setEditBatchData({ ...editBatchData, total_cost: e.target.value })}
+                                className="supplies-inline-input supplies-inline-small"
+                                step="0.01"
+                                min="0"
+                              />
+                            ) : (
+                              formatCurrency(batch.total_cost)
+                            )}
+                          </td>
                           <td>{formatCurrency(batch.cost_per_unit)}</td>
                           <td className="supplies-notes-cell">
                             {editingBatch === batch.supply_batch_id ? (

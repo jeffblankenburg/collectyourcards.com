@@ -346,3 +346,35 @@ BEGIN
     PRINT 'supply_batch table already exists - checked for missing columns';
 END
 GO
+
+-- ============================================================================
+-- SHIPPING_CONFIG_ITEM TABLE - CREATE IF NOT EXISTS
+-- Added: 2025-12-05
+-- Purpose: Items in a shipping configuration (BOM - bill of materials)
+-- ============================================================================
+
+IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'shipping_config_item')
+BEGIN
+    CREATE TABLE shipping_config_item (
+        shipping_config_item_id INT IDENTITY(1,1) PRIMARY KEY,
+        shipping_config_id INT NOT NULL,
+        supply_type_id INT NOT NULL,
+        quantity INT NOT NULL DEFAULT 1,
+
+        CONSTRAINT FK_shipping_config_item_config FOREIGN KEY (shipping_config_id)
+            REFERENCES shipping_config(shipping_config_id) ON DELETE CASCADE,
+        CONSTRAINT FK_shipping_config_item_supply_type FOREIGN KEY (supply_type_id)
+            REFERENCES supply_type(supply_type_id) ON DELETE NO ACTION,
+        CONSTRAINT UQ_shipping_config_item UNIQUE (shipping_config_id, supply_type_id)
+    );
+
+    CREATE INDEX IX_shipping_config_item_config ON shipping_config_item(shipping_config_id);
+    CREATE INDEX IX_shipping_config_item_supply_type ON shipping_config_item(supply_type_id);
+
+    PRINT 'Created shipping_config_item table with indexes';
+END
+ELSE
+BEGIN
+    PRINT 'shipping_config_item table already exists';
+END
+GO
