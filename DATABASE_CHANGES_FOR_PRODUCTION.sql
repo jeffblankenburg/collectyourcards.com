@@ -416,17 +416,52 @@ GO
 IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'sale_order' AND COLUMN_NAME = 'shipping_config_id')
 BEGIN
     ALTER TABLE sale_order ADD shipping_config_id INT NULL;
-    
+
     ALTER TABLE sale_order ADD CONSTRAINT FK_sale_order_shipping_config
         FOREIGN KEY (shipping_config_id) REFERENCES shipping_config(shipping_config_id);
-    
+
     CREATE INDEX IX_sale_order_shipping_config ON sale_order(shipping_config_id);
-    
+
     PRINT 'Added shipping_config_id to sale_order table with FK and index';
 END
 ELSE
 BEGIN
     PRINT 'shipping_config_id already exists on sale_order table';
+END
+GO
+
+-- ============================================================================
+-- ORDER_SUPPLY_USAGE TABLE
+-- Added: 2025-12-05
+-- Purpose: Track additional supplies used for an order beyond the shipping config
+--          Uses FIFO costing from supply batches
+-- ============================================================================
+
+IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'order_supply_usage')
+BEGIN
+    CREATE TABLE order_supply_usage (
+        order_supply_usage_id BIGINT IDENTITY(1,1) PRIMARY KEY,
+        order_id BIGINT NOT NULL,
+        supply_batch_id BIGINT NOT NULL,
+        quantity_used INT NOT NULL,
+        cost_per_unit DECIMAL(10, 6) NOT NULL,
+        total_cost DECIMAL(10, 2) NOT NULL,
+        created DATETIME NOT NULL DEFAULT GETDATE(),
+
+        CONSTRAINT FK_order_supply_usage_order FOREIGN KEY (order_id)
+            REFERENCES sale_order(order_id) ON DELETE CASCADE,
+        CONSTRAINT FK_order_supply_usage_batch FOREIGN KEY (supply_batch_id)
+            REFERENCES supply_batch(supply_batch_id) ON DELETE NO ACTION
+    );
+
+    CREATE INDEX IX_order_supply_usage_order ON order_supply_usage(order_id);
+    CREATE INDEX IX_order_supply_usage_batch ON order_supply_usage(supply_batch_id);
+
+    PRINT 'Created order_supply_usage table with indexes';
+END
+ELSE
+BEGIN
+    PRINT 'order_supply_usage table already exists';
 END
 GO
 

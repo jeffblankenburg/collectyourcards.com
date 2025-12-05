@@ -433,7 +433,7 @@ function EditableSalesTable({
     })
   }
 
-  // Group sales by order_id for display
+  // Group sales by order_id for display, with sorting support
   const groupedSalesData = useMemo(() => {
     const orders = new Map() // order_id -> { order info, sales: [] }
     const ungrouped = []
@@ -444,7 +444,9 @@ function EditableSalesTable({
           orders.set(sale.order_id, {
             order_id: sale.order_id,
             order: sale.order,
-            sales: []
+            sales: [],
+            // Will be calculated after all sales are added
+            latestSaleDate: null
           })
         }
         orders.get(sale.order_id).sales.push(sale)
@@ -453,8 +455,62 @@ function EditableSalesTable({
       }
     })
 
+    // Calculate the latest sale date for each order (used for sorting)
+    orders.forEach(orderData => {
+      const dates = orderData.sales
+        .map(s => s.sale_date ? new Date(s.sale_date).getTime() : 0)
+        .filter(d => d > 0)
+      orderData.latestSaleDate = dates.length > 0 ? Math.max(...dates) : 0
+    })
+
     return { orders: Array.from(orders.values()), ungrouped }
   }, [sales])
+
+  // Combine orders and ungrouped sales into a single sorted list
+  const sortedDisplayItems = useMemo(() => {
+    // Create display items: { type: 'order' | 'sale', data: orderData | sale, sortValue: any }
+    const items = []
+
+    // Add orders
+    groupedSalesData.orders.forEach(orderData => {
+      // For orders, use the latest sale date for date sorting, or aggregate values for other sorts
+      let sortValue
+      if (sortConfig.key === 'sale_date') {
+        sortValue = orderData.latestSaleDate
+      } else if (['sale_price', 'shipping_charged', 'platform_fees', 'shipping_cost', 'supply_cost', 'net_profit'].includes(sortConfig.key)) {
+        // Sum the values for numeric fields
+        sortValue = orderData.sales.reduce((sum, s) => sum + (parseFloat(s[sortConfig.key]) || 0), 0)
+      } else {
+        // For other fields, use the first sale's value
+        sortValue = getSortValue(orderData.sales[0], sortConfig.key)
+      }
+      items.push({ type: 'order', data: orderData, sortValue })
+    })
+
+    // Add ungrouped sales
+    groupedSalesData.ungrouped.forEach(sale => {
+      const sortValue = sortConfig.key === 'sale_date'
+        ? (sale.sale_date ? new Date(sale.sale_date).getTime() : 0)
+        : getSortValue(sale, sortConfig.key)
+      items.push({ type: 'sale', data: sale, sortValue })
+    })
+
+    // Sort all items together
+    items.sort((a, b) => {
+      const aVal = a.sortValue
+      const bVal = b.sortValue
+
+      if (typeof aVal === 'number' && typeof bVal === 'number') {
+        return sortConfig.direction === 'asc' ? aVal - bVal : bVal - aVal
+      }
+
+      const aStr = String(aVal || '').toLowerCase()
+      const bStr = String(bVal || '').toLowerCase()
+      return sortConfig.direction === 'asc' ? aStr.localeCompare(bStr) : bStr.localeCompare(aStr)
+    })
+
+    return items
+  }, [groupedSalesData, sortConfig])
 
   const handleDownloadCSV = () => {
     // Define CSV columns
@@ -1281,10 +1337,12 @@ function EditableSalesTable({
             </tr>
           </thead>
           <tbody>
-            {/* Render grouped orders first */}
-            {groupedSalesData.orders.map(orderData => renderOrderRow(orderData))}
-            {/* Render ungrouped sales */}
-            {groupedSalesData.ungrouped.map(sale => renderSaleRow(sale, false))}
+            {/* Render orders and ungrouped sales in sorted order */}
+            {sortedDisplayItems.map(item =>
+              item.type === 'order'
+                ? renderOrderRow(item.data)
+                : renderSaleRow(item.data, false)
+            )}
           </tbody>
         </table>
       </div>
