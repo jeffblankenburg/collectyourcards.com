@@ -79,6 +79,12 @@ const ListDetail = lazy(() => import('./pages/ListDetail.jsx'))
 const Blog = lazy(() => import('./pages/Blog.jsx'))
 const BlogPost = lazy(() => import('./pages/BlogPost.jsx'))
 const SharedCollectionView = lazy(() => import('./pages/SharedCollectionView.jsx'))
+const SellerDashboard = lazy(() => import('./pages/SellerDashboard.jsx'))
+const SuppliesManagement = lazy(() => import('./pages/SuppliesManagement.jsx'))
+const ShippingConfigs = lazy(() => import('./pages/ShippingConfigs.jsx'))
+const SetPurchases = lazy(() => import('./pages/SetPurchases.jsx'))
+const SetPurchaseDetail = lazy(() => import('./pages/SetPurchaseDetail.jsx'))
+const SellerAdmin = lazy(() => import('./pages/SellerAdmin.jsx'))
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -148,6 +154,12 @@ createRoot(document.getElementById('root')).render(
               <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
               <Route path="/admin/achievements" element={<ProtectedRoute><AdminAchievements /></ProtectedRoute>} />
               <Route path="/admin/query-tester" element={<ProtectedRoute><AdminQueryTester /></ProtectedRoute>} />
+              <Route path="/seller" element={<ProtectedRoute><SellerDashboard /></ProtectedRoute>} />
+              <Route path="/seller/supplies" element={<ProtectedRoute><SuppliesManagement /></ProtectedRoute>} />
+              <Route path="/seller/shipping" element={<ProtectedRoute><ShippingConfigs /></ProtectedRoute>} />
+              <Route path="/seller/purchases" element={<ProtectedRoute><SetPurchases /></ProtectedRoute>} />
+              <Route path="/seller/purchases/:setId" element={<ProtectedRoute><SetPurchaseDetail /></ProtectedRoute>} />
+              <Route path="/admin/seller" element={<ProtectedRoute><SellerAdmin /></ProtectedRoute>} />
 
               {/* Lists routes - MUST BE BEFORE username route */}
               <Route path="/lists" element={<ProtectedRoute><Lists /></ProtectedRoute>} />

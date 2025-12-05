@@ -198,9 +198,13 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
+  // Computed property for admin check
+  const isAdmin = user?.role === 'admin'
+
   const value = {
     user,
     isAuthenticated,
+    isAdmin,
     loading,
     login,
     register,

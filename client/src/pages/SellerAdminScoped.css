@@ -1,0 +1,515 @@
+/* Seller Admin Page - Dark Theme */
+
+.seller-admin-page {
+  width: 100%;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  color: white;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Header */
+.seller-admin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.seller-admin-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.seller-admin-back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: rgba(59, 130, 246, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  border-radius: 6px;
+  color: #60a5fa;
+  text-decoration: none;
+}
+
+.seller-admin-back:hover {
+  background: rgba(59, 130, 246, 0.25);
+}
+
+.seller-admin-title svg {
+  color: #60a5fa;
+}
+
+.seller-admin-title h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin: 0;
+  background: linear-gradient(135deg, #e5e7eb 0%, #f3f4f6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.seller-admin-header-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.seller-admin-nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 1rem;
+  background: rgba(59, 130, 246, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  border-radius: 6px;
+  color: #60a5fa;
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.seller-admin-nav-btn:hover {
+  background: rgba(59, 130, 246, 0.25);
+}
+
+/* Info Banner */
+.seller-admin-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  border-radius: 6px;
+  color: #93c5fd;
+  font-size: 0.875rem;
+}
+
+.seller-admin-info svg {
+  flex-shrink: 0;
+  color: #60a5fa;
+}
+
+/* Tabs */
+.seller-admin-tabs {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 0.5rem;
+}
+
+.seller-admin-tab {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.seller-admin-tab:hover {
+  color: white;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.seller-admin-tab.active {
+  color: #60a5fa;
+  background: rgba(59, 130, 246, 0.15);
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+/* Content */
+.seller-admin-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.seller-admin-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.seller-admin-toolbar h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: white;
+}
+
+.seller-admin-add-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 1rem;
+  background: rgba(16, 185, 129, 0.2);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  color: #34d399;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.seller-admin-add-btn:hover {
+  background: rgba(16, 185, 129, 0.3);
+}
+
+/* Form Container */
+.seller-admin-form-container {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 1.25rem;
+}
+
+.seller-admin-form h3 {
+  margin: 0 0 1rem;
+  font-size: 1rem;
+  color: white;
+}
+
+.seller-admin-form-group {
+  margin-bottom: 0.875rem;
+}
+
+.seller-admin-form-group label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 0.25rem;
+}
+
+.seller-admin-input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.3);
+  color: white;
+  font-size: 0.875rem;
+  font-family: inherit;
+}
+
+.seller-admin-input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.seller-admin-input:focus {
+  outline: none;
+  border-color: #60a5fa;
+}
+
+/* Color Picker */
+.seller-admin-color-picker {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.seller-admin-color-picker input[type="color"] {
+  width: 40px;
+  height: 36px;
+  padding: 2px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+}
+
+.seller-admin-color-picker input[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 2px;
+}
+
+.seller-admin-color-picker input[type="color"]::-webkit-color-swatch {
+  border-radius: 4px;
+  border: none;
+}
+
+.seller-admin-color-picker .seller-admin-input {
+  flex: 1;
+}
+
+/* Color Chip in table */
+.seller-admin-color-chip {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  vertical-align: middle;
+}
+
+.seller-admin-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.625rem;
+  margin-top: 1rem;
+  padding-top: 0.875rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.seller-admin-cancel-btn,
+.seller-admin-submit-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.seller-admin-cancel-btn {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.seller-admin-cancel-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+}
+
+.seller-admin-submit-btn {
+  background: #10b981;
+  color: white;
+  border: none;
+}
+
+.seller-admin-submit-btn:hover:not(:disabled) {
+  background: #059669;
+}
+
+.seller-admin-submit-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Table Container */
+.seller-admin-table-container {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.seller-admin-loading,
+.seller-admin-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  text-align: center;
+}
+
+.seller-admin-loading p,
+.seller-admin-empty p {
+  margin: 0.75rem 0 0;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.seller-admin-empty h3 {
+  margin: 0.75rem 0 0;
+  color: white;
+}
+
+.seller-admin-empty svg {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.seller-admin-seed-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin-top: 1rem;
+  padding: 0.5rem 1rem;
+  background: rgba(251, 191, 36, 0.2);
+  border: 1px solid rgba(251, 191, 36, 0.4);
+  color: #fbbf24;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.seller-admin-seed-btn:hover {
+  background: rgba(251, 191, 36, 0.3);
+}
+
+/* Table */
+.seller-admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.seller-admin-table th,
+.seller-admin-table td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.seller-admin-table th {
+  background: rgba(255, 255, 255, 0.05);
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.seller-admin-table tr:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.seller-admin-table tr.seller-admin-inactive {
+  opacity: 0.5;
+}
+
+.seller-admin-code {
+  font-family: 'Monaco', 'Consolas', monospace;
+  font-size: 0.8125rem;
+  color: #60a5fa;
+}
+
+.seller-admin-status {
+  display: inline-block;
+  padding: 0.125rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.seller-admin-status.active {
+  background: rgba(52, 211, 153, 0.2);
+  color: #34d399;
+}
+
+.seller-admin-status.inactive {
+  background: rgba(248, 113, 113, 0.2);
+  color: #f87171;
+}
+
+.seller-admin-actions {
+  display: flex;
+  gap: 0.375rem;
+}
+
+.seller-admin-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+}
+
+.seller-admin-action-btn:hover {
+  color: #60a5fa;
+  border-color: #60a5fa;
+}
+
+.seller-admin-action-btn.seller-admin-delete:hover {
+  color: #f87171;
+  border-color: #f87171;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .seller-admin-page {
+    padding: 1rem;
+  }
+
+  .seller-admin-title h1 {
+    font-size: 1.25rem;
+  }
+
+  .seller-admin-tabs {
+    flex-direction: column;
+  }
+
+  .seller-admin-tab {
+    justify-content: center;
+  }
+
+  .seller-admin-table-container {
+    overflow-x: auto;
+  }
+
+  .seller-admin-table {
+    min-width: 600px;
+  }
+}
+
+@media (max-width: 480px) {
+  .seller-admin-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .seller-admin-header-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .seller-admin-toolbar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .seller-admin-add-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .seller-admin-form-actions {
+    flex-direction: column;
+  }
+
+  .seller-admin-cancel-btn,
+  .seller-admin-submit-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Spinning animation */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+}

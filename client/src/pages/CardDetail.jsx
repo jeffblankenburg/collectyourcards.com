@@ -52,6 +52,9 @@ function CardDetail() {
   const [currentImageView, setCurrentImageView] = useState('front') // 'front' or 'back'
   const [ebayConnected, setEbayConnected] = useState(false)
   const [creatingListing, setCreatingListing] = useState(false)
+  const [creatingSale, setCreatingSale] = useState(false)
+  const [showSellModal, setShowSellModal] = useState(false)
+  const [sellingPlatforms, setSellingPlatforms] = useState([])
 
   // Determine which URL format we're using based on presence of year/setSlug
   const isSimpleUrl = !year || !setSlug
@@ -544,6 +547,36 @@ function CardDetail() {
     }
   }
 
+  const handleSellCard = async () => {
+    if (!isAuthenticated || !isAdmin) {
+      showError('You need admin access to use seller tools')
+      return
+    }
+
+    try {
+      setCreatingSale(true)
+      log.info('Creating sale for card', { card_id: card.card_id })
+
+      // Create the sale with pending status
+      const response = await axios.post('/api/seller/sales', {
+        card_id: card.card_id,
+        status: 'pending'
+      })
+
+      if (response.data.sale) {
+        success('Card added to seller dashboard!')
+        log.success('Sale created', { sale_id: response.data.sale.sale_id })
+        // Navigate to seller dashboard
+        navigate('/seller')
+      }
+    } catch (err) {
+      log.error('Failed to create sale', err)
+      showError(err.response?.data?.error || 'Failed to add card to seller dashboard')
+    } finally {
+      setCreatingSale(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="card-detail-page">
@@ -726,6 +759,17 @@ function CardDetail() {
                     >
                       <Icon name="dollar-sign" size={16} />
                       {creatingListing && <span className="button-loading-spinner"></span>}
+                    </button>
+                  )}
+                  {isAuthenticated && isAdmin && (
+                    <button
+                      onClick={handleSellCard}
+                      disabled={creatingSale}
+                      className="squircle-button sell-button"
+                      title="Add to Seller Dashboard"
+                    >
+                      <Icon name="tag" size={16} />
+                      {creatingSale && <span className="button-loading-spinner"></span>}
                     </button>
                   )}
                   {parallelSeries.length > 1 && (

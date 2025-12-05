@@ -1,0 +1,548 @@
+/* Shipping Configs Page Styles */
+.shipping-configs-page {
+  width: 100%;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  color: white;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Header */
+.shipping-configs-page .shipping-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.shipping-configs-page .shipping-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.shipping-configs-page .shipping-title h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin: 0;
+  background: linear-gradient(135deg, #e5e7eb 0%, #f3f4f6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.shipping-configs-page .shipping-header-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.shipping-configs-page .shipping-nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: rgba(59, 130, 246, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  border-radius: 6px;
+  color: #60a5fa;
+  font-size: 0.875rem;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.shipping-configs-page .shipping-nav-btn:hover {
+  background: rgba(59, 130, 246, 0.25);
+  border-color: rgba(59, 130, 246, 0.4);
+}
+
+.shipping-configs-page .shipping-refresh-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.shipping-configs-page .shipping-refresh-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+}
+
+.shipping-configs-page .shipping-add-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: rgba(59, 130, 246, 0.2);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 6px;
+  color: #60a5fa;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.shipping-configs-page .shipping-add-btn:hover {
+  background: rgba(59, 130, 246, 0.3);
+}
+
+/* Loading & Empty States */
+.shipping-configs-page .shipping-loading,
+.shipping-configs-page .shipping-empty,
+.shipping-configs-page .shipping-unauthorized {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  color: rgba(255, 255, 255, 0.6);
+  gap: 1rem;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+}
+
+.shipping-configs-page .shipping-empty h3 {
+  color: white;
+  margin: 0;
+}
+
+.shipping-configs-page .shipping-empty button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: rgba(59, 130, 246, 0.2);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 6px;
+  color: #60a5fa;
+  cursor: pointer;
+  margin-top: 0.5rem;
+}
+
+.shipping-configs-page .spinning {
+  animation: shipping-spin 1s linear infinite;
+}
+
+@keyframes shipping-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Add Form */
+.shipping-configs-page .shipping-add-form {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.shipping-configs-page .shipping-add-form h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0 0 1.25rem 0;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.shipping-configs-page .shipping-form-row {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.shipping-configs-page .shipping-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  min-width: 150px;
+}
+
+.shipping-configs-page .shipping-form-field label {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.shipping-configs-page .shipping-field-wide {
+  flex: 1;
+}
+
+.shipping-configs-page .shipping-input,
+.shipping-configs-page .shipping-select {
+  padding: 0.5rem 0.75rem;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  color: white;
+  font-size: 0.875rem;
+}
+
+.shipping-configs-page .shipping-input:focus,
+.shipping-configs-page .shipping-select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.shipping-configs-page .shipping-input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.shipping-configs-page .shipping-select option {
+  background: #1e293b;
+  color: white;
+}
+
+/* Items Section */
+.shipping-configs-page .shipping-items-section {
+  margin: 1rem 0;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+}
+
+.shipping-configs-page .shipping-items-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.shipping-configs-page .shipping-items-header h3,
+.shipping-configs-page .shipping-items-header h4 {
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.shipping-configs-page .shipping-add-item-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.375rem 0.75rem;
+  background: rgba(34, 197, 94, 0.2);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  border-radius: 4px;
+  color: #86efac;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.shipping-configs-page .shipping-add-item-btn:hover:not(:disabled) {
+  background: rgba(34, 197, 94, 0.3);
+}
+
+.shipping-configs-page .shipping-add-item-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.shipping-configs-page .shipping-items-empty {
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.5);
+  font-style: italic;
+  margin: 0;
+}
+
+.shipping-configs-page .shipping-items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.shipping-configs-page .shipping-item-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.shipping-configs-page .shipping-item-x {
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.875rem;
+}
+
+.shipping-configs-page .shipping-qty-input {
+  width: 60px;
+  padding: 0.375rem 0.5rem;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  color: white;
+  font-size: 0.875rem;
+  text-align: center;
+}
+
+.shipping-configs-page .shipping-qty-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+/* Icon Buttons */
+.shipping-configs-page .shipping-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.shipping-configs-page .shipping-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.shipping-configs-page .shipping-icon-btn.shipping-icon-danger:hover {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+}
+
+/* Form Actions */
+.shipping-configs-page .shipping-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.shipping-configs-page .shipping-cancel-btn {
+  padding: 0.5rem 1rem;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.shipping-configs-page .shipping-cancel-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.shipping-configs-page .shipping-submit-btn {
+  padding: 0.5rem 1rem;
+  background: rgba(59, 130, 246, 0.2);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 4px;
+  color: #60a5fa;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.shipping-configs-page .shipping-submit-btn:hover:not(:disabled) {
+  background: rgba(59, 130, 246, 0.3);
+}
+
+.shipping-configs-page .shipping-submit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Configs List */
+.shipping-configs-page .shipping-configs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.shipping-configs-page .shipping-config-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.shipping-configs-page .shipping-config-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.shipping-configs-page .shipping-config-header:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.shipping-configs-page .shipping-config-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.shipping-configs-page .shipping-config-info h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0;
+  color: #60a5fa;
+}
+
+.shipping-configs-page .shipping-config-info p {
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.6);
+  margin: 0;
+}
+
+.shipping-configs-page .shipping-config-count {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.shipping-configs-page .shipping-config-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.shipping-configs-page .shipping-config-details {
+  padding: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.1);
+}
+
+/* Items Display (View Mode) */
+.shipping-configs-page .shipping-items-display h4 {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.5);
+  margin: 0 0 0.75rem 0;
+}
+
+.shipping-configs-page .shipping-no-items {
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.4);
+  font-style: italic;
+  margin: 0;
+}
+
+.shipping-configs-page .shipping-items-ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.shipping-configs-page .shipping-items-ul li {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.375rem 0.75rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  font-size: 0.875rem;
+}
+
+.shipping-configs-page .shipping-item-qty {
+  font-weight: 600;
+  color: #60a5fa;
+}
+
+.shipping-configs-page .shipping-item-name {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* Edit Form */
+.shipping-configs-page .shipping-edit-form {
+  padding: 0.5rem 0;
+}
+
+/* Help Section */
+.shipping-configs-page .shipping-help {
+  background: rgba(59, 130, 246, 0.05);
+  border: 1px solid rgba(59, 130, 246, 0.1);
+  border-radius: 8px;
+  padding: 1.25rem;
+}
+
+.shipping-configs-page .shipping-help h4 {
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin: 0 0 0.75rem 0;
+  color: #60a5fa;
+}
+
+.shipping-configs-page .shipping-help p {
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0 0 0.5rem 0;
+  line-height: 1.5;
+}
+
+.shipping-configs-page .shipping-help p:last-child {
+  margin-bottom: 0;
+}
+
+.shipping-configs-page .shipping-help a {
+  color: #60a5fa;
+  text-decoration: none;
+}
+
+.shipping-configs-page .shipping-help a:hover {
+  text-decoration: underline;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .shipping-configs-page {
+    padding: 1rem;
+  }
+
+  .shipping-configs-page .shipping-title h1 {
+    font-size: 1.5rem;
+  }
+
+  .shipping-configs-page .shipping-form-row {
+    flex-direction: column;
+  }
+
+  .shipping-configs-page .shipping-item-row {
+    flex-wrap: wrap;
+  }
+
+  .shipping-configs-page .shipping-item-row .shipping-select {
+    flex: 1;
+    min-width: 150px;
+  }
+
+  .shipping-configs-page .shipping-config-header {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .shipping-configs-page .shipping-items-ul {
+    flex-direction: column;
+  }
+}

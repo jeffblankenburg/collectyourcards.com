@@ -1,0 +1,587 @@
+/* Set Purchases Page - Dark Theme Styles (matching Seller Dashboard) */
+
+.set-purchases-page {
+  width: 100%;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  color: white;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Header */
+.set-purchases-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.set-purchases-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.set-purchases-title h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin: 0;
+  background: linear-gradient(135deg, #e5e7eb 0%, #f3f4f6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.set-purchases-title svg {
+  color: #60a5fa;
+}
+
+.set-purchases-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.purchase-nav-btn,
+.purchase-add-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-decoration: none;
+}
+
+.purchase-nav-btn {
+  background: rgba(59, 130, 246, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  color: #60a5fa;
+}
+
+.purchase-nav-btn:hover {
+  background: rgba(59, 130, 246, 0.25);
+  border-color: rgba(59, 130, 246, 0.4);
+}
+
+.purchase-add-btn {
+  background: rgba(16, 185, 129, 0.2);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  color: #34d399;
+}
+
+.purchase-add-btn:hover {
+  background: rgba(16, 185, 129, 0.3);
+  border-color: rgba(16, 185, 129, 0.5);
+}
+
+/* Summary Cards */
+.purchase-summary-cards {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.purchase-summary-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 0.75rem 1.25rem;
+  min-width: 120px;
+  text-align: center;
+}
+
+.purchase-summary-label {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.25rem;
+}
+
+.purchase-summary-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: white;
+}
+
+.purchase-value-spent {
+  color: #fbbf24;
+}
+
+.purchase-value-revenue {
+  color: #34d399;
+}
+
+.purchase-summary-hole {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.purchase-hole-negative {
+  color: #f87171;
+}
+
+.purchase-hole-positive {
+  color: #34d399;
+}
+
+/* Add Purchase Form */
+.purchase-add-form-container {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.purchase-add-form h3 {
+  margin: 0 0 1.25rem 0;
+  font-size: 1.125rem;
+  color: white;
+}
+
+.purchase-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.purchase-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.purchase-form-wide {
+  grid-column: 1 / -1;
+}
+
+.purchase-form-group label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.purchase-form-input,
+.purchase-form-select,
+.purchase-form-textarea {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.3);
+  color: white;
+  font-size: 0.875rem;
+  font-family: inherit;
+  transition: border-color 0.15s ease;
+}
+
+.purchase-form-input::placeholder,
+.purchase-form-textarea::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.purchase-form-input:focus,
+.purchase-form-select:focus,
+.purchase-form-textarea:focus {
+  outline: none;
+  border-color: #60a5fa;
+}
+
+.purchase-form-textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+/* Set Search - Searchable Dropdown */
+.purchase-set-search {
+  position: relative;
+  width: 100%;
+}
+
+.purchase-set-input {
+  width: 100%;
+  padding-right: 60px; /* Space for spinner and clear button */
+}
+
+.purchase-search-spinner {
+  position: absolute;
+  right: 36px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.purchase-set-clear {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 4px;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.purchase-set-clear:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+.purchase-search-results {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  width: 100%;
+  background: #1e293b;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  max-height: 280px;
+  overflow-y: auto;
+  z-index: 100;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  margin-top: 2px;
+}
+
+.purchase-search-result {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  transition: background 0.1s ease;
+  color: white;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.purchase-search-result:last-child {
+  border-bottom: none;
+}
+
+.purchase-search-result:hover,
+.purchase-search-result.highlighted {
+  background: rgba(59, 130, 246, 0.15);
+}
+
+.purchase-search-name {
+  color: white;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.purchase-search-counts {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.5);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Form Actions */
+.purchase-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.purchase-form-cancel,
+.purchase-form-submit {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.purchase-form-cancel {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.purchase-form-cancel:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+}
+
+.purchase-form-submit {
+  background: #10b981;
+  color: white;
+  border: none;
+}
+
+.purchase-form-submit:hover:not(:disabled) {
+  background: #059669;
+}
+
+.purchase-form-submit:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Table Container */
+.purchase-table-container {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.purchase-loading,
+.purchase-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  text-align: center;
+}
+
+.purchase-loading p,
+.purchase-empty p {
+  margin: 0.75rem 0 0;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.purchase-empty h3 {
+  margin: 0.75rem 0 0;
+  color: white;
+}
+
+.purchase-empty svg {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+/* Table Wrapper */
+.purchase-table-wrapper {
+  overflow-x: auto;
+  display: none;
+}
+
+.purchase-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.purchase-table th,
+.purchase-table td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.purchase-table th {
+  background: rgba(255, 255, 255, 0.05);
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.purchase-th-right,
+.purchase-td-right {
+  text-align: right;
+}
+
+.purchase-row {
+  cursor: pointer;
+  transition: background 0.1s ease;
+}
+
+.purchase-row:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.purchase-td-name {
+  max-width: 250px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.purchase-td-spent {
+  color: #fbbf24;
+  font-weight: 500;
+}
+
+.purchase-td-revenue {
+  color: #34d399;
+  font-weight: 500;
+}
+
+.purchase-td-hole {
+  font-weight: 600;
+}
+
+/* Mobile Card View */
+.purchase-mobile-view {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.75rem;
+}
+
+.purchase-mobile-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 1rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.purchase-mobile-card:hover {
+  border-color: #60a5fa;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.purchase-mobile-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.75rem;
+}
+
+.purchase-mobile-set {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.purchase-mobile-year {
+  font-size: 0.75rem;
+  color: #60a5fa;
+  font-weight: 600;
+}
+
+.purchase-mobile-name {
+  font-weight: 600;
+  color: white;
+}
+
+.purchase-mobile-hole {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.purchase-mobile-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.purchase-mobile-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.purchase-mobile-label {
+  font-size: 0.6875rem;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+}
+
+.purchase-mobile-value {
+  font-weight: 500;
+  color: white;
+}
+
+.purchase-mobile-footer {
+  display: flex;
+  gap: 1rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Responsive */
+@media (min-width: 768px) {
+  .set-purchases-page {
+    padding: 1.5rem;
+  }
+
+  .set-purchases-title h1 {
+    font-size: 1.75rem;
+  }
+
+  .purchase-mobile-view {
+    display: none;
+  }
+
+  .purchase-table-wrapper {
+    display: block;
+  }
+}
+
+@media (max-width: 480px) {
+  .set-purchases-page {
+    padding: 1rem;
+  }
+
+  .set-purchases-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .set-purchases-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .purchase-summary-cards {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .purchase-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .purchase-form-actions {
+    flex-direction: column;
+  }
+
+  .purchase-form-cancel,
+  .purchase-form-submit {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Spinning animation */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+}

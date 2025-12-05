@@ -20,7 +20,9 @@ function AdminUsers() {
     email: '',
     role: '',
     is_active: true,
-    is_verified: true
+    is_verified: true,
+    seller_role: '',
+    seller_expires: ''
   })
   const [addForm, setAddForm] = useState({
     name: '',
@@ -110,6 +112,25 @@ function AdminUsers() {
     return <span className="status-badge status-active">Active</span>
   }
 
+  const getSellerBadge = (sellerRole, sellerExpires) => {
+    if (!sellerRole) return <span className="seller-badge seller-none">-</span>
+
+    // Check if expired
+    if (sellerExpires && new Date(sellerExpires) < new Date()) {
+      return <span className="seller-badge seller-expired" title={`Expired ${formatDate(sellerExpires)}`}>{sellerRole} (expired)</span>
+    }
+
+    return (
+      <span
+        className={`seller-badge seller-${sellerRole}`}
+        title={sellerExpires ? `Expires ${formatDate(sellerExpires)}` : 'No expiration'}
+      >
+        {sellerRole}
+        {sellerExpires && <span className="seller-expires"> ({formatDate(sellerExpires)})</span>}
+      </span>
+    )
+  }
+
   const handleEditUser = (userData) => {
     setEditingUser(userData)
     setEditForm({
@@ -117,7 +138,9 @@ function AdminUsers() {
       email: userData.email || '',
       role: userData.role || 'user',
       is_active: userData.is_active ?? true,
-      is_verified: userData.is_verified ?? false
+      is_verified: userData.is_verified ?? false,
+      seller_role: userData.seller_role || '',
+      seller_expires: userData.seller_expires ? userData.seller_expires.split('T')[0] : ''
     })
     setShowEditModal(true)
   }
@@ -130,7 +153,9 @@ function AdminUsers() {
       email: '',
       role: '',
       is_active: true,
-      is_verified: true
+      is_verified: true,
+      seller_role: '',
+      seller_expires: ''
     })
     setSaving(false)
   }
@@ -205,7 +230,9 @@ function AdminUsers() {
         email: editForm.email.trim().toLowerCase(),
         role: editForm.role,
         is_active: editForm.is_active,
-        is_verified: editForm.is_verified
+        is_verified: editForm.is_verified,
+        seller_role: editForm.seller_role || null,
+        seller_expires: editForm.seller_expires || null
       }
 
       const response = await axios.put(`/api/admin/users/${editingUser.user_id}`, updateData)
@@ -315,6 +342,7 @@ function AdminUsers() {
               <div className="col-name">Name</div>
               <div className="col-email">Email</div>
               <div className="col-role">Role</div>
+              <div className="col-seller">Seller</div>
               <div className="col-cards">Cards</div>
               <div className="col-status">Status</div>
               <div className="col-created">Joined</div>
@@ -354,6 +382,9 @@ function AdminUsers() {
                 <div className="col-email">{u.email}</div>
                 <div className="col-role">
                   <span className={getRoleBadgeClass(u.role)}>{u.role}</span>
+                </div>
+                <div className="col-seller">
+                  {getSellerBadge(u.seller_role, u.seller_expires)}
                 </div>
                 <div className="col-cards">
                   {u.card_count ? u.card_count.toLocaleString() : '0'}
@@ -467,6 +498,38 @@ function AdminUsers() {
                     />
                     <span className="checkbox-label">Email Verified</span>
                   </label>
+                </div>
+              </div>
+
+              <div className="form-divider">
+                <span>Seller Access</span>
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Seller Role</label>
+                  <select
+                    className="form-input"
+                    value={editForm.seller_role}
+                    onChange={(e) => handleFormChange('seller_role', e.target.value)}
+                  >
+                    <option value="">No Seller Access</option>
+                    <option value="basic">Basic</option>
+                    <option value="pro">Pro</option>
+                    <option value="enterprise">Enterprise</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label>Expires</label>
+                  <input
+                    type="date"
+                    className="form-input"
+                    value={editForm.seller_expires}
+                    onChange={(e) => handleFormChange('seller_expires', e.target.value)}
+                    disabled={!editForm.seller_role}
+                  />
+                  <span className="form-hint">Leave blank for no expiration</span>
                 </div>
               </div>
 

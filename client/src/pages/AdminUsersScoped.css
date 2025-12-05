@@ -139,8 +139,8 @@
 
 .admin-users-page .table-header {
   display: grid;
-  grid-template-columns: 80px 140px 1fr 1fr 120px 100px 140px 150px 150px 100px;
-  gap: 1rem;
+  grid-template-columns: 60px 120px 1fr 1fr 90px 100px 80px 100px 100px 130px 80px;
+  gap: 0.75rem;
   padding: 1rem;
   background: rgba(255, 255, 255, 0.1);
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
@@ -153,8 +153,8 @@
 
 .admin-users-page .user-row {
   display: grid;
-  grid-template-columns: 80px 140px 1fr 1fr 120px 100px 140px 150px 150px 100px;
-  gap: 1rem;
+  grid-template-columns: 60px 120px 1fr 1fr 90px 100px 80px 100px 100px 130px 80px;
+  gap: 0.75rem;
   padding: 1rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   transition: all 0.2s ease;
@@ -809,4 +809,97 @@
     width: 100%;
     justify-content: center;
   }
+}
+
+/* Seller Column */
+.admin-users-page .col-seller {
+  text-align: center;
+}
+
+.admin-users-page .seller-badge {
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: inline-block;
+}
+
+.admin-users-page .seller-none {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.admin-users-page .seller-basic {
+  background: rgba(34, 197, 94, 0.2);
+  color: #86efac;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.admin-users-page .seller-pro {
+  background: rgba(59, 130, 246, 0.2);
+  color: #93c5fd;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.admin-users-page .seller-enterprise {
+  background: rgba(168, 85, 247, 0.2);
+  color: #c4b5fd;
+  border: 1px solid rgba(168, 85, 247, 0.3);
+}
+
+.admin-users-page .seller-expired {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.admin-users-page .seller-expires {
+  font-size: 0.6rem;
+  font-weight: 400;
+  opacity: 0.8;
+}
+
+/* Form Divider */
+.admin-users-page .form-divider {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 1.5rem 0 1rem;
+}
+
+.admin-users-page .form-divider::before,
+.admin-users-page .form-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.admin-users-page .form-divider span {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Form Row (side by side fields) */
+.admin-users-page .form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+@media (max-width: 480px) {
+  .admin-users-page .form-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.admin-users-page .form-hint {
+  display: block;
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.5);
+  margin-top: 0.25rem;
 }

@@ -1,0 +1,858 @@
+/* Seller Dashboard Page Styles - Spreadsheet-like Editable Table */
+.seller-dashboard-page {
+  width: 100%;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  color: white;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Header Section */
+.seller-dashboard-page .seller-dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.seller-dashboard-page .seller-dashboard-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.seller-dashboard-page .seller-dashboard-title h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin: 0;
+  background: linear-gradient(135deg, #e5e7eb 0%, #f3f4f6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.seller-dashboard-page .seller-dashboard-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.seller-dashboard-page .seller-nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: rgba(59, 130, 246, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  border-radius: 6px;
+  color: #60a5fa;
+  font-size: 0.875rem;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.seller-dashboard-page .seller-nav-btn:hover {
+  background: rgba(59, 130, 246, 0.25);
+  border-color: rgba(59, 130, 246, 0.4);
+}
+
+.seller-dashboard-page .seller-nav-btn-primary {
+  background: rgba(16, 185, 129, 0.2);
+  border-color: rgba(16, 185, 129, 0.4);
+  color: #34d399;
+}
+
+.seller-dashboard-page .seller-nav-btn-primary:hover {
+  background: rgba(16, 185, 129, 0.3);
+  border-color: rgba(16, 185, 129, 0.5);
+}
+
+.seller-dashboard-page .seller-refresh-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.seller-dashboard-page .seller-refresh-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+}
+
+/* Summary Cards */
+.seller-dashboard-page .seller-dashboard-summary {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.seller-dashboard-page .seller-summary-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 0.75rem 1.25rem;
+  min-width: 120px;
+}
+
+.seller-dashboard-page .seller-summary-label {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 0.25rem;
+}
+
+.seller-dashboard-page .seller-summary-value {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: white;
+}
+
+.seller-dashboard-page .seller-summary-sold {
+  border-color: rgba(34, 197, 94, 0.3);
+  background: rgba(34, 197, 94, 0.1);
+}
+
+.seller-dashboard-page .seller-summary-revenue {
+  border-color: rgba(59, 130, 246, 0.3);
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.seller-dashboard-page .seller-summary-profit {
+  border-color: rgba(34, 197, 94, 0.3);
+  background: rgba(34, 197, 94, 0.1);
+}
+
+.seller-dashboard-page .seller-profit-positive {
+  color: #86efac !important;
+}
+
+.seller-dashboard-page .seller-profit-negative {
+  color: #fca5a5 !important;
+}
+
+/* Table Container */
+.seller-dashboard-page .seller-dashboard-table-container {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  overflow: hidden;
+  flex: 1;
+}
+
+.seller-dashboard-page .seller-table-wrapper {
+  overflow-x: auto;
+  max-height: calc(100vh - 280px);
+  overflow-y: auto;
+}
+
+.seller-dashboard-page .seller-dashboard-loading,
+.seller-dashboard-page .seller-dashboard-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  color: rgba(255, 255, 255, 0.6);
+  gap: 1rem;
+}
+
+.seller-dashboard-page .seller-dashboard-empty h3 {
+  color: white;
+  margin: 0;
+}
+
+.seller-dashboard-page .seller-dashboard-empty p {
+  margin: 0;
+  text-align: center;
+}
+
+.seller-dashboard-page .spinning {
+  animation: seller-spin 1s linear infinite;
+}
+
+@keyframes seller-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Editable Table */
+.seller-dashboard-page .seller-editable-table {
+  width: max-content;
+  min-width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+  table-layout: fixed;
+}
+
+.seller-dashboard-page .seller-editable-table th,
+.seller-dashboard-page .seller-editable-table td {
+  padding: 0.375rem 0.25rem;
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  white-space: nowrap;
+  vertical-align: middle;
+  height: 38px;
+  box-sizing: border-box;
+}
+
+.seller-dashboard-page .seller-editable-table th {
+  position: sticky;
+  top: 0;
+  background: #1e293b;
+  font-weight: 600;
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.6);
+  z-index: 10;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+/* Sortable Headers */
+.seller-dashboard-page .seller-sortable-th {
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.seller-dashboard-page .seller-sortable-th:hover {
+  background: rgba(59, 130, 246, 0.15);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.seller-dashboard-page .seller-sort-active {
+  color: #60a5fa;
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.seller-dashboard-page .seller-th-content {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.seller-dashboard-page .seller-sort-icon {
+  font-size: 0.5rem;
+  opacity: 0.6;
+}
+
+.seller-dashboard-page .seller-sort-active .seller-sort-icon {
+  opacity: 1;
+}
+
+.seller-dashboard-page .seller-editable-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+/* Player Cell */
+.seller-dashboard-page .seller-td-player {
+  max-width: 180px;
+}
+
+.seller-dashboard-page .seller-player-info {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+/* Team Circle for Seller Dashboard */
+.seller-dashboard-page .team-circle-base {
+  border-radius: 50%;
+  border: 2px solid;
+  color: white;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.seller-dashboard-page .team-circle-xs {
+  width: 20px;
+  height: 20px;
+  font-size: 0.45rem;
+  border-width: 1.5px;
+}
+
+
+.seller-dashboard-page .seller-player-name {
+  font-size: 0.8125rem;
+  color: rgba(255, 255, 255, 0.9);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Series Cell */
+.seller-dashboard-page .seller-td-series {
+  max-width: 160px;
+}
+
+.seller-dashboard-page .seller-series-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.seller-dashboard-page .seller-series-name {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.7);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.seller-dashboard-page .seller-print-info {
+  font-size: 0.6875rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Tags Cell */
+.seller-dashboard-page .seller-td-tags {
+  max-width: 80px;
+}
+
+.seller-dashboard-page .seller-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.seller-dashboard-page .seller-tag {
+  padding: 0.15rem 0.3rem;
+  border-radius: 4px;
+  font-size: 0.55rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  border: 1px solid;
+}
+
+.seller-dashboard-page .seller-tag-rc {
+  background: rgba(34, 197, 94, 0.2);
+  color: #22c55e;
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+.seller-dashboard-page .seller-tag-auto {
+  background: rgba(59, 130, 246, 0.2);
+  color: #3b82f6;
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.seller-dashboard-page .seller-tag-relic {
+  background: rgba(168, 85, 247, 0.2);
+  color: #a855f7;
+  border-color: rgba(168, 85, 247, 0.3);
+}
+
+.seller-dashboard-page .seller-tag-sp {
+  background: rgba(236, 72, 153, 0.2);
+  color: #ec4899;
+  border-color: rgba(236, 72, 153, 0.3);
+}
+
+/* Percent Cell */
+.seller-dashboard-page .seller-td-percent {
+  text-align: right;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+/* Legacy card info (for backwards compat) */
+.seller-dashboard-page .seller-card-info-compact {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 150px;
+  max-width: 200px;
+}
+
+.seller-dashboard-page .seller-card-number {
+  font-weight: 600;
+  color: #60a5fa;
+  font-size: 0.75rem;
+}
+
+.seller-dashboard-page .seller-card-player {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.8);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.seller-dashboard-page .seller-card-unknown {
+  color: rgba(255, 255, 255, 0.4);
+  font-style: italic;
+}
+
+/* Mobile card rows */
+.seller-dashboard-page .seller-mobile-card-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.seller-dashboard-page .seller-mobile-percent {
+  font-size: 0.875rem;
+  margin-left: 0.5rem;
+  opacity: 0.8;
+}
+
+/* Inline Form Controls */
+.seller-dashboard-page .seller-inline-select,
+.seller-dashboard-page .seller-inline-input,
+.seller-dashboard-page .seller-inline-date {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 3px;
+  padding: 0.1875rem 0.375rem;
+  color: white;
+  font-size: 0.8125rem;
+  width: 100%;
+  min-width: 60px;
+  height: 26px;
+  box-sizing: border-box;
+  margin: 0;
+}
+
+.seller-dashboard-page .seller-inline-select:focus,
+.seller-dashboard-page .seller-inline-input:focus,
+.seller-dashboard-page .seller-inline-date:focus {
+  outline: none;
+  border-color: #3b82f6;
+  background: rgba(59, 130, 246, 0.15);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.seller-dashboard-page .seller-inline-select option {
+  background: #1e293b;
+  color: white;
+}
+
+.seller-dashboard-page .seller-inline-date {
+  min-width: 110px;
+}
+
+.seller-dashboard-page .seller-inline-date::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  opacity: 0.6;
+}
+
+/* Status Select Styling */
+.seller-dashboard-page .seller-status-select[data-status="listed"] {
+  color: #93c5fd;
+}
+
+.seller-dashboard-page .seller-status-select[data-status="sold"] {
+  color: #86efac;
+}
+
+/* Editable Cell - Fixed height to match input */
+.seller-dashboard-page .seller-editable-cell {
+  display: flex;
+  align-items: center;
+  padding: 0.1875rem 0.375rem;
+  border-radius: 3px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background 0.1s ease, border-color 0.1s ease;
+  height: 26px;
+  box-sizing: border-box;
+  margin: 0;
+}
+
+.seller-dashboard-page .seller-editable-cell:hover {
+  background: rgba(59, 130, 246, 0.1);
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+/* Currency Cells */
+.seller-dashboard-page .seller-td-currency {
+  text-align: right;
+  font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+  min-width: 80px;
+  width: 80px;
+}
+
+.seller-dashboard-page .seller-td-currency .seller-editable-cell,
+.seller-dashboard-page .seller-td-currency .seller-inline-input {
+  text-align: right;
+  justify-content: flex-end;
+}
+
+.seller-dashboard-page .seller-td-profit {
+  font-weight: 600;
+  min-width: 85px;
+  width: 85px;
+}
+
+/* Notes Cell */
+.seller-dashboard-page .seller-td-notes {
+  max-width: 200px;
+}
+
+.seller-dashboard-page .seller-td-notes .seller-editable-cell {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Read-only cells */
+.seller-dashboard-page .seller-td-readonly {
+  color: rgba(255, 255, 255, 0.5);
+  font-style: italic;
+}
+
+.seller-dashboard-page .seller-mobile-readonly {
+  color: rgba(255, 255, 255, 0.5);
+  font-style: italic;
+  padding: 0.1875rem 0.375rem;
+}
+
+/* Actions Cell */
+.seller-dashboard-page .seller-td-actions {
+  width: 40px;
+  text-align: center;
+}
+
+.seller-dashboard-page .seller-delete-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: transparent !important;
+  border: none;
+  border-radius: 4px;
+  color: rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.seller-dashboard-page .seller-delete-btn:hover {
+  background: rgba(239, 68, 68, 0.2) !important;
+  color: #fca5a5;
+}
+
+/* Mobile View - Hidden by default on desktop */
+.seller-dashboard-page .seller-mobile-view {
+  display: none;
+}
+
+/* Mobile Card Styles */
+.seller-dashboard-page .seller-mobile-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  overflow: hidden;
+}
+
+.seller-dashboard-page .seller-mobile-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.seller-dashboard-page .seller-mobile-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.seller-dashboard-page .seller-mobile-card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+}
+
+.seller-dashboard-page .seller-mobile-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.seller-dashboard-page .seller-mobile-field label {
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.seller-dashboard-page .seller-mobile-field-profit {
+  background: rgba(255, 255, 255, 0.03);
+  padding: 0.5rem;
+  border-radius: 4px;
+  grid-column: span 2;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.seller-dashboard-page .seller-mobile-profit {
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.seller-dashboard-page .seller-mobile-field-full {
+  grid-column: span 2;
+}
+
+.seller-dashboard-page .seller-mobile-card-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+/* Mobile field inputs */
+.seller-dashboard-page .seller-mobile-field .seller-inline-select,
+.seller-dashboard-page .seller-mobile-field .seller-inline-date,
+.seller-dashboard-page .seller-mobile-field .seller-inline-input,
+.seller-dashboard-page .seller-mobile-field .seller-editable-cell {
+  height: 36px;
+  font-size: 0.875rem;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  /* Hide desktop table, show mobile cards */
+  .seller-dashboard-page .seller-table-wrapper {
+    display: none;
+  }
+
+  .seller-dashboard-page .seller-mobile-view {
+    display: block;
+    max-height: calc(100vh - 280px);
+    overflow-y: auto;
+    padding: 0.5rem;
+  }
+
+  .seller-dashboard-page {
+    padding: 1rem;
+  }
+
+  .seller-dashboard-page .seller-dashboard-title h1 {
+    font-size: 1.5rem;
+  }
+
+  .seller-dashboard-page .seller-dashboard-summary {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+  }
+
+  .seller-dashboard-page .seller-summary-card {
+    min-width: auto;
+    padding: 0.5rem 0.75rem;
+  }
+
+  .seller-dashboard-page .seller-summary-value {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .seller-dashboard-page .seller-dashboard-summary {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .seller-dashboard-page .seller-mobile-card-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 400px) {
+  .seller-dashboard-page .seller-dashboard-summary {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .seller-dashboard-page .seller-summary-card:nth-child(5),
+  .seller-dashboard-page .seller-summary-card:nth-child(4) {
+    grid-column: span 1;
+  }
+}
+
+/* Profit Margin Summary Card */
+.seller-dashboard-page .seller-summary-margin {
+  border-color: rgba(168, 85, 247, 0.3);
+  background: rgba(168, 85, 247, 0.1);
+}
+
+/* Analytics Toggle Button */
+.seller-dashboard-page .seller-analytics-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.seller-dashboard-page .seller-analytics-toggle:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: white;
+}
+
+/* Analytics Section */
+.seller-dashboard-page .seller-analytics-section {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1rem;
+}
+
+.seller-dashboard-page .seller-analytics-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.seller-dashboard-page .seller-analytics-card h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  margin: 0 0 0.75rem 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.seller-dashboard-page .seller-analytics-table {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.seller-dashboard-page .seller-analytics-row {
+  display: flex;
+  align-items: center;
+  padding: 0.375rem 0;
+  font-size: 0.8125rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.seller-dashboard-page .seller-analytics-row:last-child {
+  border-bottom: none;
+}
+
+.seller-dashboard-page .seller-analytics-header {
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 600;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.seller-dashboard-page .seller-analytics-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.seller-dashboard-page .seller-analytics-num {
+  width: 70px;
+  text-align: right;
+  font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.seller-dashboard-page .seller-analytics-negative {
+  color: #fca5a5 !important;
+}
+
+/* Cost Breakdown Card */
+.seller-dashboard-page .seller-analytics-costs {
+  grid-column: span 1;
+}
+
+.seller-dashboard-page .seller-cost-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+}
+
+.seller-dashboard-page .seller-cost-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.5rem;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 4px;
+}
+
+.seller-dashboard-page .seller-cost-label {
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.seller-dashboard-page .seller-cost-value {
+  font-size: 1rem;
+  font-weight: 600;
+  font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+}
+
+.seller-dashboard-page .seller-cost-highlight {
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  grid-column: span 2;
+}
+
+/* Analytics Responsive */
+@media (max-width: 1024px) {
+  .seller-dashboard-page .seller-analytics-section {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .seller-dashboard-page .seller-analytics-num {
+    width: 55px;
+    font-size: 0.6875rem;
+  }
+
+  .seller-dashboard-page .seller-cost-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+  }
+
+  .seller-dashboard-page .seller-cost-highlight {
+    grid-column: span 2;
+  }
+}

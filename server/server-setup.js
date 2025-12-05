@@ -270,7 +270,10 @@ if (config.environment === 'test') {
     { path: '/api/admin/achievements', file: './routes/admin-achievements', name: 'Admin Achievements' },
     { path: '/api/admin/import', file: './routes/import-workflow', name: 'Admin Import' },
     { path: '/api/admin', file: './routes/admin-query-tester', name: 'Admin Query Tester' },
-    { path: '/api/blog', file: './routes/blog', name: 'Blog' }
+    { path: '/api/blog', file: './routes/blog', name: 'Blog' },
+    { path: '/api/seller', file: './routes/seller', name: 'Seller Tools' },
+    { path: '/api/supplies', file: './routes/supplies', name: 'Supply Management' },
+    { path: '/api/admin/seller', file: './routes/admin-seller', name: 'Admin Seller Config' }
   ];
 
   console.log('📍 Loading API routes in production mode...');

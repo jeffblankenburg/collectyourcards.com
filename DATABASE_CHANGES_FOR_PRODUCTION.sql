@@ -1,288 +1,168 @@
 -- ============================================================================
 -- DATABASE CHANGES FOR PRODUCTION
 -- ============================================================================
--- This file contains SQL scripts that need to be run on production
+-- This file contains SQL scripts that need to be run on production.
+-- Scripts should be IDEMPOTENT - safe to run multiple times without errors.
+--
+-- After running scripts in production, move them to the archive section
+-- at the bottom or clear the file.
 -- ============================================================================
 
 -- ============================================================================
--- 2025-01-11: Add is_short_print column to card table
--- Description: Adds is_short_print column to track short print cards (cards
---              with lower print runs than standard cards in a set). Column
---              follows same pattern as is_rookie, is_autograph, is_relic.
---              Also migrates existing cards with "SP" in notes field.
+-- PRODUCT_TYPE TABLE (Updated)
+-- Added: 2024-12-04
+-- Updated: 2025-12-04 - Made user_id nullable for global/system types
+-- Purpose: Product types for purchases (hobby box, case, etc.)
+--          user_id NULL = global/system type, user_id = user-specific type
 -- ============================================================================
 
-SET QUOTED_IDENTIFIER ON;
-
-PRINT '';
-PRINT '============================================================================';
-PRINT 'SHORT PRINT MIGRATION';
-PRINT '============================================================================';
-PRINT '';
-
--- Check if column already exists
-IF NOT EXISTS (
-    SELECT 1
-    FROM sys.columns
-    WHERE object_id = OBJECT_ID('card')
-    AND name = 'is_short_print'
-)
+IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'product_type')
 BEGIN
-    PRINT 'Adding is_short_print column to card table...';
+    CREATE TABLE product_type (
+        product_type_id INT IDENTITY(1,1) PRIMARY KEY,
+        user_id BIGINT NULL,  -- NULL = global/system type
+        name NVARCHAR(100) NOT NULL,
+        slug VARCHAR(50) NOT NULL,
+        description NVARCHAR(255) NULL,
+        is_active BIT NOT NULL DEFAULT 1,
+        display_order INT NOT NULL DEFAULT 0,
+        created DATETIME NOT NULL DEFAULT GETDATE(),
 
-    ALTER TABLE card
-    ADD is_short_print BIT NOT NULL DEFAULT 0;
+        CONSTRAINT FK_product_type_user FOREIGN KEY (user_id)
+            REFERENCES [user](user_id) ON DELETE CASCADE
+    );
 
-    PRINT 'Column added successfully!';
-    PRINT '';
+    CREATE INDEX IX_product_type_user ON product_type(user_id);
+    CREATE INDEX IX_product_type_user_active ON product_type(user_id, is_active);
+    CREATE INDEX IX_product_type_user_slug ON product_type(user_id, slug);
+
+    PRINT 'Created product_type table with indexes';
 END
 ELSE
 BEGIN
-    PRINT 'Column is_short_print already exists. Skipping column creation.';
-    PRINT '';
+    -- Make user_id nullable if it isn't already
+    IF EXISTS (
+        SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_NAME = 'product_type' AND COLUMN_NAME = 'user_id' AND IS_NULLABLE = 'NO'
+    )
+    BEGIN
+        ALTER TABLE product_type ALTER COLUMN user_id BIGINT NULL;
+        PRINT 'Made product_type.user_id nullable';
+    END
+    ELSE
+    BEGIN
+        PRINT 'product_type table already exists with nullable user_id';
+    END
 END
-
--- Verify the column exists
-SELECT
-    c.name as column_name,
-    t.name as data_type,
-    c.is_nullable,
-    ISNULL(dc.definition, 'No default') as default_value
-FROM sys.columns c
-JOIN sys.types t ON c.user_type_id = t.user_type_id
-LEFT JOIN sys.default_constraints dc ON c.default_object_id = dc.object_id
-WHERE c.object_id = OBJECT_ID('card')
-AND c.name = 'is_short_print';
-
-PRINT '';
-PRINT 'Checking cards with SP in notes...';
-PRINT '';
-
--- Check how many cards will be affected
-SELECT COUNT(*) AS affected_cards
-FROM card
-WHERE notes IS NOT NULL
-  AND is_short_print = 0
-  AND (
-    notes LIKE '%SP%'
-    OR notes LIKE '%sp%'
-    OR notes LIKE '%S.P.%'
-    OR notes LIKE '%s.p.%'
-    OR LOWER(notes) LIKE '%short print%'
-  );
-
-PRINT '';
-PRINT 'Starting migration...';
-PRINT '';
-
-BEGIN TRANSACTION;
-
--- Update cards: Set is_short_print = 1 and clean notes
-UPDATE card
-SET
-    is_short_print = 1,
-    notes = LTRIM(RTRIM(
-        REPLACE(
-        REPLACE(
-        REPLACE(
-        REPLACE(
-        REPLACE(
-        REPLACE(
-        REPLACE(
-        REPLACE(
-        REPLACE(
-        REPLACE(
-        REPLACE(
-        REPLACE(
-        REPLACE(
-        REPLACE(
-        REPLACE(
-        REPLACE(notes,
-            'Short Print', ''),
-            'short print', ''),
-            'SHORT PRINT', ''),
-            '(SP)', ''),
-            '(sp)', ''),
-            'SP:', ''),
-            'sp:', ''),
-            'SP-', ''),
-            'sp-', ''),
-            'S.P.', ''),
-            's.p.', ''),
-            ' SP ', ' '),
-            ' sp ', ' '),
-            'SP', ''),
-            'sp', ''),
-            '  ', ' ')
-    ))
-WHERE notes IS NOT NULL
-  AND (
-    notes LIKE '%SP%'
-    OR notes LIKE '%sp%'
-    OR notes LIKE '%S.P.%'
-    OR notes LIKE '%s.p.%'
-    OR LOWER(notes) LIKE '%short print%'
-  );
-
-PRINT 'Cards updated with is_short_print = 1:';
-SELECT @@ROWCOUNT AS cards_updated;
-
--- Clean up leading and trailing commas/spaces from notes
--- Handle leading comma with space: ", text" → "text"
-UPDATE card
-SET notes =
-  CASE
-    WHEN LEFT(notes, 2) = ', ' THEN SUBSTRING(notes, 3, LEN(notes))
-    WHEN LEFT(notes, 1) = ',' THEN LTRIM(SUBSTRING(notes, 2, LEN(notes)))
-    ELSE notes
-  END
-WHERE notes LIKE ',%';
-
-PRINT 'Notes with leading commas cleaned:';
-SELECT @@ROWCOUNT AS leading_commas_cleaned;
-
--- Handle trailing comma with space: "text ," → "text" or "text," → "text"
-UPDATE card
-SET notes =
-  CASE
-    WHEN RIGHT(notes, 2) = ' ,' THEN SUBSTRING(notes, 1, LEN(notes) - 2)
-    WHEN RIGHT(notes, 1) = ',' THEN RTRIM(SUBSTRING(notes, 1, LEN(notes) - 1))
-    ELSE notes
-  END
-WHERE notes LIKE '%,';
-
-PRINT 'Notes with trailing commas cleaned:';
-SELECT @@ROWCOUNT AS trailing_commas_cleaned;
-
--- Final cleanup: trim any extra spaces
-UPDATE card
-SET notes = LTRIM(RTRIM(notes))
-WHERE notes LIKE ' %' OR notes LIKE '% ';
-
-PRINT 'Extra spaces trimmed:';
-SELECT @@ROWCOUNT AS spaces_trimmed;
-
--- Set empty notes to NULL for consistency
-UPDATE card
-SET notes = NULL
-WHERE notes IS NOT NULL
-  AND (
-    notes = ''
-    OR LEN(LTRIM(RTRIM(notes))) = 0
-  );
-
-PRINT 'Empty notes set to NULL:';
-SELECT @@ROWCOUNT AS empty_notes_cleaned;
-
-COMMIT TRANSACTION;
-
-PRINT '';
-PRINT 'Migration completed successfully!';
-PRINT '';
-
--- Verification query
-PRINT 'Verification - Total short print cards:';
-SELECT
-    COUNT(*) AS total_short_print_cards,
-    COUNT(CASE WHEN notes IS NOT NULL AND notes LIKE '%SP%' THEN 1 END) AS still_has_sp_in_notes
-FROM card
-WHERE is_short_print = 1;
-
-PRINT '';
-PRINT 'Sample of updated records (first 10):';
-SELECT TOP 10
-    card_id,
-    card_number,
-    notes AS cleaned_notes,
-    is_short_print
-FROM card
-WHERE is_short_print = 1
-ORDER BY card_id;
-
-PRINT '';
-PRINT '============================================================================';
-PRINT 'MIGRATION COMPLETE';
-PRINT '============================================================================';
-PRINT '';
+GO
 
 -- ============================================================================
--- 2025-01-12: Add front_image_path and back_image_path columns to card table
--- Description: Adds columns to store web-optimized card image URLs for
---              performance (carousel, card detail pages). Used by Issue #33
---              image optimization system. Original user uploads remain
---              separate in user_card_photo table.
+-- SALE_STATUS TABLE
+-- Added: 2025-12-04
+-- Purpose: Lookup table for sale statuses (listed, sold, shipped, etc.)
 -- ============================================================================
 
-PRINT '';
-PRINT '============================================================================';
-PRINT 'CARD IMAGE OPTIMIZATION - ADD IMAGE PATH COLUMNS';
-PRINT '============================================================================';
-PRINT '';
-
--- Check if front_image_path column already exists
-IF NOT EXISTS (
-    SELECT 1
-    FROM sys.columns
-    WHERE object_id = OBJECT_ID('card')
-    AND name = 'front_image_path'
-)
+IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'sale_status')
 BEGIN
-    PRINT 'Adding front_image_path column to card table...';
+    CREATE TABLE sale_status (
+        sale_status_id INT IDENTITY(1,1) PRIMARY KEY,
+        name NVARCHAR(50) NOT NULL,
+        slug VARCHAR(50) NOT NULL,
+        description NVARCHAR(255) NULL,
+        color VARCHAR(20) NULL,
+        is_active BIT NOT NULL DEFAULT 1,
+        display_order INT NOT NULL DEFAULT 0,
+        created DATETIME NOT NULL DEFAULT GETDATE(),
 
-    ALTER TABLE card
-    ADD front_image_path NVARCHAR(MAX) NULL;
+        CONSTRAINT UQ_sale_status_slug UNIQUE (slug)
+    );
 
-    PRINT 'Column front_image_path added successfully!';
-    PRINT '';
+    CREATE INDEX IX_sale_status_active ON sale_status(is_active);
+
+    -- Seed default statuses
+    INSERT INTO sale_status (name, slug, description, color, display_order) VALUES
+        ('Listed', 'listed', 'Card is listed for sale', '#3b82f6', 0),
+        ('Sold', 'sold', 'Card has been sold', '#10b981', 1),
+        ('Shipped', 'shipped', 'Card has been shipped', '#8b5cf6', 2),
+        ('Delivered', 'delivered', 'Card has been delivered', '#06b6d4', 3),
+        ('Cancelled', 'cancelled', 'Sale was cancelled', '#ef4444', 4),
+        ('Returned', 'returned', 'Card was returned', '#f97316', 5);
+
+    PRINT 'Created sale_status table with default values';
 END
 ELSE
 BEGIN
-    PRINT 'Column front_image_path already exists. Skipping column creation.';
-    PRINT '';
+    PRINT 'sale_status table already exists';
 END
+GO
 
--- Check if back_image_path column already exists
+-- ============================================================================
+-- USER TABLE - ADD SELLER ACCESS FIELDS
+-- Added: 2025-12-04
+-- Purpose: Add seller_role and seller_expires for seller access control
+--          seller_role: NULL = no access, 'basic', 'pro', 'enterprise'
+--          seller_expires: Optional expiration date for seller access
+-- ============================================================================
+
 IF NOT EXISTS (
-    SELECT 1
-    FROM sys.columns
-    WHERE object_id = OBJECT_ID('card')
-    AND name = 'back_image_path'
+    SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_NAME = 'user' AND COLUMN_NAME = 'seller_role'
 )
 BEGIN
-    PRINT 'Adding back_image_path column to card table...';
-
-    ALTER TABLE card
-    ADD back_image_path NVARCHAR(MAX) NULL;
-
-    PRINT 'Column back_image_path added successfully!';
-    PRINT '';
+    ALTER TABLE [user] ADD seller_role NVARCHAR(50) NULL;
+    PRINT 'Added seller_role column to user table';
 END
 ELSE
 BEGIN
-    PRINT 'Column back_image_path already exists. Skipping column creation.';
-    PRINT '';
+    PRINT 'seller_role column already exists on user table';
 END
+GO
 
--- Verify the columns exist
-PRINT 'Verifying columns...';
-SELECT
-    c.name as column_name,
-    t.name as data_type,
-    c.is_nullable,
-    c.max_length
-FROM sys.columns c
-JOIN sys.types t ON c.user_type_id = t.user_type_id
-WHERE c.object_id = OBJECT_ID('card')
-AND c.name IN ('front_image_path', 'back_image_path')
-ORDER BY c.name;
+IF NOT EXISTS (
+    SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_NAME = 'user' AND COLUMN_NAME = 'seller_expires'
+)
+BEGIN
+    ALTER TABLE [user] ADD seller_expires DATETIME NULL;
+    PRINT 'Added seller_expires column to user table';
+END
+ELSE
+BEGIN
+    PRINT 'seller_expires column already exists on user table';
+END
+GO
 
-PRINT '';
-PRINT '============================================================================';
-PRINT 'IMAGE PATH COLUMNS MIGRATION COMPLETE';
-PRINT '============================================================================';
-PRINT '';
-PRINT 'Next steps:';
-PRINT '1. Deploy code changes to production';
-PRINT '2. Run migration script: node server/scripts/migrate-optimize-card-images.js';
-PRINT '3. This will populate front_image_path and back_image_path for existing cards';
-PRINT '';
+-- ============================================================================
+-- SUPPLY_BATCH TABLE - ADD IMAGE_URL AND SOURCE_URL FIELDS
+-- Added: 2025-12-05
+-- Purpose: Add image_url for product photos and source_url for purchase links
+-- ============================================================================
+
+IF NOT EXISTS (
+    SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_NAME = 'supply_batch' AND COLUMN_NAME = 'image_url'
+)
+BEGIN
+    ALTER TABLE supply_batch ADD image_url NVARCHAR(500) NULL;
+    PRINT 'Added image_url column to supply_batch table';
+END
+ELSE
+BEGIN
+    PRINT 'image_url column already exists on supply_batch table';
+END
+GO
+
+IF NOT EXISTS (
+    SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_NAME = 'supply_batch' AND COLUMN_NAME = 'source_url'
+)
+BEGIN
+    ALTER TABLE supply_batch ADD source_url NVARCHAR(500) NULL;
+    PRINT 'Added source_url column to supply_batch table';
+END
+ELSE
+BEGIN
+    PRINT 'source_url column already exists on supply_batch table';
+END
+GO
+

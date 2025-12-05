@@ -26,6 +26,7 @@ const CardTable = ({
   loading = false,
   loadingMore = false, // Loading more cards (not initial load)
   onAddCard = null,
+  onSellCard = null, // Sell card handler (admin only)
   onCardClick = null,
   onSeriesClick = null,
   onPlayerClick = null,
@@ -817,6 +818,7 @@ const CardTable = ({
                           <AddToListDropdown
                             card={card}
                             onAddToCollection={() => onAddCard?.(card)}
+                            onSellCard={onSellCard ? () => onSellCard(card) : null}
                           />
                         </td>
                       )}

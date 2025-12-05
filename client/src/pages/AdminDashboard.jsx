@@ -935,6 +935,10 @@ function AdminDashboard() {
             Quick Actions
           </h2>
           <div className="action-buttons">
+            <button className="action-btn" onClick={() => window.location.href = '/seller'}>
+              <Icon name="dollar-sign" size={16} />
+              Seller Dashboard
+            </button>
             <button className="action-btn" onClick={() => window.location.href = '/admin/cards-needing-reference'}>
               <Icon name="image" size={16} />
               Assign Card Images

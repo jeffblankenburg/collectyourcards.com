@@ -27,6 +27,7 @@ const CollectionTable = ({
   onEditCard = null,
   onDeleteCard = null,
   onFavoriteToggle = null,
+  onSellCard = null, // Sell card from collection (admin only)
   onCardClick = null,
   showSearch = true,
   showGalleryToggle = false,
@@ -71,6 +72,7 @@ const CollectionTable = ({
     grade: 100,        // Fixed width for grades
     am_auto: 100,      // Width for "AM AUTO" header text
     notes: 200,        // Generous width for notes
+    sell: 56,          // Sell button column (admin only)
     delete: 64         // 32px button + 32px padding (more generous spacing)
   })
   const [isResizing, setIsResizing] = useState(false)
@@ -796,11 +798,16 @@ const CollectionTable = ({
               >
                 <div className="header-with-resize">
                   <div className="collection-table-header-content">
-                    PRODUCTION CODE
+                    PROD CODE
                   </div>
                   <ResizeHandle columnKey="production_code" />
                 </div>
               </th>
+              {onSellCard && (
+                <th className="sell-header" style={{ width: columnWidths.sell }}>
+                  SELL
+                </th>
+              )}
               <th className="delete-header" style={{ width: columnWidths.delete }}>
                 DELETE
               </th>
@@ -949,6 +956,20 @@ const CollectionTable = ({
                 </td>
                 <td className="notes-cell">{card.notes}</td>
                 <td className="production-code-cell">{card.series_rel?.production_code || ''}</td>
+                {onSellCard && (
+                  <td className="sell-cell">
+                    <button
+                      className="sell-card-btn"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onSellCard(card)
+                      }}
+                      title="Sell this card"
+                    >
+                      <Icon name="dollar-sign" size={16} />
+                    </button>
+                  </td>
+                )}
                 <td className="delete-cell">
                   <button
                     className="delete-card-btn"

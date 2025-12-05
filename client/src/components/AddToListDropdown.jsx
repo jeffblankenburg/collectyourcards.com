@@ -14,9 +14,10 @@ import './AddToListDropdown.css'
  * - card: Card object with card_id
  * - onAddToCollection: Callback for "Add to Collection" (opens AddCardModal)
  * - onAddToList: Optional callback after card is added to list
+ * - onSellCard: Optional callback for "Sell This Card" (admin only)
  * - className: Optional CSS class
  */
-function AddToListDropdown({ card, onAddToCollection, onAddToList, className = '' }) {
+function AddToListDropdown({ card, onAddToCollection, onAddToList, onSellCard, className = '' }) {
   const { success, error: showError } = useToast()
   const [isOpen, setIsOpen] = useState(false)
   const [lists, setLists] = useState([])
@@ -105,6 +106,14 @@ function AddToListDropdown({ card, onAddToCollection, onAddToList, className = '
     setIsOpen(false)
     if (onAddToCollection) {
       onAddToCollection(card)
+    }
+  }
+
+  const handleSellCard = (e) => {
+    e.stopPropagation()
+    setIsOpen(false)
+    if (onSellCard) {
+      onSellCard(card)
     }
   }
 
@@ -232,6 +241,17 @@ function AddToListDropdown({ card, onAddToCollection, onAddToList, className = '
             <Icon name="plus" size={16} />
             <span>Add to Your Collection</span>
           </button>
+
+          {/* Sell This Card (Admin Only) */}
+          {onSellCard && (
+            <button
+              className="add-to-list-dropdown-item sell-card"
+              onClick={handleSellCard}
+            >
+              <Icon name="tag" size={16} />
+              <span>Sell This Card</span>
+            </button>
+          )}
 
           <div className="add-to-list-dropdown-divider" />
 

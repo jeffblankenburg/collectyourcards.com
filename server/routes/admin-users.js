@@ -36,11 +36,16 @@ router.get('/users', async (req, res) => {
         u.is_active,
         u.is_verified,
         u.created_at,
+        u.last_login,
+        u.login_attempts,
+        u.seller_role,
+        u.seller_expires,
         ISNULL(COUNT(uc.user_card_id), 0) as card_count
       FROM [user] u
       LEFT JOIN user_card uc ON u.user_id = uc.[user]
       GROUP BY u.user_id, u.username, u.first_name, u.last_name, u.email,
-               u.role, u.is_active, u.is_verified, u.created_at
+               u.role, u.is_active, u.is_verified, u.created_at, u.last_login,
+               u.login_attempts, u.seller_role, u.seller_expires
       ORDER BY u.created_at DESC
     `)
 
@@ -328,6 +333,8 @@ router.put('/users/:id', async (req, res) => {
       role: updateData.role || 'user',
       is_active: updateData.is_active ?? true,
       is_verified: updateData.is_verified ?? false,
+      seller_role: updateData.seller_role || null,
+      seller_expires: updateData.seller_expires ? new Date(updateData.seller_expires) : null,
       updated_at: new Date()
     }
 
@@ -345,6 +352,8 @@ router.put('/users/:id', async (req, res) => {
         role: true,
         is_active: true,
         is_verified: true,
+        seller_role: true,
+        seller_expires: true,
         created: true,
         last_login: true,
         login_attempts: true,

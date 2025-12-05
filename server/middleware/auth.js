@@ -57,7 +57,9 @@ const authMiddleware = async (req, res, next) => {
         name: true,
         role: true,
         is_active: true,
-        is_verified: true
+        is_verified: true,
+        seller_role: true,
+        seller_expires: true
       }
     })
 
@@ -95,7 +97,9 @@ const authMiddleware = async (req, res, next) => {
       email: user.email,
       name: user.name,
       role: user.role,
-      is_verified: user.is_verified
+      is_verified: user.is_verified,
+      seller_role: user.seller_role,
+      seller_expires: user.seller_expires
     }
 
     next()
@@ -137,6 +141,73 @@ const requireDataAdmin = requireRole('data_admin', 'admin', 'superadmin')
 
 // Super admin only middleware
 const requireSuperAdmin = requireRole('superadmin')
+
+// Seller access middleware
+// Allows access if: admin role OR (has seller_role AND not expired)
+const requireSeller = (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({
+      error: 'Authentication required'
+    })
+  }
+
+  // Admins always have seller access
+  if (req.user.role === 'admin' || req.user.role === 'superadmin') {
+    return next()
+  }
+
+  // Check if user has a seller role
+  if (!req.user.seller_role) {
+    return res.status(403).json({
+      error: 'Seller access required',
+      message: 'You do not have access to seller tools'
+    })
+  }
+
+  // Check expiration if set
+  if (req.user.seller_expires && new Date(req.user.seller_expires) < new Date()) {
+    return res.status(403).json({
+      error: 'Seller access expired',
+      message: 'Your seller access has expired'
+    })
+  }
+
+  next()
+}
+
+// Seller role tier middleware - requires specific seller role levels
+const requireSellerRole = (...allowedSellerRoles) => {
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({
+        error: 'Authentication required'
+      })
+    }
+
+    // Admins always have full access
+    if (req.user.role === 'admin' || req.user.role === 'superadmin') {
+      return next()
+    }
+
+    // Check if user has required seller role
+    if (!req.user.seller_role || !allowedSellerRoles.includes(req.user.seller_role)) {
+      return res.status(403).json({
+        error: 'Insufficient seller permissions',
+        message: `This action requires one of the following seller roles: ${allowedSellerRoles.join(', ')}`
+      })
+    }
+
+    // Check expiration
+    if (req.user.seller_expires && new Date(req.user.seller_expires) < new Date()) {
+      return res.status(403).json({
+        error: 'Seller access expired',
+        message: 'Your seller access has expired'
+      })
+    }
+
+    next()
+  }
+}
 
 // Optional authentication middleware - sets req.user if token exists, but doesn't require it
 const optionalAuthMiddleware = async (req, res, next) => {
@@ -210,5 +281,7 @@ module.exports = {
   requireRole,
   requireAdmin,
   requireDataAdmin,
-  requireSuperAdmin
+  requireSuperAdmin,
+  requireSeller,
+  requireSellerRole
 }

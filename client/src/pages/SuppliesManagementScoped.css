@@ -1,0 +1,694 @@
+/* Supplies Management Page Styles */
+.supplies-management-page {
+  width: 100%;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  color: white;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Header */
+.supplies-management-page .supplies-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.supplies-management-page .supplies-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.supplies-management-page .supplies-title h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin: 0;
+  background: linear-gradient(135deg, #e5e7eb 0%, #f3f4f6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.supplies-management-page .supplies-header-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.supplies-management-page .supplies-nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: rgba(59, 130, 246, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  border-radius: 6px;
+  color: #60a5fa;
+  font-size: 0.875rem;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.supplies-management-page .supplies-nav-btn:hover {
+  background: rgba(59, 130, 246, 0.25);
+  border-color: rgba(59, 130, 246, 0.4);
+}
+
+.supplies-management-page .supplies-refresh-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.supplies-management-page .supplies-refresh-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+}
+
+.supplies-management-page .supplies-refresh-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Tabs */
+.supplies-management-page .supplies-tabs {
+  display: flex;
+  gap: 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 0.5rem;
+}
+
+.supplies-management-page .supplies-tab {
+  padding: 0.625rem 1.25rem;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px 6px 0 0;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.supplies-management-page .supplies-tab:hover {
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.supplies-management-page .supplies-tab.active {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: rgba(59, 130, 246, 0.3);
+  color: #60a5fa;
+}
+
+/* Section */
+.supplies-management-page .supplies-section {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.supplies-management-page .supplies-section h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0 0 1rem 0;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* Loading & Empty States */
+.supplies-management-page .supplies-loading,
+.supplies-management-page .supplies-empty,
+.supplies-management-page .supplies-unauthorized {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  color: rgba(255, 255, 255, 0.6);
+  gap: 1rem;
+  text-align: center;
+}
+
+.supplies-management-page .supplies-empty button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: rgba(59, 130, 246, 0.2);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 6px;
+  color: #60a5fa;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.supplies-management-page .supplies-empty button:hover {
+  background: rgba(59, 130, 246, 0.3);
+}
+
+.supplies-management-page .spinning {
+  animation: supplies-spin 1s linear infinite;
+}
+
+@keyframes supplies-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Summary Grid */
+.supplies-management-page .supplies-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.supplies-management-page .supplies-summary-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.supplies-management-page .supplies-summary-image {
+  width: 100%;
+  height: 120px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.supplies-management-page .supplies-summary-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.supplies-management-page .supplies-summary-image img:hover {
+  transform: scale(1.05);
+}
+
+.supplies-management-page .supplies-summary-content {
+  padding: 1rem;
+}
+
+.supplies-management-page .supplies-summary-card h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 0.75rem 0;
+  color: #60a5fa;
+}
+
+.supplies-management-page .supplies-summary-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.supplies-management-page .supplies-stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.supplies-management-page .supplies-stat-label {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.supplies-management-page .supplies-stat-value {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: white;
+}
+
+/* Add Form */
+.supplies-management-page .supplies-add-form {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+}
+
+.supplies-management-page .supplies-batch-form {
+  flex-wrap: wrap;
+}
+
+.supplies-management-page .supplies-input,
+.supplies-management-page .supplies-select {
+  padding: 0.5rem 0.75rem;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  color: white;
+  font-size: 0.875rem;
+  min-width: 120px;
+}
+
+.supplies-management-page .supplies-input:focus,
+.supplies-management-page .supplies-select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.supplies-management-page .supplies-input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.supplies-management-page .supplies-input-wide {
+  flex: 1;
+  min-width: 200px;
+  max-width: 400px;
+}
+
+.supplies-management-page .supplies-input-small {
+  width: 100px;
+  min-width: 80px;
+}
+
+.supplies-management-page .supplies-select option {
+  background: #1e293b;
+  color: white;
+}
+
+.supplies-management-page .supplies-add-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: rgba(34, 197, 94, 0.2);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  border-radius: 4px;
+  color: #86efac;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.supplies-management-page .supplies-add-btn:hover:not(:disabled) {
+  background: rgba(34, 197, 94, 0.3);
+}
+
+.supplies-management-page .supplies-add-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Cost Preview */
+.supplies-management-page .supplies-cost-preview {
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.6);
+  padding: 0.5rem 1rem;
+  background: rgba(59, 130, 246, 0.1);
+  border-radius: 4px;
+  margin-bottom: 1rem;
+}
+
+/* List */
+.supplies-management-page .supplies-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.supplies-management-page .supplies-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  transition: background 0.15s ease;
+}
+
+.supplies-management-page .supplies-list-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.supplies-management-page .supplies-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.supplies-management-page .supplies-item-name {
+  font-weight: 500;
+  color: white;
+}
+
+.supplies-management-page .supplies-item-desc {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.supplies-management-page .supplies-item-actions {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.supplies-management-page .supplies-edit-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+/* Icon Buttons */
+.supplies-management-page .supplies-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.supplies-management-page .supplies-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.supplies-management-page .supplies-icon-btn.supplies-icon-success:hover {
+  background: rgba(34, 197, 94, 0.2);
+  color: #86efac;
+}
+
+.supplies-management-page .supplies-icon-btn.supplies-icon-warning:hover {
+  background: rgba(234, 179, 8, 0.2);
+  color: #fde047;
+}
+
+.supplies-management-page .supplies-icon-btn.supplies-icon-danger:hover {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+}
+
+/* Batches Table */
+.supplies-management-page .supplies-batches-table-wrapper {
+  overflow-x: auto;
+}
+
+.supplies-management-page .supplies-batches-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.supplies-management-page .supplies-batches-table th,
+.supplies-management-page .supplies-batches-table td {
+  padding: 0.625rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  white-space: nowrap;
+}
+
+.supplies-management-page .supplies-batches-table th {
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.supplies-management-page .supplies-batches-table tr.depleted {
+  opacity: 0.5;
+}
+
+.supplies-management-page .supplies-batches-table tr:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.supplies-management-page .supplies-notes-cell {
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.supplies-management-page .supplies-inline-input {
+  width: 60px;
+  padding: 0.25rem 0.5rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 3px;
+  color: white;
+  font-size: 0.875rem;
+}
+
+.supplies-management-page .supplies-inline-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+.supplies-management-page .supplies-inline-wide {
+  width: 120px;
+}
+
+/* Form Rows */
+.supplies-management-page .supplies-form-row {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  width: 100%;
+  align-items: center;
+}
+
+/* Image Cell */
+.supplies-management-page .supplies-image-cell {
+  width: 50px;
+  text-align: center;
+}
+
+.supplies-management-page .supplies-image-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.supplies-management-page .supplies-batch-image {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 4px;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.supplies-management-page .supplies-batch-image:hover {
+  transform: scale(1.1);
+  border-color: #3b82f6;
+}
+
+.supplies-management-page .supplies-image-delete {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(239, 68, 68, 0.9);
+  border: none;
+  border-radius: 50%;
+  color: white;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.supplies-management-page .supplies-image-wrapper:hover .supplies-image-delete {
+  opacity: 1;
+}
+
+.supplies-management-page .supplies-image-upload {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px dashed rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+  color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin: 0 auto;
+}
+
+.supplies-management-page .supplies-image-upload:hover {
+  background: rgba(59, 130, 246, 0.1);
+  border-color: rgba(59, 130, 246, 0.3);
+  color: #60a5fa;
+}
+
+/* Link Cell */
+.supplies-management-page .supplies-link-cell {
+  text-align: center;
+}
+
+.supplies-management-page .supplies-source-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: rgba(59, 130, 246, 0.15);
+  border-radius: 4px;
+  color: #60a5fa;
+  transition: all 0.2s ease;
+}
+
+.supplies-management-page .supplies-source-link:hover {
+  background: rgba(59, 130, 246, 0.25);
+  color: #93c5fd;
+}
+
+/* Image Modal */
+.supplies-image-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 2rem;
+  cursor: pointer;
+}
+
+.supplies-image-modal {
+  position: relative;
+  max-width: 90vw;
+  max-height: 90vh;
+  cursor: default;
+}
+
+.supplies-image-modal img {
+  max-width: 100%;
+  max-height: 85vh;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.supplies-image-modal-close {
+  position: absolute;
+  top: -40px;
+  right: 0;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.supplies-image-modal-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(1.1);
+}
+
+/* Status Badge */
+.supplies-management-page .supplies-status {
+  display: inline-block;
+  padding: 0.125rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.supplies-management-page .supplies-status.active {
+  background: rgba(34, 197, 94, 0.2);
+  color: #86efac;
+}
+
+.supplies-management-page .supplies-status.depleted {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Action Buttons */
+.supplies-management-page .supplies-action-btns {
+  display: flex;
+  gap: 0.125rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .supplies-management-page {
+    padding: 1rem;
+  }
+
+  .supplies-management-page .supplies-title h1 {
+    font-size: 1.5rem;
+  }
+
+  .supplies-management-page .supplies-tabs {
+    flex-wrap: wrap;
+  }
+
+  .supplies-management-page .supplies-tab {
+    flex: 1;
+    min-width: 100px;
+    text-align: center;
+    font-size: 0.8125rem;
+  }
+
+  .supplies-management-page .supplies-add-form {
+    flex-direction: column;
+  }
+
+  .supplies-management-page .supplies-input,
+  .supplies-management-page .supplies-select {
+    width: 100%;
+    min-width: auto;
+  }
+
+  .supplies-management-page .supplies-input-wide,
+  .supplies-management-page .supplies-input-small {
+    width: 100%;
+    min-width: auto;
+  }
+
+  .supplies-management-page .supplies-summary-grid {
+    grid-template-columns: 1fr;
+  }
+}

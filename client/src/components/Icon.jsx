@@ -158,6 +158,7 @@ const iconMap = {
 
   // Stats & Values
   'money': DollarSign,
+  'dollar-sign': DollarSign,
   'value': DollarSign,
   'stats': BarChart3,
   'chart': TrendingUp,

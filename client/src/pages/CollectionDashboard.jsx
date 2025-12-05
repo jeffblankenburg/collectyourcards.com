@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom'
 import CollectionTable from '../components/tables/CollectionTable'
 import QuickEditModal from '../components/modals/QuickEditModal'
 import SaveViewModal from '../components/modals/SaveViewModal'
+import ConfirmModal from '../components/modals/ConfirmModal'
 import SavedViewsDropdown from '../components/SavedViewsDropdown'
 import TeamFilterCircles from '../components/TeamFilterCircles'
 import Icon from '../components/Icon'
@@ -16,7 +17,7 @@ import './CollectionDashboardScoped.css'
 const log = createLogger('CollectionDashboard')
 
 function CollectionDashboard() {
-  const { isAuthenticated, user } = useAuth()
+  const { isAuthenticated, user, isAdmin } = useAuth()
   const { success, error } = useToast()
 
   log.info('CollectionDashboard mounted', { isAuthenticated, userId: user?.user_id })
@@ -51,6 +52,9 @@ function CollectionDashboard() {
   const [showSaveViewModal, setShowSaveViewModal] = useState(false)
   const [allTeams, setAllTeams] = useState([]) // All teams from full collection
   const [loadedView, setLoadedView] = useState(null) // Track currently loaded view for updates
+  const [showSellConfirm, setShowSellConfirm] = useState(false)
+  const [cardToSell, setCardToSell] = useState(null)
+  const [sellLoading, setSellLoading] = useState(false)
 
   const navigate = useNavigate()
 
@@ -435,9 +439,48 @@ function CollectionDashboard() {
     }
   }, [success, error])
 
+  // Show confirmation dialog before selling
+  const handleSellCard = useCallback((card) => {
+    if (!isAdmin) {
+      error('Admin access required for seller tools')
+      return
+    }
+    setCardToSell(card)
+    setShowSellConfirm(true)
+  }, [isAdmin, error])
+
+  // Actually execute the sell after confirmation
+  const confirmSellCard = useCallback(async () => {
+    if (!cardToSell) return
+
+    setSellLoading(true)
+    log.info('Selling card from collection', { user_card_id: cardToSell.user_card_id, purchase_price: cardToSell.purchase_price })
+
+    try {
+      await axios.post('/api/seller/sell-from-collection', {
+        user_card_id: cardToSell.user_card_id
+      })
+
+      success('Card listed for sale! Your card data has been archived.')
+
+      // Remove from local state (it's now archived, not deleted)
+      setCards(prev => prev.filter(c => c.user_card_id !== cardToSell.user_card_id))
+
+      // Close modal and navigate to seller dashboard
+      setShowSellConfirm(false)
+      setCardToSell(null)
+      navigate('/seller')
+    } catch (err) {
+      log.error('Failed to sell card', err)
+      error('Failed to sell card: ' + (err.response?.data?.error || err.message))
+    } finally {
+      setSellLoading(false)
+    }
+  }, [cardToSell, success, error, navigate])
+
   const handleCardClick = useCallback((card) => {
     // Navigate to card detail page
-    const playerSlug = card.card_player_teams?.[0]?.player 
+    const playerSlug = card.card_player_teams?.[0]?.player
       ? `${card.card_player_teams[0].player.first_name}-${card.card_player_teams[0].player.last_name}`.toLowerCase().replace(/\s+/g, '-')
       : 'unknown'
     const seriesSlug = card.series_rel?.slug || 'unknown'
@@ -909,6 +952,7 @@ function CollectionDashboard() {
             onEditCard={handleEditCard}
             onDeleteCard={handleDeleteCard}
             onFavoriteToggle={handleFavoriteToggle}
+            onSellCard={isAdmin ? handleSellCard : null}
             onCardClick={handleCardClick}
             customActions={
               locations.length > 0 && cards.length > 0 && (
@@ -1219,6 +1263,46 @@ function CollectionDashboard() {
         onClose={() => setShowSaveViewModal(false)}
         filterConfig={getCurrentFilterConfig()}
         onViewSaved={handleViewSaved}
+      />
+
+      {/* Sell Card Confirmation Modal */}
+      <ConfirmModal
+        isOpen={showSellConfirm}
+        onClose={() => {
+          setShowSellConfirm(false)
+          setCardToSell(null)
+        }}
+        onConfirm={confirmSellCard}
+        title="Sell This Card?"
+        icon="dollar-sign"
+        confirmText="List for Sale"
+        confirmVariant="success"
+        loading={sellLoading}
+        message={
+          cardToSell && (
+            <>
+              <p>You are about to list this card for sale:</p>
+              <div className="confirm-card-preview">
+                <div className="card-info">
+                  <span className="card-name">
+                    #{cardToSell.card_number} - {cardToSell.card_player_teams?.[0]?.player?.first_name} {cardToSell.card_player_teams?.[0]?.player?.last_name}
+                  </span>
+                  <span className="card-series">{cardToSell.series_rel?.name}</span>
+                  {cardToSell.purchase_price > 0 && (
+                    <span className="card-details">Purchase price: ${parseFloat(cardToSell.purchase_price).toFixed(2)}</span>
+                  )}
+                </div>
+              </div>
+              <p style={{ marginTop: '1rem' }}>
+                This card will be <strong>archived</strong> from your collection and added to your Seller Dashboard.
+                All photos, notes, and card details will be preserved.
+              </p>
+              <p className="warning-text">
+                You can restore this card to your collection later by removing it from the Seller Dashboard.
+              </p>
+            </>
+          )
+        }
       />
     </div>
   )

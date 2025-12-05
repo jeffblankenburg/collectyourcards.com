@@ -46,7 +46,7 @@ router.get('/minimal', async (req, res) => {
     const userIdNum = validateNumericId(userId, 'user_id')
 
     // Build where clause
-    let whereClause = `WHERE uc.[user] = ${userIdNum}`
+    let whereClause = `WHERE uc.[user] = ${userIdNum} AND uc.sold_at IS NULL`
 
     // Add location filter
     if (onlyUnassigned) {
@@ -302,7 +302,7 @@ router.get('/', async (req, res) => {
     const userIdNum = validateNumericId(userId, 'user_id')
 
     // Build where clause with location and series filters
-    let whereClause = `WHERE uc.[user] = ${userIdNum}`
+    let whereClause = `WHERE uc.[user] = ${userIdNum} AND uc.sold_at IS NULL`
 
     // Add location filter with validation
     if (onlyUnassigned) {
@@ -618,7 +618,7 @@ router.get('/teams-with-players', async (req, res) => {
       INNER JOIN player_team pt ON cpt.player_team = pt.player_team_id
       INNER JOIN team t ON pt.team = t.team_id
       INNER JOIN player p ON pt.player = p.player_id
-      WHERE uc.[user] = ${userIdNum}
+      WHERE uc.[user] = ${userIdNum} AND uc.sold_at IS NULL
       GROUP BY t.team_id, t.name, t.abbreviation, t.primary_color, t.secondary_color
       HAVING COUNT(DISTINCT p.player_id) > 0
       ORDER BY COUNT(DISTINCT p.player_id) DESC, t.name ASC

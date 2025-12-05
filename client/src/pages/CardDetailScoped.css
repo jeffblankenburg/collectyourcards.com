@@ -401,6 +401,26 @@
   transform: translateY(-1px);
 }
 
+/* Sell button - admin only */
+.card-detail-page .squircle-button.sell-button {
+  background: rgba(34, 197, 94, 0.2);
+  border-color: rgba(34, 197, 94, 0.4);
+  color: #86efac;
+}
+
+.card-detail-page .squircle-button.sell-button:hover {
+  background: rgba(34, 197, 94, 0.3);
+  border-color: rgba(34, 197, 94, 0.6);
+  color: #bbf7d0;
+  transform: translateY(-1px);
+}
+
+.card-detail-page .squircle-button.sell-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
 /* Card Header Right Section */
 .card-detail-page .card-header-right-section {
   display: flex;

@@ -5,7 +5,7 @@ import './UserNavigation.css'
 
 function UserNavigation() {
   const location = useLocation()
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, user } = useAuth()
 
   const publicRoutes = [
     { path: '/players', name: 'Players', icon: 'player' },
@@ -13,7 +13,14 @@ function UserNavigation() {
     { path: '/sets', name: 'Sets', icon: 'series' }
   ]
 
+  // Check if user has seller access (seller_role or admin)
+  const hasSellerAccess = user?.seller_role ||
+    user?.role === 'admin' ||
+    user?.role === 'superadmin'
+
+  // Build user routes dynamically
   const userRoutes = [
+    ...(hasSellerAccess ? [{ path: '/seller', name: 'My Sales', icon: 'dollar-sign' }] : []),
     { path: '/collection', name: 'My Collection', icon: 'collections' },
     { path: '/lists', name: 'My Lists', icon: 'list' }
   ]

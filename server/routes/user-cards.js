@@ -74,8 +74,9 @@ router.get('/:cardId', async (req, res) => {
       LEFT JOIN player_team pt ON cpt.player_team = pt.player_team_id
       LEFT JOIN player p ON pt.player = p.player_id
       LEFT JOIN team t ON pt.team = t.team_id
-      WHERE uc.[user] = ${parseInt(userId)} 
+      WHERE uc.[user] = ${parseInt(userId)}
       AND uc.card = ${parseInt(cardId)}
+      AND uc.sold_at IS NULL
       ORDER BY uc.created DESC
     `
     
@@ -187,12 +188,13 @@ router.post('/counts', async (req, res) => {
     const cardIdNumbers = card_ids.map(id => parseInt(id))
 
     const counts = await prisma.$queryRaw`
-      SELECT 
+      SELECT
         card,
         COUNT(*) as count
-      FROM user_card 
-      WHERE [user] = ${BigInt(parseInt(userId))} 
+      FROM user_card
+      WHERE [user] = ${BigInt(parseInt(userId))}
       AND card IN (${Prisma.join(cardIdNumbers)})
+      AND sold_at IS NULL
       GROUP BY card
     `
 
@@ -413,6 +415,7 @@ router.get('/', async (req, res) => {
       LEFT JOIN user_location ul ON uc.user_location = ul.user_location_id
       LEFT JOIN grading_agency ga ON uc.grading_agency = ga.grading_agency_id
       WHERE uc.[user] = ${BigInt(parseInt(userId))}
+      AND uc.sold_at IS NULL
       ORDER BY uc.created DESC
       OFFSET ${offsetNum} ROWS
       FETCH NEXT ${limitNum} ROWS ONLY
@@ -420,7 +423,7 @@ router.get('/', async (req, res) => {
 
     // Get total count
     const totalCount = await prisma.$queryRaw`
-      SELECT COUNT(*) as total FROM user_card WHERE [user] = ${userId}
+      SELECT COUNT(*) as total FROM user_card WHERE [user] = ${userId} AND sold_at IS NULL
     `
 
     const serializedCards = userCards.map(card => {

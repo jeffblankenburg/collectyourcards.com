@@ -55,6 +55,16 @@ function AdminNavigation() {
       path: '/admin/query-tester',
       name: 'Query Tester',
       icon: 'search'
+    },
+    {
+      path: '/seller',
+      name: 'Seller',
+      icon: 'dollar-sign'
+    },
+    {
+      path: '/admin/seller',
+      name: 'Seller Admin',
+      icon: 'sliders-horizontal'
     }
   ]
 

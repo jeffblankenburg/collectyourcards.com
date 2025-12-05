@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { createPortal } from 'react-dom'
 import axios from 'axios'
 import { useAuth } from '../contexts/AuthContext'
+import { useToast } from '../contexts/ToastContext'
 import Icon from '../components/Icon'
 import CardTable from '../components/tables/CardTable'
 import AddCardModal from '../components/modals/AddCardModal'
@@ -19,6 +20,7 @@ function SeriesDetail() {
   const { seriesSlug, year, setSlug } = useParams()
   const navigate = useNavigate()
   const { isAuthenticated, user } = useAuth()
+  const { success, error: showError } = useToast()
   const [series, setSeries] = useState(null)
 
   log.info('SeriesDetail mounted', { seriesSlug, year, setSlug, isAuthenticated })
@@ -309,6 +311,29 @@ function SeriesDetail() {
     setShowAddCardModal(false)
   }
 
+  const handleSellCard = async (card) => {
+    if (!isAuthenticated || !isAdmin) {
+      showError('You need admin access to use seller tools')
+      return
+    }
+
+    try {
+      log.info('Creating sale for card', { card_id: card.card_id })
+      const response = await axios.post('/api/seller/sales', {
+        card_id: card.card_id,
+        status: 'pending'
+      })
+
+      if (response.data.sale) {
+        success('Card added to seller dashboard!')
+        navigate('/seller')
+      }
+    } catch (err) {
+      log.error('Failed to create sale', err)
+      showError(err.response?.data?.error || 'Failed to add card to seller dashboard')
+    }
+  }
+
   const handleCardClick = (card) => {
     // Generate the player names for URL
     const playerNames = card.card_player_teams?.map(cpt =>
@@ -559,6 +584,7 @@ function SeriesDetail() {
             cards={cards}
             loading={tableLoading}
             onAddCard={handleAddCard}
+            onSellCard={isAdmin ? handleSellCard : null}
             onCardClick={handleCardClick}
             onPlayerClick={(player) => {
               const playerName = `${player.first_name} ${player.last_name}`

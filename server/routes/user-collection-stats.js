@@ -54,6 +54,7 @@ router.get('/', async (req, res) => {
       LEFT JOIN card_player_team cpt ON c.card_id = cpt.card
       LEFT JOIN player_team pt ON cpt.player_team = pt.player_team_id
       WHERE uc.[user] = ${userIdNumber}
+      AND uc.sold_at IS NULL
     `
 
     const cardTypes = cardTypeCounts[0]
@@ -73,6 +74,7 @@ router.get('/', async (req, res) => {
           ), 0) as total_value
         FROM user_card uc
         WHERE uc.[user] = ${userIdNumber}
+        AND uc.sold_at IS NULL
       `
       totalValue = Number(valueResult[0]?.total_value || 0)
       console.log('Total value calculated:', totalValue)
