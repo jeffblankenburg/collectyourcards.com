@@ -1,10 +1,22 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { useToast } from '../contexts/ToastContext'
 import Icon from '../components/Icon'
 import ConfirmModal from '../components/modals/ConfirmModal'
 import './SetPurchaseDetailScoped.css'
+
+// Helper to determine text color based on background
+const getContrastColor = (hexColor) => {
+  if (!hexColor) return '#ffffff'
+  const hex = hexColor.replace('#', '')
+  if (hex.length !== 6) return '#ffffff'
+  const r = parseInt(hex.substr(0, 2), 16)
+  const g = parseInt(hex.substr(2, 2), 16)
+  const b = parseInt(hex.substr(4, 2), 16)
+  const brightness = (r * 299 + g * 587 + b * 114) / 1000
+  return brightness > 128 ? '#000000' : '#ffffff'
+}
 
 function SetPurchaseDetail() {
   const { setId } = useParams()
@@ -18,6 +30,11 @@ function SetPurchaseDetail() {
   const [editingPurchase, setEditingPurchase] = useState(null)
   const [deleteConfirm, setDeleteConfirm] = useState(null)
   const [formLoading, setFormLoading] = useState(false)
+
+  // Inline editing state
+  const [editingCell, setEditingCell] = useState(null) // { saleId, field }
+  const [editValue, setEditValue] = useState('')
+  const inputRef = useRef(null)
 
   const [formData, setFormData] = useState({
     product_type: 'hobby_box',
@@ -33,6 +50,14 @@ function SetPurchaseDetail() {
     document.title = 'Set Purchase - Collect Your Cards'
     fetchData()
   }, [setId])
+
+  // Focus input when editing starts
+  useEffect(() => {
+    if (editingCell && inputRef.current) {
+      inputRef.current.focus()
+      inputRef.current.select()
+    }
+  }, [editingCell])
 
   const fetchData = async () => {
     setLoading(true)
@@ -148,6 +173,146 @@ function SetPurchaseDetail() {
       case 'listed': return 'detail-status-listed'
       default: return ''
     }
+  }
+
+  // Inline editing functions
+  const startEditing = (saleId, field, currentValue) => {
+    setEditingCell({ saleId, field })
+    setEditValue(currentValue ?? '')
+  }
+
+  const cancelEditing = () => {
+    setEditingCell(null)
+    setEditValue('')
+  }
+
+  const saveEdit = async (saleId, field) => {
+    if (!editingCell) return
+
+    const sale = data.sales.find(s => s.sale_id === saleId)
+    if (!sale) return
+
+    // Check if value actually changed
+    const originalValue = sale[field]
+    let newValue = editValue
+
+    // Handle type conversions
+    if (['purchase_price', 'sale_price', 'shipping_charged', 'shipping_cost', 'platform_fees', 'other_fees', 'supply_cost', 'adjustment'].includes(field)) {
+      newValue = editValue === '' ? null : parseFloat(editValue)
+      if (newValue !== null && isNaN(newValue)) {
+        addToast('Please enter a valid number', 'error')
+        return
+      }
+    }
+
+    // If no change, just cancel
+    if (String(originalValue ?? '') === String(newValue ?? '')) {
+      cancelEditing()
+      return
+    }
+
+    try {
+      await axios.put(`/api/seller/sales/${saleId}`, {
+        [field]: newValue
+      })
+
+      // Update local state immediately for responsiveness
+      setData(prev => ({
+        ...prev,
+        sales: prev.sales.map(s => {
+          if (s.sale_id === saleId) {
+            const updated = { ...s, [field]: newValue }
+            // Recalculate profit fields
+            const purchasePrice = parseFloat(updated.purchase_price) || 0
+            const salePrice = parseFloat(updated.sale_price) || 0
+            const shippingCharged = parseFloat(updated.shipping_charged) || 0
+            const shippingCost = parseFloat(updated.shipping_cost) || 0
+            const platformFees = parseFloat(updated.platform_fees) || 0
+            const otherFees = parseFloat(updated.other_fees) || 0
+            const supplyCost = parseFloat(updated.supply_cost) || 0
+            const adjustment = parseFloat(updated.adjustment) || 0
+
+            updated.total_revenue = salePrice + shippingCharged
+            updated.total_costs = purchasePrice + shippingCost + platformFees + otherFees + supplyCost
+            updated.net_profit = updated.total_revenue - updated.total_costs + adjustment
+
+            return updated
+          }
+          return s
+        })
+      }))
+
+      cancelEditing()
+    } catch (error) {
+      console.error('Error updating sale:', error)
+      addToast('Failed to update', 'error')
+    }
+  }
+
+  const handleKeyDown = (e, saleId, field) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      saveEdit(saleId, field)
+    } else if (e.key === 'Escape') {
+      cancelEditing()
+    } else if (e.key === 'Tab') {
+      e.preventDefault()
+      saveEdit(saleId, field)
+      // Move to next editable field
+      const editableFields = ['purchase_price', 'sale_price', 'shipping_charged', 'platform_fees', 'shipping_cost', 'notes']
+      const currentIndex = editableFields.indexOf(field)
+      const nextField = editableFields[(currentIndex + 1) % editableFields.length]
+      const sale = data.sales.find(s => s.sale_id === saleId)
+      if (sale) {
+        setTimeout(() => startEditing(saleId, nextField, sale[nextField]), 50)
+      }
+    }
+  }
+
+  const handleStatusChange = async (saleId, newStatus) => {
+    try {
+      await axios.put(`/api/seller/sales/${saleId}`, { status: newStatus })
+      setData(prev => ({
+        ...prev,
+        sales: prev.sales.map(s => s.sale_id === saleId ? { ...s, status: newStatus } : s)
+      }))
+      addToast('Status updated', 'success')
+    } catch (error) {
+      console.error('Error updating status:', error)
+      addToast('Failed to update status', 'error')
+    }
+  }
+
+  const renderEditableCell = (sale, field, type = 'text') => {
+    const isEditing = editingCell?.saleId === sale.sale_id && editingCell?.field === field
+    const value = sale[field]
+
+    if (isEditing) {
+      return (
+        <input
+          ref={inputRef}
+          type={type === 'currency' ? 'number' : 'text'}
+          step={type === 'currency' ? '0.01' : undefined}
+          className="detail-inline-input"
+          value={editValue}
+          onChange={(e) => setEditValue(e.target.value)}
+          onBlur={() => saveEdit(sale.sale_id, field)}
+          onKeyDown={(e) => handleKeyDown(e, sale.sale_id, field)}
+        />
+      )
+    }
+
+    const displayValue = type === 'currency' ? formatCurrency(value) : (value || '-')
+
+    return (
+      <span
+        className="detail-editable-cell"
+        onClick={() => startEditing(sale.sale_id, field, type === 'currency' ? (value ?? '') : value)}
+        title="Click to edit"
+      >
+        {displayValue}
+      </span>
+    )
   }
 
   if (loading) {
@@ -384,6 +549,7 @@ function SetPurchaseDetail() {
                               className="detail-tag"
                               style={{
                                 backgroundColor: sale.card_info.color_hex || '#666',
+                                color: getContrastColor(sale.card_info.color_hex),
                                 borderColor: sale.card_info.color_hex || '#666'
                               }}
                             >
@@ -395,14 +561,23 @@ function SetPurchaseDetail() {
                           {sale.card_info?.is_short_print && <span className="detail-tag detail-tag-sp">SP</span>}
                         </div>
                       </td>
-                      <td><span className={`detail-sale-status ${getStatusClass(sale.status)}`}>{sale.status}</span></td>
+                      <td>
+                        <select
+                          className={`detail-status-select ${getStatusClass(sale.status)}`}
+                          value={sale.status}
+                          onChange={(e) => handleStatusChange(sale.sale_id, e.target.value)}
+                        >
+                          <option value="listed">Listed</option>
+                          <option value="sold">Sold</option>
+                        </select>
+                      </td>
                       <td>{sale.platform?.name || '-'}</td>
                       <td>{formatDate(sale.sale_date)}</td>
-                      <td className="detail-td-right">{formatCurrency(sale.purchase_price)}</td>
-                      <td className="detail-td-right">{formatCurrency(sale.sale_price)}</td>
-                      <td className="detail-td-right">{formatCurrency(sale.shipping_charged)}</td>
-                      <td className="detail-td-right">{formatCurrency(sale.platform_fees)}</td>
-                      <td className="detail-td-right">{formatCurrency(sale.shipping_cost)}</td>
+                      <td className="detail-td-right">{renderEditableCell(sale, 'purchase_price', 'currency')}</td>
+                      <td className="detail-td-right">{renderEditableCell(sale, 'sale_price', 'currency')}</td>
+                      <td className="detail-td-right">{renderEditableCell(sale, 'shipping_charged', 'currency')}</td>
+                      <td className="detail-td-right">{renderEditableCell(sale, 'platform_fees', 'currency')}</td>
+                      <td className="detail-td-right">{renderEditableCell(sale, 'shipping_cost', 'currency')}</td>
                       <td className="detail-td-right">{formatCurrency(sale.supply_cost)}</td>
                       <td className={`detail-td-right detail-td-profit ${sale.net_profit > 0 ? 'detail-profit-positive' : sale.net_profit < 0 ? 'detail-profit-negative' : ''}`}>
                         {formatCurrency(sale.net_profit)}

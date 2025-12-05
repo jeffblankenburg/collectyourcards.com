@@ -1879,14 +1879,17 @@ router.get('/set-investments/:setId', requireAuth, requireSeller, async (req, re
               include: {
                 player_team_card_player_team_player_teamToplayer_team: {
                   include: {
-                    player_player_team_playerToplayer: true
+                    player_player_team_playerToplayer: true,
+                    team_player_team_teamToteam: true
                   }
                 }
               }
             }
           }
         },
-        platform: true
+        platform: true,
+        order: true,
+        shipping_config: true
       },
       orderBy: { sale_date: 'desc' }
     }) : []
@@ -1903,22 +1906,45 @@ router.get('/set-investments/:setId', requireAuth, requireSeller, async (req, re
     const remainingHole = totalInvestment - salesRevenue
     const recoveryPercentage = totalInvestment > 0 ? ((salesRevenue / totalInvestment) * 100) : 0
 
-    // Format sales with card info
+    // Create series map for looking up series names
+    const seriesMap = new Map(seriesData.map(s => [Number(s.series_id), s]))
+
+    // Format sales with card info (matching main /sales endpoint format)
     const formattedSales = sales.map(sale => {
       const card = sale.card
       const playerTeams = card?.card_player_team_card_player_team_cardTocard || []
-      const players = playerTeams.map(cpt => {
-        const player = cpt.player_team_card_player_team_player_teamToplayer_team?.player_player_team_playerToplayer
-        return player ? `${player.first_name || ''} ${player.last_name || ''}`.trim() : null
-      }).filter(Boolean)
+      const series = card?.series ? seriesMap.get(Number(card.series)) : null
+      const colorData = card?.color_card_colorTocolor
+
+      // Get player names and teams (same format as main /sales endpoint)
+      const playerData = playerTeams.map(cpt => {
+        const pt = cpt.player_team_card_player_team_player_teamToplayer_team
+        const player = pt?.player_player_team_playerToplayer
+        const team = pt?.team_player_team_teamToteam
+        return {
+          name: player ? `${player.first_name || ''} ${player.last_name || ''}`.trim() : null,
+          team_name: team?.name || null,
+          team_abbreviation: team?.abbreviation || null,
+          primary_color: team?.primary_color || null,
+          secondary_color: team?.secondary_color || null
+        }
+      }).filter(p => p.name)
 
       return {
         ...serializeBigInt(sale),
         card_info: card ? {
           card_id: Number(card.card_id),
           card_number: card.card_number,
-          players: players.join(', '),
-          color: card.color_card_colorTocolor?.name || null
+          players: playerData.map(p => p.name).join(', '),
+          player_data: playerData,
+          is_rookie: card.is_rookie,
+          is_autograph: card.is_autograph,
+          is_relic: card.is_relic,
+          is_short_print: card.is_short_print,
+          print_run: card.print_run,
+          color: colorData?.name || null,
+          color_hex: colorData?.hex_value || null,
+          series_name: series?.name || null
         } : null
       }
     })
