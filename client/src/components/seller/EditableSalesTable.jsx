@@ -30,6 +30,7 @@ function EditableSalesTable({
   onSalesUpdate,
   onSummaryRefresh,
   onDataRefresh,
+  onAddBulkSale,
   loading = false,
   showShippingConfig = true,
   showAdjustment = true,
@@ -466,6 +467,31 @@ function EditableSalesTable({
     return { orders: Array.from(orders.values()), ungrouped }
   }, [sales])
 
+  // Helper to get sort value from a sale
+  const getSortValue = (sale, key) => {
+    switch (key) {
+      case 'card_number': return sale.card_info?.card_number || ''
+      case 'player': return sale.card_info?.players || ''
+      case 'series': return sale.card_info?.series_name || ''
+      case 'status': return sale.status || ''
+      case 'platform': return sale.platform?.name || ''
+      case 'sale_date': return sale.sale_date || ''
+      case 'purchase_price': return parseFloat(sale.purchase_price) || 0
+      case 'sale_price': return parseFloat(sale.sale_price) || 0
+      case 'shipping_charged': return parseFloat(sale.shipping_charged) || 0
+      case 'platform_fees': return parseFloat(sale.platform_fees) || 0
+      case 'shipping_cost': return parseFloat(sale.shipping_cost) || 0
+      case 'supply_cost': return parseFloat(sale.supply_cost) || 0
+      case 'adjustment': return parseFloat(sale.adjustment) || 0
+      case 'net_profit': return parseFloat(sale.net_profit) || 0
+      case 'profit_margin':
+        const sp = parseFloat(sale.sale_price) || 0
+        const np = parseFloat(sale.net_profit) || 0
+        return sp > 0 ? (np / sp) * 100 : 0
+      default: return sale[key] || ''
+    }
+  }
+
   // Combine orders and ungrouped sales into a single sorted list
   const sortedDisplayItems = useMemo(() => {
     // Create display items: { type: 'order' | 'sale', data: orderData | sale, sortValue: any }
@@ -600,30 +626,6 @@ function EditableSalesTable({
       key,
       direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
     }))
-  }
-
-  const getSortValue = (sale, key) => {
-    switch (key) {
-      case 'card_number': return sale.card_info?.card_number || ''
-      case 'player': return sale.card_info?.players || ''
-      case 'series': return sale.card_info?.series_name || ''
-      case 'status': return sale.status || ''
-      case 'platform': return sale.platform?.name || ''
-      case 'sale_date': return sale.sale_date || ''
-      case 'purchase_price': return parseFloat(sale.purchase_price) || 0
-      case 'sale_price': return parseFloat(sale.sale_price) || 0
-      case 'shipping_charged': return parseFloat(sale.shipping_charged) || 0
-      case 'platform_fees': return parseFloat(sale.platform_fees) || 0
-      case 'shipping_cost': return parseFloat(sale.shipping_cost) || 0
-      case 'supply_cost': return parseFloat(sale.supply_cost) || 0
-      case 'adjustment': return parseFloat(sale.adjustment) || 0
-      case 'net_profit': return parseFloat(sale.net_profit) || 0
-      case 'profit_margin':
-        const sp = parseFloat(sale.sale_price) || 0
-        const np = parseFloat(sale.net_profit) || 0
-        return sp > 0 ? (np / sp) * 100 : 0
-      default: return sale[key] || ''
-    }
   }
 
   const sortedSales = useMemo(() => {
@@ -902,10 +904,23 @@ function EditableSalesTable({
         )}
       </td>
 
-      <td>{sale.card_info?.card_number || '-'}</td>
+      {/* Card # or Bulk indicator */}
+      <td>
+        {sale.is_bulk_sale ? (
+          <span className="sales-table-bulk-indicator" title="Bulk Sale">BULK</span>
+        ) : (
+          sale.card_info?.card_number || '-'
+        )}
+      </td>
 
+      {/* Player or Bulk Description */}
       <td className="sales-table-td-player">
-        {sale.card_info ? (
+        {sale.is_bulk_sale ? (
+          <div className="sales-table-bulk-info">
+            <Icon name="package" size={14} className="sales-table-bulk-icon" />
+            <span className="sales-table-bulk-description">{sale.bulk_info?.description || 'Bulk Sale'}</span>
+          </div>
+        ) : sale.card_info ? (
           <div className="sales-table-player-info">
             {sale.card_info.player_data?.[0] && (
               <div
@@ -925,34 +940,42 @@ function EditableSalesTable({
         ) : '-'}
       </td>
 
+      {/* Series */}
       <td className="sales-table-td-series">
         <div className="sales-table-series-info">
-          <span className="sales-table-series-name" title={sale.card_info?.series_name || ''}>
-            {sale.card_info?.series_name || '-'}
+          <span className="sales-table-series-name" title={sale.is_bulk_sale ? sale.bulk_info?.series_name : sale.card_info?.series_name || ''}>
+            {sale.is_bulk_sale ? sale.bulk_info?.series_name : sale.card_info?.series_name || '-'}
           </span>
-          {sale.card_info?.print_run && (
+          {!sale.is_bulk_sale && sale.card_info?.print_run && (
             <span className="sales-table-print-info">/{sale.card_info.print_run}</span>
           )}
         </div>
       </td>
 
+      {/* Tags */}
       <td className="sales-table-td-tags">
         <div className="sales-table-tags">
-          {sale.card_info?.color && (
-            <span
-              className="sales-table-tag"
-              style={{
-                backgroundColor: sale.card_info.color_hex || '#666',
-                color: getContrastColor(sale.card_info.color_hex),
-                borderColor: sale.card_info.color_hex || '#666'
-              }}
-            >
-              {sale.card_info.color}
-            </span>
+          {sale.is_bulk_sale ? (
+            <span className="sales-table-tag sales-table-tag-bulk">Bulk</span>
+          ) : (
+            <>
+              {sale.card_info?.color && (
+                <span
+                  className="sales-table-tag"
+                  style={{
+                    backgroundColor: sale.card_info.color_hex || '#666',
+                    color: getContrastColor(sale.card_info.color_hex),
+                    borderColor: sale.card_info.color_hex || '#666'
+                  }}
+                >
+                  {sale.card_info.color}
+                </span>
+              )}
+              {sale.card_info?.is_autograph && <span className="sales-table-tag sales-table-tag-auto">Auto</span>}
+              {sale.card_info?.is_relic && <span className="sales-table-tag sales-table-tag-relic">Relic</span>}
+              {sale.card_info?.is_short_print && <span className="sales-table-tag sales-table-tag-sp">SP</span>}
+            </>
           )}
-          {sale.card_info?.is_autograph && <span className="sales-table-tag sales-table-tag-auto">Auto</span>}
-          {sale.card_info?.is_relic && <span className="sales-table-tag sales-table-tag-relic">Relic</span>}
-          {sale.card_info?.is_short_print && <span className="sales-table-tag sales-table-tag-sp">SP</span>}
         </div>
       </td>
 
@@ -1267,10 +1290,12 @@ function EditableSalesTable({
               </button>
             </div>
           )}
-          <button className="sales-table-download-btn" onClick={handleDownloadCSV} title="Download as CSV for Excel">
-            <Icon name="download" size={16} />
-            <span>Export CSV</span>
-          </button>
+          {onAddBulkSale && (
+            <button className="sales-table-bulk-sale-btn" onClick={onAddBulkSale} title="Add a bulk sale (complete base set, etc.)">
+              <Icon name="plus" size={16} />
+              <span>Bulk Sale</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -1345,6 +1370,14 @@ function EditableSalesTable({
             )}
           </tbody>
         </table>
+      </div>
+
+      {/* Table Footer with Export CSV */}
+      <div className="sales-table-footer">
+        <button className="sales-table-download-btn" onClick={handleDownloadCSV}>
+          <Icon name="download" size={14} />
+          <span>Export CSV</span>
+        </button>
       </div>
 
       <ConfirmModal

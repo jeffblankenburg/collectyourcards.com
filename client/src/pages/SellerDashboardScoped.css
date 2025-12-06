@@ -72,6 +72,17 @@
   border-color: rgba(16, 185, 129, 0.5);
 }
 
+.seller-dashboard-page .seller-nav-btn-bulk {
+  background: rgba(139, 92, 246, 0.2);
+  border-color: rgba(139, 92, 246, 0.4);
+  color: #a78bfa;
+}
+
+.seller-dashboard-page .seller-nav-btn-bulk:hover {
+  background: rgba(139, 92, 246, 0.3);
+  border-color: rgba(139, 92, 246, 0.5);
+}
+
 .seller-dashboard-page .seller-refresh-btn {
   display: flex;
   align-items: center;

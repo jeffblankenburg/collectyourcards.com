@@ -43,6 +43,62 @@ router.get('/health', (req, res) => {
   })
 })
 
+// Series search endpoint - used by BulkSaleModal
+router.get('/series', async (req, res) => {
+  try {
+    const { q: query, limit = 10 } = req.query
+
+    if (!query || query.trim().length < 2) {
+      return res.json({ series: [] })
+    }
+
+    if (!databaseAvailable) {
+      return res.json({ series: [], message: 'Database temporarily unavailable' })
+    }
+
+    const searchPattern = `%${escapeSqlLike(query.trim())}%`
+
+    const results = await executeWithRetry(async () => {
+      return await prisma.$queryRawUnsafe(`
+        SELECT TOP ${parseInt(limit)}
+          s.series_id,
+          s.name,
+          s.slug as series_slug,
+          s.card_count,
+          s.print_run_display,
+          st.name as set_name,
+          st.slug as set_slug,
+          st.year as set_year,
+          c.name as color_name,
+          c.hex_value as color_hex
+        FROM series s
+        JOIN [set] st ON s.[set] = st.set_id
+        LEFT JOIN color c ON s.color = c.color_id
+        WHERE s.name LIKE '${searchPattern}' COLLATE Latin1_General_CI_AI
+           OR st.name LIKE '${searchPattern}' COLLATE Latin1_General_CI_AI
+           OR CONCAT(CAST(st.year AS varchar), ' ', st.name, ' ', s.name) LIKE '${searchPattern}' COLLATE Latin1_General_CI_AI
+        ORDER BY st.year DESC, st.name, s.name
+      `)
+    })
+
+    // Format results for the BulkSaleModal
+    const series = results.map(s => ({
+      series_id: Number(s.series_id),
+      name: s.name,
+      card_count: Number(s.card_count || 0),
+      print_run: s.print_run_display || null,
+      color_name: s.color_name || null,
+      color_hex: s.color_hex || null
+    }))
+
+    res.json({ series })
+
+  } catch (error) {
+    console.error('Series search error:', error)
+    res.status(500).json({ error: 'Search failed', details: error.message })
+  }
+})
+
 // Universal search endpoint with intelligent entity recognition
 router.get('/universal', async (req, res) => {
   try {

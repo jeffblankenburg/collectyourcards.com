@@ -465,3 +465,70 @@ BEGIN
 END
 GO
 
+-- ============================================================================
+-- SALE TABLE - Add bulk sale support
+-- Added: 2025-12-05
+-- Purpose: Allow bulk sales (complete base sets, etc.) without individual cards
+--          - Make card_id nullable (bulk sales don't have a card)
+--          - Add series_id for bulk sales to reference the series
+--          - Add bulk_description for describing the bulk item
+-- ============================================================================
+
+-- Make card_id nullable (required for bulk sales)
+IF EXISTS (
+    SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_NAME = 'sale' AND COLUMN_NAME = 'card_id' AND IS_NULLABLE = 'NO'
+)
+BEGIN
+    -- First drop the FK constraint
+    IF EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name = 'FK_sale_card')
+    BEGIN
+        ALTER TABLE sale DROP CONSTRAINT FK_sale_card;
+    END
+
+    -- Make the column nullable
+    ALTER TABLE sale ALTER COLUMN card_id BIGINT NULL;
+
+    -- Re-add the FK constraint
+    ALTER TABLE sale ADD CONSTRAINT FK_sale_card
+        FOREIGN KEY (card_id) REFERENCES card(card_id);
+
+    PRINT 'Made card_id nullable on sale table';
+END
+ELSE
+BEGIN
+    PRINT 'card_id is already nullable on sale table';
+END
+GO
+
+-- Add series_id for bulk sales
+IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'sale' AND COLUMN_NAME = 'series_id')
+BEGIN
+    ALTER TABLE sale ADD series_id BIGINT NULL;
+
+    ALTER TABLE sale ADD CONSTRAINT FK_sale_series
+        FOREIGN KEY (series_id) REFERENCES series(series_id);
+
+    CREATE INDEX IX_sale_series ON sale(series_id);
+
+    PRINT 'Added series_id to sale table with FK and index';
+END
+ELSE
+BEGIN
+    PRINT 'series_id already exists on sale table';
+END
+GO
+
+-- Add bulk_description for bulk sales
+IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'sale' AND COLUMN_NAME = 'bulk_description')
+BEGIN
+    ALTER TABLE sale ADD bulk_description NVARCHAR(255) NULL;
+
+    PRINT 'Added bulk_description to sale table';
+END
+ELSE
+BEGIN
+    PRINT 'bulk_description already exists on sale table';
+END
+GO
+

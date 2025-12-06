@@ -390,6 +390,7 @@ model series {
   color_series_colorTocolor color?                   @relation("series_colorTocolor", fields: [color], references: [color_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_series_color")
   set_series_setToset       set?                     @relation("series_setToset", fields: [set], references: [set_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_series_set")
   user_series_completion    user_series_completion[]
+  sales                     sale[]                   @relation("sale_seriesToseries")
 
   @@unique([slug, set], map: "idx_series_slug_set")
   @@index([set], map: "IX_series_set")
@@ -1053,8 +1054,10 @@ model selling_platform {
 model sale {
   sale_id            BigInt            @id(map: "PK_sale") @default(autoincrement())
   user_id            BigInt
-  card_id            BigInt
+  card_id            BigInt?           // Nullable for bulk sales
   user_card_id       BigInt?
+  series_id          BigInt?           // For bulk sales - which series the bulk item is from
+  bulk_description   String?           @db.NVarChar(255) // For bulk sales - "Complete Base Set", etc.
   platform_id        Int?
   order_id           BigInt?
   shipping_config_id Int?
@@ -1076,7 +1079,8 @@ model sale {
   notes              String?           @db.NVarChar(Max)
   created            DateTime          @default(now()) @db.DateTime
   updated            DateTime          @default(now()) @db.DateTime
-  card               card              @relation("sale_cardTocard", fields: [card_id], references: [card_id], onUpdate: NoAction, map: "FK_sale_card")
+  card               card?             @relation("sale_cardTocard", fields: [card_id], references: [card_id], onUpdate: NoAction, map: "FK_sale_card")
+  series             series?           @relation("sale_seriesToseries", fields: [series_id], references: [series_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_sale_series")
   platform           selling_platform? @relation("sale_platformToselling_platform", fields: [platform_id], references: [platform_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_sale_platform")
   order              sale_order?       @relation("sale_orderTosale_order", fields: [order_id], references: [order_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_sale_order")
   shipping_config    shipping_config?  @relation("sale_shipping_configToshipping_config", fields: [shipping_config_id], references: [shipping_config_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_sale_shipping_config")
@@ -1086,6 +1090,7 @@ model sale {
   @@index([user_id], map: "IX_sale_user")
   @@index([user_id, status], map: "IX_sale_user_status")
   @@index([card_id], map: "IX_sale_card")
+  @@index([series_id], map: "IX_sale_series")
   @@index([sale_date], map: "IX_sale_date")
   @@index([platform_id], map: "IX_sale_platform")
   @@index([order_id], map: "IX_sale_order")

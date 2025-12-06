@@ -4,6 +4,7 @@ import axios from 'axios'
 import { useToast } from '../contexts/ToastContext'
 import Icon from '../components/Icon'
 import EditableSalesTable from '../components/seller/EditableSalesTable'
+import BulkSaleModal from '../components/seller/BulkSaleModal'
 import './SellerDashboardScoped.css'
 
 function SellerDashboard() {
@@ -13,6 +14,7 @@ function SellerDashboard() {
   const [summary, setSummary] = useState(null)
   const [loading, setLoading] = useState(true)
   const [showAnalytics, setShowAnalytics] = useState(true)
+  const [showBulkSaleModal, setShowBulkSaleModal] = useState(false)
 
   const { addToast } = useToast()
 
@@ -514,11 +516,21 @@ function SellerDashboard() {
         onSalesUpdate={setSales}
         onSummaryRefresh={refreshSummary}
         onDataRefresh={refreshSalesData}
+        onAddBulkSale={() => setShowBulkSaleModal(true)}
         loading={loading}
         showShippingConfig={true}
         showAdjustment={true}
         showDeleteButton={true}
         emptyMessage="No sales yet. Click the + button on any card and select 'Sell This Card' to add it here."
+      />
+
+      {/* Bulk Sale Modal */}
+      <BulkSaleModal
+        isOpen={showBulkSaleModal}
+        onClose={() => setShowBulkSaleModal(false)}
+        onSuccess={refreshSalesData}
+        platforms={platforms}
+        shippingConfigs={shippingConfigs}
       />
     </div>
   )

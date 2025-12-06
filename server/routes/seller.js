@@ -144,6 +144,11 @@ router.get('/sales', requireAuth, requireSeller, async (req, res) => {
               }
             }
           },
+          series: {
+            include: {
+              set_series_setToset: true
+            }
+          },
           platform: true,
           order: {
             include: {
@@ -172,15 +177,24 @@ router.get('/sales', requireAuth, requireSeller, async (req, res) => {
       where: { series_id: { in: seriesIds } },
       include: { set_series_setToset: true }
     }) : []
-    const seriesMap = new Map(seriesData.map(s => [Number(s.series_id), s]))
+    // Serialize the series data to convert BigInt fields
+    const serializedSeriesData = serializeBigInt(seriesData)
+    const seriesMap = new Map(serializedSeriesData.map(s => [Number(s.series_id), s]))
+
+    // Serialize all sales first to convert BigInt fields
+    const serializedSales = serializeBigInt(sales)
 
     // Format the response with card details
-    const formattedSales = sales.map(sale => {
+    const formattedSales = serializedSales.map(sale => {
       const card = sale.card
       const playerTeams = card?.card_player_team_card_player_team_cardTocard || []
-      const series = card?.series ? seriesMap.get(Number(card.series)) : null
+      // For card sales, get series from the card; for bulk sales, use the direct series relation
+      const series = sale.series || (card?.series ? seriesMap.get(Number(card.series)) : null)
       const set = series?.set_series_setToset
       const colorData = card?.color_card_colorTocolor
+
+      // Check if this is a bulk sale
+      const isBulkSale = !card && sale.series_id
 
       // Get player names and teams
       const playerData = playerTeams.map(cpt => {
@@ -197,9 +211,10 @@ router.get('/sales', requireAuth, requireSeller, async (req, res) => {
       }).filter(p => p.name)
 
       return {
-        ...serializeBigInt(sale),
+        ...sale,
+        is_bulk_sale: isBulkSale,
         card_info: card ? {
-          card_id: Number(card.card_id),
+          card_id: card.card_id,
           card_number: card.card_number,
           players: playerData.map(p => p.name).join(', '),
           player_data: playerData,
@@ -212,6 +227,12 @@ router.get('/sales', requireAuth, requireSeller, async (req, res) => {
           color_hex: colorData?.hex_value || null,
           series_name: series?.name || null,
           set_name: set?.name || null
+        } : null,
+        bulk_info: isBulkSale ? {
+          series_id: sale.series_id,
+          series_name: series?.name || null,
+          set_name: set?.name || null,
+          description: sale.bulk_description
         } : null
       }
     })
@@ -224,7 +245,7 @@ router.get('/sales', requireAuth, requireSeller, async (req, res) => {
     })
   } catch (error) {
     console.error('Error fetching sales:', error)
-    res.status(500).json({ error: 'Failed to fetch sales' })
+    res.status(500).json({ error: 'Failed to fetch sales', details: error.message })
   }
 })
 
@@ -376,6 +397,114 @@ router.post('/sales', requireAuth, requireSeller, async (req, res) => {
   } catch (error) {
     console.error('Error creating sale:', error)
     res.status(500).json({ error: 'Failed to create sale' })
+  }
+})
+
+/**
+ * POST /api/seller/bulk-sales
+ * Create a bulk sale (complete base set, etc.) - no individual card required
+ */
+router.post('/bulk-sales', requireAuth, requireSeller, async (req, res) => {
+  try {
+    const userId = BigInt(req.user.userId)
+    const {
+      series_id,
+      bulk_description,
+      platform_id,
+      order_id,
+      shipping_config_id,
+      status = 'listed',
+      sale_date,
+      purchase_price,
+      sale_price,
+      shipping_charged,
+      shipping_cost,
+      platform_fees,
+      other_fees,
+      supply_cost,
+      adjustment,
+      buyer_username,
+      tracking_number,
+      notes
+    } = req.body
+
+    if (!series_id) {
+      return res.status(400).json({ error: 'series_id is required for bulk sales' })
+    }
+
+    if (!bulk_description) {
+      return res.status(400).json({ error: 'bulk_description is required for bulk sales' })
+    }
+
+    // Verify the series exists
+    const series = await prisma.series.findUnique({
+      where: { series_id: BigInt(series_id) }
+    })
+
+    if (!series) {
+      return res.status(404).json({ error: 'Series not found' })
+    }
+
+    // Calculate profit fields
+    const profitFields = calculateProfitFields({
+      purchase_price,
+      sale_price,
+      shipping_charged,
+      shipping_cost,
+      platform_fees,
+      other_fees,
+      supply_cost,
+      adjustment
+    })
+
+    const sale = await prisma.sale.create({
+      data: {
+        user_id: userId,
+        series_id: BigInt(series_id),
+        bulk_description,
+        card_id: null, // No card for bulk sales
+        user_card_id: null,
+        platform_id: platform_id ? parseInt(platform_id) : null,
+        order_id: order_id ? BigInt(order_id) : null,
+        shipping_config_id: shipping_config_id ? parseInt(shipping_config_id) : null,
+        status,
+        sale_date: sale_date ? new Date(sale_date) : null,
+        purchase_price: purchase_price ? parseFloat(purchase_price) : null,
+        sale_price: sale_price ? parseFloat(sale_price) : null,
+        shipping_charged: shipping_charged ? parseFloat(shipping_charged) : null,
+        shipping_cost: shipping_cost ? parseFloat(shipping_cost) : null,
+        platform_fees: platform_fees ? parseFloat(platform_fees) : null,
+        other_fees: other_fees ? parseFloat(other_fees) : null,
+        supply_cost: supply_cost ? parseFloat(supply_cost) : null,
+        adjustment: adjustment ? parseFloat(adjustment) : null,
+        total_revenue: profitFields.total_revenue,
+        total_costs: profitFields.total_costs,
+        net_profit: profitFields.net_profit,
+        buyer_username,
+        tracking_number,
+        notes
+      },
+      include: {
+        series: {
+          include: {
+            set_series_setToset: true
+          }
+        },
+        platform: true,
+        order: true,
+        shipping_config: true
+      }
+    })
+
+    console.log(`Seller: Created bulk sale ${sale.sale_id} for series ${series_id} - "${bulk_description}"`)
+
+    res.status(201).json({
+      message: 'Bulk sale created successfully',
+      sale: serializeBigInt(sale)
+    })
+  } catch (error) {
+    console.error('Error creating bulk sale:', error)
+    res.status(500).json({ error: 'Failed to create bulk sale' })
   }
 })
 
