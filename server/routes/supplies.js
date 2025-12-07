@@ -47,6 +47,7 @@ const serializeBigInt = (obj) => {
 /**
  * GET /api/supplies/types
  * Get all supply types for the current user
+ * Includes estimated_cost_per_unit from oldest available batch (FIFO)
  */
 router.get('/types', requireAuth, requireSeller, async (req, res) => {
   try {
@@ -60,8 +61,29 @@ router.get('/types', requireAuth, requireSeller, async (req, res) => {
       orderBy: { name: 'asc' }
     })
 
+    // For each supply type, get the estimated cost from the oldest available batch
+    const typesWithCost = await Promise.all(
+      supplyTypes.map(async (st) => {
+        const oldestBatch = await prisma.supply_batch.findFirst({
+          where: {
+            user_id: userId,
+            supply_type_id: st.supply_type_id,
+            is_depleted: false,
+            quantity_remaining: { gt: 0 }
+          },
+          orderBy: { purchase_date: 'asc' }
+        })
+
+        return {
+          ...st,
+          estimated_cost_per_unit: oldestBatch ? parseFloat(oldestBatch.cost_per_unit) : null,
+          quantity_available: oldestBatch ? oldestBatch.quantity_remaining : 0
+        }
+      })
+    )
+
     res.json({
-      supply_types: serializeBigInt(supplyTypes)
+      supply_types: serializeBigInt(typesWithCost)
     })
   } catch (error) {
     console.error('Error fetching supply types:', error)

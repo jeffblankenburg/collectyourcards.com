@@ -18,3 +18,13 @@ BEGIN
 END
 GO
 
+-- Add bulk_card_count field to sale table (for bulk sales to track card count)
+IF NOT EXISTS (
+  SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+  WHERE TABLE_NAME = 'sale' AND COLUMN_NAME = 'bulk_card_count'
+)
+BEGIN
+  ALTER TABLE sale ADD bulk_card_count INT NULL;
+END
+GO
+

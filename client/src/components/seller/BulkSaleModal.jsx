@@ -36,9 +36,15 @@ function BulkSaleModal({
   const [selectedSeries, setSelectedSeries] = useState(null)
   const searchTimeoutRef = useRef(null)
 
+  // Supply selection state
+  const [supplyTypes, setSupplyTypes] = useState([])
+  const [loadingSupplies, setLoadingSupplies] = useState(false)
+  const [selectedSupplies, setSelectedSupplies] = useState([]) // [{ supply_type_id, quantity }]
+
   // Form fields
   const [formData, setFormData] = useState({
     bulk_description: '',
+    bulk_card_count: '',
     platform_id: '',
     status: 'listed',
     sale_date: new Date().toISOString().split('T')[0],
@@ -47,16 +53,35 @@ function BulkSaleModal({
     shipping_charged: '',
     shipping_cost: '',
     platform_fees: '',
-    supply_cost: '',
     shipping_config_id: '',
     notes: ''
   })
+
+  // Fetch supply types when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      fetchSupplyTypes()
+    }
+  }, [isOpen])
+
+  const fetchSupplyTypes = async () => {
+    try {
+      setLoadingSupplies(true)
+      const res = await axios.get('/api/supplies/types')
+      setSupplyTypes(res.data.supply_types || [])
+    } catch (error) {
+      console.error('Error fetching supply types:', error)
+    } finally {
+      setLoadingSupplies(false)
+    }
+  }
 
   // Reset form when modal opens
   useEffect(() => {
     if (isOpen) {
       setFormData({
         bulk_description: '',
+        bulk_card_count: '',
         platform_id: '',
         status: 'listed',
         sale_date: new Date().toISOString().split('T')[0],
@@ -65,13 +90,13 @@ function BulkSaleModal({
         shipping_charged: '',
         shipping_cost: '',
         platform_fees: '',
-        supply_cost: '',
         shipping_config_id: '',
         notes: ''
       })
       setSelectedSeries(null)
       setSearchQuery('')
       setSearchResults([])
+      setSelectedSupplies([])
     }
   }, [isOpen])
 
@@ -109,11 +134,45 @@ function BulkSaleModal({
     setSelectedSeries(series)
     setSearchQuery('')
     setSearchResults([])
+    // Pre-fill card count with series card count
+    if (series.card_count) {
+      setFormData(prev => ({ ...prev, bulk_card_count: series.card_count.toString() }))
+    }
   }
 
   const handleChange = (e) => {
     const { name, value } = e.target
     setFormData(prev => ({ ...prev, [name]: value }))
+  }
+
+  // Supply selection handlers
+  const addSupplyRow = () => {
+    setSelectedSupplies([...selectedSupplies, { supply_type_id: '', quantity: 1 }])
+  }
+
+  const updateSupply = (index, field, value) => {
+    const updated = [...selectedSupplies]
+    updated[index][field] = field === 'quantity' ? parseInt(value) || 1 : value
+    setSelectedSupplies(updated)
+  }
+
+  const removeSupply = (index) => {
+    setSelectedSupplies(selectedSupplies.filter((_, i) => i !== index))
+  }
+
+  // Calculate total supply cost from selected supplies
+  // For now, we'll use estimated cost from supply types (actual FIFO cost calculated on server)
+  const calculateSupplyCost = () => {
+    let total = 0
+    for (const supply of selectedSupplies) {
+      if (supply.supply_type_id && supply.quantity > 0) {
+        const supplyType = supplyTypes.find(st => st.supply_type_id === parseInt(supply.supply_type_id))
+        if (supplyType && supplyType.estimated_cost_per_unit) {
+          total += supply.quantity * parseFloat(supplyType.estimated_cost_per_unit)
+        }
+      }
+    }
+    return total
   }
 
   const handleSubmit = async (e) => {
@@ -131,9 +190,13 @@ function BulkSaleModal({
 
     setLoading(true)
     try {
+      // Calculate supply cost from selections
+      const supplyCost = calculateSupplyCost()
+
       await axios.post('/api/seller/bulk-sales', {
         series_id: selectedSeries.series_id,
         bulk_description: formData.bulk_description.trim(),
+        bulk_card_count: formData.bulk_card_count ? parseInt(formData.bulk_card_count) : null,
         platform_id: formData.platform_id || null,
         status: formData.status,
         sale_date: formData.sale_date || null,
@@ -142,7 +205,7 @@ function BulkSaleModal({
         shipping_charged: formData.shipping_charged || null,
         shipping_cost: formData.shipping_cost || null,
         platform_fees: formData.platform_fees || null,
-        supply_cost: formData.supply_cost || null,
+        supply_cost: supplyCost > 0 ? supplyCost : null,
         shipping_config_id: formData.shipping_config_id || null,
         notes: formData.notes || null
       })
@@ -165,6 +228,8 @@ function BulkSaleModal({
       onClose()
     }
   }
+
+  const supplyCost = calculateSupplyCost()
 
   return (
     <div className="bulk-sale-modal-overlay" onClick={handleBackdropClick}>
@@ -258,18 +323,32 @@ function BulkSaleModal({
             )}
           </div>
 
-          {/* Description */}
-          <div className="bulk-sale-form-section">
-            <label className="bulk-sale-form-label">Description *</label>
-            <input
-              type="text"
-              name="bulk_description"
-              value={formData.bulk_description}
-              onChange={handleChange}
-              placeholder="e.g., Complete Base Set, Base Set minus 5 cards"
-              className="bulk-sale-input"
-              required
-            />
+          {/* Description and Card Count Row */}
+          <div className="bulk-sale-form-row">
+            <div className="bulk-sale-form-section" style={{ flex: 2 }}>
+              <label className="bulk-sale-form-label">Description *</label>
+              <input
+                type="text"
+                name="bulk_description"
+                value={formData.bulk_description}
+                onChange={handleChange}
+                placeholder="e.g., Complete Base Set, Base Set minus 5 cards"
+                className="bulk-sale-input"
+                required
+              />
+            </div>
+            <div className="bulk-sale-form-section" style={{ flex: 1 }}>
+              <label className="bulk-sale-form-label"># Cards</label>
+              <input
+                type="number"
+                name="bulk_card_count"
+                value={formData.bulk_card_count}
+                onChange={handleChange}
+                placeholder="0"
+                min="1"
+                className="bulk-sale-input"
+              />
+            </div>
           </div>
 
           {/* Status and Platform */}
@@ -401,15 +480,68 @@ function BulkSaleModal({
               <div className="bulk-sale-financial-field">
                 <label>Supplies</label>
                 <input
-                  type="number"
-                  step="0.01"
-                  name="supply_cost"
-                  value={formData.supply_cost}
-                  onChange={handleChange}
-                  placeholder="0.00"
-                  className="bulk-sale-input-small"
+                  type="text"
+                  value={supplyCost > 0 ? `$${supplyCost.toFixed(2)}` : '$0.00'}
+                  readOnly
+                  className="bulk-sale-input-small bulk-sale-input-readonly"
+                  title="Calculated from selected supplies below"
                 />
               </div>
+            </div>
+          </div>
+
+          {/* Supplies Selection */}
+          <div className="bulk-sale-form-section">
+            <label className="bulk-sale-form-label">Supplies Used</label>
+            <div className="bulk-sale-supplies-section">
+              {loadingSupplies ? (
+                <div className="bulk-sale-supplies-loading">
+                  <Icon name="loader" size={16} className="spinning" />
+                  <span>Loading supplies...</span>
+                </div>
+              ) : (
+                <>
+                  {selectedSupplies.map((supply, index) => (
+                    <div key={index} className="bulk-sale-supply-row">
+                      <select
+                        className="bulk-sale-supply-select"
+                        value={supply.supply_type_id}
+                        onChange={(e) => updateSupply(index, 'supply_type_id', e.target.value)}
+                      >
+                        <option value="">Select supply...</option>
+                        {supplyTypes.map(st => (
+                          <option key={st.supply_type_id} value={st.supply_type_id}>
+                            {st.name}
+                          </option>
+                        ))}
+                      </select>
+                      <input
+                        type="number"
+                        className="bulk-sale-supply-qty"
+                        value={supply.quantity}
+                        onChange={(e) => updateSupply(index, 'quantity', e.target.value)}
+                        min="1"
+                        max="999"
+                      />
+                      <button
+                        type="button"
+                        className="bulk-sale-supply-remove"
+                        onClick={() => removeSupply(index)}
+                      >
+                        <Icon name="x" size={14} />
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    className="bulk-sale-add-supply-btn"
+                    onClick={addSupplyRow}
+                  >
+                    <Icon name="plus" size={14} />
+                    Add Supply
+                  </button>
+                </>
+              )}
             </div>
           </div>
 

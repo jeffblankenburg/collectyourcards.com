@@ -410,6 +410,7 @@ router.post('/bulk-sales', requireAuth, requireSeller, async (req, res) => {
     const {
       series_id,
       bulk_description,
+      bulk_card_count,
       platform_id,
       order_id,
       shipping_config_id,
@@ -462,6 +463,7 @@ router.post('/bulk-sales', requireAuth, requireSeller, async (req, res) => {
         user_id: userId,
         series_id: BigInt(series_id),
         bulk_description,
+        bulk_card_count: bulk_card_count ? parseInt(bulk_card_count) : null,
         card_id: null, // No card for bulk sales
         user_card_id: null,
         platform_id: platform_id ? parseInt(platform_id) : null,

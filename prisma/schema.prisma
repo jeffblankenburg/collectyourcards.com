@@ -1058,6 +1058,7 @@ model sale {
   user_card_id       BigInt?
   series_id          BigInt?           // For bulk sales - which series the bulk item is from
   bulk_description   String?           @db.NVarChar(255) // For bulk sales - "Complete Base Set", etc.
+  bulk_card_count    Int?              // For bulk sales - number of cards in the bulk item
   platform_id        Int?
   order_id           BigInt?
   shipping_config_id Int?
