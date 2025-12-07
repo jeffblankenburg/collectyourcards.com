@@ -11,8 +11,8 @@ import { aggregateByState, getTopCities, getStateName, getCitiesWithCoordinates 
 import Icon from '../Icon'
 import './ShippingMap.css'
 
-// TopoJSON for US states - using a CDN hosted version
-const geoUrl = 'https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json'
+// TopoJSON for US states - hosted locally to avoid CSP issues
+const geoUrl = '/data/us-states-10m.json'
 
 // State FIPS codes to state abbreviations mapping
 const fipsToState = {
