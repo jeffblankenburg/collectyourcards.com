@@ -805,6 +805,17 @@
   color: rgba(255, 255, 255, 0.85);
 }
 
+.seller-dashboard-page .seller-analytics-link {
+  color: #60a5fa;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.seller-dashboard-page .seller-analytics-link:hover {
+  color: #93c5fd;
+  text-decoration: underline;
+}
+
 .seller-dashboard-page .seller-analytics-num {
   width: 70px;
   text-align: right;

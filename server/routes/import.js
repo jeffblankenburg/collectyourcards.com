@@ -19,6 +19,73 @@ function generateSlug(name) {
     .replace(/^-|-$/g, '') // Remove leading/trailing hyphens
 }
 
+/**
+ * Parse a CSV line respecting quoted fields
+ * Handles values like: "Biloxi Lighthouse, Biloxi, Mississippi"
+ * where commas inside quotes should NOT be treated as delimiters
+ */
+function parseCSVLine(line, delimiter = ',') {
+  const result = []
+  let current = ''
+  let inQuotes = false
+
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i]
+    const nextChar = line[i + 1]
+
+    if (char === '"') {
+      if (inQuotes && nextChar === '"') {
+        // Escaped quote ("") - add single quote and skip next
+        current += '"'
+        i++
+      } else {
+        // Toggle quote state
+        inQuotes = !inQuotes
+      }
+    } else if (char === delimiter && !inQuotes) {
+      // End of field
+      result.push(current.trim())
+      current = ''
+    } else {
+      current += char
+    }
+  }
+
+  // Add the last field
+  result.push(current.trim())
+
+  return result
+}
+
+/**
+ * Detect whether data is tab-separated or comma-separated
+ * and parse accordingly
+ */
+function parseDelimitedData(data) {
+  const lines = data.trim().split('\n')
+  if (lines.length === 0) return []
+
+  const firstLine = lines[0]
+
+  // Check for tabs - if present, assume tab-separated (Excel/Sheets paste)
+  const tabCount = (firstLine.match(/\t/g) || []).length
+  const commaCount = (firstLine.match(/,/g) || []).length
+
+  // If tabs are present, use tab delimiter (standard spreadsheet paste)
+  // Otherwise, use comma delimiter (CSV paste)
+  const delimiter = tabCount > 0 ? '\t' : ','
+
+  console.log(`Detected delimiter: ${delimiter === '\t' ? 'TAB' : 'COMMA'} (tabs: ${tabCount}, commas: ${commaCount})`)
+
+  // For tab-delimited (no quoted fields expected), simple split is fine
+  if (delimiter === '\t') {
+    return lines.map(line => line.split('\t').map(cell => cell.trim()))
+  }
+
+  // For comma-delimited, use proper CSV parsing to handle quoted fields
+  return lines.map(line => parseCSVLine(line, ','))
+}
+
 // Configure multer for file uploads
 const storage = multer.memoryStorage()
 const upload = multer({ 
@@ -310,7 +377,7 @@ router.post('/parse-xlsx', requireAuth, requireAdmin, upload.single('xlsx'), asy
   }
 })
 
-// Parse pasted data (tab-separated)
+// Parse pasted data (tab-separated or comma-separated CSV)
 router.post('/parse-pasted', requireAuth, requireAdmin, async (req, res) => {
   try {
     console.log('📋 Pasted data parse request received')
@@ -328,8 +395,8 @@ router.post('/parse-pasted', requireAuth, requireAdmin, async (req, res) => {
     console.log('Series ID:', seriesId)
     console.log('Data length:', data.length, 'characters')
 
-    // Split into rows and parse as tab-separated values
-    const rows = data.trim().split('\n').map(row => row.split('\t'))
+    // Parse data - auto-detects tab or comma delimiter, handles quoted CSV fields
+    const rows = parseDelimitedData(data)
 
     console.log('Total rows found:', rows.length)
     console.log('First 3 rows:', rows.slice(0, 3))

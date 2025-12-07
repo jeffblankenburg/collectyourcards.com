@@ -462,7 +462,7 @@ function SetPurchases() {
                 <div
                   key={inv.set_id}
                   className="purchase-mobile-card"
-                  onClick={() => navigate(`/seller/purchases/${inv.set_id}`)}
+                  onClick={() => navigate(`/seller/sets/${inv.set_id}`)}
                 >
                   <div className="purchase-mobile-header">
                     <div className="purchase-mobile-set">
@@ -524,7 +524,7 @@ function SetPurchases() {
                     <tr
                       key={inv.set_id}
                       className="purchase-row"
-                      onClick={() => navigate(`/seller/purchases/${inv.set_id}`)}
+                      onClick={() => navigate(`/seller/sets/${inv.set_id}`)}
                     >
                       <td>{inv.set_year || '-'}</td>
                       <td className="purchase-td-name">{inv.set_name}</td>

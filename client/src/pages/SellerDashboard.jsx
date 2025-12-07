@@ -113,27 +113,35 @@ function SellerDashboard() {
     // Revenue = sale_price + shipping_charged (total money received)
     const setStats = {}
     soldSales.forEach(sale => {
-      const setName = sale.card_info?.set_name || 'Unknown Set'
-      if (!setStats[setName]) {
-        setStats[setName] = {
+      const setId = sale.card_info?.set_id || sale.bulk_info?.set_id
+      const setName = sale.card_info?.set_name || sale.bulk_info?.set_name || 'Unknown Set'
+      const key = setId || setName // Use ID as key if available
+      if (!setStats[key]) {
+        setStats[key] = {
+          id: setId,
           name: setName,
           count: 0,
           revenue: 0,
           profit: 0
         }
       }
-      setStats[setName].count++
-      setStats[setName].revenue += (parseFloat(sale.sale_price) || 0) + (parseFloat(sale.shipping_charged) || 0)
-      setStats[setName].profit += parseFloat(sale.net_profit) || 0
+      setStats[key].count++
+      setStats[key].revenue += (parseFloat(sale.sale_price) || 0) + (parseFloat(sale.shipping_charged) || 0)
+      setStats[key].profit += parseFloat(sale.net_profit) || 0
     })
 
     // Player breakdown - sold only
     // Revenue = sale_price + shipping_charged (total money received)
     const playerStats = {}
     soldSales.forEach(sale => {
+      // Get first player from player_data if available
+      const firstPlayer = sale.card_info?.player_data?.[0]
+      const playerId = firstPlayer?.player_id
       const playerName = sale.card_info?.players || 'Unknown'
-      if (!playerStats[playerName]) {
-        playerStats[playerName] = {
+      const key = playerId || playerName // Use ID as key if available
+      if (!playerStats[key]) {
+        playerStats[key] = {
+          id: playerId,
           name: playerName,
           count: 0,
           revenue: 0,
@@ -141,9 +149,9 @@ function SellerDashboard() {
           avgProfit: 0
         }
       }
-      playerStats[playerName].count++
-      playerStats[playerName].revenue += (parseFloat(sale.sale_price) || 0) + (parseFloat(sale.shipping_charged) || 0)
-      playerStats[playerName].profit += parseFloat(sale.net_profit) || 0
+      playerStats[key].count++
+      playerStats[key].revenue += (parseFloat(sale.sale_price) || 0) + (parseFloat(sale.shipping_charged) || 0)
+      playerStats[key].profit += parseFloat(sale.net_profit) || 0
     })
     // Calculate avg profit per player
     Object.values(playerStats).forEach(p => {
@@ -523,8 +531,12 @@ function SellerDashboard() {
                   <span className="seller-analytics-num">Avg</span>
                 </div>
                 {analytics.topSets.map(set => (
-                  <div key={set.name} className="seller-analytics-row">
-                    <span className="seller-analytics-name" title={set.name}>{set.name}</span>
+                  <div key={set.id || set.name} className="seller-analytics-row">
+                    {set.id ? (
+                      <Link to={`/seller/sets/${set.id}`} className="seller-analytics-name seller-analytics-link" title={set.name}>{set.name}</Link>
+                    ) : (
+                      <span className="seller-analytics-name" title={set.name}>{set.name}</span>
+                    )}
                     <span className="seller-analytics-num">{set.count}</span>
                     <span className="seller-analytics-num">{formatCurrencyDisplay(set.revenue)}</span>
                     <span className={`seller-analytics-num ${getProfitClass(set.profit)}`}>
@@ -560,8 +572,12 @@ function SellerDashboard() {
                   <span className="seller-analytics-num">Avg</span>
                 </div>
                 {analytics.topPlayers.map(player => (
-                  <div key={player.name} className="seller-analytics-row">
-                    <span className="seller-analytics-name" title={player.name}>{player.name}</span>
+                  <div key={player.id || player.name} className="seller-analytics-row">
+                    {player.id ? (
+                      <Link to={`/seller/players/${player.id}`} className="seller-analytics-name seller-analytics-link" title={player.name}>{player.name}</Link>
+                    ) : (
+                      <span className="seller-analytics-name" title={player.name}>{player.name}</span>
+                    )}
                     <span className="seller-analytics-num">{player.count}</span>
                     <span className="seller-analytics-num">{formatCurrencyDisplay(player.revenue)}</span>
                     <span className={`seller-analytics-num ${getProfitClass(player.profit)}`}>
@@ -588,8 +604,12 @@ function SellerDashboard() {
                   <span className="seller-analytics-num">Profit</span>
                 </div>
                 {analytics.mostSoldPlayers.map(player => (
-                  <div key={player.name} className="seller-analytics-row">
-                    <span className="seller-analytics-name" title={player.name}>{player.name}</span>
+                  <div key={player.id || player.name} className="seller-analytics-row">
+                    {player.id ? (
+                      <Link to={`/seller/players/${player.id}`} className="seller-analytics-name seller-analytics-link" title={player.name}>{player.name}</Link>
+                    ) : (
+                      <span className="seller-analytics-name" title={player.name}>{player.name}</span>
+                    )}
                     <span className="seller-analytics-num seller-analytics-highlight">{player.count}</span>
                     <span className="seller-analytics-num">{formatCurrencyDisplay(player.revenue)}</span>
                     <span className={`seller-analytics-num ${getProfitClass(player.profit)}`}>
@@ -613,8 +633,12 @@ function SellerDashboard() {
                   <span className="seller-analytics-num">Profit</span>
                 </div>
                 {analytics.mostSoldSets.map(set => (
-                  <div key={set.name} className="seller-analytics-row">
-                    <span className="seller-analytics-name" title={set.name}>{set.name}</span>
+                  <div key={set.id || set.name} className="seller-analytics-row">
+                    {set.id ? (
+                      <Link to={`/seller/sets/${set.id}`} className="seller-analytics-name seller-analytics-link" title={set.name}>{set.name}</Link>
+                    ) : (
+                      <span className="seller-analytics-name" title={set.name}>{set.name}</span>
+                    )}
                     <span className="seller-analytics-num seller-analytics-highlight">{set.count}</span>
                     <span className="seller-analytics-num">{formatCurrencyDisplay(set.revenue)}</span>
                     <span className={`seller-analytics-num ${getProfitClass(set.profit)}`}>

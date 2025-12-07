@@ -581,6 +581,26 @@ Each entry should include:
   ```
 - **Expected Result**: Table exists with columns: product_type_id, user_id, name, slug, description, is_active, display_order, created
 
+### 2025-12-07: Admin Set View Tracking Table
+- **Date**: 2025-12-07
+- **Change Type**: Schema (CREATE TABLE)
+- **Description**:
+  - Created `admin_set_view` table to track recently viewed sets in admin interface
+  - Allows admin pages to show "Recently Viewed" sets instead of always showing by created date
+  - Tracks user_id, set_id, last_viewed timestamp, and view_count
+  - MERGE statement in admin-sets.js upserts records on each set view
+  - Unique constraint on (user_id, set_id) prevents duplicates
+  - Cascade deletes when user or set is deleted
+- **Tables Affected**: `admin_set_view` (new)
+- **SQL File Reference**: DATABASE_CHANGES_FOR_PRODUCTION.sql
+- **Status**: Pending
+- **Verification Query**:
+  ```sql
+  SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'admin_set_view';
+  SELECT COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'admin_set_view';
+  ```
+- **Expected Result**: Table exists with columns: admin_set_view_id (BIGINT), user_id (BIGINT), set_id (INT), last_viewed (DATETIME2), view_count (INT)
+
 ---
 
 ## Notes

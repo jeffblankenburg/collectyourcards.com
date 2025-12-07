@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect, useRef, useMemo } from 'react'
+import { Link } from 'react-router-dom'
 import axios from 'axios'
 import { useToast } from '../../contexts/ToastContext'
 import Icon from '../Icon'
@@ -51,6 +52,7 @@ function EditableSalesTable({
   const [editOrderValue, setEditOrderValue] = useState('')
   const inputRef = useRef(null)
   const orderInputRef = useRef(null)
+  const pendingEditRef = useRef(null) // Track next cell to edit after save
 
   // Focus input when editing starts
   useEffect(() => {
@@ -59,6 +61,19 @@ function EditableSalesTable({
       inputRef.current.select()
     }
   }, [editingCell])
+
+  // Restore focus after data refresh if we have a pending edit
+  useEffect(() => {
+    if (pendingEditRef.current && !editingCell) {
+      const { saleId, field, value } = pendingEditRef.current
+      pendingEditRef.current = null
+      // Small delay to ensure DOM is ready after re-render
+      setTimeout(() => {
+        setEditingCell({ saleId, field })
+        setEditValue(value ?? '')
+      }, 10)
+    }
+  }, [sales, editingCell])
 
   // Focus order input when editing starts
   useEffect(() => {
@@ -69,6 +84,12 @@ function EditableSalesTable({
   }, [editingOrderCell])
 
   const startEditing = (saleId, field, currentValue) => {
+    // If we're already editing a different cell, store this as pending
+    // so it can be restored after the save/refresh cycle
+    if (editingCell && (editingCell.saleId !== saleId || editingCell.field !== field)) {
+      pendingEditRef.current = { saleId, field, value: currentValue }
+      return
+    }
     setEditingCell({ saleId, field })
     setEditValue(currentValue ?? '')
   }
@@ -717,12 +738,24 @@ function EditableSalesTable({
                       {sale.card_info.player_data[0].team_abbreviation || ''}
                     </div>
                   )}
-                  <span className="sales-table-card-player">{sale.card_info.players}</span>
+                  {sale.card_info.player_data?.[0]?.player_id ? (
+                    <Link to={`/seller/players/${sale.card_info.player_data[0].player_id}`} className="sales-table-player-link">
+                      {sale.card_info.players}
+                    </Link>
+                  ) : (
+                    <span className="sales-table-card-player">{sale.card_info.players}</span>
+                  )}
                   {sale.card_info.is_rookie && <span className="sales-table-tag sales-table-tag-rc">RC</span>}
                 </div>
               </div>
               <div className="sales-table-mobile-card-row">
-                <span className="sales-table-series-name" title={sale.card_info.series_name}>{sale.card_info.series_name}</span>
+                {sale.card_info.set_id ? (
+                  <Link to={`/seller/sets/${sale.card_info.set_id}`} className="sales-table-series-link" title={sale.card_info.series_name}>
+                    {sale.card_info.series_name}
+                  </Link>
+                ) : (
+                  <span className="sales-table-series-name" title={sale.card_info.series_name}>{sale.card_info.series_name}</span>
+                )}
                 <div className="sales-table-tags">
                   {sale.card_info.color && (
                     <span
@@ -935,7 +968,17 @@ function EditableSalesTable({
                 {sale.card_info.player_data[0].team_abbreviation || ''}
               </div>
             )}
-            <span className="sales-table-player-name">{sale.card_info.players}</span>
+            {sale.card_info.player_data?.[0]?.player_id ? (
+              <Link
+                to={`/seller/players/${sale.card_info.player_data[0].player_id}`}
+                className="sales-table-player-link"
+                title="View player sales"
+              >
+                {sale.card_info.players}
+              </Link>
+            ) : (
+              <span className="sales-table-player-name">{sale.card_info.players}</span>
+            )}
             {sale.card_info.is_rookie && <span className="sales-table-tag sales-table-tag-rc">RC</span>}
           </div>
         ) : '-'}
@@ -944,9 +987,19 @@ function EditableSalesTable({
       {/* Series */}
       <td className="sales-table-td-series">
         <div className="sales-table-series-info">
-          <span className="sales-table-series-name" title={sale.is_bulk_sale ? sale.bulk_info?.series_name : sale.card_info?.series_name || ''}>
-            {sale.is_bulk_sale ? sale.bulk_info?.series_name : sale.card_info?.series_name || '-'}
-          </span>
+          {(sale.is_bulk_sale ? sale.bulk_info?.set_id : sale.card_info?.set_id) ? (
+            <Link
+              to={`/seller/sets/${sale.is_bulk_sale ? sale.bulk_info?.set_id : sale.card_info?.set_id}`}
+              className="sales-table-series-link"
+              title="View set sales"
+            >
+              {sale.is_bulk_sale ? sale.bulk_info?.series_name : sale.card_info?.series_name || '-'}
+            </Link>
+          ) : (
+            <span className="sales-table-series-name" title={sale.is_bulk_sale ? sale.bulk_info?.series_name : sale.card_info?.series_name || ''}>
+              {sale.is_bulk_sale ? sale.bulk_info?.series_name : sale.card_info?.series_name || '-'}
+            </span>
+          )}
           {!sale.is_bulk_sale && sale.card_info?.print_run && (
             <span className="sales-table-print-info">/{sale.card_info.print_run}</span>
           )}

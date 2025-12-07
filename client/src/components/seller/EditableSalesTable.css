@@ -525,6 +525,21 @@ tr.sales-table-grouped-row:has(+ tr.sales-table-order-row) td {
   max-width: 120px;
 }
 
+.sales-table-player-link {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 120px;
+  color: #60a5fa;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.sales-table-player-link:hover {
+  color: #93c5fd;
+  text-decoration: underline;
+}
+
 /* Series Column */
 .sales-table-td-series {
   max-width: 160px;
@@ -542,6 +557,22 @@ tr.sales-table-grouped-row:has(+ tr.sales-table-order-row) td {
   white-space: nowrap;
   max-width: 120px;
   font-size: 0.75rem;
+}
+
+.sales-table-series-link {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 120px;
+  font-size: 0.75rem;
+  color: #60a5fa;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.sales-table-series-link:hover {
+  color: #93c5fd;
+  text-decoration: underline;
 }
 
 .sales-table-print-info {

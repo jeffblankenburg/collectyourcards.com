@@ -84,6 +84,8 @@ const SuppliesManagement = lazy(() => import('./pages/SuppliesManagement.jsx'))
 const ShippingConfigs = lazy(() => import('./pages/ShippingConfigs.jsx'))
 const SetPurchases = lazy(() => import('./pages/SetPurchases.jsx'))
 const SetPurchaseDetail = lazy(() => import('./pages/SetPurchaseDetail.jsx'))
+const SellerSetDetail = lazy(() => import('./pages/SellerSetDetail.jsx'))
+const SellerPlayerDetail = lazy(() => import('./pages/SellerPlayerDetail.jsx'))
 const SellerAdmin = lazy(() => import('./pages/SellerAdmin.jsx'))
 
 createRoot(document.getElementById('root')).render(
@@ -159,6 +161,8 @@ createRoot(document.getElementById('root')).render(
               <Route path="/seller/shipping" element={<ProtectedRoute><ShippingConfigs /></ProtectedRoute>} />
               <Route path="/seller/purchases" element={<ProtectedRoute><SetPurchases /></ProtectedRoute>} />
               <Route path="/seller/purchases/:setId" element={<ProtectedRoute><SetPurchaseDetail /></ProtectedRoute>} />
+              <Route path="/seller/sets/:setId" element={<ProtectedRoute><SellerSetDetail /></ProtectedRoute>} />
+              <Route path="/seller/players/:playerId" element={<ProtectedRoute><SellerPlayerDetail /></ProtectedRoute>} />
               <Route path="/admin/seller" element={<ProtectedRoute><SellerAdmin /></ProtectedRoute>} />
 
               {/* Lists routes - MUST BE BEFORE username route */}

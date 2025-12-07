@@ -2292,6 +2292,191 @@ router.get('/set-investments/:setId', requireAuth, requireSeller, async (req, re
 })
 
 /**
+ * GET /api/seller/player-sales/:playerId
+ * Get all sales for a specific player (cards featuring this player)
+ * Includes player info and summary statistics
+ */
+router.get('/player-sales/:playerId', requireAuth, requireSeller, async (req, res) => {
+  try {
+    const userId = BigInt(req.user.userId)
+    const playerId = parseInt(req.params.playerId)
+
+    if (isNaN(playerId)) {
+      return res.status(400).json({ error: 'Invalid player ID' })
+    }
+
+    // First, verify this user has sales for this player (security check)
+    // and get player info
+    const player = await prisma.player.findUnique({
+      where: { player_id: playerId },
+      include: {
+        player_team_player_team_playerToplayer: {
+          where: { is_current: true },
+          include: {
+            team_player_team_teamToteam: true
+          },
+          take: 1
+        }
+      }
+    })
+
+    if (!player) {
+      return res.status(404).json({ error: 'Player not found' })
+    }
+
+    // Get all sales for cards featuring this player that belong to this user
+    const sales = await prisma.sale.findMany({
+      where: {
+        user_id: userId,
+        card: {
+          card_player_team_card_player_team_cardTocard: {
+            some: {
+              player_team_card_player_team_player_teamToplayer_team: {
+                player_id: playerId
+              }
+            }
+          }
+        }
+      },
+      include: {
+        card: {
+          include: {
+            series: {
+              include: {
+                set: true
+              }
+            },
+            card_player_team_card_player_team_cardTocard: {
+              include: {
+                player_team_card_player_team_player_teamToplayer_team: {
+                  include: {
+                    player_player_team_playerToplayer: true,
+                    team_player_team_teamToteam: true
+                  }
+                }
+              }
+            }
+          }
+        },
+        selling_platform: true
+      },
+      orderBy: { sale_date: 'desc' }
+    })
+
+    // If user has no sales for this player, return 404
+    if (sales.length === 0) {
+      return res.status(404).json({ error: 'No sales found for this player' })
+    }
+
+    // Format sales (same format as main /sales endpoint)
+    const formattedSales = sales.map(sale => {
+      const card = sale.card
+      const series = card?.series
+      const set = series?.set
+      const playerTeams = card?.card_player_team_card_player_team_cardTocard || []
+
+      const playerData = playerTeams.map(cpt => {
+        const pt = cpt.player_team_card_player_team_player_teamToplayer_team
+        const playerInfo = pt?.player_player_team_playerToplayer
+        const team = pt?.team_player_team_teamToteam
+        return {
+          name: playerInfo ? `${playerInfo.first_name || ''} ${playerInfo.last_name || ''}`.trim() : null,
+          player_id: playerInfo?.player_id,
+          team_name: team?.name,
+          team_abbreviation: team?.abbreviation,
+          primary_color: team?.primary_color,
+          secondary_color: team?.secondary_color
+        }
+      })
+
+      return {
+        sale_id: Number(sale.sale_id),
+        card_id: sale.card_id,
+        status: sale.status,
+        sale_date: sale.sale_date,
+        purchase_price: sale.purchase_price,
+        sale_price: sale.sale_price,
+        shipping_charged: sale.shipping_charged,
+        shipping_cost: sale.shipping_cost,
+        platform_fees: sale.platform_fees,
+        other_fees: sale.other_fees,
+        supply_cost: sale.supply_cost,
+        adjustment: sale.adjustment,
+        total_revenue: sale.total_revenue,
+        total_costs: sale.total_costs,
+        net_profit: sale.net_profit,
+        notes: sale.notes,
+        buyer_zip_code: sale.buyer_zip_code,
+        platform_name: sale.selling_platform?.name || null,
+        platform_id: sale.selling_platform_id,
+        order_id: sale.order_id ? Number(sale.order_id) : null,
+        shipping_config_id: sale.shipping_config_id,
+        is_bulk_sale: sale.is_bulk_sale,
+        bulk_description: sale.bulk_description,
+        bulk_card_count: sale.bulk_card_count,
+        card_info: card ? {
+          card_number: card.card_number,
+          is_rookie_card: card.is_rookie_card,
+          is_autograph: card.is_autograph,
+          is_relic: card.is_relic,
+          print_run: card.print_run,
+          players: playerData.map(p => p.name).join(', '),
+          player_data: playerData,
+          series_name: series?.name,
+          series_id: series?.series_id,
+          set_name: set?.name,
+          set_id: set?.set_id,
+          set_year: set?.year
+        } : null
+      }
+    })
+
+    // Calculate summary statistics
+    const soldSales = formattedSales.filter(s => s.status === 'sold')
+    const listedSales = formattedSales.filter(s => s.status === 'listed')
+
+    const totalRevenue = soldSales.reduce((sum, s) => sum + (parseFloat(s.total_revenue) || 0), 0)
+    const totalCosts = soldSales.reduce((sum, s) => sum + (parseFloat(s.total_costs) || 0), 0)
+    const netProfit = soldSales.reduce((sum, s) => sum + (parseFloat(s.net_profit) || 0), 0)
+    const avgProfitPerCard = soldSales.length > 0 ? netProfit / soldSales.length : 0
+    const profitMargin = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0
+
+    // Get primary team info
+    const primaryTeamRelation = player.player_team_player_team_playerToplayer?.[0]
+    const primaryTeam = primaryTeamRelation?.team_player_team_teamToteam
+
+    res.json({
+      player: {
+        player_id: player.player_id,
+        first_name: player.first_name,
+        last_name: player.last_name,
+        primary_team: primaryTeam ? {
+          team_id: primaryTeam.team_id,
+          name: primaryTeam.name,
+          abbreviation: primaryTeam.abbreviation,
+          primary_color: primaryTeam.primary_color,
+          secondary_color: primaryTeam.secondary_color
+        } : null
+      },
+      sales: formattedSales,
+      summary: {
+        cards_sold: soldSales.length,
+        cards_listed: listedSales.length,
+        total_cards: formattedSales.length,
+        total_revenue: totalRevenue,
+        total_costs: totalCosts,
+        net_profit: netProfit,
+        avg_profit_per_card: avgProfitPerCard,
+        profit_margin: profitMargin
+      }
+    })
+  } catch (error) {
+    console.error('Error fetching player sales:', error)
+    res.status(500).json({ error: 'Failed to fetch player sales' })
+  }
+})
+
+/**
  * GET /api/seller/summary
  * Get summary statistics for the seller dashboard
  */
