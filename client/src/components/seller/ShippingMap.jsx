@@ -120,8 +120,10 @@ function ShippingMap({ sales = [] }) {
   const renderMap = (isFullscreen = false) => (
     <ComposableMap
       projection="geoAlbersUsa"
-      projectionConfig={{ scale: isFullscreen ? 1000 : 800 }}
+      projectionConfig={{ scale: isFullscreen ? 1000 : 1000 }}
       className="shipping-map-svg"
+      width={800}
+      height={500}
     >
       <Geographies geography={geoUrl}>
         {({ geographies }) =>

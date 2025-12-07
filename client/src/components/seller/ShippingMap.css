@@ -10,10 +10,19 @@
 .shipping-map-wrapper {
   position: relative;
   width: 100%;
-  aspect-ratio: 1.6 / 1;
+  aspect-ratio: 1.5 / 1;
   background: rgba(0, 0, 0, 0.2);
   border-radius: 6px;
   overflow: hidden;
+}
+
+.shipping-map-wrapper .shipping-map-svg {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 108%;
+  height: auto;
 }
 
 .shipping-map-clickable {
@@ -260,6 +269,8 @@
 }
 
 .shipping-map-modal-content .shipping-map-svg {
+  position: static;
+  transform: none;
   width: 100%;
   height: 100%;
 }
