@@ -216,13 +216,34 @@ class ExcelParserService {
       }
 
       // Pattern 1: Multiple players on same line (/, comma, etc.)
-      const hasMultiplePlayers = /[\/,]/.test(card.playerNames)
-      if (hasMultiplePlayers) {
+      // IMPORTANT: Only split on commas if there's team data provided.
+      // If teamNames is empty, commas in playerNames are likely part of a location/name
+      // (e.g., "Biloxi Lighthouse, Mississippi" is ONE subject, not two)
+      // Slashes are ALWAYS treated as multi-player delimiters
+      const hasSlash = card.playerNames.includes('/')
+      const hasTeamData = card.teamNames && card.teamNames.trim() !== ''
+      const hasCommaWithTeamData = card.playerNames.includes(',') && hasTeamData
+
+      if (hasSlash || hasCommaWithTeamData) {
         console.log(`👥 Found multiple players on line: ${card.cardNumber} - ${card.playerNames}`)
 
-        // Split by BOTH / and , to handle mixed delimiters like "A, B / C"
-        const players = card.playerNames.split(/[\/,]/).map(p => p.trim()).filter(p => p)
-        const teams = card.teamNames.split(/[\/,]/).map(t => t.trim()).filter(t => t)
+        let players, teams
+
+        if (hasSlash) {
+          // Always split on slash first
+          players = card.playerNames.split('/').map(p => p.trim()).filter(p => p)
+          teams = card.teamNames.split('/').map(t => t.trim()).filter(t => t)
+
+          // If we have team data and commas in the remaining parts, split those too
+          if (hasTeamData) {
+            players = players.flatMap(p => p.split(',').map(s => s.trim()).filter(s => s))
+            teams = teams.flatMap(t => t.split(',').map(s => s.trim()).filter(s => s))
+          }
+        } else {
+          // Only comma (and we know hasTeamData is true here)
+          players = card.playerNames.split(',').map(p => p.trim()).filter(p => p)
+          teams = card.teamNames.split(',').map(t => t.trim()).filter(t => t)
+        }
 
         console.log(`  Players (${players.length}): ${players.join(' | ')}`)
         console.log(`  Teams (${teams.length}): ${teams.join(' | ')}`)

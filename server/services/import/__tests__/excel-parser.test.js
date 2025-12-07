@@ -657,5 +657,130 @@ describe('ExcelParserService', () => {
       expect(result[1].cardNumber).toBe('101')
       expect(result[1].playerNames).toEqual(['Player C', 'Player D'])
     })
+
+    // ============================================================================
+    // Comma in Name Without Team Data Tests
+    // These test cases ensure commas in playerNames are NOT treated as multi-player
+    // delimiters when there is no team data provided (teamNames is empty)
+    // ============================================================================
+
+    test('should NOT split on comma when teamNames is empty (lighthouse names with location)', async () => {
+      const mockWorkbook = {
+        SheetNames: ['Sheet1'],
+        Sheets: { Sheet1: {} }
+      }
+
+      // This is the actual use case: 2-column import with lighthouse names containing commas
+      const mockData = [
+        ['LTN-1', 'Ponce de Leon Inlet Ponce Inlet, Florida', '', '', ''],
+        ['LTN-2', 'Biloxi Lighthouse Biloxi, Mississippi', '', '', '']
+      ]
+
+      XLSX.read.mockReturnValue(mockWorkbook)
+      XLSX.utils.sheet_to_json.mockReturnValue(mockData)
+
+      const result = await excelParser.parseXlsxFile(Buffer.from('mock'))
+
+      expect(result).toHaveLength(2)
+      // The full name including comma should be preserved as a single entry
+      expect(result[0].playerNames).toEqual(['Ponce de Leon Inlet Ponce Inlet, Florida'])
+      expect(result[0].teamNames).toEqual([])
+      expect(result[1].playerNames).toEqual(['Biloxi Lighthouse Biloxi, Mississippi'])
+      expect(result[1].teamNames).toEqual([])
+    })
+
+    test('should NOT split on comma when teamNames is empty (multiple commas in name)', async () => {
+      const mockWorkbook = {
+        SheetNames: ['Sheet1'],
+        Sheets: { Sheet1: {} }
+      }
+
+      // Names with multiple commas (like "City, State, Country")
+      const mockData = [
+        ['1', 'Big Ben Clock Tower, London, United Kingdom', '', '', '']
+      ]
+
+      XLSX.read.mockReturnValue(mockWorkbook)
+      XLSX.utils.sheet_to_json.mockReturnValue(mockData)
+
+      const result = await excelParser.parseXlsxFile(Buffer.from('mock'))
+
+      expect(result).toHaveLength(1)
+      expect(result[0].playerNames).toEqual(['Big Ben Clock Tower, London, United Kingdom'])
+      expect(result[0].teamNames).toEqual([])
+    })
+
+    test('should STILL split on comma when teamNames IS provided', async () => {
+      const mockWorkbook = {
+        SheetNames: ['Sheet1'],
+        Sheets: { Sheet1: {} }
+      }
+
+      // When team data is present, comma IS a multi-player delimiter
+      const mockData = [
+        ['100', 'Mike Trout, Shohei Ohtani', 'Angels, Angels', '', '']
+      ]
+
+      XLSX.read.mockReturnValue(mockWorkbook)
+      XLSX.utils.sheet_to_json.mockReturnValue(mockData)
+
+      const result = await excelParser.parseXlsxFile(Buffer.from('mock'))
+
+      expect(result).toHaveLength(1)
+      expect(result[0].playerNames).toEqual(['Mike Trout', 'Shohei Ohtani'])
+      expect(result[0].teamNames).toEqual(['Angels', 'Angels'])
+    })
+
+    test('should ALWAYS split on slash regardless of teamNames (slash is always a delimiter)', async () => {
+      const mockWorkbook = {
+        SheetNames: ['Sheet1'],
+        Sheets: { Sheet1: {} }
+      }
+
+      // Slash should always be treated as a delimiter, even without team data
+      const mockData = [
+        ['100', 'Player A / Player B', '', '', '']
+      ]
+
+      XLSX.read.mockReturnValue(mockWorkbook)
+      XLSX.utils.sheet_to_json.mockReturnValue(mockData)
+
+      const result = await excelParser.parseXlsxFile(Buffer.from('mock'))
+
+      expect(result).toHaveLength(1)
+      expect(result[0].playerNames).toEqual(['Player A', 'Player B'])
+    })
+
+    test('should handle mixed: slash splits but comma preserved when no team', async () => {
+      const mockWorkbook = {
+        SheetNames: ['Sheet1'],
+        Sheets: { Sheet1: {} }
+      }
+
+      // Slash should split, but the comma within each name should be preserved
+      const mockData = [
+        ['100', 'Lighthouse A, Florida / Lighthouse B, California', '', '', '']
+      ]
+
+      XLSX.read.mockReturnValue(mockWorkbook)
+      XLSX.utils.sheet_to_json.mockReturnValue(mockData)
+
+      const result = await excelParser.parseXlsxFile(Buffer.from('mock'))
+
+      expect(result).toHaveLength(1)
+      // Each slash-separated entry should preserve its internal comma
+      expect(result[0].playerNames).toEqual(['Lighthouse A, Florida', 'Lighthouse B, California'])
+    })
+
+    test('should NOT split pasted data on comma when teamNames is empty', async () => {
+      // Tab-separated paste with no team column data
+      const data = 'LTN-1\tBiloxi Lighthouse, Mississippi\t\t\t'
+
+      const result = await excelParser.parsePastedData(data)
+
+      expect(result).toHaveLength(1)
+      expect(result[0].playerNames).toEqual(['Biloxi Lighthouse, Mississippi'])
+      expect(result[0].teamNames).toEqual([])
+    })
   })
 })

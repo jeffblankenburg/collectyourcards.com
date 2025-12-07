@@ -202,6 +202,7 @@ router.get('/sales', requireAuth, requireSeller, async (req, res) => {
         const player = pt?.player_player_team_playerToplayer
         const team = pt?.team_player_team_teamToteam
         return {
+          player_id: player?.player_id ? Number(player.player_id) : null,
           name: player ? `${player.first_name || ''} ${player.last_name || ''}`.trim() : null,
           team_name: team?.name || null,
           team_abbreviation: team?.abbreviation || null,
@@ -225,11 +226,14 @@ router.get('/sales', requireAuth, requireSeller, async (req, res) => {
           print_run: card.print_run,
           color: colorData?.name || null,
           color_hex: colorData?.hex_value || null,
+          series_id: series?.series_id ? Number(series.series_id) : null,
           series_name: series?.name || null,
+          set_id: set?.set_id ? Number(set.set_id) : null,
           set_name: set?.name || null
         } : null,
         bulk_info: isBulkSale ? {
-          series_id: sale.series_id,
+          series_id: sale.series_id ? Number(sale.series_id) : null,
+          set_id: set?.set_id ? Number(set.set_id) : null,
           series_name: series?.name || null,
           set_name: set?.name || null,
           description: sale.bulk_description
@@ -2219,6 +2223,7 @@ router.get('/set-investments/:setId', requireAuth, requireSeller, async (req, re
         const player = pt?.player_player_team_playerToplayer
         const team = pt?.team_player_team_teamToteam
         return {
+          player_id: player?.player_id ? Number(player.player_id) : null,
           name: player ? `${player.first_name || ''} ${player.last_name || ''}`.trim() : null,
           team_name: team?.name || null,
           team_abbreviation: team?.abbreviation || null,
@@ -2226,6 +2231,8 @@ router.get('/set-investments/:setId', requireAuth, requireSeller, async (req, re
           secondary_color: team?.secondary_color || null
         }
       }).filter(p => p.name)
+
+      const set = series?.set_series_setToset
 
       return {
         ...serializeBigInt(sale),
@@ -2241,7 +2248,10 @@ router.get('/set-investments/:setId', requireAuth, requireSeller, async (req, re
           print_run: card.print_run,
           color: colorData?.name || null,
           color_hex: colorData?.hex_value || null,
-          series_name: series?.name || null
+          series_id: series?.series_id ? Number(series.series_id) : null,
+          series_name: series?.name || null,
+          set_id: set?.set_id ? Number(set.set_id) : null,
+          set_name: set?.name || null
         } : null
       }
     })
