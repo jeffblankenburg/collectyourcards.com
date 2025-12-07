@@ -88,6 +88,7 @@ function SellerDashboard() {
     const listedSales = sales.filter(s => s.status === 'listed')
 
     // Platform breakdown (sold only)
+    // Revenue = sale_price + shipping_charged (total money received)
     const platformStats = {}
     soldSales.forEach(sale => {
       const platformName = sale.platform?.name || 'Unassigned'
@@ -101,12 +102,13 @@ function SellerDashboard() {
         }
       }
       platformStats[platformName].count++
-      platformStats[platformName].revenue += parseFloat(sale.sale_price) || 0
+      platformStats[platformName].revenue += (parseFloat(sale.sale_price) || 0) + (parseFloat(sale.shipping_charged) || 0)
       platformStats[platformName].profit += parseFloat(sale.net_profit) || 0
       platformStats[platformName].fees += parseFloat(sale.platform_fees) || 0
     })
 
     // Set breakdown (from series -> set) - sold only
+    // Revenue = sale_price + shipping_charged (total money received)
     const setStats = {}
     soldSales.forEach(sale => {
       const setName = sale.card_info?.set_name || 'Unknown Set'
@@ -119,11 +121,12 @@ function SellerDashboard() {
         }
       }
       setStats[setName].count++
-      setStats[setName].revenue += parseFloat(sale.sale_price) || 0
+      setStats[setName].revenue += (parseFloat(sale.sale_price) || 0) + (parseFloat(sale.shipping_charged) || 0)
       setStats[setName].profit += parseFloat(sale.net_profit) || 0
     })
 
     // Player breakdown - sold only
+    // Revenue = sale_price + shipping_charged (total money received)
     const playerStats = {}
     soldSales.forEach(sale => {
       const playerName = sale.card_info?.players || 'Unknown'
@@ -137,7 +140,7 @@ function SellerDashboard() {
         }
       }
       playerStats[playerName].count++
-      playerStats[playerName].revenue += parseFloat(sale.sale_price) || 0
+      playerStats[playerName].revenue += (parseFloat(sale.sale_price) || 0) + (parseFloat(sale.shipping_charged) || 0)
       playerStats[playerName].profit += parseFloat(sale.net_profit) || 0
     })
     // Calculate avg profit per player
@@ -146,6 +149,7 @@ function SellerDashboard() {
     })
 
     // Card type breakdown (RC, Auto, Relic, SP) - sold only
+    // Revenue = sale_price + shipping_charged (total money received)
     const typeStats = {
       rookie: { count: 0, revenue: 0, profit: 0 },
       autograph: { count: 0, revenue: 0, profit: 0 },
@@ -155,7 +159,7 @@ function SellerDashboard() {
     }
     soldSales.forEach(sale => {
       const cardInfo = sale.card_info
-      const revenue = parseFloat(sale.sale_price) || 0
+      const revenue = (parseFloat(sale.sale_price) || 0) + (parseFloat(sale.shipping_charged) || 0)
       const profit = parseFloat(sale.net_profit) || 0
 
       if (cardInfo?.is_rookie) {
@@ -203,17 +207,20 @@ function SellerDashboard() {
       .slice(0, 5)
 
     // Overall totals - sold only
+    // Revenue = sale_price + shipping_charged (total money received)
     const totals = soldSales.reduce((acc, sale) => {
       acc.purchaseCost += parseFloat(sale.purchase_price) || 0
-      acc.revenue += parseFloat(sale.sale_price) || 0
+      acc.salePrice += parseFloat(sale.sale_price) || 0
       acc.shippingCharged += parseFloat(sale.shipping_charged) || 0
       acc.fees += parseFloat(sale.platform_fees) || 0
       acc.shippingCost += parseFloat(sale.shipping_cost) || 0
       acc.supplies += parseFloat(sale.supply_cost) || 0
       acc.profit += parseFloat(sale.net_profit) || 0
       return acc
-    }, { purchaseCost: 0, revenue: 0, shippingCharged: 0, fees: 0, shippingCost: 0, supplies: 0, profit: 0 })
+    }, { purchaseCost: 0, salePrice: 0, shippingCharged: 0, fees: 0, shippingCost: 0, supplies: 0, profit: 0 })
 
+    // Revenue includes shipping charged (total money received from buyer)
+    totals.revenue = totals.salePrice + totals.shippingCharged
     totals.avgProfit = soldSales.length > 0 ? totals.profit / soldSales.length : 0
     totals.profitMargin = totals.revenue > 0 ? (totals.profit / totals.revenue) * 100 : 0
 
@@ -269,13 +276,15 @@ function SellerDashboard() {
             <div className="seller-summary-label">Listed</div>
             <div className="seller-summary-value">{analytics.listedCount}</div>
           </div>
-          <div className="seller-summary-card seller-summary-sold">
+          <div className="seller-summary-card">
             <div className="seller-summary-label">Sold</div>
             <div className="seller-summary-value">{analytics.soldCount}</div>
           </div>
-          <div className="seller-summary-card seller-summary-revenue">
-            <div className="seller-summary-label">Revenue</div>
-            <div className="seller-summary-value">{formatCurrencyDisplay(analytics.totals.revenue)}</div>
+          <div className="seller-summary-card seller-summary-profit">
+            <div className="seller-summary-label">Profit/Card</div>
+            <div className={`seller-summary-value ${getProfitClass(analytics.totals.avgProfit)}`}>
+              {formatCurrencyDisplay(analytics.totals.avgProfit)}
+            </div>
           </div>
           <div className="seller-summary-card seller-summary-profit">
             <div className="seller-summary-label">Net Profit</div>

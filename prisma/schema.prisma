@@ -1075,6 +1075,7 @@ model sale {
   total_costs        Decimal?          @db.Decimal(10, 2)
   net_profit         Decimal?          @db.Decimal(10, 2)
   buyer_username     String?           @db.NVarChar(100)
+  buyer_zip_code     String?           @db.VarChar(20)   // Shipping destination zip code
   tracking_number    String?           @db.NVarChar(100)
   notes              String?           @db.NVarChar(Max)
   created            DateTime          @default(now()) @db.DateTime

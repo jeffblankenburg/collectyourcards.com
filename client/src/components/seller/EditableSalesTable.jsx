@@ -1082,6 +1082,7 @@ function EditableSalesTable({
         {sale.sale_price > 0 ? `${Math.round((sale.net_profit / sale.sale_price) * 100)}%` : '-'}
       </td>
 
+      <td className="sales-table-td-zip">{renderEditableCell(sale, 'buyer_zip_code')}</td>
       <td className="sales-table-td-notes">{renderEditableCell(sale, 'notes')}</td>
 
       {showDeleteButton && (
@@ -1114,6 +1115,34 @@ function EditableSalesTable({
     )
     const totalSupplyCost = configCost + extraSuppliesCost
 
+    // Calculate order-level status, platform, and date range
+    const uniqueStatuses = [...new Set(orderSales.map(s => s.status))]
+    const orderStatus = uniqueStatuses.length === 1 ? uniqueStatuses[0] : 'multiple'
+
+    const uniquePlatforms = [...new Set(orderSales.map(s => s.platform_id).filter(Boolean))]
+    const orderPlatformId = uniquePlatforms.length === 1 ? uniquePlatforms[0] : null
+    const orderPlatformDisplay = uniquePlatforms.length === 0 ? '-' :
+      uniquePlatforms.length === 1 ? (platforms.find(p => p.platform_id === parseInt(uniquePlatforms[0]))?.name || '-') :
+      'Multiple'
+
+    // Calculate date range
+    const dates = orderSales.map(s => s.sale_date).filter(Boolean).sort()
+    let dateDisplay = '-'
+    if (dates.length > 0) {
+      const firstDate = dates[0].split('T')[0]
+      const lastDate = dates[dates.length - 1].split('T')[0]
+      if (firstDate === lastDate) {
+        dateDisplay = firstDate
+      } else {
+        // Show range in compact format (MM/DD - MM/DD)
+        const formatShort = (d) => {
+          const [y, m, day] = d.split('-')
+          return `${parseInt(m)}/${parseInt(day)}`
+        }
+        dateDisplay = `${formatShort(firstDate)} - ${formatShort(lastDate)}`
+      }
+    }
+
     return (
       <React.Fragment key={`order-${order_id}`}>
         <tr className="sales-table-order-row" onClick={() => toggleOrderExpanded(order_id)}>
@@ -1130,11 +1159,22 @@ function EditableSalesTable({
             </div>
           </td>
           {/* Status */}
-          <td></td>
+          <td>
+            <span className={`sales-table-order-status ${orderStatus === 'multiple' ? 'sales-table-order-multiple' : ''}`}
+              data-status={orderStatus}>
+              {orderStatus === 'multiple' ? 'Multiple' : orderStatus.charAt(0).toUpperCase() + orderStatus.slice(1)}
+            </span>
+          </td>
           {/* Platform */}
-          <td></td>
+          <td>
+            <span className={`sales-table-order-platform ${orderPlatformDisplay === 'Multiple' ? 'sales-table-order-multiple' : ''}`}>
+              {orderPlatformDisplay}
+            </span>
+          </td>
           {/* Date */}
-          <td></td>
+          <td>
+            <span className="sales-table-order-date">{dateDisplay}</span>
+          </td>
           {/* Cost - empty for order row */}
           <td></td>
           {/* Sale $ - total (read-only, sum of individual card prices) */}
@@ -1252,6 +1292,8 @@ function EditableSalesTable({
           <td className={`sales-table-td-percent ${getProfitClass(totalProfit)}`}>
             {totalSalePrice > 0 ? `${Math.round((totalProfit / totalSalePrice) * 100)}%` : '-'}
           </td>
+          {/* Zip - empty for order row */}
+          <td></td>
           {/* Notes */}
           <td></td>
           {/* Actions - Ungroup */}
@@ -1326,6 +1368,7 @@ function EditableSalesTable({
             {showAdjustment && <col style={{ width: '70px' }} />}
             <col style={{ width: '80px' }} />
             <col style={{ width: '50px' }} />
+            <col style={{ width: '60px' }} />
             <col style={{ width: '140px' }} />
             {showDeleteButton && <col style={{ width: '40px' }} />}
           </colgroup>
@@ -1357,6 +1400,7 @@ function EditableSalesTable({
               {showAdjustment && renderSortHeader('adjustment', 'Adjust', 'right')}
               {renderSortHeader('net_profit', 'Profit', 'right')}
               {renderSortHeader('profit_margin', '%', 'right')}
+              <th>Zip</th>
               <th>Notes</th>
               {showDeleteButton && <th></th>}
             </tr>

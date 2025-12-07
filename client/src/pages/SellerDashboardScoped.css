@@ -129,15 +129,13 @@
   color: white;
 }
 
-.seller-dashboard-page .seller-summary-sold {
-  border-color: rgba(34, 197, 94, 0.3);
-  background: rgba(34, 197, 94, 0.1);
-}
+/* Listed and Sold use neutral gray - no special colors needed */
 
+/* No longer needed - Revenue replaced with Profit per card
 .seller-dashboard-page .seller-summary-revenue {
   border-color: rgba(59, 130, 246, 0.3);
   background: rgba(59, 130, 246, 0.1);
-}
+} */
 
 .seller-dashboard-page .seller-summary-profit {
   border-color: rgba(34, 197, 94, 0.3);

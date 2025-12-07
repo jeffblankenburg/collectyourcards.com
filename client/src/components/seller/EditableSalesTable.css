@@ -180,18 +180,18 @@
   background: rgba(59, 130, 246, 0.15) !important;
 }
 
-/* Order row (grouped shipment header) */
+/* Order row (grouped shipment header) - subtle styling */
 .sales-table-order-row {
-  background: rgba(139, 92, 246, 0.15) !important;
+  background: rgba(255, 255, 255, 0.06) !important;
   cursor: pointer;
 }
 
 .sales-table-order-row > td:first-child {
-  border-left: 4px solid #a78bfa;
+  border-left: 3px solid rgba(139, 92, 246, 0.5);
 }
 
 .sales-table-order-row:hover {
-  background: rgba(139, 92, 246, 0.2) !important;
+  background: rgba(255, 255, 255, 0.09) !important;
 }
 
 .sales-table-order-row td {
@@ -201,7 +201,7 @@
 }
 
 .sales-table-order-row .sales-table-td-checkbox {
-  color: #a78bfa;
+  color: rgba(139, 92, 246, 0.7);
 }
 
 .sales-table-order-header {
@@ -211,21 +211,21 @@
 }
 
 .sales-table-order-header svg {
-  color: #a78bfa;
+  color: rgba(139, 92, 246, 0.7);
 }
 
 .sales-table-order-label {
-  font-weight: 600;
-  color: white;
-  font-size: 0.875rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.8125rem;
 }
 
 .sales-table-order-count {
   font-size: 0.6875rem;
-  font-weight: 600;
-  color: white;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.8);
   padding: 0.125rem 0.5rem;
-  background: #a78bfa;
+  background: rgba(139, 92, 246, 0.3);
   border-radius: 4px;
 }
 
@@ -233,17 +233,38 @@
   font-weight: 600;
 }
 
-/* Grouped row (child of order) */
+/* Order-level status, platform, and date displays */
+.sales-table-order-status,
+.sales-table-order-platform,
+.sales-table-order-date {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.sales-table-order-status[data-status="listed"] {
+  color: #fbbf24;
+}
+
+.sales-table-order-status[data-status="sold"] {
+  color: #34d399;
+}
+
+.sales-table-order-multiple {
+  font-style: italic;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Grouped row (child of order) - subtle styling */
 .sales-table-grouped-row {
-  background: rgba(139, 92, 246, 0.08) !important;
+  background: rgba(255, 255, 255, 0.02) !important;
 }
 
 .sales-table-grouped-row > td:first-child {
-  border-left: 4px solid rgba(139, 92, 246, 0.4);
+  border-left: 3px solid rgba(139, 92, 246, 0.25);
 }
 
 .sales-table-grouped-row:hover {
-  background: rgba(139, 92, 246, 0.12) !important;
+  background: rgba(255, 255, 255, 0.05) !important;
 }
 
 /* Visual connection between order header and grouped rows */
@@ -251,16 +272,16 @@
   border-bottom: none !important;
 }
 
-/* Add spacing/separator after a group ends */
+/* Add spacing/separator after a group ends - subtle border */
 .sales-table-order-row + .sales-table-grouped-row:last-of-type td,
 tr.sales-table-grouped-row:has(+ tr:not(.sales-table-grouped-row)) td,
 tr.sales-table-grouped-row:has(+ tr.sales-table-order-row) td {
-  border-bottom: 3px solid rgba(139, 92, 246, 0.4) !important;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.15) !important;
 }
 
 /* Fallback for last grouped row (if :has not supported) */
 .sales-table-order-group-last td {
-  border-bottom: 3px solid rgba(139, 92, 246, 0.4) !important;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.15) !important;
 }
 
 /* Ungroup button */
@@ -554,9 +575,9 @@ tr.sales-table-grouped-row:has(+ tr.sales-table-order-row) td {
 }
 
 .sales-table-tag-rc {
-  background: rgba(251, 191, 36, 0.2);
-  color: #fbbf24;
-  border-color: rgba(251, 191, 36, 0.4);
+  background: rgba(34, 197, 94, 0.2);
+  color: #22c55e;
+  border-color: rgba(34, 197, 94, 0.3);
 }
 
 .sales-table-tag-auto {
@@ -716,6 +737,13 @@ tr.sales-table-grouped-row:has(+ tr.sales-table-order-row) td {
 /* Profit Column */
 .sales-table-td-profit {
   font-weight: 600;
+}
+
+/* Zip Code Column */
+.sales-table-td-zip {
+  max-width: 60px;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.7);
 }
 
 /* Notes Column */

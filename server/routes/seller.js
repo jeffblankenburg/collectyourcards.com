@@ -621,6 +621,7 @@ router.put('/sales/:id', requireAuth, requireSeller, async (req, res) => {
       other_fees,
       adjustment,
       buyer_username,
+      buyer_zip_code,
       tracking_number,
       notes
     } = req.body
@@ -668,6 +669,7 @@ router.put('/sales/:id', requireAuth, requireSeller, async (req, res) => {
         total_costs: profitFields.total_costs,
         net_profit: profitFields.net_profit,
         buyer_username: buyer_username ?? undefined,
+        buyer_zip_code: buyer_zip_code ?? undefined,
         tracking_number: tracking_number ?? undefined,
         notes: notes ?? undefined,
         updated: new Date()
