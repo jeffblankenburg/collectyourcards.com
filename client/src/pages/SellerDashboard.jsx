@@ -366,7 +366,42 @@ function SellerDashboard() {
       {/* Detailed Analytics Section */}
       {analytics && showAnalytics && (
         <div className="seller-analytics-section">
-          {/* Platform Breakdown */}
+          {/* ROW 1: Cost Breakdown, Platform Performance, Card Type Performance, Most Profitable Sets */}
+
+          {/* Cost Breakdown */}
+          <div className="seller-analytics-card seller-analytics-costs">
+            <h3><Icon name="analytics" size={18} /> Cost Breakdown</h3>
+            <div className="seller-cost-grid">
+              <div className="seller-cost-item">
+                <span className="seller-cost-label">Card Costs</span>
+                <span className="seller-cost-value seller-analytics-negative">{formatCurrencyDisplay(analytics.totals.purchaseCost)}</span>
+              </div>
+              <div className="seller-cost-item">
+                <span className="seller-cost-label">Platform Fees</span>
+                <span className="seller-cost-value seller-analytics-negative">{formatCurrencyDisplay(analytics.totals.fees)}</span>
+              </div>
+              <div className="seller-cost-item">
+                <span className="seller-cost-label">Shipping Costs</span>
+                <span className="seller-cost-value seller-analytics-negative">{formatCurrencyDisplay(analytics.totals.shippingCost)}</span>
+              </div>
+              <div className="seller-cost-item">
+                <span className="seller-cost-label">Supply Costs</span>
+                <span className="seller-cost-value seller-analytics-negative">{formatCurrencyDisplay(analytics.totals.supplies)}</span>
+              </div>
+              <div className="seller-cost-item">
+                <span className="seller-cost-label">Shipping Charged</span>
+                <span className="seller-cost-value seller-profit-positive">{formatCurrencyDisplay(analytics.totals.shippingCharged)}</span>
+              </div>
+              <div className="seller-cost-item seller-cost-highlight">
+                <span className="seller-cost-label">Avg Profit/Sale</span>
+                <span className={`seller-cost-value ${getProfitClass(analytics.totals.avgProfit)}`}>
+                  {formatCurrencyDisplay(analytics.totals.avgProfit)}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Platform Performance */}
           {analytics.topPlatforms.length > 0 && (
             <div className="seller-analytics-card">
               <h3><Icon name="credit-card" size={18} /> Platform Performance</h3>
@@ -396,146 +431,7 @@ function SellerDashboard() {
             </div>
           )}
 
-          {/* Top Sets */}
-          {analytics.topSets.length > 0 && (
-            <div className="seller-analytics-card">
-              <h3><Icon name="layers" size={18} /> Most Profitable Sets</h3>
-              <div className="seller-analytics-table">
-                <div className="seller-analytics-row seller-analytics-header">
-                  <span className="seller-analytics-name">Set</span>
-                  <span className="seller-analytics-num">Sales</span>
-                  <span className="seller-analytics-num">Revenue</span>
-                  <span className="seller-analytics-num">Profit</span>
-                  <span className="seller-analytics-num">Avg</span>
-                </div>
-                {analytics.topSets.map(set => (
-                  <div key={set.name} className="seller-analytics-row">
-                    <span className="seller-analytics-name" title={set.name}>{set.name}</span>
-                    <span className="seller-analytics-num">{set.count}</span>
-                    <span className="seller-analytics-num">{formatCurrencyDisplay(set.revenue)}</span>
-                    <span className={`seller-analytics-num ${getProfitClass(set.profit)}`}>
-                      {formatCurrencyDisplay(set.profit)}
-                    </span>
-                    <span className={`seller-analytics-num ${getProfitClass(set.profit / set.count)}`}>
-                      {formatCurrencyDisplay(set.profit / set.count)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Top Players */}
-          {analytics.topPlayers.length > 0 && (
-            <div className="seller-analytics-card">
-              <h3><Icon name="user" size={18} /> Most Profitable Players</h3>
-              <div className="seller-analytics-table">
-                <div className="seller-analytics-row seller-analytics-header">
-                  <span className="seller-analytics-name">Player</span>
-                  <span className="seller-analytics-num">Sales</span>
-                  <span className="seller-analytics-num">Revenue</span>
-                  <span className="seller-analytics-num">Profit</span>
-                  <span className="seller-analytics-num">Avg</span>
-                </div>
-                {analytics.topPlayers.map(player => (
-                  <div key={player.name} className="seller-analytics-row">
-                    <span className="seller-analytics-name" title={player.name}>{player.name}</span>
-                    <span className="seller-analytics-num">{player.count}</span>
-                    <span className="seller-analytics-num">{formatCurrencyDisplay(player.revenue)}</span>
-                    <span className={`seller-analytics-num ${getProfitClass(player.profit)}`}>
-                      {formatCurrencyDisplay(player.profit)}
-                    </span>
-                    <span className={`seller-analytics-num ${getProfitClass(player.avgProfit)}`}>
-                      {formatCurrencyDisplay(player.avgProfit)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Most Sold Players */}
-          {analytics.mostSoldPlayers.length > 0 && (
-            <div className="seller-analytics-card">
-              <h3><Icon name="trending-up" size={18} /> Most Sold Players</h3>
-              <div className="seller-analytics-table">
-                <div className="seller-analytics-row seller-analytics-header">
-                  <span className="seller-analytics-name">Player</span>
-                  <span className="seller-analytics-num">Sales</span>
-                  <span className="seller-analytics-num">Revenue</span>
-                  <span className="seller-analytics-num">Profit</span>
-                </div>
-                {analytics.mostSoldPlayers.map(player => (
-                  <div key={player.name} className="seller-analytics-row">
-                    <span className="seller-analytics-name" title={player.name}>{player.name}</span>
-                    <span className="seller-analytics-num seller-analytics-highlight">{player.count}</span>
-                    <span className="seller-analytics-num">{formatCurrencyDisplay(player.revenue)}</span>
-                    <span className={`seller-analytics-num ${getProfitClass(player.profit)}`}>
-                      {formatCurrencyDisplay(player.profit)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Most Sold Teams */}
-          {analytics.mostSoldTeams.length > 0 && (
-            <div className="seller-analytics-card">
-              <h3><Icon name="users" size={18} /> Most Sold Teams</h3>
-              <div className="seller-analytics-table">
-                <div className="seller-analytics-row seller-analytics-header">
-                  <span className="seller-analytics-name">Team</span>
-                  <span className="seller-analytics-num">Sales</span>
-                  <span className="seller-analytics-num">Revenue</span>
-                  <span className="seller-analytics-num">Profit</span>
-                </div>
-                {analytics.mostSoldTeams.map(team => (
-                  <div key={team.name} className="seller-analytics-row">
-                    <span className="seller-analytics-name" title={team.name}>{team.name}</span>
-                    <span className="seller-analytics-num seller-analytics-highlight">{team.count}</span>
-                    <span className="seller-analytics-num">{formatCurrencyDisplay(team.revenue)}</span>
-                    <span className={`seller-analytics-num ${getProfitClass(team.profit)}`}>
-                      {formatCurrencyDisplay(team.profit)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Most Sold Sets */}
-          {analytics.mostSoldSets.length > 0 && (
-            <div className="seller-analytics-card">
-              <h3><Icon name="archive" size={18} /> Most Sold Sets</h3>
-              <div className="seller-analytics-table">
-                <div className="seller-analytics-row seller-analytics-header">
-                  <span className="seller-analytics-name">Set</span>
-                  <span className="seller-analytics-num">Sales</span>
-                  <span className="seller-analytics-num">Revenue</span>
-                  <span className="seller-analytics-num">Profit</span>
-                </div>
-                {analytics.mostSoldSets.map(set => (
-                  <div key={set.name} className="seller-analytics-row">
-                    <span className="seller-analytics-name" title={set.name}>{set.name}</span>
-                    <span className="seller-analytics-num seller-analytics-highlight">{set.count}</span>
-                    <span className="seller-analytics-num">{formatCurrencyDisplay(set.revenue)}</span>
-                    <span className={`seller-analytics-num ${getProfitClass(set.profit)}`}>
-                      {formatCurrencyDisplay(set.profit)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Shipping Destinations Map */}
-          <div className="seller-analytics-card seller-analytics-card-map">
-            <h3><Icon name="map" size={18} /> Shipping Destinations</h3>
-            <ShippingMap sales={sales} />
-          </div>
-
-          {/* Card Type Breakdown */}
+          {/* Card Type Performance */}
           <div className="seller-analytics-card">
             <h3><Icon name="layers" size={18} /> Card Type Performance</h3>
             <div className="seller-analytics-table">
@@ -614,38 +510,121 @@ function SellerDashboard() {
             </div>
           </div>
 
-          {/* Cost Breakdown */}
-          <div className="seller-analytics-card seller-analytics-costs">
-            <h3><Icon name="analytics" size={18} /> Cost Breakdown</h3>
-            <div className="seller-cost-grid">
-              <div className="seller-cost-item">
-                <span className="seller-cost-label">Card Costs</span>
-                <span className="seller-cost-value seller-analytics-negative">{formatCurrencyDisplay(analytics.totals.purchaseCost)}</span>
-              </div>
-              <div className="seller-cost-item">
-                <span className="seller-cost-label">Platform Fees</span>
-                <span className="seller-cost-value seller-analytics-negative">{formatCurrencyDisplay(analytics.totals.fees)}</span>
-              </div>
-              <div className="seller-cost-item">
-                <span className="seller-cost-label">Shipping Costs</span>
-                <span className="seller-cost-value seller-analytics-negative">{formatCurrencyDisplay(analytics.totals.shippingCost)}</span>
-              </div>
-              <div className="seller-cost-item">
-                <span className="seller-cost-label">Supply Costs</span>
-                <span className="seller-cost-value seller-analytics-negative">{formatCurrencyDisplay(analytics.totals.supplies)}</span>
-              </div>
-              <div className="seller-cost-item">
-                <span className="seller-cost-label">Shipping Charged</span>
-                <span className="seller-cost-value seller-profit-positive">{formatCurrencyDisplay(analytics.totals.shippingCharged)}</span>
-              </div>
-              <div className="seller-cost-item seller-cost-highlight">
-                <span className="seller-cost-label">Avg Profit/Sale</span>
-                <span className={`seller-cost-value ${getProfitClass(analytics.totals.avgProfit)}`}>
-                  {formatCurrencyDisplay(analytics.totals.avgProfit)}
-                </span>
+          {/* Most Profitable Sets */}
+          {analytics.topSets.length > 0 && (
+            <div className="seller-analytics-card">
+              <h3><Icon name="layers" size={18} /> Most Profitable Sets</h3>
+              <div className="seller-analytics-table">
+                <div className="seller-analytics-row seller-analytics-header">
+                  <span className="seller-analytics-name">Set</span>
+                  <span className="seller-analytics-num">Sales</span>
+                  <span className="seller-analytics-num">Revenue</span>
+                  <span className="seller-analytics-num">Profit</span>
+                  <span className="seller-analytics-num">Avg</span>
+                </div>
+                {analytics.topSets.map(set => (
+                  <div key={set.name} className="seller-analytics-row">
+                    <span className="seller-analytics-name" title={set.name}>{set.name}</span>
+                    <span className="seller-analytics-num">{set.count}</span>
+                    <span className="seller-analytics-num">{formatCurrencyDisplay(set.revenue)}</span>
+                    <span className={`seller-analytics-num ${getProfitClass(set.profit)}`}>
+                      {formatCurrencyDisplay(set.profit)}
+                    </span>
+                    <span className={`seller-analytics-num ${getProfitClass(set.profit / set.count)}`}>
+                      {formatCurrencyDisplay(set.profit / set.count)}
+                    </span>
+                  </div>
+                ))}
               </div>
             </div>
+          )}
+
+          {/* ROW 2: Shipping Destinations, Most Profitable Players, Most Sold Players, Most Sold Sets */}
+
+          {/* Shipping Destinations Map */}
+          <div className="seller-analytics-card seller-analytics-card-map">
+            <h3><Icon name="map" size={18} /> Shipping Destinations</h3>
+            <ShippingMap sales={sales} />
           </div>
+
+          {/* Most Profitable Players */}
+          {analytics.topPlayers.length > 0 && (
+            <div className="seller-analytics-card">
+              <h3><Icon name="user" size={18} /> Most Profitable Players</h3>
+              <div className="seller-analytics-table">
+                <div className="seller-analytics-row seller-analytics-header">
+                  <span className="seller-analytics-name">Player</span>
+                  <span className="seller-analytics-num">Sales</span>
+                  <span className="seller-analytics-num">Revenue</span>
+                  <span className="seller-analytics-num">Profit</span>
+                  <span className="seller-analytics-num">Avg</span>
+                </div>
+                {analytics.topPlayers.map(player => (
+                  <div key={player.name} className="seller-analytics-row">
+                    <span className="seller-analytics-name" title={player.name}>{player.name}</span>
+                    <span className="seller-analytics-num">{player.count}</span>
+                    <span className="seller-analytics-num">{formatCurrencyDisplay(player.revenue)}</span>
+                    <span className={`seller-analytics-num ${getProfitClass(player.profit)}`}>
+                      {formatCurrencyDisplay(player.profit)}
+                    </span>
+                    <span className={`seller-analytics-num ${getProfitClass(player.avgProfit)}`}>
+                      {formatCurrencyDisplay(player.avgProfit)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Most Sold Players */}
+          {analytics.mostSoldPlayers.length > 0 && (
+            <div className="seller-analytics-card">
+              <h3><Icon name="trending-up" size={18} /> Most Sold Players</h3>
+              <div className="seller-analytics-table">
+                <div className="seller-analytics-row seller-analytics-header">
+                  <span className="seller-analytics-name">Player</span>
+                  <span className="seller-analytics-num">Sales</span>
+                  <span className="seller-analytics-num">Revenue</span>
+                  <span className="seller-analytics-num">Profit</span>
+                </div>
+                {analytics.mostSoldPlayers.map(player => (
+                  <div key={player.name} className="seller-analytics-row">
+                    <span className="seller-analytics-name" title={player.name}>{player.name}</span>
+                    <span className="seller-analytics-num seller-analytics-highlight">{player.count}</span>
+                    <span className="seller-analytics-num">{formatCurrencyDisplay(player.revenue)}</span>
+                    <span className={`seller-analytics-num ${getProfitClass(player.profit)}`}>
+                      {formatCurrencyDisplay(player.profit)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Most Sold Sets */}
+          {analytics.mostSoldSets.length > 0 && (
+            <div className="seller-analytics-card">
+              <h3><Icon name="archive" size={18} /> Most Sold Sets</h3>
+              <div className="seller-analytics-table">
+                <div className="seller-analytics-row seller-analytics-header">
+                  <span className="seller-analytics-name">Set</span>
+                  <span className="seller-analytics-num">Sales</span>
+                  <span className="seller-analytics-num">Revenue</span>
+                  <span className="seller-analytics-num">Profit</span>
+                </div>
+                {analytics.mostSoldSets.map(set => (
+                  <div key={set.name} className="seller-analytics-row">
+                    <span className="seller-analytics-name" title={set.name}>{set.name}</span>
+                    <span className="seller-analytics-num seller-analytics-highlight">{set.count}</span>
+                    <span className="seller-analytics-num">{formatCurrencyDisplay(set.revenue)}</span>
+                    <span className={`seller-analytics-num ${getProfitClass(set.profit)}`}>
+                      {formatCurrencyDisplay(set.profit)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
