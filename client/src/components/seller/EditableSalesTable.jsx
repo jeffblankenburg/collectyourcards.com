@@ -31,6 +31,7 @@ function EditableSalesTable({
   onSummaryRefresh,
   onDataRefresh,
   onAddBulkSale,
+  onEditBulkSale,
   loading = false,
   showShippingConfig = true,
   showAdjustment = true,
@@ -1087,6 +1088,15 @@ function EditableSalesTable({
 
       {showDeleteButton && (
         <td className="sales-table-td-actions">
+          {sale.is_bulk_sale && onEditBulkSale && (
+            <button
+              className="sales-table-edit-btn"
+              onClick={() => onEditBulkSale(sale)}
+              title="Edit bulk sale"
+            >
+              <Icon name="edit" size={14} />
+            </button>
+          )}
           <button className="sales-table-delete-btn" onClick={() => handleDeleteSale(sale)} title="Delete sale">
             <Icon name="trash" size={14} />
           </button>
@@ -1370,7 +1380,7 @@ function EditableSalesTable({
             <col style={{ width: '50px' }} />
             <col style={{ width: '60px' }} />
             <col style={{ width: '140px' }} />
-            {showDeleteButton && <col style={{ width: '40px' }} />}
+            {showDeleteButton && <col style={{ width: '65px' }} />}
           </colgroup>
           <thead>
             <tr>

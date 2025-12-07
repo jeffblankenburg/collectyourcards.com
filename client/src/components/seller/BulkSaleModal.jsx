@@ -1,5 +1,5 @@
 /**
- * BulkSaleModal - Create a bulk sale (complete base set, etc.)
+ * BulkSaleModal - Create or edit a bulk sale (complete base set, etc.)
  * Allows selling items without individual card tracking
  */
 
@@ -26,7 +26,8 @@ function BulkSaleModal({
   onClose,
   onSuccess,
   platforms = [],
-  shippingConfigs = []
+  shippingConfigs = [],
+  editSale = null // If provided, we're in edit mode
 }) {
   const { addToast } = useToast()
   const [loading, setLoading] = useState(false)
@@ -41,6 +42,9 @@ function BulkSaleModal({
   const [loadingSupplies, setLoadingSupplies] = useState(false)
   const [selectedSupplies, setSelectedSupplies] = useState([]) // [{ supply_type_id, quantity }]
 
+  // Determine if we're in edit mode
+  const isEditMode = !!editSale
+
   // Form fields
   const [formData, setFormData] = useState({
     bulk_description: '',
@@ -54,6 +58,9 @@ function BulkSaleModal({
     shipping_cost: '',
     platform_fees: '',
     shipping_config_id: '',
+    buyer_username: '',
+    buyer_zip_code: '',
+    tracking_number: '',
     notes: ''
   })
 
@@ -76,29 +83,63 @@ function BulkSaleModal({
     }
   }
 
-  // Reset form when modal opens
+  // Reset/populate form when modal opens or editSale changes
   useEffect(() => {
     if (isOpen) {
-      setFormData({
-        bulk_description: '',
-        bulk_card_count: '',
-        platform_id: '',
-        status: 'listed',
-        sale_date: new Date().toISOString().split('T')[0],
-        purchase_price: '',
-        sale_price: '',
-        shipping_charged: '',
-        shipping_cost: '',
-        platform_fees: '',
-        shipping_config_id: '',
-        notes: ''
-      })
-      setSelectedSeries(null)
+      if (editSale) {
+        // Edit mode - populate form with existing data
+        setFormData({
+          bulk_description: editSale.bulk_description || editSale.bulk_info?.description || '',
+          bulk_card_count: editSale.bulk_card_count?.toString() || '',
+          platform_id: editSale.platform_id?.toString() || '',
+          status: editSale.status || 'listed',
+          sale_date: editSale.sale_date ? editSale.sale_date.split('T')[0] : new Date().toISOString().split('T')[0],
+          purchase_price: editSale.purchase_price?.toString() || '',
+          sale_price: editSale.sale_price?.toString() || '',
+          shipping_charged: editSale.shipping_charged?.toString() || '',
+          shipping_cost: editSale.shipping_cost?.toString() || '',
+          platform_fees: editSale.platform_fees?.toString() || '',
+          shipping_config_id: editSale.shipping_config_id?.toString() || '',
+          buyer_username: editSale.buyer_username || '',
+          buyer_zip_code: editSale.buyer_zip_code || '',
+          tracking_number: editSale.tracking_number || '',
+          notes: editSale.notes || ''
+        })
+        // Set selected series from edit data
+        if (editSale.bulk_info || editSale.series) {
+          setSelectedSeries({
+            series_id: editSale.series_id || editSale.bulk_info?.series_id,
+            name: editSale.bulk_info?.series_name || editSale.series?.name || 'Unknown Series',
+            card_count: editSale.bulk_card_count || null
+          })
+        }
+        setSelectedSupplies([]) // TODO: Could load existing supply usage
+      } else {
+        // Create mode - reset form
+        setFormData({
+          bulk_description: '',
+          bulk_card_count: '',
+          platform_id: '',
+          status: 'listed',
+          sale_date: new Date().toISOString().split('T')[0],
+          purchase_price: '',
+          sale_price: '',
+          shipping_charged: '',
+          shipping_cost: '',
+          platform_fees: '',
+          shipping_config_id: '',
+          buyer_username: '',
+          buyer_zip_code: '',
+          tracking_number: '',
+          notes: ''
+        })
+        setSelectedSeries(null)
+        setSelectedSupplies([])
+      }
       setSearchQuery('')
       setSearchResults([])
-      setSelectedSupplies([])
     }
-  }, [isOpen])
+  }, [isOpen, editSale])
 
   // Search for series
   useEffect(() => {
@@ -134,8 +175,8 @@ function BulkSaleModal({
     setSelectedSeries(series)
     setSearchQuery('')
     setSearchResults([])
-    // Pre-fill card count with series card count
-    if (series.card_count) {
+    // Pre-fill card count with series card count (only in create mode)
+    if (!isEditMode && series.card_count) {
       setFormData(prev => ({ ...prev, bulk_card_count: series.card_count.toString() }))
     }
   }
@@ -161,7 +202,6 @@ function BulkSaleModal({
   }
 
   // Calculate total supply cost from selected supplies
-  // For now, we'll use estimated cost from supply types (actual FIFO cost calculated on server)
   const calculateSupplyCost = () => {
     let total = 0
     for (const supply of selectedSupplies) {
@@ -190,10 +230,10 @@ function BulkSaleModal({
 
     setLoading(true)
     try {
-      // Calculate supply cost from selections
+      // Calculate supply cost from selections (only use if supplies selected)
       const supplyCost = calculateSupplyCost()
 
-      await axios.post('/api/seller/bulk-sales', {
+      const payload = {
         series_id: selectedSeries.series_id,
         bulk_description: formData.bulk_description.trim(),
         bulk_card_count: formData.bulk_card_count ? parseInt(formData.bulk_card_count) : null,
@@ -205,17 +245,29 @@ function BulkSaleModal({
         shipping_charged: formData.shipping_charged || null,
         shipping_cost: formData.shipping_cost || null,
         platform_fees: formData.platform_fees || null,
-        supply_cost: supplyCost > 0 ? supplyCost : null,
+        supply_cost: supplyCost > 0 ? supplyCost : (isEditMode ? editSale.supply_cost : null),
         shipping_config_id: formData.shipping_config_id || null,
+        buyer_username: formData.buyer_username || null,
+        buyer_zip_code: formData.buyer_zip_code || null,
+        tracking_number: formData.tracking_number || null,
         notes: formData.notes || null
-      })
+      }
 
-      addToast('Bulk sale created successfully', 'success')
+      if (isEditMode) {
+        // Update existing bulk sale
+        await axios.put(`/api/seller/sales/${editSale.sale_id}`, payload)
+        addToast('Bulk sale updated successfully', 'success')
+      } else {
+        // Create new bulk sale
+        await axios.post('/api/seller/bulk-sales', payload)
+        addToast('Bulk sale created successfully', 'success')
+      }
+
       if (onSuccess) onSuccess()
       onClose()
     } catch (error) {
-      console.error('Error creating bulk sale:', error)
-      addToast(error.response?.data?.error || 'Failed to create bulk sale', 'error')
+      console.error(`Error ${isEditMode ? 'updating' : 'creating'} bulk sale:`, error)
+      addToast(error.response?.data?.error || `Failed to ${isEditMode ? 'update' : 'create'} bulk sale`, 'error')
     } finally {
       setLoading(false)
     }
@@ -230,14 +282,16 @@ function BulkSaleModal({
   }
 
   const supplyCost = calculateSupplyCost()
+  // In edit mode, show existing supply cost if no new supplies selected
+  const displaySupplyCost = supplyCost > 0 ? supplyCost : (isEditMode ? parseFloat(editSale?.supply_cost) || 0 : 0)
 
   return (
     <div className="bulk-sale-modal-overlay" onClick={handleBackdropClick}>
       <div className="bulk-sale-modal">
         <div className="bulk-sale-modal-header">
           <h2>
-            <Icon name="package" size={20} />
-            Add Bulk Sale
+            <Icon name={isEditMode ? "edit" : "package"} size={20} />
+            {isEditMode ? 'Edit Bulk Sale' : 'Add Bulk Sale'}
           </h2>
           <button className="bulk-sale-modal-close" onClick={onClose} disabled={loading}>
             <Icon name="x" size={20} />
@@ -253,7 +307,9 @@ function BulkSaleModal({
                 <div className="bulk-sale-series-info">
                   <span className="bulk-sale-series-name">{selectedSeries.name}</span>
                   <div className="bulk-sale-series-meta">
-                    <span className="bulk-sale-card-count">{selectedSeries.card_count} cards</span>
+                    {selectedSeries.card_count && (
+                      <span className="bulk-sale-card-count">{selectedSeries.card_count} cards</span>
+                    )}
                     {selectedSeries.print_run && (
                       <span className="bulk-sale-print-run">/{selectedSeries.print_run}</span>
                     )}
@@ -270,13 +326,15 @@ function BulkSaleModal({
                     )}
                   </div>
                 </div>
-                <button
-                  type="button"
-                  className="bulk-sale-series-clear"
-                  onClick={() => setSelectedSeries(null)}
-                >
-                  <Icon name="x" size={16} />
-                </button>
+                {!isEditMode && (
+                  <button
+                    type="button"
+                    className="bulk-sale-series-clear"
+                    onClick={() => setSelectedSeries(null)}
+                  >
+                    <Icon name="x" size={16} />
+                  </button>
+                )}
               </div>
             ) : (
               <div className="bulk-sale-series-search">
@@ -413,6 +471,49 @@ function BulkSaleModal({
             </div>
           </div>
 
+          {/* Buyer Info (for edit mode or when status is sold/shipped) */}
+          {(isEditMode || formData.status !== 'listed') && (
+            <div className="bulk-sale-form-row">
+              <div className="bulk-sale-form-section">
+                <label className="bulk-sale-form-label">Buyer Username</label>
+                <input
+                  type="text"
+                  name="buyer_username"
+                  value={formData.buyer_username}
+                  onChange={handleChange}
+                  placeholder="eBay username, etc."
+                  className="bulk-sale-input"
+                />
+              </div>
+              <div className="bulk-sale-form-section">
+                <label className="bulk-sale-form-label">Buyer Zip Code</label>
+                <input
+                  type="text"
+                  name="buyer_zip_code"
+                  value={formData.buyer_zip_code}
+                  onChange={handleChange}
+                  placeholder="12345"
+                  className="bulk-sale-input"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Tracking Number (for edit mode or when status is shipped) */}
+          {(isEditMode || formData.status === 'shipped' || formData.status === 'completed') && (
+            <div className="bulk-sale-form-section">
+              <label className="bulk-sale-form-label">Tracking Number</label>
+              <input
+                type="text"
+                name="tracking_number"
+                value={formData.tracking_number}
+                onChange={handleChange}
+                placeholder="Tracking number"
+                className="bulk-sale-input"
+              />
+            </div>
+          )}
+
           {/* Financial Fields */}
           <div className="bulk-sale-form-section">
             <label className="bulk-sale-form-label">Financials</label>
@@ -481,7 +582,7 @@ function BulkSaleModal({
                 <label>Supplies</label>
                 <input
                   type="text"
-                  value={supplyCost > 0 ? `$${supplyCost.toFixed(2)}` : '$0.00'}
+                  value={displaySupplyCost > 0 ? `$${displaySupplyCost.toFixed(2)}` : '$0.00'}
                   readOnly
                   className="bulk-sale-input-small bulk-sale-input-readonly"
                   title="Calculated from selected supplies below"
@@ -576,12 +677,12 @@ function BulkSaleModal({
               {loading ? (
                 <>
                   <Icon name="loader" size={16} className="spinning" />
-                  Creating...
+                  {isEditMode ? 'Saving...' : 'Creating...'}
                 </>
               ) : (
                 <>
-                  <Icon name="plus" size={16} />
-                  Create Bulk Sale
+                  <Icon name={isEditMode ? "check" : "plus"} size={16} />
+                  {isEditMode ? 'Save Changes' : 'Create Bulk Sale'}
                 </>
               )}
             </button>

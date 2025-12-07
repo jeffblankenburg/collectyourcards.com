@@ -736,6 +736,14 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
   gap: 1rem;
+  max-width: 100%;
+}
+
+/* Limit to max 4 columns */
+@media (min-width: 1400px) {
+  .seller-dashboard-page .seller-analytics-section {
+    grid-template-columns: repeat(4, 1fr);
+  }
 }
 
 .seller-dashboard-page .seller-analytics-card {
@@ -743,6 +751,11 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
   padding: 1rem;
+}
+
+/* Map card - keep it standard size, content will fit nicely */
+.seller-dashboard-page .seller-analytics-card-map {
+  min-height: 300px;
 }
 
 .seller-dashboard-page .seller-analytics-card h3 {
@@ -802,6 +815,11 @@
 
 .seller-dashboard-page .seller-analytics-negative {
   color: #fca5a5 !important;
+}
+
+.seller-dashboard-page .seller-analytics-highlight {
+  font-weight: 600;
+  color: #60a5fa !important;
 }
 
 /* Cost Breakdown Card */

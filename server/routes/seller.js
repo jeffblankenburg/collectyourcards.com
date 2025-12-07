@@ -621,17 +621,24 @@ router.put('/sales/:id', requireAuth, requireSeller, async (req, res) => {
       shipping_cost,
       platform_fees,
       other_fees,
+      supply_cost,
       adjustment,
       buyer_username,
       buyer_zip_code,
       tracking_number,
-      notes
+      notes,
+      // Bulk sale specific fields
+      bulk_description,
+      bulk_card_count
     } = req.body
 
-    // If shipping_config_id changed, auto-calculate supply cost from config
+    // Determine supply cost - use explicit value if provided, otherwise calculate from config
     let newSupplyCost = existingSale.supply_cost
-    const newConfigId = shipping_config_id !== undefined ? shipping_config_id : existingSale.shipping_config_id
-    if (shipping_config_id !== undefined) {
+    if (supply_cost !== undefined) {
+      // Explicit supply cost provided (for bulk sales with manual supply selection)
+      newSupplyCost = parseFloat(supply_cost) || 0
+    } else if (shipping_config_id !== undefined) {
+      // If shipping_config_id changed, auto-calculate supply cost from config
       if (shipping_config_id) {
         newSupplyCost = await calculateSupplyCostFromConfig(prisma, userId, parseInt(shipping_config_id))
       } else {
@@ -674,13 +681,21 @@ router.put('/sales/:id', requireAuth, requireSeller, async (req, res) => {
         buyer_zip_code: buyer_zip_code ?? undefined,
         tracking_number: tracking_number ?? undefined,
         notes: notes ?? undefined,
+        // Bulk sale specific fields
+        bulk_description: bulk_description ?? undefined,
+        bulk_card_count: bulk_card_count !== undefined ? (bulk_card_count ? parseInt(bulk_card_count) : null) : undefined,
         updated: new Date()
       },
       include: {
         card: true,
         platform: true,
         order: true,
-        shipping_config: true
+        shipping_config: true,
+        series: {
+          include: {
+            set_series_setToset: true
+          }
+        }
       }
     })
 

@@ -769,9 +769,13 @@ tr.sales-table-grouped-row:has(+ tr.sales-table-order-row) td {
 
 /* Actions Column */
 .sales-table-td-actions {
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.25rem;
 }
 
+.sales-table-edit-btn,
 .sales-table-delete-btn {
   display: inline-flex;
   align-items: center;
@@ -785,6 +789,12 @@ tr.sales-table-grouped-row:has(+ tr.sales-table-order-row) td {
   color: rgba(255, 255, 255, 0.5);
   cursor: pointer;
   transition: all 0.15s ease;
+}
+
+.sales-table-edit-btn:hover {
+  background: rgba(139, 92, 246, 0.15);
+  border-color: rgba(139, 92, 246, 0.4);
+  color: #a78bfa;
 }
 
 .sales-table-delete-btn:hover {

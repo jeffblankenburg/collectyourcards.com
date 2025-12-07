@@ -5,6 +5,7 @@ import { useToast } from '../contexts/ToastContext'
 import Icon from '../components/Icon'
 import EditableSalesTable from '../components/seller/EditableSalesTable'
 import BulkSaleModal from '../components/seller/BulkSaleModal'
+import ShippingMap from '../components/seller/ShippingMap'
 import './SellerDashboardScoped.css'
 
 function SellerDashboard() {
@@ -15,6 +16,7 @@ function SellerDashboard() {
   const [loading, setLoading] = useState(true)
   const [showAnalytics, setShowAnalytics] = useState(true)
   const [showBulkSaleModal, setShowBulkSaleModal] = useState(false)
+  const [editBulkSale, setEditBulkSale] = useState(null)
 
   const { addToast } = useToast()
 
@@ -148,6 +150,28 @@ function SellerDashboard() {
       p.avgProfit = p.count > 0 ? p.profit / p.count : 0
     })
 
+    // Team breakdown - sold only
+    const teamStats = {}
+    soldSales.forEach(sale => {
+      const teamName = sale.card_info?.team || 'Unknown'
+      if (!teamStats[teamName]) {
+        teamStats[teamName] = {
+          name: teamName,
+          count: 0,
+          revenue: 0,
+          profit: 0,
+          avgProfit: 0
+        }
+      }
+      teamStats[teamName].count++
+      teamStats[teamName].revenue += (parseFloat(sale.sale_price) || 0) + (parseFloat(sale.shipping_charged) || 0)
+      teamStats[teamName].profit += parseFloat(sale.net_profit) || 0
+    })
+    // Calculate avg profit per team
+    Object.values(teamStats).forEach(t => {
+      t.avgProfit = t.count > 0 ? t.profit / t.count : 0
+    })
+
     // Card type breakdown (RC, Auto, Relic, SP) - sold only
     // Revenue = sale_price + shipping_charged (total money received)
     const typeStats = {
@@ -190,7 +214,7 @@ function SellerDashboard() {
       }
     })
 
-    // Top performers
+    // Top performers (sorted by profit)
     const topPlatforms = Object.values(platformStats)
       .filter(p => p.name !== 'Unassigned')
       .sort((a, b) => b.profit - a.profit)
@@ -204,6 +228,27 @@ function SellerDashboard() {
     const topPlayers = Object.values(playerStats)
       .filter(p => p.name !== 'Unknown')
       .sort((a, b) => b.profit - a.profit)
+      .slice(0, 5)
+
+    const topTeams = Object.values(teamStats)
+      .filter(t => t.name !== 'Unknown')
+      .sort((a, b) => b.profit - a.profit)
+      .slice(0, 5)
+
+    // Most sold (sorted by count)
+    const mostSoldPlayers = Object.values(playerStats)
+      .filter(p => p.name !== 'Unknown')
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5)
+
+    const mostSoldTeams = Object.values(teamStats)
+      .filter(t => t.name !== 'Unknown')
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5)
+
+    const mostSoldSets = Object.values(setStats)
+      .filter(s => s.name !== 'Unknown Set')
+      .sort((a, b) => b.count - a.count)
       .slice(0, 5)
 
     // Overall totals - sold only
@@ -228,16 +273,22 @@ function SellerDashboard() {
       platformStats: Object.values(platformStats),
       setStats: Object.values(setStats),
       playerStats: Object.values(playerStats),
+      teamStats: Object.values(teamStats),
       typeStats,
       topPlatforms,
       topSets,
       topPlayers,
+      topTeams,
+      mostSoldPlayers,
+      mostSoldTeams,
+      mostSoldSets,
       totals,
       soldCount: soldSales.length,
       listedCount: listedSales.length,
       totalCount: sales.length,
       uniquePlayers: Object.keys(playerStats).filter(k => k !== 'Unknown').length,
       uniqueSets: Object.keys(setStats).filter(k => k !== 'Unknown Set').length,
+      uniqueTeams: Object.keys(teamStats).filter(k => k !== 'Unknown').length,
       uniquePlatforms: Object.keys(platformStats).filter(k => k !== 'Unassigned').length
     }
   }, [sales])
@@ -403,6 +454,87 @@ function SellerDashboard() {
             </div>
           )}
 
+          {/* Most Sold Players */}
+          {analytics.mostSoldPlayers.length > 0 && (
+            <div className="seller-analytics-card">
+              <h3><Icon name="trending-up" size={18} /> Most Sold Players</h3>
+              <div className="seller-analytics-table">
+                <div className="seller-analytics-row seller-analytics-header">
+                  <span className="seller-analytics-name">Player</span>
+                  <span className="seller-analytics-num">Sales</span>
+                  <span className="seller-analytics-num">Revenue</span>
+                  <span className="seller-analytics-num">Profit</span>
+                </div>
+                {analytics.mostSoldPlayers.map(player => (
+                  <div key={player.name} className="seller-analytics-row">
+                    <span className="seller-analytics-name" title={player.name}>{player.name}</span>
+                    <span className="seller-analytics-num seller-analytics-highlight">{player.count}</span>
+                    <span className="seller-analytics-num">{formatCurrencyDisplay(player.revenue)}</span>
+                    <span className={`seller-analytics-num ${getProfitClass(player.profit)}`}>
+                      {formatCurrencyDisplay(player.profit)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Most Sold Teams */}
+          {analytics.mostSoldTeams.length > 0 && (
+            <div className="seller-analytics-card">
+              <h3><Icon name="users" size={18} /> Most Sold Teams</h3>
+              <div className="seller-analytics-table">
+                <div className="seller-analytics-row seller-analytics-header">
+                  <span className="seller-analytics-name">Team</span>
+                  <span className="seller-analytics-num">Sales</span>
+                  <span className="seller-analytics-num">Revenue</span>
+                  <span className="seller-analytics-num">Profit</span>
+                </div>
+                {analytics.mostSoldTeams.map(team => (
+                  <div key={team.name} className="seller-analytics-row">
+                    <span className="seller-analytics-name" title={team.name}>{team.name}</span>
+                    <span className="seller-analytics-num seller-analytics-highlight">{team.count}</span>
+                    <span className="seller-analytics-num">{formatCurrencyDisplay(team.revenue)}</span>
+                    <span className={`seller-analytics-num ${getProfitClass(team.profit)}`}>
+                      {formatCurrencyDisplay(team.profit)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Most Sold Sets */}
+          {analytics.mostSoldSets.length > 0 && (
+            <div className="seller-analytics-card">
+              <h3><Icon name="archive" size={18} /> Most Sold Sets</h3>
+              <div className="seller-analytics-table">
+                <div className="seller-analytics-row seller-analytics-header">
+                  <span className="seller-analytics-name">Set</span>
+                  <span className="seller-analytics-num">Sales</span>
+                  <span className="seller-analytics-num">Revenue</span>
+                  <span className="seller-analytics-num">Profit</span>
+                </div>
+                {analytics.mostSoldSets.map(set => (
+                  <div key={set.name} className="seller-analytics-row">
+                    <span className="seller-analytics-name" title={set.name}>{set.name}</span>
+                    <span className="seller-analytics-num seller-analytics-highlight">{set.count}</span>
+                    <span className="seller-analytics-num">{formatCurrencyDisplay(set.revenue)}</span>
+                    <span className={`seller-analytics-num ${getProfitClass(set.profit)}`}>
+                      {formatCurrencyDisplay(set.profit)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Shipping Destinations Map */}
+          <div className="seller-analytics-card seller-analytics-card-map">
+            <h3><Icon name="map" size={18} /> Shipping Destinations</h3>
+            <ShippingMap sales={sales} />
+          </div>
+
           {/* Card Type Breakdown */}
           <div className="seller-analytics-card">
             <h3><Icon name="layers" size={18} /> Card Type Performance</h3>
@@ -526,6 +658,7 @@ function SellerDashboard() {
         onSummaryRefresh={refreshSummary}
         onDataRefresh={refreshSalesData}
         onAddBulkSale={() => setShowBulkSaleModal(true)}
+        onEditBulkSale={(sale) => setEditBulkSale(sale)}
         loading={loading}
         showShippingConfig={true}
         showAdjustment={true}
@@ -535,11 +668,15 @@ function SellerDashboard() {
 
       {/* Bulk Sale Modal */}
       <BulkSaleModal
-        isOpen={showBulkSaleModal}
-        onClose={() => setShowBulkSaleModal(false)}
+        isOpen={showBulkSaleModal || !!editBulkSale}
+        onClose={() => {
+          setShowBulkSaleModal(false)
+          setEditBulkSale(null)
+        }}
         onSuccess={refreshSalesData}
         platforms={platforms}
         shippingConfigs={shippingConfigs}
+        editSale={editBulkSale}
       />
     </div>
   )
