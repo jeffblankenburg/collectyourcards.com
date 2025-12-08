@@ -359,12 +359,14 @@ model player_team {
   player                                                     BigInt?
   team                                                       Int?
   created                                                    DateTime           @default(now(), map: "DEFAULT_player_team_created") @db.DateTime
+  card_count                                                 Int                @default(0, map: "DF__player_te__card___116A8EFB")
   card_player_team_card_player_team_player_teamToplayer_team card_player_team[] @relation("card_player_team_player_teamToplayer_team")
   player_player_team_playerToplayer                          player?            @relation("player_team_playerToplayer", fields: [player], references: [player_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_player_team_player")
   team_player_team_teamToteam                                team?              @relation("player_team_teamToteam", fields: [team], references: [team_Id], onDelete: NoAction, onUpdate: NoAction, map: "FK_player_team_team")
 
   @@index([player_team_id, player], map: "idx_player_team")
   @@index([team], map: "IX_player_team_team")
+  @@index([card_count(sort: Desc)], map: "IX_player_team_card_count")
 }
 
 model series {
@@ -387,10 +389,10 @@ model series {
   production_code           String?                  @db.VarChar(50)
   name_indexed              String?                  @db.NVarChar(450)
   slug                      String                   @db.NVarChar(255)
+  sales                     sale[]                   @relation("sale_seriesToseries")
   color_series_colorTocolor color?                   @relation("series_colorTocolor", fields: [color], references: [color_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_series_color")
   set_series_setToset       set?                     @relation("series_setToset", fields: [set], references: [set_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_series_set")
   user_series_completion    user_series_completion[]
-  sales                     sale[]                   @relation("sale_seriesToseries")
 
   @@unique([slug, set], map: "idx_series_slug_set")
   @@index([set], map: "IX_series_set")
@@ -416,12 +418,13 @@ model set {
   checklist_format                            String?                        @default("csv", map: "DF__set__checklist_f__589C25F3") @db.VarChar(20)
   name_indexed                                String?                        @db.NVarChar(450)
   slug                                        String                         @unique(map: "idx_set_slug") @db.NVarChar(255)
+  admin_set_view                              admin_set_view[]
+  product_purchases                           product_purchase[]             @relation("product_purchase_setToset")
   series_series_setToset                      series[]                       @relation("series_setToset")
   manufacturer_set_manufacturerTomanufacturer manufacturer?                  @relation("set_manufacturerTomanufacturer", fields: [manufacturer], references: [manufacturer_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_set_manufacturer")
   organization_set_organizationToorganization organization?                  @relation("set_organizationToorganization", fields: [organization], references: [organization_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_set_organization")
   spreadsheet_generation_log                  spreadsheet_generation_log[]
   spreadsheet_generation_queue                spreadsheet_generation_queue[]
-  product_purchases                           product_purchase[]             @relation("product_purchase_setToset")
 
   @@index([set_id], map: "IX_set_series_lookup")
   @@index([manufacturer], map: "IX_set_manufacturer")
@@ -498,14 +501,21 @@ model user {
   is_muted                                                    Boolean                     @default(false, map: "DF__user__is_muted__0A338187")
   muted_at                                                    DateTime?                   @db.DateTime
   muted_by                                                    BigInt?
-  seller_role                                                 String?                     @db.NVarChar(50)  // NULL = no seller access, 'basic', 'pro', etc.
-  seller_expires                                              DateTime?                   @db.DateTime      // Optional expiration for seller access
+  seller_expires                                              DateTime?                   @db.DateTime
+  seller_role                                                 String?                     @db.NVarChar(50)
   achievement_history                                         achievement_history[]
   achievement_notifications                                   achievement_notifications[]
+  admin_set_view                                              admin_set_view[]
   collection_view_collection_view_userTouser                  collection_view[]           @relation("collection_view_userTouser")
+  product_purchases                                           product_purchase[]          @relation("product_purchase_userTouser")
+  product_types                                               product_type[]              @relation("product_type_userTouser")
   sales                                                       sale[]                      @relation("sale_userTouser")
+  sale_orders                                                 sale_order[]                @relation("sale_order_userTouser")
   selling_platforms                                           selling_platform[]          @relation("selling_platform_userTouser")
+  shipping_configs                                            shipping_config[]           @relation("shipping_config_userTouser")
   staging_data_staging_data_userTouser                        staging_data[]              @relation("staging_data_userTouser")
+  supply_batches                                              supply_batch[]              @relation("supply_batch_userTouser")
+  supply_types                                                supply_type[]               @relation("supply_type_userTouser")
   universal_comments_universal_comments_user_idTouser         universal_comments[]        @relation("universal_comments_user_idTouser")
   universal_comments_universal_comments_deleted_byTouser      universal_comments[]        @relation("universal_comments_deleted_byTouser")
   user                                                        user?                       @relation("userTouser", fields: [muted_by], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_user_muted_by")
@@ -525,12 +535,6 @@ model user {
   user_streaks                                                user_streaks[]
   user_table_preferences_user_table_preferences_userTouser    user_table_preferences[]    @relation("user_table_preferences_userTouser")
   user_team_user_team_userTouser                              user_team[]                 @relation("user_team_userTouser")
-  supply_types                                                supply_type[]               @relation("supply_type_userTouser")
-  supply_batches                                              supply_batch[]              @relation("supply_batch_userTouser")
-  shipping_configs                                            shipping_config[]           @relation("shipping_config_userTouser")
-  sale_orders                                                 sale_order[]                @relation("sale_order_userTouser")
-  product_purchases                                           product_purchase[]          @relation("product_purchase_userTouser")
-  product_types                                               product_type[]              @relation("product_type_userTouser")
 
   @@index([is_muted], map: "IX_user_is_muted")
   @@map("user")
@@ -575,8 +579,8 @@ model user_card {
   random_code                                                  String?               @db.NVarChar(Max)
   created                                                      DateTime?             @default(now(), map: "DEFAULT_user_card_created") @db.DateTime
   ebay_purchase_id                                             BigInt?
-  sold_at                                                      DateTime?             @db.DateTime
   sale_id                                                      BigInt?
+  sold_at                                                      DateTime?             @db.DateTime
   card_card_reference_user_cardTouser_card                     card[]                @relation("card_reference_user_cardTouser_card")
   card_user_card_cardTocard                                    card?                 @relation("user_card_cardTocard", fields: [card], references: [card_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_user_card_card")
   card_variation_user_card_card_variationTocard_variation      card_variation?       @relation("user_card_card_variationTocard_variation", fields: [card_variation], references: [card_variation_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_user_card_card_variation")
@@ -1035,14 +1039,14 @@ model user_table_preferences {
 }
 
 model selling_platform {
-  platform_id     Int      @id(map: "PK_selling_platform") @default(autoincrement())
+  platform_id     Int          @id(map: "PK_selling_platform") @default(autoincrement())
   user_id         BigInt?
-  name            String   @db.NVarChar(100)
-  fee_percentage  Decimal? @db.Decimal(5, 2)
-  payment_fee_pct Decimal? @db.Decimal(5, 2)
-  fixed_fee       Decimal? @db.Decimal(10, 2)
-  is_active       Boolean  @default(true)
-  created         DateTime @default(now()) @db.DateTime
+  name            String       @db.NVarChar(100)
+  fee_percentage  Decimal?     @db.Decimal(5, 2)
+  payment_fee_pct Decimal?     @db.Decimal(5, 2)
+  fixed_fee       Decimal?     @db.Decimal(10, 2)
+  is_active       Boolean      @default(true)
+  created         DateTime     @default(now()) @db.DateTime
   sales           sale[]       @relation("sale_platformToselling_platform")
   sale_orders     sale_order[] @relation("sale_order_platformToselling_platform")
   user            user?        @relation("selling_platform_userTouser", fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction, map: "FK_selling_platform_user")
@@ -1052,41 +1056,41 @@ model selling_platform {
 }
 
 model sale {
-  sale_id            BigInt            @id(map: "PK_sale") @default(autoincrement())
+  sale_id            BigInt              @id(map: "PK_sale") @default(autoincrement())
   user_id            BigInt
-  card_id            BigInt?           // Nullable for bulk sales
-  user_card_id       BigInt?
-  series_id          BigInt?           // For bulk sales - which series the bulk item is from
-  bulk_description   String?           @db.NVarChar(255) // For bulk sales - "Complete Base Set", etc.
-  bulk_card_count    Int?              // For bulk sales - number of cards in the bulk item
+  card_id            BigInt?
   platform_id        Int?
+  status             String              @default("listed") @db.VarChar(20)
+  sale_date          DateTime?           @db.DateTime
+  sale_price         Decimal?            @db.Decimal(10, 2)
+  shipping_charged   Decimal?            @db.Decimal(10, 2)
+  shipping_cost      Decimal?            @db.Decimal(10, 2)
+  platform_fees      Decimal?            @db.Decimal(10, 2)
+  other_fees         Decimal?            @db.Decimal(10, 2)
+  supply_cost        Decimal?            @db.Decimal(10, 2)
+  total_revenue      Decimal?            @db.Decimal(10, 2)
+  total_costs        Decimal?            @db.Decimal(10, 2)
+  net_profit         Decimal?            @db.Decimal(10, 2)
+  buyer_username     String?             @db.NVarChar(100)
+  tracking_number    String?             @db.NVarChar(100)
+  notes              String?             @db.NVarChar(Max)
+  created            DateTime            @default(now()) @db.DateTime
+  updated            DateTime            @default(now()) @db.DateTime
   order_id           BigInt?
   shipping_config_id Int?
-  status             String            @default("listed") @db.VarChar(20)
-  sale_date          DateTime?         @db.DateTime
-  purchase_price     Decimal?          @db.Decimal(10, 2)
-  sale_price         Decimal?          @db.Decimal(10, 2)
-  shipping_charged   Decimal?          @db.Decimal(10, 2)
-  shipping_cost      Decimal?          @db.Decimal(10, 2)
-  platform_fees      Decimal?          @db.Decimal(10, 2)
-  other_fees         Decimal?          @db.Decimal(10, 2)
-  supply_cost        Decimal?          @db.Decimal(10, 2)
-  adjustment         Decimal?          @db.Decimal(10, 2) // Manual override: negative = cost, positive = profit
-  total_revenue      Decimal?          @db.Decimal(10, 2)
-  total_costs        Decimal?          @db.Decimal(10, 2)
-  net_profit         Decimal?          @db.Decimal(10, 2)
-  buyer_username     String?           @db.NVarChar(100)
-  buyer_zip_code     String?           @db.VarChar(20)   // Shipping destination zip code
-  tracking_number    String?           @db.NVarChar(100)
-  notes              String?           @db.NVarChar(Max)
-  created            DateTime          @default(now()) @db.DateTime
-  updated            DateTime          @default(now()) @db.DateTime
-  card               card?             @relation("sale_cardTocard", fields: [card_id], references: [card_id], onUpdate: NoAction, map: "FK_sale_card")
-  series             series?           @relation("sale_seriesToseries", fields: [series_id], references: [series_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_sale_series")
-  platform           selling_platform? @relation("sale_platformToselling_platform", fields: [platform_id], references: [platform_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_sale_platform")
-  order              sale_order?       @relation("sale_orderTosale_order", fields: [order_id], references: [order_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_sale_order")
-  shipping_config    shipping_config?  @relation("sale_shipping_configToshipping_config", fields: [shipping_config_id], references: [shipping_config_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_sale_shipping_config")
-  user               user              @relation("sale_userTouser", fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction, map: "FK_sale_user")
+  adjustment         Decimal?            @db.Decimal(10, 2)
+  purchase_price     Decimal?            @db.Decimal(10, 2)
+  user_card_id       BigInt?
+  bulk_description   String?             @db.NVarChar(255)
+  series_id          BigInt?
+  buyer_zip_code     String?             @db.VarChar(20)
+  bulk_card_count    Int?
+  card               card?               @relation("sale_cardTocard", fields: [card_id], references: [card_id], onUpdate: NoAction, map: "FK_sale_card")
+  order              sale_order?         @relation("sale_orderTosale_order", fields: [order_id], references: [order_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_sale_order")
+  platform           selling_platform?   @relation("sale_platformToselling_platform", fields: [platform_id], references: [platform_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_sale_platform")
+  series             series?             @relation("sale_seriesToseries", fields: [series_id], references: [series_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_sale_series")
+  shipping_config    shipping_config?    @relation("sale_shipping_configToshipping_config", fields: [shipping_config_id], references: [shipping_config_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_sale_shipping_config")
+  user               user                @relation("sale_userTouser", fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction, map: "FK_sale_user")
   sale_supply_usage  sale_supply_usage[] @relation("sale_supply_usage_saleToSale")
 
   @@index([user_id], map: "IX_sale_user")
@@ -1099,13 +1103,11 @@ model sale {
   @@index([shipping_config_id], map: "IX_sale_shipping_config")
 }
 
-// Order groups multiple sales for combined shipping
 model sale_order {
   order_id           BigInt               @id(map: "PK_sale_order") @default(autoincrement())
   user_id            BigInt
   platform_id        Int?
-  shipping_config_id Int?
-  order_reference    String?              @db.NVarChar(100)  // eBay order #, etc.
+  order_reference    String?              @db.NVarChar(100)
   buyer_username     String?              @db.NVarChar(100)
   status             String               @default("pending") @db.VarChar(20)
   ship_date          DateTime?            @db.DateTime
@@ -1115,11 +1117,12 @@ model sale_order {
   notes              String?              @db.NVarChar(Max)
   created            DateTime             @default(now()) @db.DateTime
   updated            DateTime             @default(now()) @db.DateTime
-  user               user                 @relation("sale_order_userTouser", fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction, map: "FK_sale_order_user")
+  shipping_config_id Int?
+  order_supplies     order_supply_usage[] @relation("order_supply_usage_orderToorder")
+  sales              sale[]               @relation("sale_orderTosale_order")
   platform           selling_platform?    @relation("sale_order_platformToselling_platform", fields: [platform_id], references: [platform_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_sale_order_platform")
   shipping_config    shipping_config?     @relation("sale_order_shipping_configToshipping_config", fields: [shipping_config_id], references: [shipping_config_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_sale_order_shipping_config")
-  sales              sale[]               @relation("sale_orderTosale_order")
-  order_supplies     order_supply_usage[] @relation("order_supply_usage_orderToorder")
+  user               user                 @relation("sale_order_userTouser", fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction, map: "FK_sale_order_user")
 
   @@index([user_id], map: "IX_sale_order_user")
   @@index([user_id, status], map: "IX_sale_order_user_status")
@@ -1127,7 +1130,6 @@ model sale_order {
   @@index([shipping_config_id], map: "IX_sale_order_shipping_config")
 }
 
-// Supply usage per order (for combined shipping)
 model order_supply_usage {
   order_supply_usage_id BigInt       @id(map: "PK_order_supply_usage") @default(autoincrement())
   order_id              BigInt
@@ -1136,56 +1138,53 @@ model order_supply_usage {
   cost_per_unit         Decimal      @db.Decimal(10, 6)
   total_cost            Decimal      @db.Decimal(10, 2)
   created               DateTime     @default(now()) @db.DateTime
+  supply_batch          supply_batch @relation("order_supply_usage_batchTobatch", fields: [supply_batch_id], references: [supply_batch_id], onUpdate: NoAction, map: "FK_order_supply_usage_batch")
   order                 sale_order   @relation("order_supply_usage_orderToorder", fields: [order_id], references: [order_id], onDelete: Cascade, onUpdate: NoAction, map: "FK_order_supply_usage_order")
-  supply_batch          supply_batch @relation("order_supply_usage_batchTobatch", fields: [supply_batch_id], references: [supply_batch_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_order_supply_usage_batch")
 
   @@index([order_id], map: "IX_order_supply_usage_order")
   @@index([supply_batch_id], map: "IX_order_supply_usage_batch")
 }
 
-// Supply type definitions (penny sleeve, top loader, team bag, etc.)
 model supply_type {
-  supply_type_id        Int                     @id(map: "PK_supply_type") @default(autoincrement())
+  supply_type_id        Int                    @id(map: "PK_supply_type") @default(autoincrement())
   user_id               BigInt
-  name                  String                  @db.NVarChar(100)
-  description           String?                 @db.NVarChar(255)
-  is_active             Boolean                 @default(true)
-  created               DateTime                @default(now()) @db.DateTime
-  user                  user                    @relation("supply_type_userTouser", fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction, map: "FK_supply_type_user")
-  supply_batches        supply_batch[]          @relation("supply_batch_supply_typeTosupply_type")
-  shipping_config_items shipping_config_item[]  @relation("shipping_config_item_supply_typeTosupply_type")
+  name                  String                 @db.NVarChar(100)
+  description           String?                @db.NVarChar(255)
+  is_active             Boolean                @default(true)
+  created               DateTime               @default(now()) @db.DateTime
+  shipping_config_items shipping_config_item[] @relation("shipping_config_item_supply_typeTosupply_type")
+  supply_batches        supply_batch[]         @relation("supply_batch_supply_typeTosupply_type")
+  user                  user                   @relation("supply_type_userTouser", fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction, map: "FK_supply_type_user")
 
   @@index([user_id], map: "IX_supply_type_user")
   @@index([user_id, is_active], map: "IX_supply_type_user_active")
 }
 
-// Supply batch purchases with FIFO tracking
 model supply_batch {
-  supply_batch_id    BigInt              @id(map: "PK_supply_batch") @default(autoincrement())
+  supply_batch_id    BigInt               @id(map: "PK_supply_batch") @default(autoincrement())
   user_id            BigInt
   supply_type_id     Int
-  purchase_date      DateTime            @db.DateTime
+  purchase_date      DateTime             @db.DateTime
   quantity_purchased Int
-  total_cost         Decimal             @db.Decimal(10, 2)
-  cost_per_unit      Decimal             @db.Decimal(10, 6)  // 6 decimal places for fractional cents
+  total_cost         Decimal              @db.Decimal(10, 2)
+  cost_per_unit      Decimal              @db.Decimal(10, 6)
   quantity_remaining Int
-  is_depleted        Boolean             @default(false)
-  notes              String?             @db.NVarChar(255)
-  image_url          String?             @db.NVarChar(500)   // URL to product image (Azure Blob Storage)
-  source_url         String?             @db.NVarChar(500)   // URL to purchase source (Amazon, etc.)
-  created            DateTime            @default(now()) @db.DateTime
-  updated            DateTime            @default(now()) @db.DateTime
-  user               user                 @relation("supply_batch_userTouser", fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction, map: "FK_supply_batch_user")
-  supply_type        supply_type          @relation("supply_batch_supply_typeTosupply_type", fields: [supply_type_id], references: [supply_type_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_supply_batch_supply_type")
-  sale_supply_usage  sale_supply_usage[]  @relation("sale_supply_usage_supply_batchTosupply_batch")
+  is_depleted        Boolean              @default(false)
+  notes              String?              @db.NVarChar(255)
+  created            DateTime             @default(now()) @db.DateTime
+  updated            DateTime             @default(now()) @db.DateTime
+  image_url          String?              @db.NVarChar(500)
+  source_url         String?              @db.NVarChar(500)
   order_supply_usage order_supply_usage[] @relation("order_supply_usage_batchTobatch")
+  sale_supply_usage  sale_supply_usage[]  @relation("sale_supply_usage_supply_batchTosupply_batch")
+  supply_type        supply_type          @relation("supply_batch_supply_typeTosupply_type", fields: [supply_type_id], references: [supply_type_id], onUpdate: NoAction, map: "FK_supply_batch_supply_type")
+  user               user                 @relation("supply_batch_userTouser", fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction, map: "FK_supply_batch_user")
 
   @@index([user_id], map: "IX_supply_batch_user")
   @@index([supply_type_id], map: "IX_supply_batch_supply_type")
   @@index([user_id, supply_type_id, is_depleted, purchase_date], map: "IX_supply_batch_fifo")
 }
 
-// Shipping configuration templates (PWE, Bubble Mailer, etc.)
 model shipping_config {
   shipping_config_id    Int                    @id(map: "PK_shipping_config") @default(autoincrement())
   user_id               BigInt
@@ -1193,30 +1192,28 @@ model shipping_config {
   description           String?                @db.NVarChar(255)
   is_active             Boolean                @default(true)
   created               DateTime               @default(now()) @db.DateTime
-  user                  user                   @relation("shipping_config_userTouser", fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction, map: "FK_shipping_config_user")
-  shipping_config_items shipping_config_item[] @relation("shipping_config_item_shipping_configToshipping_config")
   sales                 sale[]                 @relation("sale_shipping_configToshipping_config")
   sale_orders           sale_order[]           @relation("sale_order_shipping_configToshipping_config")
+  user                  user                   @relation("shipping_config_userTouser", fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction, map: "FK_shipping_config_user")
+  shipping_config_items shipping_config_item[] @relation("shipping_config_item_shipping_configToshipping_config")
 
   @@index([user_id], map: "IX_shipping_config_user")
   @@index([user_id, is_active], map: "IX_shipping_config_user_active")
 }
 
-// Items in a shipping configuration (BOM)
 model shipping_config_item {
   shipping_config_item_id Int             @id(map: "PK_shipping_config_item") @default(autoincrement())
   shipping_config_id      Int
   supply_type_id          Int
   quantity                Int             @default(1)
   shipping_config         shipping_config @relation("shipping_config_item_shipping_configToshipping_config", fields: [shipping_config_id], references: [shipping_config_id], onDelete: Cascade, onUpdate: NoAction, map: "FK_shipping_config_item_config")
-  supply_type             supply_type     @relation("shipping_config_item_supply_typeTosupply_type", fields: [supply_type_id], references: [supply_type_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_shipping_config_item_supply_type")
+  supply_type             supply_type     @relation("shipping_config_item_supply_typeTosupply_type", fields: [supply_type_id], references: [supply_type_id], onUpdate: NoAction, map: "FK_shipping_config_item_supply_type")
 
   @@unique([shipping_config_id, supply_type_id], map: "UQ_shipping_config_item")
   @@index([shipping_config_id], map: "IX_shipping_config_item_config")
   @@index([supply_type_id], map: "IX_shipping_config_item_supply_type")
 }
 
-// Tracks which supply batches were used for each sale (for FIFO audit trail)
 model sale_supply_usage {
   sale_supply_usage_id BigInt       @id(map: "PK_sale_supply_usage") @default(autoincrement())
   sale_id              BigInt
@@ -1225,31 +1222,30 @@ model sale_supply_usage {
   cost_per_unit        Decimal      @db.Decimal(10, 6)
   total_cost           Decimal      @db.Decimal(10, 2)
   created              DateTime     @default(now()) @db.DateTime
+  supply_batch         supply_batch @relation("sale_supply_usage_supply_batchTosupply_batch", fields: [supply_batch_id], references: [supply_batch_id], onUpdate: NoAction, map: "FK_sale_supply_usage_batch")
   sale                 sale         @relation("sale_supply_usage_saleToSale", fields: [sale_id], references: [sale_id], onDelete: Cascade, onUpdate: NoAction, map: "FK_sale_supply_usage_sale")
-  supply_batch         supply_batch @relation("sale_supply_usage_supply_batchTosupply_batch", fields: [supply_batch_id], references: [supply_batch_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_sale_supply_usage_batch")
 
   @@index([sale_id], map: "IX_sale_supply_usage_sale")
   @@index([supply_batch_id], map: "IX_sale_supply_usage_batch")
 }
 
-// Product purchases (hobby boxes, cases, blasters, etc.)
 model product_purchase {
-  product_purchase_id BigInt    @id(map: "PK_product_purchase") @default(autoincrement())
+  product_purchase_id BigInt   @id(map: "PK_product_purchase") @default(autoincrement())
   user_id             BigInt
   set_id              Int
-  product_type        String    @db.VarChar(50)      // 'hobby_box', 'hobby_case', 'retail_blaster', 'retail_hanger', 'retail_mega', 'retail_cello', 'other'
-  product_name        String?   @db.NVarChar(255)    // Custom name like "Topps Chrome Hobby Case"
-  purchase_date       DateTime  @db.DateTime
-  quantity            Int       @default(1)          // How many of this product
-  total_cost          Decimal   @db.Decimal(10, 2)   // Total purchase price
-  cost_per_unit       Decimal   @db.Decimal(10, 2)   // Calculated per-unit cost
-  estimated_cards     Int?                           // Expected cards from this product
-  source              String?   @db.NVarChar(255)    // Where purchased (LCS, eBay seller, etc.)
-  notes               String?   @db.NVarChar(Max)
-  created             DateTime  @default(now()) @db.DateTime
-  updated             DateTime  @default(now()) @db.DateTime
-  user                user      @relation("product_purchase_userTouser", fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction, map: "FK_product_purchase_user")
-  set                 set       @relation("product_purchase_setToset", fields: [set_id], references: [set_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_product_purchase_set")
+  product_type        String   @db.VarChar(50)
+  product_name        String?  @db.NVarChar(255)
+  purchase_date       DateTime @db.DateTime
+  quantity            Int      @default(1)
+  total_cost          Decimal  @db.Decimal(10, 2)
+  cost_per_unit       Decimal  @db.Decimal(10, 2)
+  estimated_cards     Int?
+  source              String?  @db.NVarChar(255)
+  notes               String?  @db.NVarChar(Max)
+  created             DateTime @default(now(), map: "DF__product_p__creat__75C27486") @db.DateTime
+  updated             DateTime @default(now(), map: "DF__product_p__updat__76B698BF") @db.DateTime
+  set                 set      @relation("product_purchase_setToset", fields: [set_id], references: [set_id], onUpdate: NoAction, map: "FK_product_purchase_set")
+  user                user     @relation("product_purchase_userTouser", fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction, map: "FK_product_purchase_user")
 
   @@index([user_id], map: "IX_product_purchase_user")
   @@index([user_id, set_id], map: "IX_product_purchase_user_set")
@@ -1257,17 +1253,15 @@ model product_purchase {
   @@index([purchase_date], map: "IX_product_purchase_date")
 }
 
-// Product types for purchases (hobby box, case, blaster, etc.)
-// user_id = NULL for global/system types, or user_id for user-specific types
 model product_type {
   product_type_id Int      @id(map: "PK_product_type") @default(autoincrement())
-  user_id         BigInt?  // NULL = global/system type
+  user_id         BigInt?
   name            String   @db.NVarChar(100)
-  slug            String   @db.VarChar(50)      // e.g., 'hobby_box', 'retail_blaster'
+  slug            String   @db.VarChar(50)
   description     String?  @db.NVarChar(255)
   is_active       Boolean  @default(true)
-  display_order   Int      @default(0)          // For custom ordering
-  created         DateTime @default(now()) @db.DateTime
+  display_order   Int      @default(0)
+  created         DateTime @default(now(), map: "DF__product_t__creat__7D63964E") @db.DateTime
   user            user?    @relation("product_type_userTouser", fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction, map: "FK_product_type_user")
 
   @@index([user_id], map: "IX_product_type_user")
@@ -1275,17 +1269,29 @@ model product_type {
   @@index([user_id, slug], map: "IX_product_type_user_slug")
 }
 
-// Sale statuses for tracking sale lifecycle (listed, sold, shipped, etc.)
 model sale_status {
   sale_status_id Int      @id(map: "PK_sale_status") @default(autoincrement())
   name           String   @db.NVarChar(50)
-  slug           String   @db.VarChar(50)      // e.g., 'listed', 'sold', 'shipped'
+  slug           String   @unique(map: "UQ_sale_status_slug") @db.VarChar(50)
   description    String?  @db.NVarChar(255)
-  color          String?  @db.VarChar(20)      // Hex color for UI display
+  color          String?  @db.VarChar(20)
   is_active      Boolean  @default(true)
   display_order  Int      @default(0)
   created        DateTime @default(now()) @db.DateTime
 
-  @@unique([slug], map: "UQ_sale_status_slug")
   @@index([is_active], map: "IX_sale_status_active")
+}
+
+model admin_set_view {
+  admin_set_view_id BigInt   @id(map: "PK__admin_se__A75411B6EBBCA43E") @default(autoincrement())
+  user_id           BigInt
+  set_id            Int
+  last_viewed       DateTime @default(now(), map: "DF__admin_set__last___0D99FE17")
+  view_count        Int      @default(1, map: "DF__admin_set__view___0E8E2250")
+  set               set      @relation(fields: [set_id], references: [set_id], onDelete: Cascade, onUpdate: NoAction, map: "FK_admin_set_view_set")
+  user              user     @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction, map: "FK_admin_set_view_user")
+
+  @@unique([user_id, set_id], map: "UQ_admin_set_view_user_set")
+  @@index([last_viewed(sort: Desc)], map: "IX_admin_set_view_last_viewed")
+  @@index([user_id], map: "IX_admin_set_view_user_id")
 }

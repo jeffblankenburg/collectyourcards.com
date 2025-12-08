@@ -150,13 +150,11 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
           t.abbreviation,
           t.primary_color,
           t.secondary_color,
-          COUNT(DISTINCT c.card_id) as team_card_count
+          pt.card_count as team_card_count
         FROM PlayerData pd
         JOIN player_team pt ON pd.player_id = pt.player
-        JOIN card_player_team cpt ON pt.player_team_id = cpt.player_team
-        JOIN card c ON cpt.card = c.card_id
         JOIN team t ON pt.team = t.team_id
-        GROUP BY pd.player_id, t.team_id, t.name, t.abbreviation, t.primary_color, t.secondary_color
+        WHERE pt.card_count > 0
       )
       SELECT
         pd.*,

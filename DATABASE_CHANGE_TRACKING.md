@@ -601,6 +601,32 @@ Each entry should include:
   ```
 - **Expected Result**: Table exists with columns: admin_set_view_id (BIGINT), user_id (BIGINT), set_id (INT), last_viewed (DATETIME2), view_count (INT)
 
+### 2025-12-07: Player Team Card Count Column for Performance
+- **Date**: 2025-12-07
+- **Change Type**: Schema (ALTER TABLE + DATA UPDATE + INDEX)
+- **Description**:
+  - Added `card_count` column to `player_team` table
+  - Pre-computes the number of cards per player_team instead of COUNT query at runtime
+  - **CRITICAL PERFORMANCE FIX**: Players list API was taking 29 seconds in production
+  - After fix: Query reduced from 4 table joins + COUNT to simple column read
+  - Index added on card_count for faster sorting
+  - **NOTE**: This value needs to be kept in sync when cards are added/removed
+- **Tables Affected**: `player_team`
+- **SQL File Reference**: DATABASE_CHANGES_FOR_PRODUCTION.sql (lines 53-85)
+- **Status**: Pending
+- **Verification Query**:
+  ```sql
+  SELECT COLUMN_NAME, DATA_TYPE, IS_NULLABLE
+  FROM INFORMATION_SCHEMA.COLUMNS
+  WHERE TABLE_NAME = 'player_team' AND COLUMN_NAME = 'card_count';
+
+  SELECT COUNT(*) as total, SUM(card_count) as total_cards
+  FROM player_team;
+  ```
+- **Expected Result**:
+  - Column exists as INT NOT NULL
+  - Total card_count should match count from card_player_team table
+
 ---
 
 ## Notes

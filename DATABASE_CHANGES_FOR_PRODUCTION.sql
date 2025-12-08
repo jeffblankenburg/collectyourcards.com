@@ -50,3 +50,37 @@ BEGIN
 END
 GO
 
+-- Add card_count column to player_team table for performance optimization
+-- This eliminates expensive COUNT queries when loading players list
+IF NOT EXISTS (
+  SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+  WHERE TABLE_NAME = 'player_team' AND COLUMN_NAME = 'card_count'
+)
+BEGIN
+  ALTER TABLE player_team ADD card_count INT NOT NULL DEFAULT 0;
+  PRINT 'card_count column added to player_team';
+END
+GO
+
+-- Populate card_count for all player_team records
+-- This query counts cards per player_team from card_player_team table
+UPDATE pt
+SET pt.card_count = ISNULL(counts.cnt, 0)
+FROM player_team pt
+LEFT JOIN (
+  SELECT cpt.player_team, COUNT(DISTINCT cpt.card) as cnt
+  FROM card_player_team cpt
+  GROUP BY cpt.player_team
+) counts ON pt.player_team_id = counts.player_team;
+GO
+
+-- Create index on player_team.card_count for faster sorting
+IF NOT EXISTS (
+  SELECT 1 FROM sys.indexes
+  WHERE name = 'IX_player_team_card_count' AND object_id = OBJECT_ID('player_team')
+)
+BEGIN
+  CREATE INDEX IX_player_team_card_count ON player_team(card_count DESC);
+END
+GO
+
