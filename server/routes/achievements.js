@@ -18,7 +18,10 @@ router.use(optionalAuthMiddleware)
 // Get all achievements (public endpoint for browsing)
 router.get('/', async (req, res) => {
   try {
-    const { category, tier, search, limit = 50, offset = 0 } = req.query
+    // When filtering by category, get all achievements for that category (up to 500)
+    // Otherwise default to 200 for better coverage
+    const { category, tier, search, offset = 0 } = req.query
+    const limit = req.query.limit || (category ? 500 : 200)
 
     // Build where conditions for Prisma
     const whereConditions = {

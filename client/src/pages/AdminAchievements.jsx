@@ -22,6 +22,7 @@ function AdminAchievements() {
   const [saving, setSaving] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [achievementToDelete, setAchievementToDelete] = useState(null)
+  const [statistics, setStatistics] = useState(null)
   
   // Query testing states
   const [showQueryTestModal, setShowQueryTestModal] = useState(false)
@@ -30,6 +31,10 @@ function AdminAchievements() {
   const [queryResults, setQueryResults] = useState(null)
   const [testingQuery, setTestingQuery] = useState(false)
   const [users, setUsers] = useState([])
+
+  // Recalculation states
+  const [recalcUserId, setRecalcUserId] = useState('')
+  const [recalculating, setRecalculating] = useState(false)
   
   // Form state
   const [achievementForm, setAchievementForm] = useState({
@@ -158,18 +163,36 @@ function AdminAchievements() {
     }
   }
 
+  const recalculateAchievements = async () => {
+    setRecalculating(true)
+    try {
+      const payload = recalcUserId ? { user_id: parseInt(recalcUserId) } : {}
+      addToast(recalcUserId ? `Recalculating achievements for user ${recalcUserId}...` : 'Recalculating achievements for all users...', 'info')
+
+      const response = await axios.post('/api/admin/achievements/recalculate', payload)
+      addToast(response.data.message, 'success')
+    } catch (error) {
+      console.error('Error recalculating achievements:', error)
+      addToast(`Failed to recalculate: ${error.response?.data?.message || error.message}`, 'error')
+    } finally {
+      setRecalculating(false)
+    }
+  }
+
   const loadData = async () => {
     try {
       setLoading(true)
-      const [achievementsRes, categoriesRes, usersRes] = await Promise.all([
-        axios.get('/api/admin/achievements'),
+      const [achievementsRes, categoriesRes, usersRes, statsRes] = await Promise.all([
+        axios.get('/api/admin/achievements?limit=500'),
         axios.get('/api/admin/achievements/categories'),
-        axios.get('/api/admin/users')
+        axios.get('/api/admin/users'),
+        axios.get('/api/admin/achievements/statistics')
       ])
-      
+
       setAchievements(achievementsRes.data.achievements || [])
       setCategories(categoriesRes.data.categories || [])
       setUsers((usersRes.data.users || []).slice(0, 20)) // Limit to first 20 users
+      setStatistics(statsRes.data.statistics || null)
     } catch (error) {
       console.error('Error loading data:', error)
       addToast('Failed to load achievements data', 'error')
@@ -456,13 +479,41 @@ function AdminAchievements() {
           <Icon name="award" size={32} />
           <h1>Achievement Management</h1>
           <div className="achievement-stats">
-            <span className="stat">{achievements.length} Total</span>
-            <span className="stat">{achievements.filter(a => a.is_active).length} Active</span>
-            <span className="stat">{achievements.filter(a => a.is_secret).length} Secret</span>
+            <span className="stat">{statistics?.total_achievements || achievements.length} Total</span>
+            <span className="stat">{statistics?.active_achievements || achievements.filter(a => a.is_active).length} Active</span>
+            <span className="stat">{statistics?.secret_achievements || achievements.filter(a => a.is_secret).length} Secret</span>
           </div>
         </div>
         
         <div className="admin-controls">
+          <div className="recalc-controls">
+            <input
+              type="number"
+              placeholder="User ID"
+              value={recalcUserId}
+              onChange={(e) => setRecalcUserId(e.target.value)}
+              disabled={recalculating}
+              className="recalc-user-input"
+            />
+            <button
+              className="recalc-btn"
+              onClick={recalculateAchievements}
+              disabled={recalculating}
+              title={recalcUserId ? `Recalculate achievements for user ${recalcUserId}` : 'Recalculate achievements for all users'}
+            >
+              {recalculating ? (
+                <>
+                  <Icon name="refresh-cw" size={16} className="spinning" />
+                  Recalculating...
+                </>
+              ) : (
+                <>
+                  <Icon name="refresh-cw" size={16} />
+                  {recalcUserId ? 'Recalc User' : 'Recalc All'}
+                </>
+              )}
+            </button>
+          </div>
           <button
             className="add-achievement-btn"
             onClick={handleAddAchievement}

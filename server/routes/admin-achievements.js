@@ -448,9 +448,15 @@ router.get('/statistics', async (req, res) => {
     res.json({
       success: true,
       statistics: {
-        ...result,
         total_achievements: Number(result.total_achievements) || 0,
         active_achievements: Number(result.active_achievements) || 0,
+        secret_achievements: Number(result.secret_achievements) || 0,
+        common_count: Number(result.common_count) || 0,
+        uncommon_count: Number(result.uncommon_count) || 0,
+        rare_count: Number(result.rare_count) || 0,
+        epic_count: Number(result.epic_count) || 0,
+        legendary_count: Number(result.legendary_count) || 0,
+        mythic_count: Number(result.mythic_count) || 0,
         avg_points: Number(result.avg_points) || 0,
         total_points: Number(result.total_points) || 0
       }
@@ -465,18 +471,56 @@ router.get('/statistics', async (req, res) => {
   }
 })
 
-// Simple recalculation endpoint (placeholder for now)
+// Recalculate achievements for a specific user or all users
 router.post('/recalculate', async (req, res) => {
   try {
-    res.json({
-      success: true,
-      message: 'Achievement recalculation system is under development'
-    })
+    const { user_id } = req.body
+    const achievementEngine = require('../services/achievementEngine')
+
+    if (user_id) {
+      // Recalculate for a specific user
+      console.log(`🏆 Admin triggered achievement recalculation for user ${user_id}`)
+      await achievementEngine.checkUserAchievements(parseInt(user_id), 'manual_check', { triggered_by: req.user.userId })
+
+      res.json({
+        success: true,
+        message: `Achievement recalculation completed for user ${user_id}`
+      })
+    } else {
+      // Recalculate for all users with cards (this could take a while)
+      const usersWithCards = await prisma.$queryRaw`
+        SELECT DISTINCT [user] as user_id FROM user_card WHERE sold_at IS NULL
+      `
+
+      console.log(`🏆 Admin triggered achievement recalculation for ${usersWithCards.length} users`)
+
+      let processed = 0
+      let errors = 0
+
+      for (const userRow of usersWithCards) {
+        try {
+          await achievementEngine.checkUserAchievements(Number(userRow.user_id), 'manual_check', { triggered_by: req.user.userId })
+          processed++
+        } catch (err) {
+          console.error(`Error recalculating for user ${userRow.user_id}:`, err.message)
+          errors++
+        }
+      }
+
+      res.json({
+        success: true,
+        message: `Achievement recalculation completed`,
+        users_processed: processed,
+        errors: errors,
+        total_users: usersWithCards.length
+      })
+    }
   } catch (error) {
     console.error('Error recalculating achievements:', error)
     res.status(500).json({
       success: false,
-      message: 'Failed to recalculate achievements'
+      message: 'Failed to recalculate achievements',
+      error: error.message
     })
   }
 })

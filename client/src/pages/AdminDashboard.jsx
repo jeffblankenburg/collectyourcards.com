@@ -772,7 +772,7 @@ function AdminDashboard() {
         {/* Checklist Generation Section */}
         <div className="dashboard-section checklist-generation">
           <h2>
-            <Icon name="file-text" size={20} />
+            <Icon name="import" size={20} />
             Checklist Generation
           </h2>
 
