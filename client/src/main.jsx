@@ -5,6 +5,8 @@ import { AuthProvider } from './contexts/AuthContext.jsx'
 import { ToastProvider } from './contexts/ToastContext.jsx'
 import ProtectedRoute from './components/ProtectedRoute.jsx'
 import Layout from './components/Layout.jsx'
+import ChunkErrorBoundary from './components/ChunkErrorBoundary.jsx'
+import VersionChecker from './components/VersionChecker.jsx'
 import App from './App.jsx'
 import { setupAxiosInterceptors } from './utils/axios-interceptor.js'
 import './index.css'
@@ -12,6 +14,12 @@ import './index.css'
 
 // Initialize axios interceptors for automatic API logging
 setupAxiosInterceptors()
+
+// Handle Vite preload errors (chunk load failures) - auto reload
+window.addEventListener('vite:preloadError', (event) => {
+  console.warn('Vite preload error, reloading page:', event.payload)
+  window.location.reload()
+})
 
 // Loading fallback component
 const PageLoader = () => (
@@ -94,8 +102,9 @@ createRoot(document.getElementById('root')).render(
       <ToastProvider>
         <AuthProvider>
           <Layout>
-            <Suspense fallback={<PageLoader />}>
-              <Routes>
+            <ChunkErrorBoundary>
+              <Suspense fallback={<PageLoader />}>
+                <Routes>
               {/* Home page restored with local styles */}
               <Route path="/" element={<App />} />
               {/* Other routes commented out for page independence */}
@@ -181,8 +190,10 @@ createRoot(document.getElementById('root')).render(
 
               {/* Public list route - username-scoped lists */}
               <Route path="/:username/:listSlug" element={<ListDetail />} />
-              </Routes>
-            </Suspense>
+                </Routes>
+              </Suspense>
+            </ChunkErrorBoundary>
+            <VersionChecker />
           </Layout>
         </AuthProvider>
       </ToastProvider>
