@@ -22,7 +22,8 @@ router.get('/by-slug/:slug', async (req, res) => {
 
     console.log(`🔍 Searching for player with slug: "${slug}" -> normalized: "${normalizedSlug}"`)
 
-    // Match against normalized concatenations of:
+    // Match against:
+    // 0. Stored slug in database (exact match after normalization)
     // 1. first_name + last_name (e.g., "fernandotatisjr")
     // 2. nick_name + last_name (e.g., "bighurtthomas")
     // 3. first_name + nick_name + last_name (e.g., "frankbighurtthomas")
@@ -37,6 +38,9 @@ router.get('/by-slug/:slug', async (req, res) => {
       LEFT JOIN user_card_photo display_card_photo ON display_uc.user_card_id = display_card_photo.user_card AND display_card_photo.sort_order = 1
       WHERE
         LOWER(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
+          ISNULL(p.slug, ''),
+          ' ', ''), '.', ''), '''', ''), '-', ''), ',', '')) = ${normalizedSlug}
+        OR LOWER(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
           ISNULL(p.first_name, '') + ISNULL(p.last_name, ''),
           ' ', ''), '.', ''), '''', ''), '-', ''), ',', '')) = ${normalizedSlug}
         OR LOWER(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(

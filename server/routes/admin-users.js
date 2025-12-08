@@ -326,9 +326,30 @@ router.put('/users/:id', async (req, res) => {
       }
     }
 
+    // Check for username uniqueness (if username is being changed)
+    if (updateData.username && updateData.username.trim()) {
+      const newUsername = updateData.username.trim().toLowerCase()
+      if (newUsername !== (existingUser.username || '').toLowerCase()) {
+        const usernameExists = await prisma.user.findFirst({
+          where: {
+            username: newUsername,
+            user_id: { not: BigInt(userId) }
+          }
+        })
+
+        if (usernameExists) {
+          return res.status(409).json({
+            error: 'Username conflict',
+            message: 'Username is already in use by another user'
+          })
+        }
+      }
+    }
+
     // Prepare update data
     const cleanUpdateData = {
       name: updateData.name?.trim() || null,
+      username: updateData.username?.trim() || null,
       email: updateData.email.trim().toLowerCase(),
       role: updateData.role || 'user',
       is_active: updateData.is_active ?? true,

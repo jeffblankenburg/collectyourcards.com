@@ -17,6 +17,7 @@ function AdminUsers() {
   const [showEditModal, setShowEditModal] = useState(false)
   const [editForm, setEditForm] = useState({
     name: '',
+    username: '',
     email: '',
     role: '',
     is_active: true,
@@ -135,6 +136,7 @@ function AdminUsers() {
     setEditingUser(userData)
     setEditForm({
       name: userData.name || '',
+      username: userData.username || '',
       email: userData.email || '',
       role: userData.role || 'user',
       is_active: userData.is_active ?? true,
@@ -150,6 +152,7 @@ function AdminUsers() {
     setEditingUser(null)
     setEditForm({
       name: '',
+      username: '',
       email: '',
       role: '',
       is_active: true,
@@ -227,6 +230,7 @@ function AdminUsers() {
       
       const updateData = {
         name: editForm.name.trim(),
+        username: editForm.username.trim() || null,
         email: editForm.email.trim().toLowerCase(),
         role: editForm.role,
         is_active: editForm.is_active,
@@ -450,6 +454,17 @@ function AdminUsers() {
                   value={editForm.name}
                   onChange={(e) => handleFormChange('name', e.target.value)}
                   placeholder="Enter user name"
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Username</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={editForm.username}
+                  onChange={(e) => handleFormChange('username', e.target.value)}
+                  placeholder="Enter username"
                 />
               </div>
 
