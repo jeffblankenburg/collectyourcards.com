@@ -47,6 +47,17 @@ function AdminDashboard() {
     queue_length: 0,
     jobs: []
   })
+  const [checklistStats, setChecklistStats] = useState({
+    total_complete_sets: 0,
+    sets_with_checklists: 0,
+    sets_without_checklists: 0,
+    sets: []
+  })
+  const [checklistGeneration, setChecklistGeneration] = useState({
+    generating: false,
+    progress: null,
+    results: null
+  })
   const [moderationStats, setModerationStats] = useState({
     comments: {
       visible_last_7_days: 0,
@@ -83,11 +94,12 @@ function AdminDashboard() {
     document.title = 'Admin Dashboard - Collect Your Cards'
     loadDashboardData()
     loadSpreadsheetQueue()
-    
+    loadChecklistStats()
+
     // Refresh health status and queue every 30 seconds
     const healthInterval = setInterval(checkSystemHealth, 30000)
     const queueInterval = setInterval(loadSpreadsheetQueue, 10000) // More frequent for queue
-    
+
     return () => {
       clearInterval(healthInterval)
       clearInterval(queueInterval)
@@ -248,6 +260,59 @@ function AdminDashboard() {
     } catch (error) {
       console.error('Failed to load spreadsheet queue:', error)
       // Don't show error toast for this since it runs frequently
+    }
+  }
+
+  const loadChecklistStats = async () => {
+    try {
+      const response = await axios.get('/api/spreadsheet-generation/complete-sets')
+      setChecklistStats(response.data)
+    } catch (error) {
+      console.error('Failed to load checklist stats:', error)
+    }
+  }
+
+  const generateAllChecklists = async () => {
+    setChecklistGeneration({ generating: true, progress: 'Starting...', results: null })
+
+    try {
+      addToast('Starting bulk checklist generation...', 'info')
+      const response = await axios.post('/api/spreadsheet-generation/generate-all-complete')
+
+      setChecklistGeneration({
+        generating: false,
+        progress: null,
+        results: response.data
+      })
+
+      if (response.data.generated > 0) {
+        addToast(`Generated ${response.data.generated} checklists successfully!`, 'success')
+      }
+      if (response.data.failed > 0) {
+        addToast(`${response.data.failed} checklists failed to generate`, 'warning')
+      }
+
+      // Reload checklist stats
+      loadChecklistStats()
+    } catch (error) {
+      console.error('Error generating checklists:', error)
+      setChecklistGeneration({ generating: false, progress: null, results: null })
+      addToast(`Failed to generate checklists: ${error.response?.data?.message || error.message}`, 'error')
+    }
+  }
+
+  const generateSingleChecklist = async (setId, setName) => {
+    try {
+      addToast(`Generating checklist for ${setName}...`, 'info')
+      const response = await axios.post(`/api/spreadsheet-generation/generate/${setId}`)
+
+      addToast(`Checklist generated for ${setName}!`, 'success')
+
+      // Reload checklist stats
+      loadChecklistStats()
+    } catch (error) {
+      console.error('Error generating checklist:', error)
+      addToast(`Failed to generate checklist: ${error.response?.data?.message || error.message}`, 'error')
     }
   }
 
@@ -700,6 +765,95 @@ function AdminDashboard() {
                   </li>
                 ))}
               </ul>
+            </div>
+          )}
+        </div>
+
+        {/* Checklist Generation Section */}
+        <div className="dashboard-section checklist-generation">
+          <h2>
+            <Icon name="file-text" size={20} />
+            Checklist Generation
+          </h2>
+
+          <div className="checklist-stats">
+            <div className="stat-items">
+              <div className="stat-item">
+                <span className="stat-number">{checklistStats.total_complete_sets}</span>
+                <span className="stat-label">Complete Sets</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-number">{checklistStats.sets_with_checklists}</span>
+                <span className="stat-label">Have Checklists</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-number">{checklistStats.sets_without_checklists}</span>
+                <span className="stat-label">Need Generation</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="checklist-actions">
+            <button
+              className="aggregate-btn update-all"
+              onClick={generateAllChecklists}
+              disabled={checklistGeneration.generating || checklistStats.sets_without_checklists === 0}
+            >
+              {checklistGeneration.generating ? (
+                <>
+                  <div className="card-icon-spinner small"></div>
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Icon name="download" size={16} />
+                  Generate All Missing Checklists
+                </>
+              )}
+            </button>
+          </div>
+
+          {checklistGeneration.results && (
+            <div className="generation-results">
+              <h4>Generation Results</h4>
+              <div className="results-summary">
+                <span className="success">{checklistGeneration.results.generated} generated</span>
+                {checklistGeneration.results.failed > 0 && (
+                  <span className="failed">{checklistGeneration.results.failed} failed</span>
+                )}
+              </div>
+            </div>
+          )}
+
+          {checklistStats.sets_without_checklists > 0 && checklistStats.sets.filter(s => !s.checklist_blob_url).length > 0 && (
+            <div className="sets-needing-checklists">
+              <h4>Sets Without Checklists ({checklistStats.sets_without_checklists})</h4>
+              <div className="sets-list">
+                {checklistStats.sets
+                  .filter(set => !set.checklist_blob_url)
+                  .slice(0, 10)
+                  .map(set => (
+                    <div key={set.set_id} className="set-item">
+                      <div className="set-info">
+                        <span className="set-name">{set.name}</span>
+                        <span className="set-year">({set.year})</span>
+                        <span className="set-cards">{formatNumber(set.card_count)} cards</span>
+                      </div>
+                      <button
+                        className="action-btn small"
+                        onClick={() => generateSingleChecklist(set.set_id, set.name)}
+                        title="Generate checklist"
+                      >
+                        <Icon name="download" size={14} />
+                      </button>
+                    </div>
+                  ))}
+                {checklistStats.sets_without_checklists > 10 && (
+                  <div className="more-sets">
+                    And {checklistStats.sets_without_checklists - 10} more...
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>

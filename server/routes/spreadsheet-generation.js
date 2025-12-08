@@ -99,431 +99,265 @@ router.post('/queue/:setId', authMiddleware, requireAdmin, async (req, res) => {
   }
 })
 
+// Helper function to generate spreadsheet for a set
+async function generateSpreadsheetForSet(setId, triggerType = 'manual', triggerDetails = {}) {
+  const startTime = Date.now()
+
+  console.log(`📊 Starting spreadsheet generation for set ${setId}`)
+
+  // Get set details
+  const set = await prisma.set.findUnique({
+    where: { set_id: parseInt(setId) },
+    include: {
+      series_series_setToset: {
+        orderBy: { name: 'asc' }
+      }
+    }
+  })
+
+  if (!set) {
+    throw new Error(`Set with ID ${setId} does not exist`)
+  }
+
+  // Update status to generating
+  await prisma.set.update({
+    where: { set_id: parseInt(setId) },
+    data: {
+      checklist_generation_status: 'generating'
+    }
+  })
+
+  // Fetch all cards for all series in the set, properly sorted
+  const allCards = []
+
+  for (const series of set.series_series_setToset) {
+    const cards = await prisma.$queryRawUnsafe(`
+      SELECT
+        c.card_id,
+        c.card_number,
+        c.sort_order,
+        c.is_rookie,
+        c.is_autograph,
+        c.is_relic,
+        c.is_short_print,
+        c.print_run,
+        c.notes,
+        s.name as series_name,
+        col.name as color_name,
+        STRING_AGG(CONCAT(p.first_name, ' ', p.last_name), ', ') as player_names,
+        STRING_AGG(t.name, ', ') as team_names
+      FROM card c
+      INNER JOIN series s ON c.series = s.series_id
+      LEFT JOIN color col ON c.color = col.color_id
+      LEFT JOIN card_player_team cpt ON c.card_id = cpt.card
+      LEFT JOIN player_team pt ON cpt.player_team = pt.player_team_id
+      LEFT JOIN player p ON pt.player = p.player_id
+      LEFT JOIN team t ON pt.team = t.team_id
+      WHERE c.series = ${series.series_id}
+      GROUP BY c.card_id, c.card_number, c.sort_order, c.is_rookie, c.is_autograph, c.is_relic,
+               c.is_short_print, c.print_run, c.notes, s.name, col.name
+      ORDER BY c.sort_order
+    `)
+
+    allCards.push(...cards.map(card => ({
+      ...card,
+      card_id: Number(card.card_id),
+      sort_order: Number(card.sort_order)
+    })))
+  }
+
+  console.log(`📋 Found ${allCards.length} cards for set "${set.name}"`)
+
+  // Create Excel workbook
+  const workbook = new ExcelJS.Workbook()
+  workbook.creator = 'CollectYourCards.com'
+  workbook.lastModifiedBy = 'CollectYourCards.com'
+  workbook.created = new Date()
+  workbook.modified = new Date()
+
+  // Helper function to add styled headers
+  const addStyledHeaders = (worksheet, headers) => {
+    const headerRow = worksheet.addRow(headers)
+    headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } }
+    headerRow.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF4472C4' }
+    }
+    return headerRow
+  }
+
+  // Helper function to add card data row
+  const addCardRow = (worksheet, card) => {
+    const row = worksheet.addRow([
+      card.series_name || '',
+      card.card_number || '',
+      card.player_names || '',
+      card.team_names || '',
+      card.print_run ? `/${card.print_run}` : '',
+      card.color_name || '',
+      card.is_rookie ? 'Y' : '',
+      card.is_autograph ? 'Y' : '',
+      card.is_relic ? 'Y' : '',
+      card.is_short_print ? 'Y' : '',
+      card.notes || ''
+    ])
+
+    // Conditional formatting
+    if (card.is_rookie) {
+      row.getCell(7).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFE699' } }
+    }
+    if (card.is_autograph) {
+      row.getCell(8).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD5E8D4' } }
+    }
+    if (card.is_relic) {
+      row.getCell(9).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFCE5CD' } }
+    }
+    if (card.is_short_print) {
+      row.getCell(10).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFC0CB' } }
+    }
+
+    return row
+  }
+
+  // Helper function to auto-size columns
+  const autoSizeColumns = (worksheet) => {
+    worksheet.columns.forEach(column => {
+      let maxLength = 0
+      column.eachCell({ includeEmpty: false }, cell => {
+        const columnLength = cell.value ? cell.value.toString().length : 0
+        if (columnLength > maxLength) {
+          maxLength = columnLength
+        }
+      })
+      column.width = Math.min(maxLength + 2, 50)
+    })
+  }
+
+  const headers = ['Series', 'Card #', 'Player(s)', 'Team(s)', 'Print Run', 'Color', 'RC', 'Auto', 'Relic', 'SP', 'Notes']
+
+  // TAB 1: Master List (Complete checklist)
+  const masterSheet = workbook.addWorksheet('Master List')
+  addStyledHeaders(masterSheet, headers)
+
+  allCards.forEach(card => {
+    addCardRow(masterSheet, card)
+  })
+
+  autoSizeColumns(masterSheet)
+  masterSheet.views = [{ state: 'frozen', ySplit: 1 }]
+
+  // TAB 2: Summary Sheet
+  const summarySheet = workbook.addWorksheet('Summary')
+
+  // Set overview
+  summarySheet.addRow(['Set Overview']).font = { bold: true, size: 14 }
+  summarySheet.addRow([])
+  summarySheet.addRow(['Set Name:', set.name])
+  summarySheet.addRow(['Year:', set.year || 'N/A'])
+  summarySheet.addRow(['Total Cards:', allCards.length])
+  summarySheet.addRow(['Total Series:', set.series_series_setToset.length])
+  summarySheet.addRow(['Generated:', new Date().toLocaleString()])
+  summarySheet.addRow(['Source:', 'CollectYourCards.com'])
+  summarySheet.addRow([])
+
+  // Series breakdown
+  summarySheet.addRow(['Series Breakdown']).font = { bold: true, size: 12 }
+  const seriesHeaderRow = summarySheet.addRow(['Series Name', 'Card Count', 'RC', 'Auto', 'Relic', 'SP'])
+  seriesHeaderRow.font = { bold: true }
+
+  // Group cards by series for statistics
+  const seriesStats = {}
+  allCards.forEach(card => {
+    const seriesName = card.series_name
+    if (!seriesStats[seriesName]) {
+      seriesStats[seriesName] = { total: 0, rookies: 0, autos: 0, relics: 0, shortPrints: 0 }
+    }
+    seriesStats[seriesName].total++
+    if (card.is_rookie) seriesStats[seriesName].rookies++
+    if (card.is_autograph) seriesStats[seriesName].autos++
+    if (card.is_relic) seriesStats[seriesName].relics++
+    if (card.is_short_print) seriesStats[seriesName].shortPrints++
+  })
+
+  Object.entries(seriesStats).forEach(([seriesName, stats]) => {
+    summarySheet.addRow([seriesName, stats.total, stats.rookies, stats.autos, stats.relics, stats.shortPrints])
+  })
+
+  autoSizeColumns(summarySheet)
+
+  // Generate Excel buffer
+  const excelBuffer = await workbook.xlsx.writeBuffer()
+  const fileSize = excelBuffer.length
+
+  let blobUrl = null
+
+  // Upload to Azure Blob Storage if configured
+  if (containerClient) {
+    try {
+      // Create safe filename from set name
+      const safeSetName = set.name.replace(/[^a-z0-9]/gi, '_').substring(0, 100)
+      const blobName = `${safeSetName}_checklist.xlsx`
+      const blockBlobClient = containerClient.getBlockBlobClient(blobName)
+
+      await blockBlobClient.upload(excelBuffer, fileSize, {
+        blobHTTPHeaders: {
+          blobContentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          blobContentDisposition: `attachment; filename="${safeSetName}_checklist.xlsx"`
+        }
+      })
+
+      blobUrl = blockBlobClient.url
+      console.log(`✅ Uploaded spreadsheet to Azure: ${blobUrl}`)
+    } catch (uploadError) {
+      console.error('Failed to upload to Azure:', uploadError)
+      throw new Error(`Failed to upload spreadsheet: ${uploadError.message}`)
+    }
+  } else {
+    throw new Error('Azure Blob Storage not configured')
+  }
+
+  const generationTime = Date.now() - startTime
+
+  // Update set with generation info
+  await prisma.set.update({
+    where: { set_id: parseInt(setId) },
+    data: {
+      checklist_blob_url: blobUrl,
+      checklist_generated_at: new Date(),
+      checklist_generation_status: 'current',
+      checklist_file_size: fileSize,
+      checklist_format: 'xlsx'
+    }
+  })
+
+  console.log(`✅ Generated spreadsheet for "${set.name}" in ${generationTime}ms (${allCards.length} cards, ${fileSize} bytes)`)
+
+  return {
+    set_id: setId,
+    set_name: set.name,
+    card_count: allCards.length,
+    file_size: fileSize,
+    generation_time_ms: generationTime,
+    blob_url: blobUrl,
+    format: 'xlsx'
+  }
+}
+
 // POST /api/spreadsheet-generation/generate/:setId - Generate spreadsheet immediately (admin only)
 router.post('/generate/:setId', authMiddleware, requireAdmin, async (req, res) => {
   try {
     const { setId } = req.params
-    const startTime = Date.now()
-    
-    console.log(`Starting immediate spreadsheet generation for set ${setId}`)
-    
-    // Get set details
-    const set = await prisma.set.findUnique({
-      where: { set_id: parseInt(setId) },
-      include: {
-        series_series_setToset: {
-          orderBy: { name: 'asc' }
-        }
-      }
+
+    const result = await generateSpreadsheetForSet(setId, 'manual', { user_id: req.user?.userId })
+
+    res.json({
+      message: 'Spreadsheet generated successfully',
+      ...result
     })
-    
-    if (!set) {
-      return res.status(404).json({
-        error: 'Set not found',
-        message: `Set with ID ${setId} does not exist`
-      })
-    }
-    
-    // Update status to generating
-    await prisma.set.update({
-      where: { set_id: parseInt(setId) },
-      data: {
-        checklist_generation_status: 'generating'
-      }
-    })
-    
-    console.log(`⚠️ Excel generation temporarily disabled - queueing job instead`)
-    
-    // Queue the job for background processing instead of blocking
-    const job = await prisma.spreadsheet_generation_queue.create({
-      data: {
-        set_id: parseInt(setId),
-        priority: 10, // High priority for manual requests
-        status: 'pending'
-      }
-    })
-    
-    // Update set status to indicate it's been queued
-    await prisma.set.update({
-      where: { set_id: parseInt(setId) },
-      data: {
-        checklist_generation_status: 'pending'
-      }
-    })
-    
-    const processingTime = Date.now() - startTime
-    
-    return res.json({
-      message: 'Spreadsheet generation queued for background processing',
-      set_name: set.name,
-      queue_id: job.queue_id,
-      status: 'queued',
-      processing_time_ms: processingTime,
-      note: 'Generation will be completed by background worker - check status endpoint for updates'
-    })
-    
-    // TODO: Move this Excel generation logic to Azure Function
-    /* 
-    // Fetch all cards for all series in the set, properly sorted
-    const allCards = []
-    
-    for (const series of set.series_series_setToset) {
-      const cards = await prisma.$queryRawUnsafe(`
-        SELECT 
-          c.card_id,
-          c.card_number,
-          c.sort_order,
-          c.is_rookie,
-          c.is_autograph,
-          c.is_relic,
-          c.print_run,
-          c.notes,
-          s.name as series_name,
-          col.name as color_name,
-          STRING_AGG(CONCAT(p.first_name, ' ', p.last_name), ', ') as player_names,
-          STRING_AGG(t.name, ', ') as team_names
-        FROM card c
-        INNER JOIN series s ON c.series = s.series_id
-        LEFT JOIN color col ON c.color = col.color_id
-        LEFT JOIN card_player_team cpt ON c.card_id = cpt.card
-        LEFT JOIN player_team pt ON cpt.player_team = pt.player_team_id
-        LEFT JOIN player p ON pt.player = p.player_id
-        LEFT JOIN team t ON pt.team = t.team_id
-        WHERE c.series = ${series.series_id}
-        GROUP BY c.card_id, c.card_number, c.sort_order, c.is_rookie, c.is_autograph, c.is_relic, 
-                 c.print_run, c.notes, s.name, col.name
-        ORDER BY c.sort_order
-      `)
-      
-      allCards.push(...cards.map(card => ({
-        ...card,
-        card_id: Number(card.card_id),
-        sort_order: Number(card.sort_order)
-      })))
-    }
-    
-    // Create Excel workbook
-    const workbook = new ExcelJS.Workbook()
-    workbook.creator = 'CollectYourCards.com'
-    workbook.lastModifiedBy = 'CollectYourCards.com'
-    workbook.created = new Date()
-    workbook.modified = new Date()
-    
-    // Helper function to add styled headers
-    const addStyledHeaders = (worksheet, headers) => {
-      const headerRow = worksheet.addRow(headers)
-      headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } }
-      headerRow.fill = {
-        type: 'pattern',
-        pattern: 'solid',
-        fgColor: { argb: 'FF4472C4' }
-      }
-      return headerRow
-    }
-    
-    // Helper function to add card data row
-    const addCardRow = (worksheet, card) => {
-      const row = worksheet.addRow([
-        card.series_name || '',
-        card.card_number || '',
-        card.player_names || '',
-        card.team_names || '',
-        card.print_run ? `/${card.print_run}` : '',
-        card.color_name || '',
-        card.is_rookie ? 'Y' : '',
-        card.is_autograph ? 'Y' : '',
-        card.is_relic ? 'Y' : '',
-        card.notes || ''
-      ])
-      
-      // Conditional formatting
-      if (card.is_rookie) {
-        row.getCell(7).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFE699' } }
-      }
-      if (card.is_autograph) {
-        row.getCell(8).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD5E8D4' } }
-      }
-      if (card.is_relic) {
-        row.getCell(9).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFCE5CD' } }
-      }
-      
-      return row
-    }
-    
-    // Helper function to auto-size columns
-    const autoSizeColumns = (worksheet) => {
-      worksheet.columns.forEach(column => {
-        let maxLength = 0
-        column.eachCell({ includeEmpty: false }, cell => {
-          const columnLength = cell.value ? cell.value.toString().length : 0
-          if (columnLength > maxLength) {
-            maxLength = columnLength
-          }
-        })
-        column.width = Math.min(maxLength + 2, 50)
-      })
-    }
-    
-    const headers = ['Series', 'Card #', 'Player(s)', 'Team(s)', 'Print Run', 'Color', 'Rookie', 'Autograph', 'Relic', 'Notes']
-    
-    // TAB 1: Master List (Complete checklist)
-    const masterSheet = workbook.addWorksheet('Master List')
-    addStyledHeaders(masterSheet, headers)
-    
-    allCards.forEach(card => {
-      addCardRow(masterSheet, card)
-    })
-    
-    autoSizeColumns(masterSheet)
-    masterSheet.views = [{ state: 'frozen', ySplit: 1 }]
-    
-    // TAB 2: Summary Sheet
-    const summarySheet = workbook.addWorksheet('Summary')
-    
-    // Set overview
-    summarySheet.addRow(['Set Overview']).font = { bold: true, size: 14 }
-    summarySheet.addRow([])
-    summarySheet.addRow(['Set Name:', set.name])
-    summarySheet.addRow(['Year:', set.year || 'N/A'])
-    summarySheet.addRow(['Total Cards:', allCards.length])
-    summarySheet.addRow(['Total Series:', set.series_series_setToset.length])
-    summarySheet.addRow(['Generated:', new Date().toLocaleString()])
-    summarySheet.addRow([])
-    
-    // Series breakdown
-    summarySheet.addRow(['Series Breakdown']).font = { bold: true, size: 12 }
-    const seriesHeaderRow = summarySheet.addRow(['Series Name', 'Card Count', 'Rookie Cards', 'Autographs', 'Relics'])
-    seriesHeaderRow.font = { bold: true }
-    
-    // Group cards by series for statistics
-    const seriesStats = {}
-    allCards.forEach(card => {
-      const seriesName = card.series_name
-      if (!seriesStats[seriesName]) {
-        seriesStats[seriesName] = { total: 0, rookies: 0, autos: 0, relics: 0 }
-      }
-      seriesStats[seriesName].total++
-      if (card.is_rookie) seriesStats[seriesName].rookies++
-      if (card.is_autograph) seriesStats[seriesName].autos++
-      if (card.is_relic) seriesStats[seriesName].relics++
-    })
-    
-    Object.entries(seriesStats).forEach(([seriesName, stats]) => {
-      summarySheet.addRow([seriesName, stats.total, stats.rookies, stats.autos, stats.relics])
-    })
-    
-    autoSizeColumns(summarySheet)
-    
-    // TAB 3+: Individual Parallel Parent Series
-    // Get unique parallel parents (series that have parallels)
-    const parallelParentsRaw = await prisma.$queryRawUnsafe(`
-      SELECT DISTINCT 
-        parent.series_id,
-        parent.name as parent_name,
-        COUNT(child.series_id) as parallel_count
-      FROM series parent
-      INNER JOIN series child ON parent.series_id = child.parallel_of_series
-      WHERE parent.[set] = ${parseInt(setId)}
-      GROUP BY parent.series_id, parent.name
-      ORDER BY parent.name
-    `)
-    
-    const parallelParents = parallelParentsRaw.map(p => ({
-      series_id: Number(p.series_id),
-      parent_name: p.parent_name,
-      parallel_count: Number(p.parallel_count)
-    }))
-    
-    // Add standalone series (not parallel parents but also not parallels themselves)
-    const standaloneSeriesIds = set.series_series_setToset
-      .filter(s => !s.parallel_of_series) // Not a parallel
-      .map(s => s.series_id)
-      .filter(id => !parallelParents.some(p => Number(p.series_id) === id)) // Not a parallel parent
-    
-    const standaloneSeries = await prisma.series.findMany({
-      where: {
-        series_id: { in: standaloneSeriesIds }
-      },
-      orderBy: { name: 'asc' }
-    })
-    
-    // Helper function to sanitize worksheet names
-    const sanitizeSheetName = (name) => {
-      return name.replace(/[*?:\\/\[\]]/g, '_').substring(0, 31)
-    }
-    
-    // Track used worksheet names to avoid duplicates
-    const usedNames = new Set(['Master List', 'Summary'])
-    
-    // Create tabs for parallel parents
-    for (const parent of parallelParents) {
-      const parentId = parent.series_id
-      let baseTabName = sanitizeSheetName(parent.parent_name)
-      let tabName = baseTabName
-      let counter = 1
-      
-      // Ensure unique worksheet name
-      while (usedNames.has(tabName)) {
-        tabName = sanitizeSheetName(`${parent.parent_name}_${counter}`)
-        counter++
-      }
-      usedNames.add(tabName)
-      
-      const seriesSheet = workbook.addWorksheet(tabName)
-      
-      // Get all parallels for this parent
-      const parallelsRaw = await prisma.$queryRawUnsafe(`
-        SELECT series_id, name, color, min_print_run, max_print_run, print_run_display
-        FROM series 
-        WHERE parallel_of_series = ${parentId} OR series_id = ${parentId}
-        ORDER BY name
-      `)
-      
-      const parallels = parallelsRaw.map(p => ({
-        series_id: Number(p.series_id),
-        name: p.name,
-        color: p.color,
-        min_print_run: p.min_print_run ? Number(p.min_print_run) : null,
-        max_print_run: p.max_print_run ? Number(p.max_print_run) : null,
-        print_run_display: p.print_run_display
-      }))
-      
-      // Add parallel summary at top
-      seriesSheet.addRow([`${parent.parent_name} - Parallel Summary`]).font = { bold: true, size: 12 }
-      seriesSheet.addRow([])
-      
-      const parallelHeaderRow = seriesSheet.addRow(['Parallel/Color', 'Print Run', 'Series ID'])
-      parallelHeaderRow.font = { bold: true }
-      
-      parallels.forEach(parallel => {
-        const printRun = parallel.print_run_display || 
-          (parallel.min_print_run && parallel.max_print_run ? 
-            (parallel.min_print_run === parallel.max_print_run ? 
-              `/${parallel.min_print_run}` : 
-              `/${parallel.min_print_run}-${parallel.max_print_run}`) : 
-            'Standard')
-        seriesSheet.addRow([parallel.name, printRun, parallel.series_id])
-      })
-      
-      seriesSheet.addRow([])
-      seriesSheet.addRow([])
-      
-      // Add card checklist for parent series
-      addStyledHeaders(seriesSheet, headers)
-      
-      const parentCards = allCards.filter(card => 
-        parallels.some(p => Number(p.series_id) === card.card_id) // This logic needs fixing
-      )
-      
-      // Actually get the correct cards for this parallel family
-      const familyCards = allCards.filter(card => {
-        const cardSeriesName = card.series_name
-        return parallels.some(p => p.name === cardSeriesName)
-      })
-      
-      familyCards.forEach(card => {
-        addCardRow(seriesSheet, card)
-      })
-      
-      autoSizeColumns(seriesSheet)
-      seriesSheet.views = [{ state: 'frozen', ySplit: parallels.length + 5 }]
-    }
-    
-    // Create tabs for standalone series
-    for (const series of standaloneSeries) {
-      let baseTabName = sanitizeSheetName(series.name)
-      let tabName = baseTabName
-      let counter = 1
-      
-      // Ensure unique worksheet name
-      while (usedNames.has(tabName)) {
-        tabName = sanitizeSheetName(`${series.name}_${counter}`)
-        counter++
-      }
-      usedNames.add(tabName)
-      
-      const seriesSheet = workbook.addWorksheet(tabName)
-      
-      addStyledHeaders(seriesSheet, headers)
-      
-      const seriesCards = allCards.filter(card => card.series_name === series.name)
-      seriesCards.forEach(card => {
-        addCardRow(seriesSheet, card)
-      })
-      
-      autoSizeColumns(seriesSheet)
-      seriesSheet.views = [{ state: 'frozen', ySplit: 1 }]
-    }
-    
-    // Generate Excel buffer
-    const excelBuffer = await workbook.xlsx.writeBuffer()
-    const fileSize = excelBuffer.length
-    
-    let blobUrl = null
-    
-    // Upload to Azure Blob Storage if configured
-    if (containerClient) {
-      try {
-        const blobName = `${set.name.replace(/[^a-z0-9]/gi, '_')}_collectyourcards.xlsx`
-        const blockBlobClient = containerClient.getBlockBlobClient(blobName)
-        
-        await blockBlobClient.upload(excelBuffer, fileSize, {
-          blobHTTPHeaders: {
-            blobContentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            blobContentDisposition: `attachment; filename="${set.name.replace(/[^a-z0-9]/gi, '_')}_collectyourcards.xlsx"`
-          }
-        })
-        
-        blobUrl = blockBlobClient.url
-        console.log(`✅ Uploaded spreadsheet to Azure: ${blobUrl}`)
-      } catch (uploadError) {
-        console.error('Failed to upload to Azure:', uploadError)
-        // Continue without blob storage - return the CSV directly
-      }
-    }
-    
-    const generationTime = Date.now() - startTime
-    
-    // Update set with generation info
-    await prisma.set.update({
-      where: { set_id: parseInt(setId) },
-      data: {
-        checklist_blob_url: blobUrl,
-        checklist_generated_at: new Date(),
-        checklist_generation_status: 'current',
-        checklist_file_size: fileSize,
-        checklist_format: 'xlsx'
-      }
-    })
-    
-    // Log the generation
-    await prisma.spreadsheet_generation_log.create({
-      data: {
-        set_id: parseInt(setId),
-        trigger_type: 'manual',
-        trigger_details: JSON.stringify({ user_id: req.user.userId }),
-        file_size: fileSize,
-        generation_time_ms: generationTime,
-        success: true,
-        blob_url: blobUrl
-      }
-    })
-    */
-    
-    // This would normally return the generated file info, but for now just return queue info
-    // res.json({
-    //   message: 'Spreadsheet generated successfully',
-    //   set_name: set.name,
-    //   card_count: allCards.length,
-    //   file_size: fileSize,
-    //   generation_time_ms: generationTime,
-    //   blob_url: blobUrl,
-    //   format: 'xlsx'
-    // })
-    
   } catch (error) {
     console.error('Error generating spreadsheet:', error)
-    
+
     // Update status to failed
     await prisma.set.update({
       where: { set_id: parseInt(req.params.setId) },
@@ -531,20 +365,147 @@ router.post('/generate/:setId', authMiddleware, requireAdmin, async (req, res) =
         checklist_generation_status: 'failed'
       }
     }).catch(console.error)
-    
-    // Log the failure
-    await prisma.spreadsheet_generation_log.create({
-      data: {
-        set_id: parseInt(req.params.setId),
-        trigger_type: 'manual',
-        trigger_details: JSON.stringify({ user_id: req.user.userId }),
-        success: false,
-        error_message: error.message
-      }
-    }).catch(console.error)
-    
+
     res.status(500).json({
       error: 'Failed to generate spreadsheet',
+      message: error.message
+    })
+  }
+})
+
+// POST /api/spreadsheet-generation/generate-all-complete - Generate spreadsheets for all complete sets (admin only)
+router.post('/generate-all-complete', authMiddleware, requireAdmin, async (req, res) => {
+  try {
+    // Find all sets marked as complete that either:
+    // 1. Have never had a checklist generated
+    // 2. Have been modified since last generation (based on checklist_generation_status)
+    const completeSets = await prisma.$queryRaw`
+      SELECT
+        s.set_id,
+        s.name,
+        s.year,
+        s.checklist_generation_status,
+        s.checklist_generated_at,
+        (SELECT COUNT(*) FROM series ser WHERE ser.[set] = s.set_id) as series_count,
+        (SELECT COUNT(*) FROM card c
+         INNER JOIN series ser ON c.series = ser.series_id
+         WHERE ser.[set] = s.set_id) as card_count
+      FROM [set] s
+      WHERE s.is_complete = 1
+      ORDER BY s.year DESC, s.name ASC
+    `
+
+    if (completeSets.length === 0) {
+      return res.json({
+        message: 'No complete sets found',
+        generated: 0,
+        failed: 0,
+        results: []
+      })
+    }
+
+    console.log(`📊 Starting bulk spreadsheet generation for ${completeSets.length} complete sets`)
+
+    const results = []
+    let successCount = 0
+    let failCount = 0
+
+    for (const set of completeSets) {
+      const setId = Number(set.set_id)
+      try {
+        console.log(`📋 Generating spreadsheet for: ${set.name} (${set.year})`)
+        const result = await generateSpreadsheetForSet(setId, 'bulk', { user_id: req.user?.userId })
+        results.push({
+          set_id: setId,
+          set_name: set.name,
+          year: set.year,
+          success: true,
+          card_count: result.card_count,
+          file_size: result.file_size,
+          generation_time_ms: result.generation_time_ms,
+          blob_url: result.blob_url
+        })
+        successCount++
+      } catch (error) {
+        console.error(`❌ Failed to generate spreadsheet for ${set.name}:`, error.message)
+        results.push({
+          set_id: setId,
+          set_name: set.name,
+          year: set.year,
+          success: false,
+          error: error.message
+        })
+        failCount++
+      }
+    }
+
+    console.log(`✅ Bulk generation complete: ${successCount} succeeded, ${failCount} failed`)
+
+    res.json({
+      message: `Generated spreadsheets for ${successCount} of ${completeSets.length} complete sets`,
+      generated: successCount,
+      failed: failCount,
+      total_sets: completeSets.length,
+      results
+    })
+
+  } catch (error) {
+    console.error('Error in bulk spreadsheet generation:', error)
+    res.status(500).json({
+      error: 'Failed to generate spreadsheets',
+      message: error.message
+    })
+  }
+})
+
+// GET /api/spreadsheet-generation/complete-sets - Get list of complete sets with their checklist status (admin only)
+router.get('/complete-sets', authMiddleware, requireAdmin, async (req, res) => {
+  try {
+    const completeSets = await prisma.$queryRaw`
+      SELECT
+        s.set_id,
+        s.name,
+        s.year,
+        s.is_complete,
+        s.checklist_blob_url,
+        s.checklist_generated_at,
+        s.checklist_generation_status,
+        s.checklist_file_size,
+        s.checklist_format,
+        (SELECT COUNT(*) FROM series ser WHERE ser.[set] = s.set_id) as series_count,
+        (SELECT COUNT(*) FROM card c
+         INNER JOIN series ser ON c.series = ser.series_id
+         WHERE ser.[set] = s.set_id) as card_count
+      FROM [set] s
+      WHERE s.is_complete = 1
+      ORDER BY s.year DESC, s.name ASC
+    `
+
+    const serializedSets = completeSets.map(set => ({
+      set_id: Number(set.set_id),
+      name: set.name,
+      year: set.year,
+      is_complete: set.is_complete,
+      checklist_blob_url: set.checklist_blob_url,
+      checklist_generated_at: set.checklist_generated_at,
+      checklist_generation_status: set.checklist_generation_status || 'never_generated',
+      checklist_file_size: set.checklist_file_size ? Number(set.checklist_file_size) : null,
+      checklist_format: set.checklist_format,
+      series_count: Number(set.series_count),
+      card_count: Number(set.card_count)
+    }))
+
+    res.json({
+      total_complete_sets: serializedSets.length,
+      sets_with_checklists: serializedSets.filter(s => s.checklist_blob_url).length,
+      sets_without_checklists: serializedSets.filter(s => !s.checklist_blob_url).length,
+      sets: serializedSets
+    })
+
+  } catch (error) {
+    console.error('Error fetching complete sets:', error)
+    res.status(500).json({
+      error: 'Failed to fetch complete sets',
       message: error.message
     })
   }

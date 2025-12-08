@@ -340,13 +340,13 @@ function SeriesPage() {
                   {/* Set Actions */}
                   <div className="set-actions">
                   {spreadsheetStatus?.blob_url && (
-                    <button 
+                    <button
                       className="action-button primary"
                       onClick={() => downloadMasterSetSpreadsheet()}
                       title={`Download complete set spreadsheet (${spreadsheetStatus.format?.toUpperCase() || 'XLSX'}, ${Math.round(spreadsheetStatus.file_size / 1024)}KB)`}
                     >
                       <Icon name="import" size={16} />
-                      Download Master Set
+                      Download Complete Checklist
                     </button>
                   )}
                 </div>
