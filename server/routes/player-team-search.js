@@ -35,12 +35,16 @@ router.get('/', async (req, res) => {
     // Sanitize and escape search term for SQL safety
     const sanitized = sanitizeSearchTerm(query.trim())
     const safeSearchTerm = escapeLikePattern(sanitized)
+    // Normalize search term by removing punctuation (periods, apostrophes, hyphens)
+    const normalizedSearch = sanitized.replace(/[.''\-]/g, '')
+    const safeNormalized = escapeLikePattern(normalizedSearch)
     const searchLimit = Math.min(parseInt(limit) || 50, 100)
 
-    console.log(`Searching for player-team combinations with term: "${sanitized}", limit: ${searchLimit}`)
+    console.log(`Searching for player-team combinations with term: "${sanitized}", normalized: "${normalizedSearch}", limit: ${searchLimit}`)
 
     // Search for players and their team relationships
     // This query finds players that match the search term and returns all their team associations
+    // Includes normalized search (stripping punctuation) to match names like "Mr. Eon" when searching "Mr Eon"
     const playerTeamCombinations = await prisma.$queryRawUnsafe(`
       SELECT
         p.player_id,
@@ -61,6 +65,11 @@ router.get('/', async (req, res) => {
         OR p.nick_name LIKE '%${safeSearchTerm}%' COLLATE Latin1_General_CI_AI
         OR CONCAT(p.first_name, ' ', p.last_name) LIKE '%${safeSearchTerm}%' COLLATE Latin1_General_CI_AI
         OR CONCAT(p.first_name, ' ', p.nick_name, ' ', p.last_name) LIKE '%${safeSearchTerm}%' COLLATE Latin1_General_CI_AI
+        OR REPLACE(REPLACE(REPLACE(p.first_name, '.', ''), CHAR(39), ''), '-', '') LIKE '%${safeNormalized}%' COLLATE Latin1_General_CI_AI
+        OR REPLACE(REPLACE(REPLACE(p.last_name, '.', ''), CHAR(39), ''), '-', '') LIKE '%${safeNormalized}%' COLLATE Latin1_General_CI_AI
+        OR REPLACE(REPLACE(REPLACE(p.nick_name, '.', ''), CHAR(39), ''), '-', '') LIKE '%${safeNormalized}%' COLLATE Latin1_General_CI_AI
+        OR REPLACE(REPLACE(REPLACE(CONCAT(p.first_name, ' ', p.last_name), '.', ''), CHAR(39), ''), '-', '') LIKE '%${safeNormalized}%' COLLATE Latin1_General_CI_AI
+        OR REPLACE(REPLACE(REPLACE(CONCAT(p.first_name, ' ', p.nick_name, ' ', p.last_name), '.', ''), CHAR(39), ''), '-', '') LIKE '%${safeNormalized}%' COLLATE Latin1_General_CI_AI
       )
       ORDER BY p.last_name, p.first_name, t.name
     `)
