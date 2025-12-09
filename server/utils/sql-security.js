@@ -218,9 +218,9 @@ function sanitizeSearchTerm(searchTerm, maxLength = 100) {
     searchTerm = String(searchTerm)
   }
 
-  // Remove dangerous characters, keep alphanumeric, spaces, hyphens, apostrophes
+  // Remove dangerous characters, keep alphanumeric, spaces, hyphens, apostrophes, periods
   const sanitized = searchTerm
-    .replace(/[^\w\s\-']/g, '') // Keep word chars, spaces, hyphens, apostrophes
+    .replace(/[^\w\s\-'.]/g, '') // Keep word chars, spaces, hyphens, apostrophes, periods
     .trim()
     .substring(0, maxLength)
 
