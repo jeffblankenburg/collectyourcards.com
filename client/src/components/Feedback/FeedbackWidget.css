@@ -1,0 +1,84 @@
+/* Floating feedback tab */
+.feedback-widget-tab {
+  position: fixed;
+  top: 80%;
+  right: 0;
+  z-index: 9990;
+
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+
+  background: #0066cc;
+  color: white;
+  border: none;
+  border-radius: 0 8px 8px 0;
+  cursor: pointer;
+
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  letter-spacing: 0.5px;
+
+  box-shadow: -2px 2px 10px rgba(0, 0, 0, 0.3);
+  transition: all 0.2s ease;
+
+  /* Vertical text */
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  transform: translateY(-50%) rotate(180deg);
+}
+
+.feedback-widget-tab:hover {
+  background: #0052a3;
+  padding-right: 24px;
+}
+
+.feedback-widget-tab:focus {
+  outline: 2px solid white;
+  outline-offset: 2px;
+}
+
+.feedback-widget-tab-label {
+  display: inline-block;
+}
+
+/* Mobile: Bottom-right floating action button */
+@media (max-width: 768px) {
+  .feedback-widget-tab {
+    right: 16px;
+    bottom: 80px; /* Above any bottom nav */
+    top: auto;
+    transform: none;
+
+    background: #0066cc;
+    border-radius: 50%;
+    padding: 14px;
+    width: 56px;
+    height: 56px;
+    justify-content: center;
+  }
+
+  .feedback-widget-tab-label {
+    display: none;
+  }
+
+  .feedback-widget-tab:hover {
+    background: #0052a3;
+    padding: 14px;
+    right: 16px;
+    transform: scale(1.1);
+  }
+}
+
+/* Very small screens */
+@media (max-width: 480px) {
+  .feedback-widget-tab {
+    right: 12px;
+    bottom: 70px;
+    width: 48px;
+    height: 48px;
+    padding: 12px;
+  }
+}

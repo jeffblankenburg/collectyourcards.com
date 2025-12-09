@@ -60,6 +60,11 @@ function AdminNavigation() {
       path: '/admin/seller',
       name: 'Seller Admin',
       icon: 'sliders-horizontal'
+    },
+    {
+      path: '/admin/feedback',
+      name: 'Feedback',
+      icon: 'message-square'
     }
   ]
 

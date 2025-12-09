@@ -1,0 +1,475 @@
+/* Admin Feedback Page Styles */
+
+.admin-feedback-page {
+  padding: 24px;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+/* Header */
+.admin-feedback-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+
+.admin-feedback-header-left h1 {
+  margin: 0;
+  font-size: 28px;
+  color: white;
+}
+
+.admin-feedback-header-left p {
+  margin: 8px 0 0;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 14px;
+}
+
+.admin-feedback-refresh-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  color: white;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.admin-feedback-refresh-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.admin-feedback-refresh-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.spinning {
+  animation: admin-feedback-spin 1s linear infinite;
+}
+
+@keyframes admin-feedback-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Stats Cards */
+.admin-feedback-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.admin-feedback-stat-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+}
+
+.admin-feedback-stat-value {
+  font-size: 32px;
+  font-weight: 700;
+  color: white;
+  line-height: 1;
+}
+
+.admin-feedback-stat-label {
+  margin-top: 8px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* Filters */
+.admin-feedback-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.admin-feedback-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 200px;
+  max-width: 400px;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+}
+
+.admin-feedback-search svg {
+  color: rgba(255, 255, 255, 0.5);
+  flex-shrink: 0;
+}
+
+.admin-feedback-search input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: white;
+  font-size: 14px;
+  outline: none;
+}
+
+.admin-feedback-search input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.admin-feedback-filter-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-feedback-filter-group svg {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.admin-feedback-filter-group select {
+  padding: 10px 32px 10px 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  color: white;
+  font-size: 14px;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.6)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+}
+
+.admin-feedback-filter-group select:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.admin-feedback-filter-group select option {
+  background: #1e293b;
+  color: white;
+}
+
+/* Results Info */
+.admin-feedback-results-info {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 12px;
+}
+
+/* Table Container */
+.admin-feedback-table-container {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+/* Loading State */
+.admin-feedback-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.admin-feedback-loading p {
+  margin-top: 16px;
+}
+
+/* Empty State */
+.admin-feedback-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.admin-feedback-empty svg {
+  opacity: 0.4;
+  margin-bottom: 16px;
+}
+
+/* Table */
+.admin-feedback-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.admin-feedback-table th {
+  text-align: left;
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.05);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: rgba(255, 255, 255, 0.7);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.admin-feedback-table td {
+  padding: 14px 16px;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.9);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  vertical-align: middle;
+}
+
+.admin-feedback-row {
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.admin-feedback-row:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* ID Column */
+.admin-feedback-id {
+  font-family: monospace;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 13px;
+}
+
+/* Reference */
+.admin-feedback-ref {
+  background: rgba(102, 126, 234, 0.15);
+  color: #667eea;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+/* Type Badge */
+.admin-feedback-type-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--type-color);
+  background: color-mix(in srgb, var(--type-color) 15%, transparent);
+  white-space: nowrap;
+}
+
+/* Subject */
+.admin-feedback-subject {
+  max-width: 300px;
+}
+
+.admin-feedback-subject-text {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-feedback-response-count {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.1);
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+/* Email */
+.admin-feedback-email {
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 13px;
+}
+
+/* Priority Badge */
+.admin-feedback-priority-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--priority-color);
+  background: color-mix(in srgb, var(--priority-color) 15%, transparent);
+}
+
+/* Status Dropdown */
+.admin-feedback-status-dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.admin-feedback-status-select {
+  padding: 6px 28px 6px 10px;
+  background: color-mix(in srgb, var(--status-color) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--status-color) 30%, transparent);
+  border-radius: 6px;
+  color: var(--status-color);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  appearance: none;
+}
+
+.admin-feedback-status-select:focus {
+  outline: none;
+  border-color: var(--status-color);
+}
+
+.admin-feedback-status-select option {
+  background: #1e293b;
+  color: white;
+}
+
+.admin-feedback-status-chevron {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: var(--status-color);
+  opacity: 0.7;
+}
+
+/* Date */
+.admin-feedback-date {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
+  white-space: nowrap;
+}
+
+/* Actions */
+.admin-feedback-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.admin-feedback-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  transition: all 0.2s;
+  text-decoration: none;
+}
+
+.admin-feedback-action-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+}
+
+/* Pagination */
+.admin-feedback-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.admin-feedback-page-btn {
+  padding: 10px 20px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  color: white;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.admin-feedback-page-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.admin-feedback-page-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.admin-feedback-page-info {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 14px;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .admin-feedback-page {
+    padding: 16px;
+  }
+
+  .admin-feedback-stats {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .admin-feedback-table th:nth-child(5),
+  .admin-feedback-table td:nth-child(5) {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .admin-feedback-header {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .admin-feedback-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .admin-feedback-filters {
+    flex-direction: column;
+  }
+
+  .admin-feedback-search {
+    max-width: none;
+  }
+
+  .admin-feedback-table-container {
+    overflow-x: auto;
+  }
+
+  .admin-feedback-table {
+    min-width: 800px;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-feedback-stats {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .admin-feedback-stat-card {
+    padding: 16px;
+  }
+
+  .admin-feedback-stat-value {
+    font-size: 24px;
+  }
+}

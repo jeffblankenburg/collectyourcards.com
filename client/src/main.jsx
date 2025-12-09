@@ -9,11 +9,15 @@ import ChunkErrorBoundary from './components/ChunkErrorBoundary.jsx'
 import VersionChecker from './components/VersionChecker.jsx'
 import App from './App.jsx'
 import { setupAxiosInterceptors } from './utils/axios-interceptor.js'
+import { initConsoleCapture } from './components/Feedback/consoleCapture.js'
 import './index.css'
 // import './styles/global-design-system.css' // Temporarily removed to prevent conflicts
 
 // Initialize axios interceptors for automatic API logging
 setupAxiosInterceptors()
+
+// Initialize console capture for feedback system
+initConsoleCapture()
 
 // Handle Vite preload errors (chunk load failures) - auto reload
 window.addEventListener('vite:preloadError', (event) => {
@@ -95,6 +99,8 @@ const SetPurchaseDetail = lazy(() => import('./pages/SetPurchaseDetail.jsx'))
 const SellerSetDetail = lazy(() => import('./pages/SellerSetDetail.jsx'))
 const SellerPlayerDetail = lazy(() => import('./pages/SellerPlayerDetail.jsx'))
 const SellerAdmin = lazy(() => import('./pages/SellerAdmin.jsx'))
+const AdminFeedback = lazy(() => import('./pages/AdminFeedback.jsx'))
+const AdminFeedbackDetail = lazy(() => import('./pages/AdminFeedbackDetail.jsx'))
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -173,6 +179,8 @@ createRoot(document.getElementById('root')).render(
               <Route path="/seller/sets/:setId" element={<ProtectedRoute><SellerSetDetail /></ProtectedRoute>} />
               <Route path="/seller/players/:playerId" element={<ProtectedRoute><SellerPlayerDetail /></ProtectedRoute>} />
               <Route path="/admin/seller" element={<ProtectedRoute><SellerAdmin /></ProtectedRoute>} />
+              <Route path="/admin/feedback" element={<ProtectedRoute><AdminFeedback /></ProtectedRoute>} />
+              <Route path="/admin/feedback/:id" element={<ProtectedRoute><AdminFeedbackDetail /></ProtectedRoute>} />
 
               {/* Lists routes - MUST BE BEFORE username route */}
               <Route path="/lists" element={<ProtectedRoute><Lists /></ProtectedRoute>} />

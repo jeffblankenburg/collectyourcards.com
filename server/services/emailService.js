@@ -294,6 +294,323 @@ class EmailService {
     return html.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim()
   }
 
+  async sendFeedbackConfirmation(email, referenceNumber, submissionType, subject, githubIssueUrl) {
+    const typeLabels = {
+      bug: 'Bug Report',
+      feature: 'Feature Request',
+      general: 'General Feedback'
+    }
+
+    const emailSubject = `We received your feedback! [Reference: ${referenceNumber}]`
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <title>Feedback Received</title>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+          .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }
+          .button { display: inline-block; background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+          .footer { text-align: center; margin-top: 30px; color: #666; font-size: 14px; }
+          .info-box { background: #e8f4fd; border: 1px solid #bee5eb; padding: 15px; border-radius: 5px; margin: 20px 0; }
+          .summary-box { background: white; border: 1px solid #ddd; padding: 15px; border-radius: 5px; margin: 20px 0; }
+          .summary-item { display: flex; margin: 8px 0; }
+          .summary-label { font-weight: bold; width: 100px; color: #666; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>Thank You!</h1>
+            <p>We received your feedback</p>
+          </div>
+          <div class="content">
+            <h3>Hi there!</h3>
+            <p>Thank you for taking the time to submit your ${typeLabels[submissionType] || 'feedback'}! Your input helps us improve Collect Your Cards for everyone.</p>
+
+            <div class="summary-box">
+              <h4 style="margin-top: 0;">Your Submission</h4>
+              <div class="summary-item">
+                <span class="summary-label">Type:</span>
+                <span>${typeLabels[submissionType] || submissionType}</span>
+              </div>
+              <div class="summary-item">
+                <span class="summary-label">Subject:</span>
+                <span>${subject}</span>
+              </div>
+              <div class="summary-item">
+                <span class="summary-label">Reference:</span>
+                <span style="font-family: monospace; background: #eee; padding: 2px 6px; border-radius: 3px;">${referenceNumber}</span>
+              </div>
+            </div>
+
+            ${githubIssueUrl ? `
+            <div class="info-box">
+              <strong>Track Your Submission</strong>
+              <p style="margin-bottom: 0;">We've created a public issue to track this. You can follow along, add comments, or see updates here:</p>
+            </div>
+
+            <div style="text-align: center;">
+              <a href="${githubIssueUrl}" class="button">View on GitHub</a>
+            </div>
+
+            <p style="text-align: center; font-size: 14px; color: #666;">
+              Or copy this link: <br>
+              <span style="word-break: break-all;">${githubIssueUrl}</span>
+            </p>
+            ` : `
+            <div class="info-box">
+              <strong>What Happens Next?</strong>
+              <p style="margin-bottom: 0;">Our team will review your submission and you'll receive an email when we update the status.</p>
+            </div>
+            `}
+
+            <h4>What Happens Next?</h4>
+            <ul>
+              <li>We review all submissions within 48 hours</li>
+              <li>You'll receive an email when we update the status</li>
+              ${githubIssueUrl ? '<li>Feel free to add more details by commenting on the GitHub issue</li>' : ''}
+            </ul>
+
+            <p>Thanks for helping us improve Collect Your Cards!</p>
+            <p><strong>— The CYC Team</strong></p>
+          </div>
+          <div class="footer">
+            <p>This email was sent to ${email} regarding feedback submission ${referenceNumber}.</p>
+            <p>&copy; 2025 Collect Your Cards. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `
+
+    return await this.sendEmail(email, emailSubject, htmlContent)
+  }
+
+  async sendFeedbackAdminNotification(data) {
+    const { referenceNumber, submissionType, subject, description, email, pageUrl, priority, githubIssueUrl } = data
+    const adminEmail = process.env.ADMIN_EMAIL || 'cardcollector@jeffblankenburg.com'
+
+    const typeLabels = {
+      bug: 'Bug Report',
+      feature: 'Feature Request',
+      general: 'General Feedback'
+    }
+
+    const priorityColors = {
+      critical: '#dc3545',
+      high: '#fd7e14',
+      medium: '#ffc107',
+      low: '#28a745'
+    }
+
+    const emailSubject = `[${submissionType.toUpperCase()}] New Feedback: ${subject} (${referenceNumber})`
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <title>New Feedback Submission</title>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: #2d3748; color: white; padding: 20px; border-radius: 8px 8px 0 0; }
+          .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }
+          .button { display: inline-block; background: #667eea; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin: 10px 5px 10px 0; }
+          .priority-badge { display: inline-block; padding: 4px 12px; border-radius: 12px; color: white; font-weight: bold; font-size: 12px; }
+          .type-badge { display: inline-block; padding: 4px 12px; border-radius: 12px; background: #667eea; color: white; font-size: 12px; }
+          .detail-box { background: white; border: 1px solid #ddd; padding: 15px; border-radius: 5px; margin: 15px 0; }
+          .detail-label { font-weight: bold; color: #666; font-size: 12px; text-transform: uppercase; margin-bottom: 5px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h2 style="margin: 0;">New Feedback Submission</h2>
+            <p style="margin: 10px 0 0 0; opacity: 0.8;">${referenceNumber}</p>
+          </div>
+          <div class="content">
+            <div style="margin-bottom: 20px;">
+              <span class="type-badge">${typeLabels[submissionType]}</span>
+              <span class="priority-badge" style="background: ${priorityColors[priority] || priorityColors.medium}">${(priority || 'medium').toUpperCase()}</span>
+            </div>
+
+            <h3 style="margin-top: 0;">${subject}</h3>
+
+            <div class="detail-box">
+              <div class="detail-label">Description</div>
+              <p style="margin: 0; white-space: pre-wrap;">${description}</p>
+            </div>
+
+            <div class="detail-box">
+              <div class="detail-label">Submitted By</div>
+              <p style="margin: 0;"><a href="mailto:${email}">${email}</a></p>
+            </div>
+
+            <div class="detail-box">
+              <div class="detail-label">Page URL</div>
+              <p style="margin: 0;"><a href="${pageUrl}">${pageUrl}</a></p>
+            </div>
+
+            <div style="margin-top: 20px;">
+              <a href="${this.baseUrl}/admin/feedback" class="button">View in Admin</a>
+              ${githubIssueUrl ? `<a href="${githubIssueUrl}" class="button" style="background: #24292e;">View GitHub Issue</a>` : ''}
+            </div>
+          </div>
+        </div>
+      </body>
+      </html>
+    `
+
+    return await this.sendEmail(adminEmail, emailSubject, htmlContent)
+  }
+
+  async sendFeedbackStatusUpdate(email, referenceNumber, subject, newStatus, resolverNote, githubIssueUrl) {
+    const statusMessages = {
+      in_review: {
+        title: "We're Looking Into It",
+        message: "Your feedback is currently being reviewed by our team.",
+        color: '#3498db'
+      },
+      in_progress: {
+        title: "We're Working On It!",
+        message: "Great news! We've started working on addressing your feedback.",
+        color: '#9b59b6'
+      },
+      resolved: {
+        title: 'Issue Resolved',
+        message: "We've addressed your feedback. Thank you for helping us improve!",
+        color: '#27ae60'
+      },
+      closed: {
+        title: 'Feedback Closed',
+        message: "This feedback submission has been closed.",
+        color: '#7f8c8d'
+      },
+      wont_fix: {
+        title: 'Status Update',
+        message: "After careful consideration, we've decided not to implement this change at this time.",
+        color: '#e74c3c'
+      }
+    }
+
+    const status = statusMessages[newStatus] || statusMessages.closed
+    const emailSubject = `Update on your feedback: ${subject} [${referenceNumber}]`
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <title>Feedback Status Update</title>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: ${status.color}; color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+          .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }
+          .button { display: inline-block; background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+          .footer { text-align: center; margin-top: 30px; color: #666; font-size: 14px; }
+          .note-box { background: white; border-left: 4px solid ${status.color}; padding: 15px; margin: 20px 0; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1 style="margin: 0;">${status.title}</h1>
+            <p style="margin: 10px 0 0 0; opacity: 0.9;">${referenceNumber}</p>
+          </div>
+          <div class="content">
+            <h3>Regarding: ${subject}</h3>
+            <p>${status.message}</p>
+
+            ${resolverNote ? `
+            <div class="note-box">
+              <strong>Note from our team:</strong>
+              <p style="margin: 10px 0 0 0;">${resolverNote}</p>
+            </div>
+            ` : ''}
+
+            ${githubIssueUrl ? `
+            <div style="text-align: center;">
+              <a href="${githubIssueUrl}" class="button">View Full Details on GitHub</a>
+            </div>
+            ` : ''}
+
+            <p>Thank you for your patience and for helping us improve Collect Your Cards!</p>
+            <p><strong>— The CYC Team</strong></p>
+          </div>
+          <div class="footer">
+            <p>This email was sent to ${email} regarding feedback submission ${referenceNumber}.</p>
+            <p>&copy; 2025 Collect Your Cards. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `
+
+    return await this.sendEmail(email, emailSubject, htmlContent)
+  }
+
+  async sendFeedbackResponse(email, referenceNumber, subject, responseMessage, responderName, githubIssueUrl) {
+    const emailSubject = `Response to your feedback: ${subject} [${referenceNumber}]`
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <title>Response to Your Feedback</title>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+          .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }
+          .button { display: inline-block; background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+          .footer { text-align: center; margin-top: 30px; color: #666; font-size: 14px; }
+          .response-box { background: white; border-left: 4px solid #667eea; padding: 20px; margin: 20px 0; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1 style="margin: 0;">We've Responded!</h1>
+            <p style="margin: 10px 0 0 0; opacity: 0.9;">${referenceNumber}</p>
+          </div>
+          <div class="content">
+            <h3>Regarding: ${subject}</h3>
+
+            <div class="response-box">
+              <p style="margin: 0; white-space: pre-wrap;">${responseMessage}</p>
+              <p style="margin: 15px 0 0 0; color: #666; font-size: 14px;"><em>— ${responderName || 'The CYC Team'}</em></p>
+            </div>
+
+            ${githubIssueUrl ? `
+            <p>You can continue the conversation or see the full history on GitHub:</p>
+            <div style="text-align: center;">
+              <a href="${githubIssueUrl}" class="button">View on GitHub</a>
+            </div>
+            ` : ''}
+
+            <p>Thank you for being part of the Collect Your Cards community!</p>
+            <p><strong>— The CYC Team</strong></p>
+          </div>
+          <div class="footer">
+            <p>This email was sent to ${email} regarding feedback submission ${referenceNumber}.</p>
+            <p>&copy; 2025 Collect Your Cards. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `
+
+    return await this.sendEmail(email, emailSubject, htmlContent)
+  }
+
   // Check if email service is available
   isAvailable() {
     return this.isConfigured && this.client !== null

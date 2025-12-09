@@ -1,0 +1,443 @@
+/* Feedback Modal Overlay */
+.feedback-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+/* Modal Container */
+.feedback-modal {
+  background: rgba(15, 23, 42, 0.98);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 16px;
+  max-width: 560px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+}
+
+.feedback-modal:focus {
+  outline: none;
+}
+
+/* Close Button */
+.feedback-modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  z-index: 1;
+}
+
+.feedback-modal-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+/* Header */
+.feedback-modal-header {
+  padding: 24px 24px 0;
+  text-align: center;
+}
+
+.feedback-modal-header h2 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+  color: white;
+}
+
+.feedback-modal-header p {
+  margin: 8px 0 0;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 14px;
+}
+
+/* Form */
+.feedback-modal-form {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Field */
+.feedback-modal-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.feedback-modal-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.feedback-modal-required {
+  color: #ef4444;
+}
+
+.feedback-modal-optional {
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 400;
+}
+
+/* Type Selection Grid */
+.feedback-modal-type-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.feedback-modal-type-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.feedback-modal-type-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.feedback-modal-type-btn.selected {
+  background: rgba(102, 126, 234, 0.15);
+  border-color: #667eea;
+  color: white;
+}
+
+.feedback-modal-type-btn.selected svg {
+  color: #667eea;
+}
+
+.feedback-modal-type-label {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.feedback-modal-type-desc {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.5);
+  text-align: center;
+}
+
+.feedback-modal-type-btn.selected .feedback-modal-type-desc {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* Input & Textarea */
+.feedback-modal-input,
+.feedback-modal-textarea {
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  color: white;
+  font-size: 14px;
+  font-family: inherit;
+  transition: all 0.2s;
+}
+
+.feedback-modal-input::placeholder,
+.feedback-modal-textarea::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.feedback-modal-input:focus,
+.feedback-modal-textarea:focus {
+  outline: none;
+  border-color: #667eea;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.feedback-modal-input.error,
+.feedback-modal-textarea.error {
+  border-color: #ef4444;
+}
+
+.feedback-modal-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.feedback-modal-textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+/* Error Message */
+.feedback-modal-error {
+  font-size: 12px;
+  color: #ef4444;
+}
+
+/* Hint */
+.feedback-modal-hint {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Priority Row */
+.feedback-modal-priority-row {
+  display: flex;
+  gap: 8px;
+}
+
+.feedback-modal-priority-btn {
+  flex: 1;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.feedback-modal-priority-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.feedback-modal-priority-btn.selected {
+  background: color-mix(in srgb, var(--priority-color) 15%, transparent);
+  border-color: var(--priority-color);
+  color: var(--priority-color);
+}
+
+/* Checkbox Label */
+.feedback-modal-checkbox-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.feedback-modal-checkbox-label input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  accent-color: #667eea;
+}
+
+.feedback-modal-checkbox-hint {
+  display: block;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+  margin-top: 2px;
+}
+
+/* Context Info */
+.feedback-modal-context {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 12px;
+  background: rgba(255, 193, 7, 0.1);
+  border: 1px solid rgba(255, 193, 7, 0.2);
+  border-radius: 8px;
+  font-size: 12px;
+  color: rgba(255, 193, 7, 0.9);
+}
+
+.feedback-modal-context svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/* Submit Button */
+.feedback-modal-submit-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 24px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  border-radius: 10px;
+  color: white;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 8px;
+}
+
+.feedback-modal-submit-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.feedback-modal-submit-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.feedback-modal-spinner {
+  animation: feedback-spin 1s linear infinite;
+}
+
+@keyframes feedback-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Success State */
+.feedback-modal-success {
+  padding: 40px 24px;
+  text-align: center;
+}
+
+.feedback-modal-success-icon {
+  color: #22c55e;
+  margin-bottom: 16px;
+}
+
+.feedback-modal-success h2 {
+  margin: 0 0 8px;
+  font-size: 28px;
+  color: white;
+}
+
+.feedback-modal-success > p {
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0 0 24px;
+}
+
+.feedback-modal-success-details {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.feedback-modal-success-ref {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.feedback-modal-success-label {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 14px;
+}
+
+.feedback-modal-success-ref code {
+  background: rgba(102, 126, 234, 0.2);
+  color: #667eea;
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.feedback-modal-success-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #667eea;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.feedback-modal-success-link:hover {
+  color: #8b9ef5;
+}
+
+.feedback-modal-success-note {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 24px;
+}
+
+/* Mobile Responsive */
+@media (max-width: 600px) {
+  .feedback-modal-overlay {
+    padding: 0;
+    align-items: flex-end;
+  }
+
+  .feedback-modal {
+    border-radius: 20px 20px 0 0;
+    max-height: 95vh;
+  }
+
+  .feedback-modal-type-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .feedback-modal-type-btn {
+    flex-direction: row;
+    justify-content: flex-start;
+    padding: 12px 16px;
+  }
+
+  .feedback-modal-type-btn svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .feedback-modal-type-desc {
+    display: none;
+  }
+
+  .feedback-modal-priority-row {
+    flex-wrap: wrap;
+  }
+
+  .feedback-modal-priority-btn {
+    flex: 1 1 45%;
+  }
+}
+
+@media (max-width: 400px) {
+  .feedback-modal-form {
+    padding: 16px;
+  }
+
+  .feedback-modal-header {
+    padding: 20px 16px 0;
+  }
+
+  .feedback-modal-header h2 {
+    font-size: 20px;
+  }
+}

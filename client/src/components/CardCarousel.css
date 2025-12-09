@@ -1,13 +1,15 @@
 /* CardCarousel - Infinite scrolling card image carousel */
 
 .card-carousel-container {
-  width: 100%;
+  width: 100vw;
   height: 180px;
   overflow: hidden;
   position: relative;
   background: rgba(0, 0, 0, 0.2);
-  border-radius: 12px;
   margin: 2rem 0;
+  /* Break out of parent padding to go edge-to-edge */
+  margin-left: calc(-50vw + 50%);
+  margin-right: calc(-50vw + 50%);
 }
 
 .card-carousel-track {

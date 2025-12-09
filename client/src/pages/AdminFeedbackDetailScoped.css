@@ -1,0 +1,600 @@
+/* Admin Feedback Detail Page */
+
+.admin-feedback-detail-page {
+  padding: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.admin-feedback-detail-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.admin-feedback-detail-loading p {
+  margin-top: 16px;
+}
+
+.spinning {
+  animation: admin-feedback-detail-spin 1s linear infinite;
+}
+
+@keyframes admin-feedback-detail-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Header */
+.admin-feedback-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.admin-feedback-detail-back {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.admin-feedback-detail-back:hover {
+  color: white;
+}
+
+.admin-feedback-detail-header-actions {
+  display: flex;
+  gap: 12px;
+}
+
+/* Buttons */
+.admin-feedback-detail-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.admin-feedback-detail-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.admin-feedback-detail-btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.admin-feedback-detail-btn-primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.admin-feedback-detail-btn-secondary {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+.admin-feedback-detail-btn-secondary:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.admin-feedback-detail-btn-danger {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+}
+
+.admin-feedback-detail-btn-danger:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.25);
+}
+
+.admin-feedback-detail-btn-small {
+  padding: 8px 14px;
+  font-size: 13px;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  width: 100%;
+  justify-content: center;
+  margin-top: 8px;
+}
+
+.admin-feedback-detail-btn-small:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* Content Layout */
+.admin-feedback-detail-content {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 24px;
+}
+
+/* Main Content */
+.admin-feedback-detail-main {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Title Section */
+.admin-feedback-detail-title-section {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.admin-feedback-detail-badges {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.admin-feedback-detail-type-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--type-color);
+  background: color-mix(in srgb, var(--type-color) 15%, transparent);
+}
+
+.admin-feedback-detail-priority-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--priority-color);
+  background: color-mix(in srgb, var(--priority-color) 15%, transparent);
+}
+
+.admin-feedback-detail-title-section h1 {
+  margin: 0 0 12px;
+  font-size: 24px;
+  color: white;
+  line-height: 1.3;
+}
+
+.admin-feedback-detail-meta {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.admin-feedback-detail-ref {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(102, 126, 234, 0.15);
+  color: #667eea;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.admin-feedback-detail-ref:hover {
+  background: rgba(102, 126, 234, 0.25);
+}
+
+.admin-feedback-detail-date {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* Sections */
+.admin-feedback-detail-section {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.admin-feedback-detail-section h3 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 16px;
+  font-size: 16px;
+  color: white;
+}
+
+.admin-feedback-detail-collapsible {
+  cursor: pointer;
+  user-select: none;
+}
+
+.admin-feedback-detail-collapsible svg:last-child {
+  margin-left: auto;
+  transition: transform 0.2s;
+}
+
+.admin-feedback-detail-collapsible svg.rotated {
+  transform: rotate(180deg);
+}
+
+.admin-feedback-detail-description,
+.admin-feedback-detail-steps {
+  white-space: pre-wrap;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* Console Logs */
+.admin-feedback-detail-console-logs {
+  background: #0d1117;
+  border-radius: 8px;
+  padding: 12px;
+  max-height: 400px;
+  overflow-y: auto;
+  font-family: 'Monaco', 'Consolas', monospace;
+  font-size: 12px;
+}
+
+.admin-feedback-detail-log-entry {
+  display: flex;
+  gap: 8px;
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.admin-feedback-detail-log-entry:last-child {
+  border-bottom: none;
+}
+
+.admin-feedback-detail-log-time {
+  color: rgba(255, 255, 255, 0.4);
+  white-space: nowrap;
+}
+
+.admin-feedback-detail-log-level {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.admin-feedback-detail-log-log .admin-feedback-detail-log-level { color: #9ca3af; }
+.admin-feedback-detail-log-info .admin-feedback-detail-log-level { color: #60a5fa; }
+.admin-feedback-detail-log-warn .admin-feedback-detail-log-level { color: #fbbf24; }
+.admin-feedback-detail-log-error .admin-feedback-detail-log-level { color: #f87171; }
+.admin-feedback-detail-log-debug .admin-feedback-detail-log-level { color: #a78bfa; }
+
+.admin-feedback-detail-log-message {
+  color: rgba(255, 255, 255, 0.8);
+  word-break: break-word;
+}
+
+/* Responses */
+.admin-feedback-detail-responses {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.admin-feedback-detail-response {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 16px;
+}
+
+.admin-feedback-detail-response.internal {
+  background: rgba(255, 193, 7, 0.05);
+  border-color: rgba(255, 193, 7, 0.2);
+}
+
+.admin-feedback-detail-response-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.admin-feedback-detail-response-author {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+  color: white;
+}
+
+.admin-feedback-detail-response-internal-badge {
+  padding: 2px 8px;
+  background: rgba(255, 193, 7, 0.2);
+  color: #ffc107;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.admin-feedback-detail-response-date {
+  margin-left: auto;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.admin-feedback-detail-response-body {
+  white-space: pre-wrap;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* Response Form */
+.admin-feedback-detail-response-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.admin-feedback-detail-response-form textarea {
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  color: white;
+  font-size: 14px;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 100px;
+}
+
+.admin-feedback-detail-response-form textarea:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.admin-feedback-detail-response-form textarea::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.admin-feedback-detail-response-options {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.admin-feedback-detail-response-options label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+}
+
+.admin-feedback-detail-response-options input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #667eea;
+}
+
+/* Sidebar */
+.admin-feedback-detail-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.admin-feedback-detail-sidebar-section {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.admin-feedback-detail-sidebar-section > label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 12px;
+}
+
+.admin-feedback-detail-sidebar-section textarea {
+  width: 100%;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  color: white;
+  font-size: 14px;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.admin-feedback-detail-sidebar-section textarea:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.admin-feedback-detail-sidebar-section textarea::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+/* Status Dropdown */
+.admin-feedback-detail-status-dropdown {
+  position: relative;
+}
+
+.admin-feedback-detail-status-dropdown select {
+  width: 100%;
+  padding: 12px 36px 12px 14px;
+  background: color-mix(in srgb, var(--status-color) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--status-color) 30%, transparent);
+  border-radius: 8px;
+  color: var(--status-color);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  appearance: none;
+}
+
+.admin-feedback-detail-status-dropdown select:focus {
+  outline: none;
+  border-color: var(--status-color);
+}
+
+.admin-feedback-detail-status-dropdown select option {
+  background: #1e293b;
+  color: white;
+}
+
+.admin-feedback-detail-status-dropdown > svg {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: var(--status-color);
+}
+
+/* Info Items */
+.admin-feedback-detail-info-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+
+.admin-feedback-detail-info-item:last-child {
+  margin-bottom: 0;
+}
+
+.admin-feedback-detail-info-item svg {
+  flex-shrink: 0;
+  color: rgba(255, 255, 255, 0.5);
+  margin-top: 2px;
+}
+
+.admin-feedback-detail-info-item a {
+  color: #667eea;
+  text-decoration: none;
+  word-break: break-all;
+}
+
+.admin-feedback-detail-info-item a:hover {
+  text-decoration: underline;
+}
+
+.admin-feedback-detail-info-item span {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* GitHub Link */
+.admin-feedback-detail-github-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  background: rgba(36, 41, 46, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: white;
+  text-decoration: none;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.admin-feedback-detail-github-link:hover {
+  background: rgba(36, 41, 46, 0.8);
+}
+
+.admin-feedback-detail-github-link svg:last-child {
+  margin-left: auto;
+  opacity: 0.5;
+}
+
+/* Resolution Info */
+.admin-feedback-detail-resolution-info {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.5;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .admin-feedback-detail-content {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-feedback-detail-sidebar {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .admin-feedback-detail-page {
+    padding: 16px;
+  }
+
+  .admin-feedback-detail-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .admin-feedback-detail-header-actions {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .admin-feedback-detail-header-actions .admin-feedback-detail-btn {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .admin-feedback-detail-sidebar {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-feedback-detail-badges {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-feedback-detail-title-section h1 {
+    font-size: 20px;
+  }
+
+  .admin-feedback-detail-header-actions {
+    flex-direction: column;
+  }
+
+  .admin-feedback-detail-response-options {
+    flex-direction: column;
+    gap: 12px;
+  }
+}

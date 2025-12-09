@@ -273,7 +273,9 @@ if (config.environment === 'test') {
     { path: '/api/blog', file: './routes/blog', name: 'Blog' },
     { path: '/api/seller', file: './routes/seller', name: 'Seller Tools' },
     { path: '/api/supplies', file: './routes/supplies', name: 'Supply Management' },
-    { path: '/api/admin/seller', file: './routes/admin-seller', name: 'Admin Seller Config' }
+    { path: '/api/admin/seller', file: './routes/admin-seller', name: 'Admin Seller Config' },
+    { path: '/api/feedback', file: './routes/feedback', name: 'Feedback' },
+    { path: '/api/admin/feedback', file: './routes/admin-feedback', name: 'Admin Feedback' }
   ];
 
   console.log('📍 Loading API routes in production mode...');

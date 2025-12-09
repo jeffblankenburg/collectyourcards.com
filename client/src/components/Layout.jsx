@@ -4,6 +4,7 @@ import Header from './Header'
 import Footer from './Footer/Footer'
 import AdminNavigation from './AdminNavigation'
 import UserNavigation from './UserNavigation'
+import { FeedbackWidget } from './Feedback'
 import './Layout.css'
 
 function Layout({ children }) {
@@ -21,6 +22,7 @@ function Layout({ children }) {
         {children}
       </main>
       <Footer />
+      <FeedbackWidget />
     </div>
   )
 }
