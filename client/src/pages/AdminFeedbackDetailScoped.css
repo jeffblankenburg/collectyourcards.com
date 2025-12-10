@@ -107,6 +107,23 @@
   background: rgba(239, 68, 68, 0.25);
 }
 
+/* Delete confirmation inline */
+.admin-feedback-detail-delete-confirm {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 8px;
+}
+
+.admin-feedback-detail-delete-confirm span {
+  color: #ef4444;
+  font-weight: 500;
+  font-size: 14px;
+}
+
 .admin-feedback-detail-btn-small {
   padding: 8px 14px;
   font-size: 13px;

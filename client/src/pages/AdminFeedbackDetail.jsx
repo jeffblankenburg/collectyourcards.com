@@ -71,6 +71,9 @@ function AdminFeedbackDetail() {
   const [adminNotes, setAdminNotes] = useState('')
   const [showConsoleLogs, setShowConsoleLogs] = useState(false)
 
+  // Delete confirmation
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
+
   useEffect(() => {
     document.title = 'Feedback Detail - Collect Your Cards'
     loadSubmission()
@@ -176,7 +179,8 @@ function AdminFeedbackDetail() {
   }
 
   const handleDelete = async () => {
-    if (!confirm('Are you sure you want to delete this feedback submission? This cannot be undone.')) {
+    if (!confirmingDelete) {
+      setConfirmingDelete(true)
       return
     }
 
@@ -187,7 +191,13 @@ function AdminFeedbackDetail() {
     } catch (err) {
       console.error('Failed to delete:', err)
       showError('Failed to delete feedback')
+    } finally {
+      setConfirmingDelete(false)
     }
+  }
+
+  const cancelDelete = () => {
+    setConfirmingDelete(false)
   }
 
   const copyToClipboard = (text) => {
@@ -265,13 +275,31 @@ function AdminFeedbackDetail() {
             <Mail size={16} />
             Resend Confirmation
           </button>
-          <button
-            className="admin-feedback-detail-btn admin-feedback-detail-btn-danger"
-            onClick={handleDelete}
-          >
-            <Trash2 size={16} />
-            Delete
-          </button>
+          {confirmingDelete ? (
+            <div className="admin-feedback-detail-delete-confirm">
+              <span>Are you sure?</span>
+              <button
+                className="admin-feedback-detail-btn admin-feedback-detail-btn-danger"
+                onClick={handleDelete}
+              >
+                Yes, Delete
+              </button>
+              <button
+                className="admin-feedback-detail-btn admin-feedback-detail-btn-secondary"
+                onClick={cancelDelete}
+              >
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <button
+              className="admin-feedback-detail-btn admin-feedback-detail-btn-danger"
+              onClick={handleDelete}
+            >
+              <Trash2 size={16} />
+              Delete
+            </button>
+          )}
         </div>
       </div>
 

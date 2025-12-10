@@ -194,7 +194,7 @@ router.get('/sales', requireAuth, requireSeller, async (req, res) => {
       const colorData = card?.color_card_colorTocolor
 
       // Check if this is a bulk sale
-      const isBulkSale = !card && sale.series_id
+      const isBulkSale = !card && !!sale.series_id
 
       // Get player names and teams
       const playerData = playerTeams.map(cpt => {
@@ -2164,13 +2164,22 @@ router.get('/set-investments/:setId', requireAuth, requireSeller, async (req, re
     })
     const seriesIds = seriesData.map(s => Number(s.series_id))
 
-    // Get all sales for cards in this set
+    // Get all sales for cards in this set (including bulk sales)
     const sales = seriesIds.length > 0 ? await prisma.sale.findMany({
       where: {
         user_id: userId,
-        card: {
-          series: { in: seriesIds.map(id => BigInt(id)) }
-        }
+        OR: [
+          // Regular card sales - card's series is in this set
+          {
+            card: {
+              series: { in: seriesIds.map(id => BigInt(id)) }
+            }
+          },
+          // Bulk sales - series_id directly on sale is in this set
+          {
+            series_id: { in: seriesIds.map(id => BigInt(id)) }
+          }
+        ]
       },
       include: {
         card: {
@@ -2186,6 +2195,11 @@ router.get('/set-investments/:setId', requireAuth, requireSeller, async (req, re
                 }
               }
             }
+          }
+        },
+        series: {
+          include: {
+            set_series_setToset: true
           }
         },
         platform: true,
@@ -2214,8 +2228,10 @@ router.get('/set-investments/:setId', requireAuth, requireSeller, async (req, re
     const formattedSales = sales.map(sale => {
       const card = sale.card
       const playerTeams = card?.card_player_team_card_player_team_cardTocard || []
-      const series = card?.series ? seriesMap.get(Number(card.series)) : null
+      // For card sales, get series from seriesMap; for bulk sales, use the included series relation
+      const series = card?.series ? seriesMap.get(Number(card.series)) : sale.series
       const colorData = card?.color_card_colorTocolor
+      const isBulkSale = !card && !!sale.series_id
 
       // Get player names and teams (same format as main /sales endpoint)
       const playerData = playerTeams.map(cpt => {
@@ -2232,10 +2248,12 @@ router.get('/set-investments/:setId', requireAuth, requireSeller, async (req, re
         }
       }).filter(p => p.name)
 
-      const set = series?.set_series_setToset
+      // For bulk sales, get set from the included series relation
+      const bulkSet = sale.series?.set_series_setToset
 
       return {
         ...serializeBigInt(sale),
+        is_bulk_sale: isBulkSale,
         card_info: card ? {
           card_id: Number(card.card_id),
           card_number: card.card_number,
@@ -2250,8 +2268,16 @@ router.get('/set-investments/:setId', requireAuth, requireSeller, async (req, re
           color_hex: colorData?.hex_value || null,
           series_id: series?.series_id ? Number(series.series_id) : null,
           series_name: series?.name || null,
-          set_id: set?.set_id ? Number(set.set_id) : null,
-          set_name: set?.name || null
+          set_id: bulkSet?.set_id ? Number(bulkSet.set_id) : null,
+          set_name: bulkSet?.name || null
+        } : null,
+        bulk_info: isBulkSale ? {
+          series_id: sale.series_id ? Number(sale.series_id) : null,
+          series_name: series?.name || sale.series?.name || null,
+          set_id: bulkSet?.set_id ? Number(bulkSet.set_id) : null,
+          set_name: bulkSet?.name || null,
+          description: sale.bulk_description,
+          card_count: sale.bulk_card_count
         } : null
       }
     })
