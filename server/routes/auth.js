@@ -58,7 +58,7 @@ const createJWT = (user) => {
       verified: user.is_verified
     },
     process.env.JWT_SECRET,
-    { expiresIn: '24h' }
+    { expiresIn: '30d' }
   )
 }
 
@@ -476,12 +476,12 @@ router.post('/verify-email',
           role: user.role || 'user'
         },
         process.env.JWT_SECRET,
-        { expiresIn: '7d' }
+        { expiresIn: '30d' }
       )
 
       // Create session record using raw SQL to handle schema mismatch
       const tokenHash = crypto.createHash('sha256').update(loginToken).digest('hex')
-      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days (matches JWT expiry)
+      const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days (matches JWT expiry)
       const ipAddress = req.ip || req.connection?.remoteAddress || 'unknown'
       const userAgent = req.get('User-Agent')?.substring(0, 500) || 'unknown'
       
