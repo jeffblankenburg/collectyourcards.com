@@ -7,7 +7,7 @@
  * @module services/import/card-creator
  */
 
-const sql = require('mssql')
+const { sql } = require('../../config/mssql')
 
 /**
  * Helper function to generate URL slug

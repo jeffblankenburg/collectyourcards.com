@@ -9,7 +9,7 @@
 
 const express = require('express')
 const multer = require('multer')
-const sql = require('mssql')
+const { sql, getDbConfig } = require('../config/mssql')
 const router = express.Router()
 
 // Middleware
@@ -59,52 +59,6 @@ const upload = multer({
 let pool
 
 /**
- * Parse DATABASE_URL for mssql connection
- *
- * @param {string} connectionString - SQL Server connection string
- * @returns {Object} - MSSQL connection config
- */
-function parseConnectionString(connectionString) {
-  // Handle SQL Server connection string format: sqlserver://host:port;param=value;param=value
-  const parts = connectionString.split(';')
-  const serverPart = parts[0] // sqlserver://hostname:port
-
-  // Extract server and port from first part
-  const serverMatch = serverPart.match(/sqlserver:\/\/([^:]+):?(\d+)?/)
-  const server = serverMatch ? serverMatch[1] : 'localhost'
-  const port = serverMatch && serverMatch[2] ? parseInt(serverMatch[2]) : 1433
-
-  // Parse remaining parameters
-  const params = {}
-  parts.slice(1).forEach(part => {
-    const [key, value] = part.split('=')
-    if (key && value) {
-      params[key] = value
-    }
-  })
-
-  const config = {
-    server: server,
-    port: port,
-    database: params.database || 'CollectYourCards',
-    user: params.user || 'sa',
-    password: params.password || '',
-    pool: {
-      max: 10,
-      min: 2, // Keep 2 connections alive for import operations
-      idleTimeoutMillis: 300000 // 5 minutes for large batch imports
-    },
-    connectionTimeout: 60000, // 60 seconds to establish connection
-    requestTimeout: 300000, // 5 minutes for long-running queries
-    options: {
-      encrypt: params.encrypt === 'true',
-      trustServerCertificate: params.trustServerCertificate === 'true'
-    }
-  }
-  return config
-}
-
-/**
  * Connect to database (singleton pattern)
  *
  * @returns {Promise<ConnectionPool>} - MSSQL connection pool
@@ -123,27 +77,13 @@ async function connectToDatabase() {
     }
 
     try {
-      let config
-
-      if (process.env.NODE_ENV === 'production' && process.env.DATABASE_URL) {
-        // Production: use DATABASE_URL parser
-        config = parseConnectionString(process.env.DATABASE_URL)
-        console.log('🌐 Using production DATABASE_URL connection')
-      } else {
-        // Development: use existing environment variables
-        config = {
-          server: process.env.DB_SERVER || 'localhost',
-          port: process.env.DB_PORT ? parseInt(process.env.DB_PORT) : 1433,
-          database: process.env.DB_NAME || 'CollectYourCards',
-          user: process.env.DB_USER || 'sa',
-          password: process.env.DB_PASSWORD || 'Password123',
-          options: {
-            encrypt: false,
-            trustServerCertificate: true
-          }
-        }
-        console.log('🏠 Using development connection to localhost')
-      }
+      const config = getDbConfig()
+      // Extended timeouts for import operations
+      config.connectionTimeout = 60000 // 60 seconds to establish connection
+      config.requestTimeout = 300000 // 5 minutes for long-running queries
+      config.pool = config.pool || {}
+      config.pool.min = 2 // Keep 2 connections alive for import operations
+      config.pool.idleTimeoutMillis = 300000 // 5 minutes for large batch imports
 
       pool = await sql.connect(config)
       console.log('✅ Database connection initialized for import routes')

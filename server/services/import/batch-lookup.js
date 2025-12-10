@@ -8,7 +8,7 @@
  * @module services/import/batch-lookup
  */
 
-const sql = require('mssql')
+const { sql } = require('../../config/mssql')
 const { normalizePlayerName, normalizeTeamName } = require('./name-normalizer')
 const { levenshteinDistance } = require('../../utils/string-similarity')
 const { areNicknameVariations, getNameVariations } = require('../../utils/nickname-mapper')

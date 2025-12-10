@@ -1,48 +1,8 @@
 const express = require('express')
 const { prisma } = require('../config/prisma-singleton')
 const { authMiddleware, requireAdmin } = require('../middleware/auth')
-const sql = require('mssql')
+const { sql, getDbConfig } = require('../config/mssql')
 const router = express.Router()
-
-// Parse DATABASE_URL for mssql connection
-const parseConnectionString = (connectionString) => {
-  // Handle SQL Server connection string format: sqlserver://host:port;param=value;param=value
-  const parts = connectionString.split(';')
-  const serverPart = parts[0] // sqlserver://localhost:1433
-  
-  // Extract server and port from first part
-  const serverMatch = serverPart.match(/sqlserver:\/\/([^:]+):?(\d+)?/)
-  const server = serverMatch ? serverMatch[1] : 'localhost'
-  const port = serverMatch && serverMatch[2] ? parseInt(serverMatch[2]) : 1433
-  
-  // Parse remaining parameters
-  const params = {}
-  parts.slice(1).forEach(part => {
-    const [key, value] = part.split('=')
-    if (key && value) {
-      params[key] = value
-    }
-  })
-  
-  const config = {
-    server: server,
-    port: port,
-    database: params.database || 'CollectYourCards',
-    user: params.user || 'sa',
-    password: params.password || '',
-    requestTimeout: 300000, // 5 minutes for large aggregate queries
-    pool: {
-      max: 10,
-      min: 0,
-      idleTimeoutMillis: 30000
-    },
-    options: {
-      encrypt: params.encrypt === 'true',
-      trustServerCertificate: params.trustServerCertificate === 'true'
-    }
-  }
-  return config
-}
 
 // All routes require admin authentication
 router.use(authMiddleware)
@@ -61,27 +21,10 @@ router.post('/aggregates/update', async (req, res) => {
     }
 
     let rowsUpdated = 0
-    
-    let config;
-    if (process.env.NODE_ENV === 'production' && process.env.DATABASE_URL) {
-      // Production: use DATABASE_URL parser
-      config = parseConnectionString(process.env.DATABASE_URL)
-    } else {
-      // Development: use existing environment variables
-      config = {
-        server: process.env.DB_SERVER || 'localhost',
-        port: process.env.DB_PORT ? parseInt(process.env.DB_PORT) : 1433,
-        database: process.env.DB_NAME || 'CollectYourCards',
-        user: process.env.DB_USER || 'sa',
-        password: process.env.DB_PASSWORD || 'Password123',
-        requestTimeout: 300000, // 5 minutes for large aggregate queries
-        options: {
-          encrypt: false,
-          trustServerCertificate: true
-        }
-      }
-    }
-    
+
+    const config = getDbConfig()
+    config.requestTimeout = 300000 // 5 minutes for large aggregate queries
+
     let pool
     try {
       pool = await sql.connect(config)
@@ -301,25 +244,8 @@ router.post('/aggregates/update', async (req, res) => {
 router.get('/aggregates/status', async (req, res) => {
   let pool
   try {
-    let config;
-    if (process.env.NODE_ENV === 'production' && process.env.DATABASE_URL) {
-      // Production: use DATABASE_URL parser
-      config = parseConnectionString(process.env.DATABASE_URL)
-    } else {
-      // Development: use existing environment variables
-      config = {
-        server: process.env.DB_SERVER || 'localhost',
-        port: process.env.DB_PORT ? parseInt(process.env.DB_PORT) : 1433,
-        database: process.env.DB_NAME || 'CollectYourCards',
-        user: process.env.DB_USER || 'sa',
-        password: process.env.DB_PASSWORD || 'Password123',
-        requestTimeout: 300000, // 5 minutes for large aggregate queries
-        options: {
-          encrypt: false,
-          trustServerCertificate: true
-        }
-      }
-    }
+    const config = getDbConfig()
+    config.requestTimeout = 300000 // 5 minutes for large aggregate queries
 
     pool = await sql.connect(config)
 

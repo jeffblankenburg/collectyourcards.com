@@ -1,5 +1,5 @@
 const prisma = require('../config/prisma')
-const sql = require('mssql')
+const { sql, getPool } = require('../config/mssql')
 
 /**
  * Achievement Calculation Engine
@@ -11,32 +11,13 @@ const sql = require('mssql')
 class AchievementEngine {
   constructor() {
     this.prisma = prisma
-    this.sqlPool = null
   }
 
   /**
    * Get or create SQL connection pool
    */
   async getSqlPool() {
-    if (this.sqlPool && this.sqlPool.connected) {
-      return this.sqlPool
-    }
-
-    const config = {
-      server: process.env.DB_SERVER || 'localhost',
-      port: process.env.DB_PORT ? parseInt(process.env.DB_PORT) : 1433,
-      database: process.env.DB_NAME || 'CollectYourCards',
-      user: process.env.DB_USER || 'sa',
-      password: process.env.DB_PASSWORD || 'Password123',
-      requestTimeout: 60000, // 1 minute for achievement queries
-      options: {
-        encrypt: false,
-        trustServerCertificate: true
-      }
-    }
-
-    this.sqlPool = await sql.connect(config)
-    return this.sqlPool
+    return await getPool()
   }
 
   /**

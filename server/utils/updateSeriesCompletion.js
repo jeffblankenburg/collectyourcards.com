@@ -1,5 +1,4 @@
 const { prisma } = require('../config/prisma-singleton')
-const sql = require('mssql')
 
 /**
  * Update series completion statistics for a specific user and series
