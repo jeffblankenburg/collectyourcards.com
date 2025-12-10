@@ -2005,14 +2005,23 @@ router.get('/set-investments', requireAuth, requireSeller, async (req, res) => {
       const seriesIds = seriesData.map(s => Number(s.series_id))
       const seriesSetMap = new Map(seriesData.map(s => [Number(s.series_id), s.set]))
 
-      // Get all sold cards for these series
+      // Get all sold cards for these series (including bulk sales)
       const soldSales = await prisma.sale.findMany({
         where: {
           user_id: userId,
           status: 'sold',
-          card: {
-            series: { in: seriesIds.map(id => BigInt(id)) }
-          }
+          OR: [
+            // Regular card sales
+            {
+              card: {
+                series: { in: seriesIds.map(id => BigInt(id)) }
+              }
+            },
+            // Bulk sales - series_id directly on sale
+            {
+              series_id: { in: seriesIds.map(id => BigInt(id)) }
+            }
+          ]
         },
         include: {
           card: {
@@ -2023,7 +2032,8 @@ router.get('/set-investments', requireAuth, requireSeller, async (req, res) => {
 
       // Aggregate sales by set
       for (const sale of soldSales) {
-        const seriesId = sale.card?.series ? Number(sale.card.series) : null
+        // For card sales, get series from card; for bulk sales, get series_id directly
+        const seriesId = sale.card?.series ? Number(sale.card.series) : (sale.series_id ? Number(sale.series_id) : null)
         const setId = seriesId ? seriesSetMap.get(seriesId) : null
 
         if (setId && setMap.has(setId)) {
