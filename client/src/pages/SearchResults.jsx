@@ -370,8 +370,8 @@ function SearchResults() {
         setSearchTime(Date.now() - startTime)
         
       } else {
-        // Real API call for all other queries - using V2 endpoint
-        const response = await axios.get(`/api/search/universal-v2?q=${encodeURIComponent(query)}&limit=50`)
+        // Real API call for all other queries - using V3 unified endpoint
+        const response = await axios.get(`/api/search/universal-v3?q=${encodeURIComponent(query)}&limit=50`)
         const { results = [] } = response.data
         
         // Organize results by type

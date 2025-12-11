@@ -68,7 +68,7 @@ function UniversalSearch({ className = '' }) {
     setIsSearching(true)
 
     try {
-      const response = await axios.get('/api/search/universal-v2', {
+      const response = await axios.get('/api/search/universal-v3', {
         params: {
           q: searchQuery,
           limit: 50
