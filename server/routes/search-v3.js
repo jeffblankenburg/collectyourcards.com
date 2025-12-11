@@ -118,14 +118,22 @@ async function executeUnifiedSearch(query, tokens, limit = 50) {
   const searchPattern = `%${escapeSqlLike(searchTerms.join(' '))}%`
   const individualPatterns = searchTerms.map(t => `%${escapeSqlLike(t)}%`)
 
-  // Build the WHERE clause for each individual term (AND them together for multi-word)
-  const buildMultiTermWhere = (columns, alias = '') => {
+  // Build the WHERE clause for multi-term searches
+  // For entities (players, teams), we use OR logic - match ANY term
+  // This handles "2022 topps juan soto" finding "Juan Soto" even though "topps" doesn't match
+  const buildMultiTermWhereOr = (columns, alias = '') => {
+    // Any term matching any column is a hit
+    const allConditions = individualPatterns.map(pattern =>
+      columns.map(col => `${alias}${col} LIKE '${pattern}' COLLATE Latin1_General_CI_AI`).join(' OR ')
+    )
+    return `(${allConditions.join(' OR ')})`
+  }
+
+  // For strict matching (when we want ALL terms to match)
+  const buildMultiTermWhereAnd = (columns, alias = '') => {
     if (searchTerms.length === 1) {
-      // Single term: OR across columns
       return columns.map(col => `${alias}${col} LIKE '${individualPatterns[0]}' COLLATE Latin1_General_CI_AI`).join(' OR ')
     } else {
-      // Multi-term: Each term must match at least one column
-      // This handles "mike trout" matching first_name="Mike" AND last_name="Trout"
       const termConditions = individualPatterns.map(pattern =>
         `(${columns.map(col => `${alias}${col} LIKE '${pattern}' COLLATE Latin1_General_CI_AI`).join(' OR ')})`
       )
@@ -179,7 +187,7 @@ async function executeUnifiedSearch(query, tokens, limit = 50) {
         ELSE 70
       END + CASE WHEN p.is_hof = 1 THEN 5 ELSE 0 END as relevance
     FROM player p
-    WHERE ${buildMultiTermWhere(['first_name', 'last_name', 'nick_name'], 'p.')}
+    WHERE ${buildMultiTermWhereOr(['first_name', 'last_name', 'nick_name'], 'p.')}
 
     UNION ALL
 
@@ -219,7 +227,7 @@ async function executeUnifiedSearch(query, tokens, limit = 50) {
         ELSE 70
       END as relevance
     FROM team t
-    WHERE ${buildMultiTermWhere(['name', 'city', 'mascot', 'abbreviation'], 't.')}
+    WHERE ${buildMultiTermWhereOr(['name', 'city', 'mascot', 'abbreviation'], 't.')}
 
     UNION ALL
 
@@ -260,7 +268,7 @@ async function executeUnifiedSearch(query, tokens, limit = 50) {
       END + CASE WHEN st.year = ${tokens.year || 0} THEN 10 ELSE 0 END as relevance
     FROM [set] st
     LEFT JOIN manufacturer m ON st.manufacturer = m.manufacturer_id
-    WHERE (${buildMultiTermWhere(['name'], 'st.')} OR ${buildMultiTermWhere(['name'], 'm.')})
+    WHERE (${buildMultiTermWhereOr(['name'], 'st.')} OR ${buildMultiTermWhereOr(['name'], 'm.')})
       ${yearFilter}
 
     UNION ALL
@@ -303,7 +311,7 @@ async function executeUnifiedSearch(query, tokens, limit = 50) {
     JOIN [set] st ON s.[set] = st.set_id
     LEFT JOIN manufacturer m ON st.manufacturer = m.manufacturer_id
     LEFT JOIN color c ON s.color = c.color_id
-    WHERE (${buildMultiTermWhere(['name'], 's.')} OR ${buildMultiTermWhere(['name'], 'st.')} OR ${buildMultiTermWhere(['name'], 'm.')})
+    WHERE (${buildMultiTermWhereOr(['name'], 's.')} OR ${buildMultiTermWhereOr(['name'], 'st.')} OR ${buildMultiTermWhereOr(['name'], 'm.')})
       ${yearFilter}
 
     ORDER BY relevance DESC, card_count DESC
