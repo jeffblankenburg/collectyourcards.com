@@ -49,7 +49,7 @@ function Header() {
     if (isAuthenticated && user) {
       fetchNotificationCount()
       // Set up polling for updates
-      const interval = setInterval(fetchNotificationCount, 30000) // Every 30 seconds
+      const interval = setInterval(fetchNotificationCount, 300000) // Every 5 minutes
       return () => clearInterval(interval)
     }
   }, [isAuthenticated, user])

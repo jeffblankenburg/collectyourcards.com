@@ -2,6 +2,7 @@ const express = require('express')
 const { authMiddleware, requireAdmin, requireDataAdmin, requireSuperAdmin } = require('../middleware/auth')
 const router = express.Router()
 const { prisma } = require('../config/prisma-singleton')
+const { triggerAutoRegeneration } = require('./spreadsheet-generation')
 
 // Apply authentication and data admin requirements to all routes
 router.use(authMiddleware)
@@ -882,14 +883,30 @@ router.post('/:id/reassign-cards', async (req, res) => {
       })
     }
 
+    // Get affected set IDs before reassignment (for auto-regeneration)
+    const affectedSets = await prisma.$queryRawUnsafe(`
+      SELECT DISTINCT s.[set]
+      FROM card_player_team cpt
+      INNER JOIN card c ON cpt.card = c.card_id
+      INNER JOIN series s ON c.series = s.series_id
+      WHERE cpt.player_team = ${fromPlayerTeam.player_team_id}
+    `)
+
     // Perform the reassignment
     const updateResult = await prisma.$executeRawUnsafe(`
-      UPDATE card_player_team 
+      UPDATE card_player_team
       SET player_team = ${toPlayerTeam.player_team_id}
       WHERE player_team = ${fromPlayerTeam.player_team_id}
     `)
 
     console.log(`Admin: Reassigned ${cardsToReassign} cards for player ${playerId} from team ${from_team_id} to team ${to_team_id}`)
+
+    // Trigger auto-regeneration for all affected sets
+    for (const row of affectedSets) {
+      if (row.set) {
+        triggerAutoRegeneration(row.set, 'card_player_team', { action: 'reassign', player_id: playerId, cards_affected: cardsToReassign })
+      }
+    }
 
     // Get team names for response
     const [fromTeam, toTeam] = await Promise.all([
@@ -1025,6 +1042,16 @@ router.post('/:playerId/merge', async (req, res) => {
       })
     }
 
+    // Get affected set IDs before merge (for auto-regeneration)
+    const affectedSets = await prisma.$queryRawUnsafe(`
+      SELECT DISTINCT s.[set]
+      FROM card_player_team cpt
+      INNER JOIN player_team pt ON cpt.player_team = pt.player_team_id
+      INNER JOIN card c ON cpt.card = c.card_id
+      INNER JOIN series s ON c.series = s.series_id
+      WHERE pt.player = ${sourcePlayerId}
+    `)
+
     // Start transaction to merge players
     await prisma.$transaction(async (tx) => {
       // Get all card_player_team records for source player with team info
@@ -1128,6 +1155,13 @@ router.post('/:playerId/merge', async (req, res) => {
       console.log('Successfully merged players')
     })
 
+    // Trigger auto-regeneration for all affected sets
+    for (const row of affectedSets) {
+      if (row.set) {
+        triggerAutoRegeneration(row.set, 'card_player_team', { action: 'merge', source_player_id: sourcePlayerId.toString(), target_player_id: targetPlayerIdBigInt.toString() })
+      }
+    }
+
     res.json({
       message: 'Players merged successfully',
       sourcePlayer: {
@@ -1224,6 +1258,14 @@ router.post('/:id/reassign-selected-cards', async (req, res) => {
       })
     }
 
+    // Get affected set IDs before reassignment (for auto-regeneration)
+    const affectedSets = await prisma.$queryRawUnsafe(`
+      SELECT DISTINCT s.[set]
+      FROM card c
+      INNER JOIN series s ON c.series = s.series_id
+      WHERE c.card_id IN (${cardIdsBigInt.map(id => id.toString()).join(',')})
+    `)
+
     // Perform the reassignment
     const updateResult = await prisma.$executeRawUnsafe(`
       UPDATE card_player_team
@@ -1271,6 +1313,13 @@ router.post('/:id/reassign-selected-cards', async (req, res) => {
     }
 
     console.log(`Admin: Updated card counts for players ${playerId} and ${targetPlayerTeam.player_id}`)
+
+    // Trigger auto-regeneration for all affected sets
+    for (const row of affectedSets) {
+      if (row.set) {
+        triggerAutoRegeneration(row.set, 'card_player_team', { action: 'reassign_selected', player_id: playerId, cards_affected: card_ids.length })
+      }
+    }
 
     res.json({
       message: 'Cards reassigned successfully',
