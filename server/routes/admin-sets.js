@@ -5,6 +5,7 @@ const multer = require('multer')
 const { BlobServiceClient } = require('@azure/storage-blob')
 const { prisma } = require('../config/prisma-singleton')
 const { getBlobName } = require('../utils/azure-storage')
+const { triggerAutoRegeneration } = require('./spreadsheet-generation')
 
 // Configure multer for memory storage
 const upload = multer({ 
@@ -749,6 +750,9 @@ router.put('/sets/:id', async (req, res) => {
       console.warn('Failed to log admin action:', logError.message)
     }
 
+    // Trigger auto-regeneration for the set
+    triggerAutoRegeneration(setId, 'set', { action: 'update' })
+
     res.json({
       message: 'Set updated successfully',
       set: updatedSet
@@ -886,6 +890,9 @@ router.post('/series', async (req, res) => {
     } catch (logError) {
       console.warn('Failed to log admin action:', logError.message)
     }
+
+    // Trigger auto-regeneration for the set
+    triggerAutoRegeneration(set_id, 'series', { action: 'create', series_id: Number(newSeries.series_id) })
 
     res.status(201).json({
       message: 'Series created successfully',
@@ -1067,6 +1074,10 @@ router.put('/series/:id', async (req, res) => {
     } catch (logError) {
       console.warn('Failed to log admin action:', logError.message)
     }
+
+    // Trigger auto-regeneration for the set (use updated set if changed, otherwise use existing)
+    const setIdForRegen = set !== undefined ? parseInt(set) : existingSeries.set
+    triggerAutoRegeneration(setIdForRegen, 'series', { action: 'update', series_id: seriesId })
 
     res.json({
       message: 'Series updated successfully',

@@ -869,4 +869,104 @@ router.get('/queue', authMiddleware, requireAdmin, async (req, res) => {
   }
 })
 
+// Auto-generation trigger with debouncing
+// Keeps track of pending regenerations to avoid duplicate work
+const pendingRegenerations = new Map()
+const DEBOUNCE_DELAY = 5000 // 5 seconds - wait for batch changes to complete
+
+/**
+ * Triggers automatic spreadsheet regeneration for a set when data changes.
+ * Only regenerates if the set is marked as complete.
+ * Debounced to handle batch updates efficiently.
+ *
+ * @param {number} setId - The set ID to regenerate
+ * @param {string} triggerSource - What triggered the regeneration (card, series, set, card_player_team)
+ * @param {object} details - Additional details about the change
+ */
+async function triggerAutoRegeneration(setId, triggerSource, details = {}) {
+  if (!setId) {
+    console.log('⚠️ Auto-regen skipped: No setId provided')
+    return
+  }
+
+  const setIdNum = parseInt(setId)
+
+  // Clear any existing pending regeneration for this set
+  if (pendingRegenerations.has(setIdNum)) {
+    clearTimeout(pendingRegenerations.get(setIdNum))
+  }
+
+  // Schedule regeneration after debounce delay
+  const timeoutId = setTimeout(async () => {
+    pendingRegenerations.delete(setIdNum)
+
+    try {
+      // Check if set is complete before regenerating
+      const set = await prisma.set.findUnique({
+        where: { set_id: setIdNum },
+        select: { set_id: true, name: true, is_complete: true }
+      })
+
+      if (!set) {
+        console.log(`⚠️ Auto-regen skipped: Set ${setIdNum} not found`)
+        return
+      }
+
+      if (!set.is_complete) {
+        console.log(`⚠️ Auto-regen skipped: Set "${set.name}" is not marked as complete`)
+        return
+      }
+
+      console.log(`🔄 Auto-regenerating spreadsheet for "${set.name}" (triggered by: ${triggerSource})`)
+
+      await generateSpreadsheetForSet(setIdNum, 'auto', {
+        trigger_source: triggerSource,
+        ...details
+      })
+
+      console.log(`✅ Auto-regeneration complete for "${set.name}"`)
+
+    } catch (error) {
+      console.error(`❌ Auto-regeneration failed for set ${setIdNum}:`, error.message)
+      // Update status to indicate regeneration is needed
+      await prisma.set.update({
+        where: { set_id: setIdNum },
+        data: { checklist_generation_status: 'stale' }
+      }).catch(() => {})
+    }
+  }, DEBOUNCE_DELAY)
+
+  pendingRegenerations.set(setIdNum, timeoutId)
+  console.log(`📋 Queued auto-regeneration for set ${setIdNum} (trigger: ${triggerSource}, debounce: ${DEBOUNCE_DELAY}ms)`)
+}
+
+/**
+ * Helper to get the set ID from a series ID
+ */
+async function getSetIdFromSeriesId(seriesId) {
+  const series = await prisma.series.findUnique({
+    where: { series_id: BigInt(seriesId) },
+    select: { set: true }
+  })
+  return series?.set || null
+}
+
+/**
+ * Helper to get the set ID from a card ID
+ */
+async function getSetIdFromCardId(cardId) {
+  const card = await prisma.card.findUnique({
+    where: { card_id: BigInt(cardId) },
+    select: {
+      series_series: {
+        select: { set: true }
+      }
+    }
+  })
+  return card?.series_series?.set || null
+}
+
 module.exports = router
+module.exports.triggerAutoRegeneration = triggerAutoRegeneration
+module.exports.getSetIdFromSeriesId = getSetIdFromSeriesId
+module.exports.getSetIdFromCardId = getSetIdFromCardId

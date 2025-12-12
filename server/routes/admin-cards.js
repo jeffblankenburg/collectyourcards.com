@@ -4,6 +4,7 @@ const multer = require('multer')
 const { prisma } = require('../config/prisma-singleton')
 const { authMiddleware, requireDataAdmin } = require('../middleware/auth')
 const { processCardImage, deleteOptimizedImage, optimizeImage, uploadOptimizedImage } = require('../utils/image-optimizer')
+const { triggerAutoRegeneration, getSetIdFromSeriesId } = require('./spreadsheet-generation')
 
 // Configure multer for memory storage
 const upload = multer({
@@ -99,6 +100,12 @@ router.post('/', requireDataAdmin, async (req, res) => {
 
       return card
     })
+
+    // Trigger auto-regeneration for the set
+    const setId = await getSetIdFromSeriesId(series_id)
+    if (setId) {
+      triggerAutoRegeneration(setId, 'card', { action: 'create', card_id: Number(newCard.card_id) })
+    }
 
     res.status(201).json({
       message: 'Card created successfully',
@@ -198,15 +205,21 @@ router.put('/:id', requireDataAdmin, async (req, res) => {
       }
     })
 
-    res.json({ 
+    // Trigger auto-regeneration for the set
+    const setId = await getSetIdFromSeriesId(existingCard.series)
+    if (setId) {
+      triggerAutoRegeneration(setId, 'card', { action: 'update', card_id: cardId })
+    }
+
+    res.json({
       message: 'Card updated successfully'
     })
 
   } catch (error) {
     console.error('Error updating card:', error)
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Failed to update card',
-      message: error.message 
+      message: error.message
     })
   }
 })

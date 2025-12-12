@@ -4,6 +4,7 @@ const XLSX = require('xlsx')
 const router = express.Router()
 const { sql, getDbConfig } = require('../config/mssql')
 const { authMiddleware: requireAuth, requireAdmin } = require('../middleware/auth')
+const { triggerAutoRegeneration, getSetIdFromSeriesId } = require('./spreadsheet-generation')
 
 // Progress tracking store (in production, use Redis or database)
 const matchingProgress = new Map()
@@ -1245,7 +1246,13 @@ router.post('/create-cards', requireAuth, requireAdmin, async (req, res) => {
       
       await transaction.commit()
       console.log(`🎉 Successfully imported ${createdCount} cards`)
-      
+
+      // Trigger auto-regeneration for the set
+      const setId = await getSetIdFromSeriesId(seriesId)
+      if (setId) {
+        triggerAutoRegeneration(setId, 'card', { action: 'import', cards_created: createdCount })
+      }
+
       res.json({
         success: true,
         created: createdCount,

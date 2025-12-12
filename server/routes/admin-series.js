@@ -1,6 +1,7 @@
 const express = require('express')
 const { prisma } = require('../config/prisma-singleton')
 const { authMiddleware, requireAdmin } = require('../middleware/auth')
+const { triggerAutoRegeneration } = require('./spreadsheet-generation')
 const router = express.Router()
 
 // All routes require admin authentication
@@ -308,6 +309,12 @@ router.put('/series/:id', async (req, res) => {
       console.warn('Failed to log admin action:', logError.message)
     }
 
+    // Trigger auto-regeneration for the set
+    const setIdForRegen = updatedSeries.set || existingSeries.set
+    if (setIdForRegen) {
+      triggerAutoRegeneration(setIdForRegen, 'series', { action: 'update', series_id: seriesId })
+    }
+
     res.json({
       message: 'Series updated successfully',
       series: {
@@ -533,6 +540,11 @@ router.post('/series/:id/duplicate', async (req, res) => {
       console.warn('Failed to log admin action:', logError.message)
     }
 
+    // Trigger auto-regeneration for the set
+    if (originalSeries.set) {
+      triggerAutoRegeneration(originalSeries.set, 'series', { action: 'duplicate', series_id: Number(newSeries.series_id), cards_created: cardsCreated })
+    }
+
     res.json({
       success: true,
       message: `Successfully created parallel series "${name}" with ${cardsCreated} cards`,
@@ -631,6 +643,11 @@ router.delete('/series/:id', async (req, res) => {
       })
     } catch (logError) {
       console.warn('Failed to log admin action:', logError.message)
+    }
+
+    // Trigger auto-regeneration for the set
+    if (series.set) {
+      triggerAutoRegeneration(series.set, 'series', { action: 'delete', series_name: series.name, cards_deleted: cardCount })
     }
 
     res.json({
