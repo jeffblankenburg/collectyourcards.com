@@ -44,7 +44,7 @@ function AdminSets() {
   const [selectedBackImage, setSelectedBackImage] = useState(null)
   const [frontImagePreview, setFrontImagePreview] = useState(null)
   const [backImagePreview, setBackImagePreview] = useState(null)
-  const [generatingSpreadsheet, setGeneratingSpreadsheet] = useState(false)
+  const [generatingSpreadsheetForSet, setGeneratingSpreadsheetForSet] = useState(null)
   const { addToast } = useToast()
   const dropdownRef = useRef(null)
   const activeParallelsBoxRef = useRef(null)
@@ -595,31 +595,29 @@ function AdminSets() {
     return Math.round((cardEnteredCount / cardCount) * 100)
   }
 
-  // Generate spreadsheet for current set
-  const handleGenerateSpreadsheet = async () => {
-    if (!selectedSet || generatingSpreadsheet) return
-    
+  // Generate spreadsheet for a set
+  const handleGenerateSpreadsheet = async (set) => {
+    if (!set || generatingSpreadsheetForSet === set.set_id) return
+
     try {
-      setGeneratingSpreadsheet(true)
-      addToast('Queueing spreadsheet generation...', 'info')
-      
-      const response = await axios.post(`/api/spreadsheet-generation/queue/${selectedSet.set_id}`, {
-        priority: 10 // High priority for manual requests
-      })
-      
-      if (response.data.queue_id) {
-        addToast(`Spreadsheet generation queued for ${selectedSet.name}. Processing will complete in the background.`, 'success')
+      setGeneratingSpreadsheetForSet(set.set_id)
+      addToast(`Generating checklist for ${set.name}...`, 'info')
+
+      const response = await axios.post(`/api/spreadsheet-generation/generate/${set.set_id}`)
+
+      if (response.data.blob_url) {
+        addToast(`Checklist generated for ${set.name} (${response.data.card_count} cards)`, 'success')
       } else {
-        addToast(response.data.message || 'Spreadsheet generation queued', 'success')
+        addToast(response.data.message || 'Checklist generated', 'success')
       }
     } catch (error) {
-      console.error('Error queueing spreadsheet generation:', error)
+      console.error('Error generating spreadsheet:', error)
       addToast(
-        error.response?.data?.message || 'Failed to queue spreadsheet generation', 
+        error.response?.data?.message || 'Failed to generate checklist',
         'error'
       )
     } finally {
-      setGeneratingSpreadsheet(false)
+      setGeneratingSpreadsheetForSet(null)
     }
   }
 
@@ -921,6 +919,18 @@ function AdminSets() {
                     >
                       <Icon name="layers" size={16} />
                     </button>
+                    <button
+                      className="generate-btn"
+                      title="Generate checklist"
+                      onClick={() => handleGenerateSpreadsheet(set)}
+                      disabled={generatingSpreadsheetForSet === set.set_id}
+                    >
+                      {generatingSpreadsheetForSet === set.set_id ? (
+                        <div className="card-icon-spinner small"></div>
+                      ) : (
+                        <Icon name="file-spreadsheet" size={16} />
+                      )}
+                    </button>
                   </div>
                   <div className="col-id">{set.set_id}</div>
                   <div className="col-thumb">
@@ -1089,6 +1099,18 @@ function AdminSets() {
                       onClick={() => navigate(`/admin/series?set=${set.set_id}`)}
                     >
                       <Icon name="layers" size={16} />
+                    </button>
+                    <button
+                      className="generate-btn"
+                      title="Generate checklist"
+                      onClick={() => handleGenerateSpreadsheet(set)}
+                      disabled={generatingSpreadsheetForSet === set.set_id}
+                    >
+                      {generatingSpreadsheetForSet === set.set_id ? (
+                        <div className="card-icon-spinner small"></div>
+                      ) : (
+                        <Icon name="file-spreadsheet" size={16} />
+                      )}
                     </button>
                   </div>
                   <div className="col-id">{set.set_id}</div>

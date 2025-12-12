@@ -166,6 +166,73 @@ async function generateSpreadsheetForSet(setId, triggerType = 'manual', triggerD
     })))
   }
 
+  // Fetch card-to-team and card-to-player mappings for Teams and Players tabs
+  // This query gets individual team associations per card (not aggregated)
+  const cardTeamMappings = await prisma.$queryRawUnsafe(`
+    SELECT DISTINCT
+      c.card_id,
+      c.card_number,
+      c.sort_order,
+      c.is_rookie,
+      c.is_autograph,
+      c.is_relic,
+      c.is_short_print,
+      c.print_run,
+      c.notes,
+      s.name as series_name,
+      col.name as color_name,
+      t.name as team_name,
+      t.team_Id as team_id,
+      (SELECT STRING_AGG(CONCAT(p2.first_name, ' ', p2.last_name), ', ')
+       FROM card_player_team cpt2
+       INNER JOIN player_team pt2 ON cpt2.player_team = pt2.player_team_id
+       INNER JOIN player p2 ON pt2.player = p2.player_id
+       WHERE cpt2.card = c.card_id) as player_names
+    FROM card c
+    INNER JOIN series s ON c.series = s.series_id
+    LEFT JOIN color col ON c.color = col.color_id
+    LEFT JOIN card_player_team cpt ON c.card_id = cpt.card
+    LEFT JOIN player_team pt ON cpt.player_team = pt.player_team_id
+    LEFT JOIN team t ON pt.team = t.team_id
+    WHERE s.[set] = ${set.set_id}
+      AND t.name IS NOT NULL
+    ORDER BY t.name, s.name, c.sort_order
+  `)
+
+  // Fetch card-to-player mappings for Players tab
+  const cardPlayerMappings = await prisma.$queryRawUnsafe(`
+    SELECT DISTINCT
+      c.card_id,
+      c.card_number,
+      c.sort_order,
+      c.is_rookie,
+      c.is_autograph,
+      c.is_relic,
+      c.is_short_print,
+      c.print_run,
+      c.notes,
+      s.name as series_name,
+      col.name as color_name,
+      CONCAT(p.first_name, ' ', p.last_name) as player_name,
+      p.last_name as player_last_name,
+      p.first_name as player_first_name,
+      p.player_id,
+      (SELECT STRING_AGG(t2.name, ', ')
+       FROM card_player_team cpt2
+       INNER JOIN player_team pt2 ON cpt2.player_team = pt2.player_team_id
+       INNER JOIN team t2 ON pt2.team = t2.team_Id
+       WHERE cpt2.card = c.card_id) as team_names
+    FROM card c
+    INNER JOIN series s ON c.series = s.series_id
+    LEFT JOIN color col ON c.color = col.color_id
+    LEFT JOIN card_player_team cpt ON c.card_id = cpt.card
+    LEFT JOIN player_team pt ON cpt.player_team = pt.player_team_id
+    LEFT JOIN player p ON pt.player = p.player_id
+    WHERE s.[set] = ${set.set_id}
+      AND p.first_name IS NOT NULL
+    ORDER BY p.last_name, p.first_name, s.name, c.sort_order
+  `)
+
   console.log(`📋 Found ${allCards.length} cards for set "${set.name}"`)
 
   // Create Excel workbook
@@ -285,6 +352,173 @@ async function generateSpreadsheetForSet(setId, triggerType = 'manual', triggerD
   })
 
   autoSizeColumns(summarySheet)
+
+  // TAB 3: Teams (Cards grouped by team)
+  const teamsSheet = workbook.addWorksheet('Teams')
+
+  // Helper function to add a section header for Teams/Players tabs
+  const addSectionHeader = (worksheet, headerText, cardCount) => {
+    const row = worksheet.addRow([`${headerText} (${cardCount} cards)`])
+    row.font = { bold: true, size: 12, color: { argb: 'FF1F4E79' } }
+    row.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFD6DCE4' }
+    }
+    // Merge cells across all columns for the section header
+    worksheet.mergeCells(row.number, 1, row.number, 11)
+    return row
+  }
+
+  // Group cards by team
+  const cardsByTeam = {}
+  cardTeamMappings.forEach(mapping => {
+    const teamName = mapping.team_name
+    if (!cardsByTeam[teamName]) {
+      cardsByTeam[teamName] = []
+    }
+    cardsByTeam[teamName].push({
+      ...mapping,
+      card_id: Number(mapping.card_id),
+      sort_order: Number(mapping.sort_order)
+    })
+  })
+
+  // Sort teams alphabetically and add to worksheet
+  const sortedTeamNames = Object.keys(cardsByTeam).sort((a, b) => a.localeCompare(b))
+
+  console.log(`📋 Found ${sortedTeamNames.length} teams for Teams tab`)
+
+  sortedTeamNames.forEach((teamName, index) => {
+    const teamCards = cardsByTeam[teamName]
+
+    // Add section header
+    addSectionHeader(teamsSheet, teamName, teamCards.length)
+
+    // Add column headers for this section
+    addStyledHeaders(teamsSheet, headers)
+
+    // Add cards for this team
+    teamCards.forEach(card => {
+      const row = teamsSheet.addRow([
+        card.series_name || '',
+        card.card_number || '',
+        card.player_names || '',
+        teamName, // Show only this team for clarity
+        card.print_run ? `/${card.print_run}` : '',
+        card.color_name || '',
+        card.is_rookie ? 'Y' : '',
+        card.is_autograph ? 'Y' : '',
+        card.is_relic ? 'Y' : '',
+        card.is_short_print ? 'Y' : '',
+        card.notes || ''
+      ])
+
+      // Conditional formatting
+      if (card.is_rookie) {
+        row.getCell(7).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFE699' } }
+      }
+      if (card.is_autograph) {
+        row.getCell(8).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD5E8D4' } }
+      }
+      if (card.is_relic) {
+        row.getCell(9).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFCE5CD' } }
+      }
+      if (card.is_short_print) {
+        row.getCell(10).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFC0CB' } }
+      }
+    })
+
+    // Add blank row between sections (except after the last one)
+    if (index < sortedTeamNames.length - 1) {
+      teamsSheet.addRow([])
+    }
+  })
+
+  autoSizeColumns(teamsSheet)
+  teamsSheet.views = [{ state: 'frozen', ySplit: 0 }] // No frozen row since we have multiple headers
+
+  // TAB 4: Players (Cards grouped by player)
+  const playersSheet = workbook.addWorksheet('Players')
+
+  // Group cards by player
+  const cardsByPlayer = {}
+  cardPlayerMappings.forEach(mapping => {
+    const playerName = mapping.player_name
+    const playerKey = `${mapping.player_last_name}|||${mapping.player_first_name}|||${mapping.player_id}` // For proper sorting
+    if (!cardsByPlayer[playerKey]) {
+      cardsByPlayer[playerKey] = {
+        displayName: playerName,
+        cards: []
+      }
+    }
+    cardsByPlayer[playerKey].cards.push({
+      ...mapping,
+      card_id: Number(mapping.card_id),
+      sort_order: Number(mapping.sort_order)
+    })
+  })
+
+  // Sort players by last name, then first name
+  const sortedPlayerKeys = Object.keys(cardsByPlayer).sort((a, b) => {
+    const [lastA, firstA] = a.split('|||')
+    const [lastB, firstB] = b.split('|||')
+    const lastNameCompare = lastA.localeCompare(lastB)
+    if (lastNameCompare !== 0) return lastNameCompare
+    return firstA.localeCompare(firstB)
+  })
+
+  console.log(`📋 Found ${sortedPlayerKeys.length} players for Players tab`)
+
+  sortedPlayerKeys.forEach((playerKey, index) => {
+    const playerData = cardsByPlayer[playerKey]
+    const playerCards = playerData.cards
+
+    // Add section header
+    addSectionHeader(playersSheet, playerData.displayName, playerCards.length)
+
+    // Add column headers for this section
+    addStyledHeaders(playersSheet, headers)
+
+    // Add cards for this player
+    playerCards.forEach(card => {
+      const row = playersSheet.addRow([
+        card.series_name || '',
+        card.card_number || '',
+        playerData.displayName, // Show only this player for clarity
+        card.team_names || '',
+        card.print_run ? `/${card.print_run}` : '',
+        card.color_name || '',
+        card.is_rookie ? 'Y' : '',
+        card.is_autograph ? 'Y' : '',
+        card.is_relic ? 'Y' : '',
+        card.is_short_print ? 'Y' : '',
+        card.notes || ''
+      ])
+
+      // Conditional formatting
+      if (card.is_rookie) {
+        row.getCell(7).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFE699' } }
+      }
+      if (card.is_autograph) {
+        row.getCell(8).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD5E8D4' } }
+      }
+      if (card.is_relic) {
+        row.getCell(9).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFCE5CD' } }
+      }
+      if (card.is_short_print) {
+        row.getCell(10).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFC0CB' } }
+      }
+    })
+
+    // Add blank row between sections (except after the last one)
+    if (index < sortedPlayerKeys.length - 1) {
+      playersSheet.addRow([])
+    }
+  })
+
+  autoSizeColumns(playersSheet)
+  playersSheet.views = [{ state: 'frozen', ySplit: 0 }] // No frozen row since we have multiple headers
 
   // Generate Excel buffer
   const excelBuffer = await workbook.xlsx.writeBuffer()

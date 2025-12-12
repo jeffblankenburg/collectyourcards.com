@@ -129,6 +129,7 @@ const iconMap = {
   'home': Home,
   'collections': FolderOpen,
   'import': FileSpreadsheet,
+  'file-spreadsheet': FileSpreadsheet,
   'analytics': BarChart3,
   'trending': TrendingUp,
   'trending-up': TrendingUp,
