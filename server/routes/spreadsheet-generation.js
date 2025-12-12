@@ -351,24 +351,63 @@ async function generateSpreadsheetForSet(setId, triggerType = 'manual', triggerD
     summarySheet.addRow([seriesName, stats.total, stats.rookies, stats.autos, stats.relics, stats.shortPrints])
   })
 
+  summarySheet.addRow([])
+
+  // Team breakdown with players
+  summarySheet.addRow(['Teams & Players']).font = { bold: true, size: 14 }
+  summarySheet.addRow([])
+
+  // Build team -> player -> card count structure from cardTeamMappings and cardPlayerMappings
+  const teamPlayerStats = {}
+  cardTeamMappings.forEach(mapping => {
+    const teamName = mapping.team_name
+    if (!teamPlayerStats[teamName]) {
+      teamPlayerStats[teamName] = { totalCards: 0, players: {} }
+    }
+    teamPlayerStats[teamName].totalCards++
+  })
+
+  // Get player counts per team from cardPlayerMappings (which has team info)
+  cardPlayerMappings.forEach(mapping => {
+    // Each mapping has team_names (comma-separated if multiple)
+    const teams = (mapping.team_names || '').split(', ').filter(t => t)
+    const playerName = mapping.player_name
+
+    teams.forEach(teamName => {
+      if (teamPlayerStats[teamName]) {
+        if (!teamPlayerStats[teamName].players[playerName]) {
+          teamPlayerStats[teamName].players[playerName] = 0
+        }
+        teamPlayerStats[teamName].players[playerName]++
+      }
+    })
+  })
+
+  // Sort teams alphabetically and output
+  const sortedTeams = Object.keys(teamPlayerStats).sort((a, b) => a.localeCompare(b))
+
+  sortedTeams.forEach(teamName => {
+    const teamData = teamPlayerStats[teamName]
+    const cardWord = teamData.totalCards === 1 ? 'card' : 'cards'
+
+    // Team header
+    summarySheet.addRow([`${teamName} (${teamData.totalCards} ${cardWord})`]).font = { bold: true, size: 12 }
+
+    // Sort players alphabetically and list them
+    const sortedPlayers = Object.keys(teamData.players).sort((a, b) => a.localeCompare(b))
+    sortedPlayers.forEach(playerName => {
+      const playerCardCount = teamData.players[playerName]
+      const playerCardWord = playerCardCount === 1 ? 'card' : 'cards'
+      summarySheet.addRow([`    ${playerName}`, playerCardCount])
+    })
+
+    summarySheet.addRow([])
+  })
+
   autoSizeColumns(summarySheet)
 
-  // TAB 3: Teams (Cards grouped by team)
+  // TAB 3: Teams (Cards grouped by team, sorted by team name then series)
   const teamsSheet = workbook.addWorksheet('Teams')
-
-  // Helper function to add a section header for Teams/Players tabs
-  const addSectionHeader = (worksheet, headerText, cardCount) => {
-    const row = worksheet.addRow([`${headerText} (${cardCount} cards)`])
-    row.font = { bold: true, size: 12, color: { argb: 'FF1F4E79' } }
-    row.fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FFD6DCE4' }
-    }
-    // Merge cells across all columns for the section header
-    worksheet.mergeCells(row.number, 1, row.number, 11)
-    return row
-  }
 
   // Group cards by team
   const cardsByTeam = {}
@@ -377,86 +416,73 @@ async function generateSpreadsheetForSet(setId, triggerType = 'manual', triggerD
     if (!cardsByTeam[teamName]) {
       cardsByTeam[teamName] = []
     }
-    cardsByTeam[teamName].push({
-      ...mapping,
-      card_id: Number(mapping.card_id),
-      sort_order: Number(mapping.sort_order)
-    })
+    cardsByTeam[teamName].push(mapping)
   })
 
   // Sort teams alphabetically and add to worksheet
   const sortedTeamNames = Object.keys(cardsByTeam).sort((a, b) => a.localeCompare(b))
 
-  console.log(`📋 Found ${sortedTeamNames.length} teams for Teams tab`)
-
-  sortedTeamNames.forEach((teamName, index) => {
+  sortedTeamNames.forEach((teamName) => {
     const teamCards = cardsByTeam[teamName]
 
-    // Add section header
-    addSectionHeader(teamsSheet, teamName, teamCards.length)
+    // Add section header - bold and larger text for easy scanning
+    teamsSheet.addRow([`${teamName} (${teamCards.length} ${teamCards.length === 1 ? 'card' : 'cards'})`]).font = { bold: true, size: 14 }
 
-    // Add column headers for this section
+    // Add column headers
     addStyledHeaders(teamsSheet, headers)
 
     // Add cards for this team
-    teamCards.forEach(card => {
+    teamCards.forEach(mapping => {
       const row = teamsSheet.addRow([
-        card.series_name || '',
-        card.card_number || '',
-        card.player_names || '',
-        teamName, // Show only this team for clarity
-        card.print_run ? `/${card.print_run}` : '',
-        card.color_name || '',
-        card.is_rookie ? 'Y' : '',
-        card.is_autograph ? 'Y' : '',
-        card.is_relic ? 'Y' : '',
-        card.is_short_print ? 'Y' : '',
-        card.notes || ''
+        mapping.series_name || '',
+        mapping.card_number || '',
+        mapping.player_names || '',
+        mapping.team_name || '',
+        mapping.print_run ? `/${mapping.print_run}` : '',
+        mapping.color_name || '',
+        mapping.is_rookie ? 'Y' : '',
+        mapping.is_autograph ? 'Y' : '',
+        mapping.is_relic ? 'Y' : '',
+        mapping.is_short_print ? 'Y' : '',
+        mapping.notes || ''
       ])
 
-      // Conditional formatting
-      if (card.is_rookie) {
+      if (mapping.is_rookie) {
         row.getCell(7).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFE699' } }
       }
-      if (card.is_autograph) {
+      if (mapping.is_autograph) {
         row.getCell(8).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD5E8D4' } }
       }
-      if (card.is_relic) {
+      if (mapping.is_relic) {
         row.getCell(9).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFCE5CD' } }
       }
-      if (card.is_short_print) {
+      if (mapping.is_short_print) {
         row.getCell(10).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFC0CB' } }
       }
     })
 
-    // Add blank row between sections (except after the last one)
-    if (index < sortedTeamNames.length - 1) {
-      teamsSheet.addRow([])
-    }
+    // Add blank row between sections
+    teamsSheet.addRow([])
   })
 
   autoSizeColumns(teamsSheet)
-  teamsSheet.views = [{ state: 'frozen', ySplit: 0 }] // No frozen row since we have multiple headers
 
-  // TAB 4: Players (Cards grouped by player)
+  console.log(`📋 Added ${sortedTeamNames.length} teams to Teams tab`)
+
+  // TAB 4: Players (Cards grouped by player, sorted by player name then series)
   const playersSheet = workbook.addWorksheet('Players')
 
   // Group cards by player
   const cardsByPlayer = {}
   cardPlayerMappings.forEach(mapping => {
-    const playerName = mapping.player_name
-    const playerKey = `${mapping.player_last_name}|||${mapping.player_first_name}|||${mapping.player_id}` // For proper sorting
+    const playerKey = `${mapping.player_last_name}|||${mapping.player_first_name}|||${mapping.player_id}`
     if (!cardsByPlayer[playerKey]) {
       cardsByPlayer[playerKey] = {
-        displayName: playerName,
+        displayName: mapping.player_name,
         cards: []
       }
     }
-    cardsByPlayer[playerKey].cards.push({
-      ...mapping,
-      card_id: Number(mapping.card_id),
-      sort_order: Number(mapping.sort_order)
-    })
+    cardsByPlayer[playerKey].cards.push(mapping)
   })
 
   // Sort players by last name, then first name
@@ -468,57 +494,53 @@ async function generateSpreadsheetForSet(setId, triggerType = 'manual', triggerD
     return firstA.localeCompare(firstB)
   })
 
-  console.log(`📋 Found ${sortedPlayerKeys.length} players for Players tab`)
-
-  sortedPlayerKeys.forEach((playerKey, index) => {
+  sortedPlayerKeys.forEach((playerKey) => {
     const playerData = cardsByPlayer[playerKey]
     const playerCards = playerData.cards
 
-    // Add section header
-    addSectionHeader(playersSheet, playerData.displayName, playerCards.length)
+    // Add section header - bold and larger text for easy scanning
+    playersSheet.addRow([`${playerData.displayName} (${playerCards.length} ${playerCards.length === 1 ? 'card' : 'cards'})`]).font = { bold: true, size: 14 }
 
-    // Add column headers for this section
+    // Add column headers
     addStyledHeaders(playersSheet, headers)
 
     // Add cards for this player
-    playerCards.forEach(card => {
+    playerCards.forEach(mapping => {
       const row = playersSheet.addRow([
-        card.series_name || '',
-        card.card_number || '',
-        playerData.displayName, // Show only this player for clarity
-        card.team_names || '',
-        card.print_run ? `/${card.print_run}` : '',
-        card.color_name || '',
-        card.is_rookie ? 'Y' : '',
-        card.is_autograph ? 'Y' : '',
-        card.is_relic ? 'Y' : '',
-        card.is_short_print ? 'Y' : '',
-        card.notes || ''
+        mapping.series_name || '',
+        mapping.card_number || '',
+        mapping.player_name || '',
+        mapping.team_names || '',
+        mapping.print_run ? `/${mapping.print_run}` : '',
+        mapping.color_name || '',
+        mapping.is_rookie ? 'Y' : '',
+        mapping.is_autograph ? 'Y' : '',
+        mapping.is_relic ? 'Y' : '',
+        mapping.is_short_print ? 'Y' : '',
+        mapping.notes || ''
       ])
 
-      // Conditional formatting
-      if (card.is_rookie) {
+      if (mapping.is_rookie) {
         row.getCell(7).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFE699' } }
       }
-      if (card.is_autograph) {
+      if (mapping.is_autograph) {
         row.getCell(8).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD5E8D4' } }
       }
-      if (card.is_relic) {
+      if (mapping.is_relic) {
         row.getCell(9).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFCE5CD' } }
       }
-      if (card.is_short_print) {
+      if (mapping.is_short_print) {
         row.getCell(10).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFC0CB' } }
       }
     })
 
-    // Add blank row between sections (except after the last one)
-    if (index < sortedPlayerKeys.length - 1) {
-      playersSheet.addRow([])
-    }
+    // Add blank row between sections
+    playersSheet.addRow([])
   })
 
   autoSizeColumns(playersSheet)
-  playersSheet.views = [{ state: 'frozen', ySplit: 0 }] // No frozen row since we have multiple headers
+
+  console.log(`📋 Added ${sortedPlayerKeys.length} players to Players tab`)
 
   // Generate Excel buffer
   const excelBuffer = await workbook.xlsx.writeBuffer()
