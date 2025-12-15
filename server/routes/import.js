@@ -2348,14 +2348,35 @@ router.post('/create-player-team', requireAuth, requireAdmin, async (req, res) =
       .input('playerId', sql.BigInt, playerId)
       .input('teamId', sql.Int, teamId)
       .query(`
-        SELECT player_team_id FROM player_team 
-        WHERE player = @playerId AND team = @teamId
+        SELECT
+          pt.player_team_id as playerTeamId,
+          LTRIM(RTRIM(COALESCE(p.first_name, '') + ' ' + COALESCE(p.last_name, ''))) as playerName,
+          t.name as teamName,
+          pt.player as playerId,
+          pt.team as teamId
+        FROM player_team pt
+        JOIN player p ON pt.player = p.player_id
+        JOIN team t ON pt.team = t.team_id
+        WHERE pt.player = @playerId AND pt.team = @teamId
       `)
-    
+
+    // If already exists, return the existing record (upsert pattern)
     if (existingCheck.recordset.length > 0) {
-      return res.status(400).json({ message: 'Player-team combination already exists' })
+      const existing = existingCheck.recordset[0]
+      console.log(`✅ Player-team already exists, returning existing record: ${existing.playerTeamId}`)
+      return res.json({
+        success: true,
+        existed: true,
+        playerTeam: {
+          playerTeamId: String(existing.playerTeamId),
+          playerId: String(existing.playerId),
+          teamId: String(existing.teamId),
+          playerName: existing.playerName,
+          teamName: existing.teamName
+        }
+      })
     }
-    
+
     const result = await pool.request()
       .input('playerId', sql.BigInt, playerId)
       .input('teamId', sql.Int, teamId)
@@ -2364,12 +2385,12 @@ router.post('/create-player-team', requireAuth, requireAdmin, async (req, res) =
         VALUES (@playerId, @teamId);
         SELECT SCOPE_IDENTITY() AS player_team_id;
       `)
-    
+
     // Get the full details for response
     const detailsResult = await pool.request()
       .input('playerTeamId', sql.BigInt, result.recordset[0].player_team_id)
       .query(`
-        SELECT 
+        SELECT
           pt.player_team_id as playerTeamId,
           LTRIM(RTRIM(COALESCE(p.first_name, '') + ' ' + COALESCE(p.last_name, ''))) as playerName,
           t.name as teamName,
@@ -2380,11 +2401,13 @@ router.post('/create-player-team', requireAuth, requireAdmin, async (req, res) =
         JOIN team t ON pt.team = t.team_id
         WHERE pt.player_team_id = @playerTeamId
       `)
-    
+
     const playerTeam = detailsResult.recordset[0]
-    
+    console.log(`✅ Created new player-team: ${playerTeam.playerTeamId}`)
+
     res.json({
       success: true,
+      existed: false,
       playerTeam: {
         playerTeamId: String(playerTeam.playerTeamId),
         playerId: String(playerTeam.playerId),
