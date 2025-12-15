@@ -393,6 +393,28 @@ function PlayerDetail() {
     setSelectedCards(new Set()) // Clear selection when toggling modes
   }
 
+  const handleSellCard = async (card) => {
+    if (!isAuthenticated || !isAdmin) {
+      showToastError('You need admin access to use seller tools')
+      return
+    }
+
+    try {
+      const response = await axios.post('/api/seller/sales', {
+        card_id: card.card_id,
+        status: 'pending'
+      })
+
+      if (response.data.sale) {
+        success('Card added to seller dashboard!')
+        navigate('/seller')
+      }
+    } catch (err) {
+      console.error('Error creating sale:', err)
+      showToastError(err.response?.data?.error || 'Failed to add card to seller dashboard')
+    }
+  }
+
 
 
 
@@ -467,6 +489,7 @@ function PlayerDetail() {
           onCardSelection={setSelectedCards}
           onBulkAction={handleBulkAddCards}
           onAddCard={handleAddCard}
+          onSellCard={isAdmin ? handleSellCard : null}
         />
 
       </div>

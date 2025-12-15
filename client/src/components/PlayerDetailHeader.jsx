@@ -56,7 +56,7 @@ const PlayerDetailHeader = ({
           )}
           {player.birthdate && (
             <p className="player-birthdate">
-              Born: {new Date(player.birthdate).toLocaleDateString()}
+              Born: {new Date(player.birthdate + 'T00:00:00').toLocaleDateString()}
             </p>
           )}
           
