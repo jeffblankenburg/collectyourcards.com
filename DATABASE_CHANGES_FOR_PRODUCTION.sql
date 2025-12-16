@@ -88,3 +88,32 @@ BEGIN
   PRINT 'feedback_response table already exists';
 END
 GO
+
+-- ===========================================================
+-- Fix Bulk-Added Card Random Codes
+-- Date: 2025-12-15
+-- Description: Generate new random codes for user_card records with
+--              codes longer than 4 characters (caused by bug in
+--              BulkCardModal generating 8-char uppercase-only codes)
+-- ===========================================================
+
+-- First, show how many records will be affected
+DECLARE @affected_count INT;
+SELECT @affected_count = COUNT(*) FROM user_card WHERE LEN(random_code) > 4;
+PRINT 'Records with random_code > 4 characters: ' + CAST(@affected_count AS VARCHAR(10));
+
+-- Generate new 4-character random codes using mixed case + digits
+-- Character set: 0123456789abcdefghijkmnopqrstuvwxyzABCDEFGHJKMNOPQRSTUVWXYZ
+-- (excludes ambiguous characters like l, I, O, 0 in some positions)
+UPDATE user_card
+SET random_code = (
+    SELECT
+        SUBSTRING('0123456789abcdefghijkmnopqrstuvwxyzABCDEFGHJKMNOPQRSTUVWXYZ', ABS(CHECKSUM(NEWID())) % 60 + 1, 1) +
+        SUBSTRING('0123456789abcdefghijkmnopqrstuvwxyzABCDEFGHJKMNOPQRSTUVWXYZ', ABS(CHECKSUM(NEWID())) % 60 + 1, 1) +
+        SUBSTRING('0123456789abcdefghijkmnopqrstuvwxyzABCDEFGHJKMNOPQRSTUVWXYZ', ABS(CHECKSUM(NEWID())) % 60 + 1, 1) +
+        SUBSTRING('0123456789abcdefghijkmnopqrstuvwxyzABCDEFGHJKMNOPQRSTUVWXYZ', ABS(CHECKSUM(NEWID())) % 60 + 1, 1)
+)
+WHERE LEN(random_code) > 4;
+
+PRINT 'Updated ' + CAST(@@ROWCOUNT AS VARCHAR(10)) + ' user_card records with new random codes';
+GO
