@@ -121,12 +121,8 @@ function SeriesPage() {
     
     if (parallelsCollapsed) {
       // Only show series that are not parallels
-      // A series is considered a parallel if it has color info OR a parent series
-      seriesToFilter = series.filter(s => 
-        !s.color_name && 
-        !s.color_hex_value && 
-        !s.parent_series_id
-      )
+      // A series is a parallel if it has a parent (parallel_of_series)
+      seriesToFilter = series.filter(s => !s.parallel_of_series)
     }
     
     if (!searchTerm.trim()) {
@@ -178,14 +174,22 @@ function SeriesPage() {
         // Now get series for this set
         const response = await axios.get(`/api/series-by-set/${foundSet.set_id}`)
         const seriesData = response.data.series || []
-        
-        // Sort series alphabetically by name
+
+        // Sort series: alphabetically by name, but "coming soon" (no cards) at the end
         const sortedSeries = [...seriesData].sort((a, b) => {
+          const aHasCards = (a.card_count || 0) > 0
+          const bHasCards = (b.card_count || 0) > 0
+
+          // If one has cards and one doesn't, the one with cards comes first
+          if (aHasCards && !bHasCards) return -1
+          if (!aHasCards && bHasCards) return 1
+
+          // Both have cards or both don't - sort alphabetically
           const nameA = a.name || ''
           const nameB = b.name || ''
           return nameA.localeCompare(nameB)
         })
-        
+
         setSeries(sortedSeries)
         setFilteredSeries(sortedSeries)
       }

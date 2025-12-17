@@ -126,6 +126,21 @@ function SetsPage() {
         }
       })
 
+      // Sort sets: alphabetically by name, but "coming soon" (no cards) at the end
+      setsWithSlugs.sort((a, b) => {
+        const aHasCards = (a.total_card_count || a.card_count || 0) > 0
+        const bHasCards = (b.total_card_count || b.card_count || 0) > 0
+
+        // If one has cards and one doesn't, the one with cards comes first
+        if (aHasCards && !bHasCards) return -1
+        if (!aHasCards && bHasCards) return 1
+
+        // Both have cards or both don't - sort alphabetically
+        const nameA = (a.name || '').toLowerCase()
+        const nameB = (b.name || '').toLowerCase()
+        return nameA.localeCompare(nameB)
+      })
+
       setSets(setsWithSlugs)
       setFilteredSets(setsWithSlugs)
     } catch (error) {

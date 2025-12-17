@@ -80,6 +80,7 @@ function PlayersLanding() {
       const limit = 50
 
       // Build API URL with search parameter
+      // Get top players by card_count (default), then sort for display on client
       let apiUrl = `/api/players-list?limit=${limit}`
       if (search && search.trim()) {
         apiUrl += `&search=${encodeURIComponent(search.trim())}`
@@ -105,8 +106,12 @@ function PlayersLanding() {
 
       log.performance(`Players loaded (${playersList.length} players)`, startTime)
 
-      // Backend automatically includes recently viewed players at the top for authenticated users
-      // Non-authenticated users see players sorted by card count (default)
+      // Sort by last name for easier visual scanning
+      playersList.sort((a, b) => {
+        const lastNameA = (a.last_name || '').toLowerCase()
+        const lastNameB = (b.last_name || '').toLowerCase()
+        return lastNameA.localeCompare(lastNameB)
+      })
 
       setPlayers(playersList)
       setHasMore(pagination.has_more || false)

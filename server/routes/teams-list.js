@@ -7,8 +7,13 @@ const { escapeLikePattern, sanitizeSearchTerm } = require('../utils/sql-security
 // GET /api/teams-list - Get top teams by card count
 router.get('/', async (req, res) => {
   try {
-    const { limit = 50, search } = req.query
+    const { limit = 50, search, sortBy = 'name', sortOrder = 'asc' } = req.query
     const limitNum = Math.min(parseInt(limit) || 50, 100)
+
+    // Build sort clause - default to name ASC for easier scanning
+    const validSortColumns = ['name', 'card_count', 'player_count', 'city']
+    const sortColumn = validSortColumns.includes(sortBy) ? `t.${sortBy}` : 't.name'
+    const sortDirection = sortOrder === 'desc' ? 'DESC' : 'ASC'
 
     console.log('Getting top teams list with limit:', limitNum, search ? `and search: "${search}"` : '')
 
@@ -56,7 +61,7 @@ router.get('/', async (req, res) => {
           LEFT JOIN organization org ON t.organization = org.organization_id
           WHERE ut.[user] = ${userId}
           ${searchCondition}
-          ORDER BY ut.created DESC
+          ORDER BY ${sortColumn} ${sortDirection}
         `
         
         recentlyViewedTeams = await prisma.$queryRawUnsafe(recentViewedQuery)
@@ -84,7 +89,7 @@ router.get('/', async (req, res) => {
       LEFT JOIN organization org ON t.organization = org.organization_id
       WHERE t.card_count > 0
       ${searchCondition}
-      ORDER BY t.card_count DESC
+      ORDER BY ${sortColumn} ${sortDirection}
     `
 
     const topTeams = await prisma.$queryRawUnsafe(topTeamsQuery)
