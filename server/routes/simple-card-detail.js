@@ -43,17 +43,10 @@ router.get('/:seriesSlug/:cardNumber/:playerName', async (req, res) => {
     // This allows matching cards with multiple players even if only one name is provided
     const playerNameParts = normalizedPlayerName.split(/\s+/).filter(part => part.length > 2) // Filter out short words like "jr"
 
-    // Generate series name from slug for exact matching
-    // Convert slug to expected series name by replacing dashes with spaces, then remove spaces entirely for comparison
-    const seriesNameFromSlug = seriesSlug
-      .replace(/-/g, '')
-      .toLowerCase()
-
-    console.log(`Searching for card: ${normalizedCardNumber}, player: ${normalizedPlayerName}, series: ${seriesNameFromSlug}${set_id ? `, set_id: ${set_id}` : ''}`)
+    console.log(`Searching for card: ${normalizedCardNumber}, player: ${normalizedPlayerName}, series slug: ${seriesSlug}${set_id ? `, set_id: ${set_id}` : ''}`)
 
     // Validate and escape user inputs
     const safeCardNumber = escapeString(normalizedCardNumber)
-    const safeSeriesSlug = escapeString(seriesNameFromSlug)
     const safePlayerParts = playerNameParts.map(part => escapeString(part))
 
     // Build set filter clause with validation
@@ -105,7 +98,7 @@ router.get('/:seriesSlug/:cardNumber/:playerName', async (req, res) => {
       LEFT JOIN player p ON pt.player = p.player_id
       LEFT JOIN team t ON pt.team = t.team_id
       WHERE c.card_number = '${safeCardNumber}'
-        AND REPLACE(REPLACE(REPLACE(REPLACE(LOWER(s.name), '&', 'and'), '''', ''), '-', ''), ' ', '') = '${safeSeriesSlug}'
+        AND s.slug = '${escapeString(seriesSlug)}'
         ${setFilter}
       GROUP BY c.card_id, c.card_number, c.is_rookie, c.is_autograph, c.is_relic, c.print_run, c.reference_user_card,
                s.series_id, s.name, s.slug, st.set_id, st.name, st.slug, st.year, m.name, s.parallel_of_series, col.name, col.hex_value,
@@ -157,7 +150,7 @@ router.get('/:seriesSlug/:cardNumber/:playerName', async (req, res) => {
         LEFT JOIN player p ON pt.player = p.player_id
         LEFT JOIN team t ON pt.team = t.team_id
         WHERE (c.card_number LIKE '%${safeCardNumber}%' OR '${safeCardNumber}' LIKE '%' + c.card_number + '%')
-          AND REPLACE(REPLACE(REPLACE(REPLACE(LOWER(s.name), '&', 'and'), '''', ''), '-', ''), ' ', '') LIKE '${safeSeriesSlug}%'
+          AND s.slug LIKE '${escapeString(seriesSlug)}%'
           ${setFilter}
         GROUP BY c.card_id, c.card_number, c.is_rookie, c.is_autograph, c.is_relic, c.print_run, c.reference_user_card,
                  s.series_id, s.name, s.slug, st.set_id, st.name, st.slug, st.year, m.name, s.parallel_of_series, col.name, col.hex_value,

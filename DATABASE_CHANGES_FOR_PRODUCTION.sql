@@ -117,3 +117,73 @@ WHERE LEN(random_code) > 4;
 
 PRINT 'Updated ' + CAST(@@ROWCOUNT AS VARCHAR(10)) + ' user_card records with new random codes';
 GO
+
+-- ===========================================================
+-- Regenerate Missing Series Slugs
+-- Date: 2025-12-17
+-- Description: Generate slugs for any series with NULL or empty slugs
+--              Uses same algorithm as client-side generateSlug()
+-- ===========================================================
+
+-- First, show how many series are missing slugs
+DECLARE @missing_slugs INT;
+SELECT @missing_slugs = COUNT(*) FROM series WHERE slug IS NULL OR slug = '';
+PRINT 'Series with missing slugs: ' + CAST(@missing_slugs AS VARCHAR(10));
+
+-- Generate slugs for series with NULL or empty slugs
+-- Algorithm: lowercase, & -> and, remove apostrophes, special chars -> hyphens, clean up double hyphens
+UPDATE series
+SET slug = LTRIM(RTRIM(
+    REPLACE(
+        REPLACE(
+            REPLACE(
+                REPLACE(
+                    REPLACE(
+                        REPLACE(
+                            REPLACE(
+                                REPLACE(
+                                    REPLACE(
+                                        REPLACE(
+                                            REPLACE(
+                                                REPLACE(
+                                                    REPLACE(
+                                                        LOWER(name),
+                                                        '&', 'and'
+                                                    ),
+                                                    '''', ''
+                                                ),
+                                                ' ', '-'
+                                            ),
+                                            '/', '-'
+                                        ),
+                                        '.', ''
+                                    ),
+                                    '(', ''
+                                ),
+                                ')', ''
+                            ),
+                            ',', ''
+                        ),
+                        '!', ''
+                    ),
+                    '?', ''
+                ),
+                ':', ''
+            ),
+            '--', '-'
+        ),
+        '--', '-'
+    )
+))
+WHERE slug IS NULL OR slug = '';
+
+-- Clean leading hyphens
+UPDATE series SET slug = SUBSTRING(slug, 2, LEN(slug))
+WHERE LEFT(slug, 1) = '-';
+
+-- Clean trailing hyphens
+UPDATE series SET slug = SUBSTRING(slug, 1, LEN(slug) - 1)
+WHERE RIGHT(slug, 1) = '-';
+
+PRINT 'Generated slugs for ' + CAST(@@ROWCOUNT AS VARCHAR(10)) + ' series';
+GO
