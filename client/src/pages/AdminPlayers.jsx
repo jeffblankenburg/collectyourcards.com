@@ -124,6 +124,7 @@ function AdminPlayers() {
   const [duplicatePairs, setDuplicatePairs] = useState([])
   const [dismissingPair, setDismissingPair] = useState(null)
   const addButtonRef = useRef(null)
+  const playerTeamSearchDebounceRef = useRef(null)
   const { addToast } = useToast()
 
   useEffect(() => {
@@ -890,29 +891,37 @@ function AdminPlayers() {
     })
   }
 
-  const handlePlayerTeamSearch = async (searchValue) => {
+  const handlePlayerTeamSearch = (searchValue) => {
     setPlayerTeamSearch(searchValue)
+
+    // Clear any existing debounce timer
+    if (playerTeamSearchDebounceRef.current) {
+      clearTimeout(playerTeamSearchDebounceRef.current)
+    }
 
     if (searchValue.length < 2) {
       setPlayerTeamResults([])
       return
     }
 
-    try {
-      const response = await axios.get('/api/admin/players/player-teams/search', {
-        params: { search: searchValue }
-      })
+    // Debounce the API call by 300ms
+    playerTeamSearchDebounceRef.current = setTimeout(async () => {
+      try {
+        const response = await axios.get('/api/admin/players/player-teams/search', {
+          params: { search: searchValue }
+        })
 
-      // Filter out player-teams that belong to the current editing player
-      const filteredResults = (response.data.playerTeams || []).filter(
-        pt => pt.player_id !== editingPlayer?.player_id
-      )
+        // Filter out player-teams that belong to the current editing player
+        const filteredResults = (response.data.playerTeams || []).filter(
+          pt => pt.player_id !== editingPlayer?.player_id
+        )
 
-      setPlayerTeamResults(filteredResults)
-    } catch (error) {
-      console.error('Error searching player-teams:', error)
-      addToast('Failed to search player-teams', 'error')
-    }
+        setPlayerTeamResults(filteredResults)
+      } catch (error) {
+        console.error('Error searching player-teams:', error)
+        addToast('Failed to search player-teams', 'error')
+      }
+    }, 300)
   }
 
   const handleReassignSelectedCards = async () => {
