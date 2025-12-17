@@ -245,40 +245,20 @@ function ListDetail() {
   }
 
   const handleCardClick = (card) => {
-    const setSlug = card.series_rel?.set_slug || 'unknown-set'
-    const setYear = card.series_rel?.set_year || '0000'
-    const seriesSlug = card.series_rel?.slug || 'unknown-series'
-    const cardNumber = card.card_number || '0'
-
-    // Get first player name for URL
-    const playerName = card.card_player_teams?.[0]?.player
-      ? `${card.card_player_teams[0].player.first_name}-${card.card_player_teams[0].player.last_name}`.toLowerCase().replace(/\s+/g, '-')
-      : 'unknown-player'
-
-    navigate(`/card/${seriesSlug}/${cardNumber}/${playerName}`)
+    // Navigate to card detail by ID
+    if (card.card_id) {
+      navigate(`/cards/${card.card_id}`)
+    }
   }
 
   const handlePlayerClick = (player) => {
     if (!player?.player_id) return
-
-    const playerSlug = `${player.first_name}-${player.last_name}`
-      .toLowerCase()
-      .replace(/\s+/g, '-')
-      .replace(/[^a-z0-9-]/g, '')
-
-    navigate(`/players/${playerSlug}`)
+    navigate(`/players/${player.player_id}`)
   }
 
   const handleSeriesClick = (series) => {
-    if (!series?.slug) return
-
-    // Use canonical URL with year/setSlug if available
-    if (series.set_year && series.set_slug) {
-      navigate(`/sets/${series.set_year}/${series.set_slug}/${series.slug}`)
-    } else {
-      // Fallback to simple series route (will redirect to canonical)
-      navigate(`/series/${series.slug}`)
-    }
+    if (!series?.series_id) return
+    navigate(`/series/${series.series_id}`)
   }
 
   const formatDate = (dateString) => {

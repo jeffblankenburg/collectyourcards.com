@@ -14,12 +14,12 @@ import './SeriesPageScoped.css'
 const log = createLogger('SeriesPage')
 
 function SeriesPage() {
-  const { year, setSlug } = useParams()
+  const { year, setId } = useParams()
   const navigate = useNavigate()
   const { addToast } = useToast()
   const { user } = useAuth()
 
-  log.info('SeriesPage mounted', { year, setSlug })
+  log.info('SeriesPage mounted', { year, setId })
   
   const [series, setSeries] = useState([])
   const [filteredSeries, setFilteredSeries] = useState([])
@@ -49,11 +49,11 @@ function SeriesPage() {
   }
 
   useEffect(() => {
-    if (setSlug && year) {
-      loadSetBySlug(year, setSlug)
-      loadSeriesForSet(year, setSlug)
+    if (setId && year) {
+      loadSetById(setId)
+      loadSeriesForSet(setId)
     }
-  }, [year, setSlug])
+  }, [year, setId])
 
   // Set page title when set loads
   useEffect(() => {
@@ -137,17 +137,14 @@ function SeriesPage() {
     }
   }, [series, searchTerm, parallelsCollapsed])
 
-  const loadSetBySlug = async (yearParam, setSlugParam) => {
+  const loadSetById = async (setIdParam) => {
     try {
       const response = await axios.get('/api/sets-list')
       const allSets = response.data.sets || []
-      
-      // Find the set by year and slug (using stored slug from database)
-      const foundSet = allSets.find(set => {
-        const setYear = set.year || parseInt(set.name.split(' ')[0])
-        return setYear === parseInt(yearParam) && set.slug === setSlugParam
-      })
-      
+
+      // Find the set by ID
+      const foundSet = allSets.find(set => set.set_id === parseInt(setIdParam))
+
       if (foundSet) {
         setSelectedSet(foundSet)
         // Check spreadsheet availability
@@ -158,41 +155,31 @@ function SeriesPage() {
     }
   }
 
-  const loadSeriesForSet = async (yearParam, setSlugParam) => {
+  const loadSeriesForSet = async (setIdParam) => {
     try {
       setLoading(true)
-      
-      // First get the set ID
-      const setsResponse = await axios.get('/api/sets-list')
-      const allSets = setsResponse.data.sets || []
-      const foundSet = allSets.find(set => {
-        const setYear = set.year || parseInt(set.name.split(' ')[0])
-        return setYear === parseInt(yearParam) && set.slug === setSlugParam
+
+      // Get series for this set directly by ID
+      const response = await axios.get(`/api/series-by-set/${setIdParam}`)
+      const seriesData = response.data.series || []
+
+      // Sort series: alphabetically by name, but "coming soon" (no cards) at the end
+      const sortedSeries = [...seriesData].sort((a, b) => {
+        const aHasCards = (a.card_count || 0) > 0
+        const bHasCards = (b.card_count || 0) > 0
+
+        // If one has cards and one doesn't, the one with cards comes first
+        if (aHasCards && !bHasCards) return -1
+        if (!aHasCards && bHasCards) return 1
+
+        // Both have cards or both don't - sort alphabetically
+        const nameA = a.name || ''
+        const nameB = b.name || ''
+        return nameA.localeCompare(nameB)
       })
-      
-      if (foundSet) {
-        // Now get series for this set
-        const response = await axios.get(`/api/series-by-set/${foundSet.set_id}`)
-        const seriesData = response.data.series || []
 
-        // Sort series: alphabetically by name, but "coming soon" (no cards) at the end
-        const sortedSeries = [...seriesData].sort((a, b) => {
-          const aHasCards = (a.card_count || 0) > 0
-          const bHasCards = (b.card_count || 0) > 0
-
-          // If one has cards and one doesn't, the one with cards comes first
-          if (aHasCards && !bHasCards) return -1
-          if (!aHasCards && bHasCards) return 1
-
-          // Both have cards or both don't - sort alphabetically
-          const nameA = a.name || ''
-          const nameB = b.name || ''
-          return nameA.localeCompare(nameB)
-        })
-
-        setSeries(sortedSeries)
-        setFilteredSeries(sortedSeries)
-      }
+      setSeries(sortedSeries)
+      setFilteredSeries(sortedSeries)
     } catch (error) {
       console.error('Error loading series:', error)
       addToast(`Failed to load series: ${error.response?.data?.message || error.message}`, 'error')
@@ -403,9 +390,6 @@ function SeriesPage() {
                       parallel_of: (s.color_name && s.color_hex_value) || s.parallel_of_series ? true : false,
                       parallel_parent_name: s.parent_series_name,
                       parallel_count: parallelCount,
-                      slug: s.slug,  // Use stored slug from database
-                      set_slug: setSlug,
-                      year: year,
                       // Completion data - only present if user is authenticated
                       is_complete: s.is_complete || false,
                       completion_percentage: s.completion_percentage || 0,
@@ -444,8 +428,8 @@ function SeriesPage() {
               className="parallel-item-compact"
               onClick={(e) => {
                 e.stopPropagation()
-                // Use canonical URL with year/setSlug and stored slug
-                navigate(`/sets/${year}/${setSlug}/${parallel.slug}`)
+                // Navigate to series by ID
+                navigate(`/series/${parallel.series_id}`)
                 setOpenDropdownSeriesId(null)
                 activeParallelsBoxRef.current = null
               }}

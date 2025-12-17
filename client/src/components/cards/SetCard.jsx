@@ -15,13 +15,7 @@ function SetCard({ set, showBadge = false, customOnClick = null, onEditClick = n
     if (customOnClick) {
       customOnClick()
     } else {
-      const slug = set.slug || set.name
-        .toLowerCase()
-        .replace(/[^a-z0-9\s-]/g, '')
-        .replace(/\s+/g, '-')
-        .replace(/-+/g, '-')
-        .trim()
-      navigate(`/sets/${set.year}/${slug}`)
+      navigate(`/sets/${set.year}/${set.set_id}`)
     }
   }
 

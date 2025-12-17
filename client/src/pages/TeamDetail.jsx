@@ -10,11 +10,11 @@ import './TeamDetailScoped.css'
 const log = createLogger('TeamDetail')
 
 function TeamDetail() {
-  const { teamSlug } = useParams()
+  const { teamId } = useParams()
   const navigate = useNavigate()
   const { isAuthenticated, user } = useAuth()
 
-  log.info('TeamDetail mounted', { teamSlug, isAuthenticated })
+  log.info('TeamDetail mounted', { teamId, isAuthenticated })
   const [team, setTeam] = useState(null)
   const [players, setPlayers] = useState([])
   const [playerSearchTerm, setPlayerSearchTerm] = useState('')
@@ -32,7 +32,7 @@ function TeamDetail() {
 
   useEffect(() => {
     fetchTeamData()
-  }, [teamSlug])
+  }, [teamId])
 
   // Set page title
   useEffect(() => {
@@ -47,21 +47,9 @@ function TeamDetail() {
     try {
       setLoading(true)
 
-      // Get team data from the teams list and find the matching one
-      const response = await axios.get('/api/teams-list?limit=200')
-      const teams = response.data.teams || []
-
-      // Find team by slug (recreate slug logic from TeamsLanding)
-      const foundTeam = teams.find(t => {
-        if (!t.name) return false
-        const slug = t.name
-          .toLowerCase()
-          .replace(/[^a-z0-9\s-]/g, '')
-          .replace(/\s+/g, '-')
-          .replace(/-+/g, '-')
-          .trim()
-        return slug === teamSlug
-      })
+      // Get team data by ID
+      const response = await axios.get(`/api/teams/${teamId}`)
+      const foundTeam = response.data.team
 
       if (foundTeam) {
         setTeam(foundTeam)
@@ -145,24 +133,12 @@ function TeamDetail() {
   }
 
   const handlePlayerClick = (player) => {
-    const slug = `${player.first_name}-${player.last_name}`
-      .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, '')
-      .replace(/\s+/g, '-')
-      .replace(/-+/g, '-')
-      .trim()
-
     // Track visit for logged-in users
     if (isAuthenticated) {
-      trackPlayerVisit({
-        ...player,
-        slug
-      })
+      trackPlayerVisit(player)
     }
 
-    navigate(`/players/${slug}`, {
-      state: { selectedTeamId: team.team_id }
-    })
+    navigate(`/players/${player.player_id}/${team.team_id}`)
   }
 
   const trackPlayerVisit = (player) => {

@@ -1174,7 +1174,7 @@ function AdminSets() {
               className="parallel-item-compact"
               onClick={(e) => {
                 e.stopPropagation()
-                navigate(`/admin/cards/${year}/${setSlug}/${parallel.slug}`)
+                navigate(`/admin/cards/${parallel.series_id}`)
                 setOpenDropdownSeriesId(null)
                 activeParallelsBoxRef.current = null
               }}

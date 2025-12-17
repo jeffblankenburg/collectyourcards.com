@@ -7,14 +7,11 @@ function CardResult({ card, showBadge = false }) {
   const navigate = useNavigate()
 
   const handleCardClick = () => {
-    // Use canonical URL with year/setSlug if available
-    if (card.set_year && card.set_slug && card.series_slug) {
-      navigate(`/sets/${card.set_year}/${card.set_slug}/${card.series_slug}`)
-    } else if (card.series_slug) {
-      // Fallback to simple series route (will redirect to canonical)
-      navigate(`/series/${card.series_slug}`)
-    } else {
-      // Final fallback using series_id
+    // Navigate to card detail page by ID
+    if (card.card_id) {
+      navigate(`/cards/${card.card_id}`)
+    } else if (card.series_id) {
+      // Fallback to series page if no card_id
       navigate(`/series/${card.series_id}`)
     }
   }

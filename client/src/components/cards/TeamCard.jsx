@@ -16,13 +16,7 @@ function TeamCard({ team, showBadge = false, customOnClick = null }) {
     if (customOnClick) {
       customOnClick()
     } else {
-      const slug = `${team.name}`
-        .toLowerCase()
-        .replace(/[^a-z0-9\s-]/g, '')
-        .replace(/\s+/g, '-')
-        .replace(/-+/g, '-')
-        .trim()
-      navigate(`/teams/${slug}`)
+      navigate(`/teams/${team.team_id}`)
     }
   }
 

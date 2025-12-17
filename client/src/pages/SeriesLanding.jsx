@@ -211,28 +211,13 @@ function SeriesLanding() {
   }
 
   const handleSeriesClick = (seriesItem) => {
-    const slug = seriesItem.name
-      .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, '')
-      .replace(/\s+/g, '-')
-      .replace(/-+/g, '-')
-      .trim()
-
     // Track visit for logged-in users
     if (isAuthenticated) {
-      trackSeriesVisit({
-        ...seriesItem,
-        slug
-      })
+      trackSeriesVisit(seriesItem)
     }
 
-    // Use canonical URL with year/setSlug if available
-    if (year && setSlug) {
-      navigate(`/sets/${year}/${setSlug}/${slug}`)
-    } else {
-      // Fallback to simple series route (will redirect to canonical)
-      navigate(`/series/${slug}`)
-    }
+    // Navigate to series by ID
+    navigate(`/series/${seriesItem.series_id}`)
   }
 
   const trackSeriesVisit = (seriesItem) => {
@@ -363,7 +348,7 @@ function SeriesLanding() {
                   <div
                     key={set.set_id}
                     className="set-card"
-                    onClick={() => navigate(`/sets/${year}/${set.slug}`)}
+                    onClick={() => navigate(`/sets/${year}/${set.set_id}`)}
                     style={{ cursor: 'pointer' }}
                   >
                     <div className="set-thumbnail">

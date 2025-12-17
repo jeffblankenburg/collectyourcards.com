@@ -19,6 +19,34 @@ function generateSlug(name) {
     .replace(/^-|-$/g, '') // Remove leading/trailing hyphens
 }
 
+// Helper function to generate a unique slug, appending -2, -3, etc. if needed
+async function generateUniqueSlug(baseSlug, excludePlayerId = null) {
+  let slug = baseSlug
+  let counter = 1
+
+  while (true) {
+    // Check if slug exists
+    let existing
+    if (excludePlayerId) {
+      existing = await prisma.$queryRawUnsafe(
+        `SELECT player_id FROM player WHERE slug = '${slug}' AND player_id != ${excludePlayerId}`
+      )
+    } else {
+      existing = await prisma.$queryRawUnsafe(
+        `SELECT player_id FROM player WHERE slug = '${slug}'`
+      )
+    }
+
+    if (existing.length === 0) {
+      return slug
+    }
+
+    // Slug exists, try next number
+    counter++
+    slug = `${baseSlug}-${counter}`
+  }
+}
+
 // GET /api/admin/players - Get players list with stats
 router.get('/', async (req, res) => {
   try {
@@ -596,7 +624,8 @@ router.post('/', async (req, res) => {
       fullName = trimmedLastName
     }
 
-    const slug = generateSlug(fullName)
+    const baseSlug = generateSlug(fullName)
+    const slug = await generateUniqueSlug(baseSlug)
 
     const newPlayer = await prisma.player.create({
       data: {
@@ -681,7 +710,8 @@ router.put('/:id', async (req, res) => {
       fullName = trimmedLastName
     }
 
-    const slug = generateSlug(fullName)
+    const baseSlug = generateSlug(fullName)
+    const slug = await generateUniqueSlug(baseSlug, playerId)
 
     const updatedPlayer = await prisma.player.update({
       where: { player_id: playerId },

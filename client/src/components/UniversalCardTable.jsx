@@ -377,62 +377,9 @@ const UniversalCardTable = ({
   }
 
   const handleCardNumberClick = (card) => {
-    // Navigate to card detail page using simple URL format
-    if (card.card_number) {
-      // Get series slug from available data - prioritize stored slugs
-      let seriesSlug = ''
-      if (card.series_slug) {
-        seriesSlug = card.series_slug
-      } else if (card.series_rel?.slug) {
-        seriesSlug = card.series_rel.slug
-      } else if (card.series_rel?.name) {
-        seriesSlug = generateSlug(card.series_rel.name) // Fallback only if no slug available
-      } else if (card.series_name) {
-        seriesSlug = generateSlug(card.series_name) // Fallback only if no slug available
-      }
-
-      if (!seriesSlug) {
-        console.warn('No series information available for navigation:', card)
-        return
-      }
-
-      // Get player name from available data
-      let playerName = ''
-
-      if (card.card_player_teams && card.card_player_teams.length > 0) {
-        // From card_player_teams array
-        playerName = card.card_player_teams
-          .map(cpt => {
-            if (cpt.player?.name) {
-              return cpt.player.name
-            }
-            if (cpt.player?.first_name || cpt.player?.last_name) {
-              return `${cpt.player.first_name || ''} ${cpt.player.last_name || ''}`.trim()
-            }
-            return null
-          })
-          .filter(name => name)
-          .join(', ')
-      } else if (card.player_names) {
-        // From aggregated player_names
-        playerName = card.player_names
-      } else if (card.player_name) {
-        // From single player_name field
-        playerName = card.player_name
-      } else if (card.title) {
-        // Fallback to title
-        playerName = card.title
-      }
-
-      if (!playerName) {
-        playerName = 'unknown'
-      }
-
-      // Create player slug using standard function
-      const playerSlug = generateSlug(playerName)
-
-      console.log('Navigating to:', `/card/${seriesSlug}/${card.card_number}/${playerSlug}`)
-      navigate(`/card/${seriesSlug}/${card.card_number}/${playerSlug}`)
+    // Navigate to card detail page by ID
+    if (card.card_id) {
+      navigate(`/cards/${card.card_id}`)
     }
   }
 

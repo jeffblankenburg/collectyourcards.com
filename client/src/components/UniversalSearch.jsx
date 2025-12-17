@@ -192,66 +192,22 @@ function UniversalSearch({ className = '' }) {
       localStorage.setItem(userHistoryKey, JSON.stringify(newHistory))
     }
 
-    // Navigate based on result type
+    // Navigate based on result type using IDs
     switch (result.type) {
       case 'card':
-        // Use slug if available, otherwise use player name to create slug
-        const cardPlayerName = result.player_names || ''
-        if (cardPlayerName) {
-          const playerSlug = cardPlayerName
-            .toLowerCase()
-            .replace(/[^a-z0-9\s-]/g, '')
-            .replace(/\s+/g, '-')
-            .replace(/-+/g, '-')
-            .trim()
-          // For now, navigate to search - card detail route may need card ID
-          navigate(`/search?q=${encodeURIComponent(cardPlayerName + ' ' + result.card_number)}`)
-        } else {
-          navigate(`/search?q=${encodeURIComponent(result.card_number || '')}`)
-        }
+        navigate(`/cards/${result.id || result.card_id}`)
         break
       case 'player':
-        // Use slug if available, otherwise create from first/last name
-        if (result.slug) {
-          navigate(`/players/${result.slug}`)
-        } else if (result.first_name && result.last_name) {
-          const playerSlug = `${result.first_name}-${result.last_name}`
-            .toLowerCase()
-            .replace(/[^a-z0-9\s-]/g, '')
-            .replace(/\s+/g, '-')
-            .replace(/-+/g, '-')
-            .trim()
-          navigate(`/players/${playerSlug}`)
-        } else {
-          console.error('Player data missing for navigation:', result)
-        }
+        navigate(`/players/${result.id || result.player_id}`)
         break
       case 'team':
-        navigate(`/teams/${result.id}`)
+        navigate(`/teams/${result.id || result.team_id}`)
         break
       case 'set':
-        // Navigate to set page using year and slug
-        if (result.slug && result.year) {
-          navigate(`/sets/${result.year}/${result.slug}`)
-        } else {
-          console.error('Set data missing for navigation:', result)
-        }
+        navigate(`/sets/${result.year}/${result.id || result.set_id}`)
         break
       case 'series':
-        // Create series slug from series name
-        const seriesName = result.series_name || result.name || ''
-        if (seriesName) {
-          const seriesSlug = seriesName
-            .toLowerCase()
-            .replace(/[^a-z0-9\s-]/g, '')
-            .replace(/\s+/g, '-')
-            .replace(/-+/g, '-')
-            .trim()
-          // For now, navigate to search
-          navigate(`/search?q=${encodeURIComponent(seriesName)}`)
-        } else {
-          console.error('Series name missing for navigation:', result)
-        }
+        navigate(`/series/${result.id || result.series_id}`)
         break
       case 'collection':
         navigate(`/collection?highlight=${result.id}`)

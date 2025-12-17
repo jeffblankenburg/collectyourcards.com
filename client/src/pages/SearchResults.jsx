@@ -510,32 +510,22 @@ function SearchResults() {
   const handleResultClick = (result) => {
     switch (result.type) {
       case 'player':
-        navigate(`/players/${result.slug || result.player_id}`)
+        navigate(`/players/${result.player_id}`)
         break
       case 'team':
-        navigate(`/teams/${result.slug || result.team_id}`)
+        navigate(`/teams/${result.team_id}`)
         break
       case 'set':
-        navigate(`/sets/${result.year}/${result.slug}`)
+        navigate(`/sets/${result.year}/${result.set_id}`)
         break
       case 'series':
-        // Use canonical URL with year/setSlug if available
-        if (result.set_year && result.set_slug) {
-          navigate(`/sets/${result.set_year}/${result.set_slug}/${result.slug || result.series_id}`)
-        } else {
-          navigate(`/series/${result.slug || result.series_id}`)
-        }
+        navigate(`/series/${result.series_id}`)
         break
       case 'year':
-        navigate(`/years/${result.year}`)
+        navigate(`/sets/${result.year}`)
         break
       case 'card':
-        // For cards, navigate to the series detail page
-        if (result.set_year && result.set_slug && result.series_slug) {
-          navigate(`/sets/${result.set_year}/${result.set_slug}/${result.series_slug}`)
-        } else {
-          navigate(`/series/${result.series_id}`)
-        }
+        navigate(`/cards/${result.card_id}`)
         break
     }
   }

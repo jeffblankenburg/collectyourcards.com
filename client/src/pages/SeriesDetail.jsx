@@ -10,20 +10,19 @@ import AddCardModal from '../components/modals/AddCardModal'
 import BulkCardModal from '../components/modals/BulkCardModal'
 import CommentsSection from '../components/CommentsSection'
 import ActivityFeed from '../components/ActivityFeed'
-import { generateSlug } from '../utils/slugs'
 import { createLogger } from '../utils/logger'
 import './SeriesDetail.css'
 
 const log = createLogger('SeriesDetail')
 
 function SeriesDetail() {
-  const { seriesSlug, year, setSlug } = useParams()
+  const { seriesId } = useParams()
   const navigate = useNavigate()
   const { isAuthenticated, user } = useAuth()
   const { success, error: showError } = useToast()
   const [series, setSeries] = useState(null)
 
-  log.info('SeriesDetail mounted', { seriesSlug, year, setSlug, isAuthenticated })
+  log.info('SeriesDetail mounted', { seriesId, isAuthenticated })
   const [stats, setStats] = useState({})
   const [parallels, setParallels] = useState([])
   const [showParallels, setShowParallels] = useState(false)
@@ -50,7 +49,7 @@ function SeriesDetail() {
 
   useEffect(() => {
     fetchSeriesData()
-  }, [seriesSlug, year, setSlug])
+  }, [seriesId])
 
   // Set page title when series loads
   useEffect(() => {
@@ -80,43 +79,14 @@ function SeriesDetail() {
 
   const fetchSeriesData = async () => {
     const startTime = performance.now()
-    log.info('Fetching series data', { seriesSlug, year, setSlug })
+    log.info('Fetching series data', { seriesId })
 
     try {
       setLoading(true)
 
-      let seriesList = []
-
-      if (year && setSlug) {
-        log.debug('Using canonical URL format', { year, setSlug })
-        // If we have year and setSlug, get series for that specific set
-        // First get the set ID
-        const setsResponse = await axios.get('/api/sets-list')
-        const allSets = setsResponse.data.sets || []
-        const foundSet = allSets.find(set => {
-          const setYear = set.year || parseInt(set.name.split(' ')[0])
-          return setYear === parseInt(year) && set.slug === setSlug
-        })
-
-        if (foundSet) {
-          log.debug('Found set', { set_id: foundSet.set_id, set_name: foundSet.name })
-          // Get series for this set
-          const seriesResponse = await axios.get(`/api/series-by-set/${foundSet.set_id}`)
-          seriesList = seriesResponse.data.series || []
-          log.debug(`Loaded ${seriesList.length} series from set`)
-        } else {
-          log.warn('Set not found', { year, setSlug })
-        }
-      } else {
-        log.debug('Using fallback /series/:seriesSlug route')
-        // Fallback to getting all series (for /series/:seriesSlug route)
-        const response = await axios.get('/api/series-list')
-        seriesList = response.data.series || []
-        log.debug(`Loaded ${seriesList.length} series from series-list`)
-      }
-
-      // Find series by stored slug
-      const foundSeries = seriesList.find(s => s.slug === seriesSlug)
+      // Fetch series directly by ID
+      const response = await axios.get(`/api/series-list/${seriesId}`)
+      const foundSeries = response.data.series
 
       if (foundSeries) {
         setSeries(foundSeries)
@@ -126,25 +96,18 @@ function SeriesDetail() {
           set_name: foundSeries.set_name
         })
 
-        // If we're on the fallback /series/:seriesSlug route, redirect to canonical URL
-        if (!year && !setSlug && foundSeries.set_year && foundSeries.set_slug) {
-          log.navigation(`/series/${seriesSlug}`,
-            `/sets/${foundSeries.set_year}/${foundSeries.set_slug}/${seriesSlug}`,
-            { reason: 'Redirecting to canonical URL' })
-          navigate(`/sets/${foundSeries.set_year}/${foundSeries.set_slug}/${seriesSlug}`, { replace: true })
-          return
-        }
-
         // Get actual stats for the series
         await fetchSeriesStats(foundSeries)
 
-        // Get related parallels
+        // Get related parallels - need to fetch series for the same set
+        const setSeriesResponse = await axios.get(`/api/series-by-set/${foundSeries.set_id}`)
+        const seriesList = setSeriesResponse.data.series || []
         await fetchRelatedParallels(foundSeries, seriesList)
 
         setError(null)
         log.performance('Complete series data load', startTime)
       } else {
-        log.error('Series not found', { seriesSlug, availableSlugs: seriesList.map(s => generateSlug(s.name)).slice(0, 10) })
+        log.error('Series not found', { seriesId })
         setError('Series not found')
       }
     } catch (err) {
@@ -335,20 +298,8 @@ function SeriesDetail() {
   }
 
   const handleCardClick = (card) => {
-    // Generate the player names for URL
-    const playerNames = card.card_player_teams?.map(cpt =>
-      `${cpt.player?.first_name || ''} ${cpt.player?.last_name || ''}`.trim()
-    ).filter(name => name).join(', ') || 'unknown'
-
-    const playerSlug = generateSlug(playerNames)
-
-    // Use canonical URL with year/setSlug when available
-    if (year && setSlug) {
-      navigate(`/sets/${year}/${setSlug}/${seriesSlug}/${card.card_number}/${playerSlug}`)
-    } else {
-      // Fallback to simple route
-      navigate(`/card/${seriesSlug}/${card.card_number}/${playerSlug}`)
-    }
+    // Navigate to card detail page by ID
+    navigate(`/cards/${card.card_id}`)
   }
 
   if (loading) {
@@ -439,9 +390,9 @@ function SeriesDetail() {
             <div className="series-header-top">
               <div className="series-title-section">
                 <div className="series-title-line">
-                  {year && setSlug ? (
+                  {series.set_id ? (
                     <Link
-                      to={`/sets/${year}/${setSlug}`}
+                      to={`/sets/${series.set_year}/${series.set_id}`}
                       className="back-button"
                       title="Back to series list"
                     >
@@ -543,14 +494,7 @@ function SeriesDetail() {
                               key={parallel.series_id}
                               className={`parallel-item-compact ${parallel.relationship}`}
                               onClick={() => {
-                                // Use canonical URL with year/setSlug if available
-                                if (year && setSlug) {
-                                  navigate(`/sets/${year}/${setSlug}/${parallel.slug}`)
-                                } else if (parallel.set_year && parallel.set_slug) {
-                                  navigate(`/sets/${parallel.set_year}/${parallel.set_slug}/${parallel.slug}`)
-                                } else {
-                                  navigate(`/series/${parallel.slug}`)
-                                }
+                                navigate(`/series/${parallel.series_id}`)
                               }}
                             >
                               <div className="parallel-content-compact">
@@ -587,9 +531,7 @@ function SeriesDetail() {
             onSellCard={isAdmin ? handleSellCard : null}
             onCardClick={handleCardClick}
             onPlayerClick={(player) => {
-              const playerName = `${player.first_name} ${player.last_name}`
-              const playerSlug = generateSlug(playerName)
-              navigate(`/players/${playerSlug}`)
+              navigate(`/players/${player.player_id}`)
             }}
             bulkSelectionMode={bulkSelectionMode}
             selectedCards={selectedCards}

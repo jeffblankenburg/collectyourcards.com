@@ -6,19 +6,18 @@ import Icon from '../components/Icon'
 import CardTable from '../components/tables/CardTable'
 import AddCardModal from '../components/modals/AddCardModal'
 import { useToast } from '../contexts/ToastContext'
-import { generateSlug } from '../utils/slugs'
 import { createLogger } from '../utils/logger'
 import './CardDetailScoped.css'
 
 const log = createLogger('RainbowView')
 
 function RainbowView() {
-  const { year, setSlug, seriesSlug, cardNumber, playerName } = useParams()
+  const { cardId } = useParams()
   const navigate = useNavigate()
   const { isAuthenticated } = useAuth()
   const { success, error: showError } = useToast()
 
-  log.info('RainbowView mounted', { year, setSlug, seriesSlug, cardNumber, playerName })
+  log.info('RainbowView mounted', { cardId })
 
   const [rainbowCards, setRainbowCards] = useState([])
   const [loading, setLoading] = useState(true)
@@ -32,7 +31,7 @@ function RainbowView() {
 
   useEffect(() => {
     fetchRainbowCards()
-  }, [year, setSlug, seriesSlug, cardNumber, playerName])
+  }, [cardId])
 
   // Set page title when data loads
   useEffect(() => {
@@ -69,68 +68,14 @@ function RainbowView() {
     try {
       setLoading(true)
       setError(null)
-      log.info('Starting rainbow card fetch', { seriesSlug, cardNumber, playerName })
+      log.info('Starting rainbow card fetch', { cardId })
 
-      // First, get the correct set_id using year and setSlug
-      let targetSetId = null
-
-      if (year && setSlug) {
-        log.debug('Fetching sets list for set validation', { year, setSlug })
-        const setsResponse = await axios.get('/api/sets-list')
-        const allSets = setsResponse.data.sets || []
-
-        log.debug('Sets list received', { totalSets: allSets.length })
-
-        // Log all 2022 sets for debugging
-        const matchingYearSets = allSets.filter(set => {
-          const setYear = set.year || parseInt(set.name.split(' ')[0])
-          return setYear === parseInt(year)
-        })
-
-        log.group(`Found ${matchingYearSets.length} sets for year ${year}`, () => {
-          matchingYearSets.forEach(set => {
-            const slug = generateSlug(set.name)
-            log.debug(`  "${set.name}"`, {
-              set_id: set.set_id,
-              year: set.year,
-              slug: slug,
-              matches: slug === setSlug
-            })
-          })
-        })
-
-        const foundSet = allSets.find(set => {
-          const setYear = set.year || parseInt(set.name.split(' ')[0])
-          return setYear === parseInt(year) && set.slug === setSlug
-        })
-
-        if (foundSet) {
-          targetSetId = foundSet.set_id
-          log.success(`Found matching set: "${foundSet.name}"`, {
-            set_id: targetSetId,
-            slug: generateSlug(foundSet.name)
-          })
-        } else {
-          log.warn('No matching set found', {
-            year,
-            setSlug,
-            availableSlugs: matchingYearSets.map(s => generateSlug(s.name))
-          })
-        }
-      } else {
-        log.debug('No year/setSlug provided, skipping set validation')
-      }
-
-      // Fetch the card - pass set_id if we have it for disambiguation
-      const cardApiPath = `/api/card/${seriesSlug}/${cardNumber}/${playerName}`
-      const apiParams = targetSetId ? { set_id: targetSetId } : {}
-      log.debug('Fetching card', { path: cardApiPath, params: apiParams })
-
+      // Fetch the card by ID
       const cardFetchStart = performance.now()
-      const cardResponse = await axios.get(cardApiPath, { params: apiParams })
+      const cardResponse = await axios.get(`/api/cards/${cardId}`)
       log.performance('Card fetch', cardFetchStart)
 
-      if (!cardResponse.data.success) {
+      if (!cardResponse.data.card) {
         log.error('Card not found in API response')
         setError('Card not found')
         return
@@ -145,22 +90,6 @@ function RainbowView() {
         series_name: card.series_name
       })
 
-      // Verify the card is from the expected set (should match since we passed set_id to API)
-      if (targetSetId && card.set_id !== targetSetId) {
-        log.error('Set validation failed - API returned card from wrong set', {
-          expectedSetId: targetSetId,
-          actualSetId: card.set_id,
-          cardSetName: card.set_name,
-          urlYear: year,
-          urlSetSlug: setSlug
-        })
-        setError(`Card #${cardNumber} not found in the specified set`)
-        return
-      }
-
-      if (targetSetId) {
-        log.success('Set validation passed - card is from correct set')
-      }
       setCardInfo(card)
 
       // Now fetch all rainbow cards (parallels with same card number in the set)
@@ -178,10 +107,10 @@ function RainbowView() {
       })
       log.performance('Rainbow fetch', rainbowFetchStart)
 
-      const rainbowCards = rainbowResponse.data.cards || []
-      log.success(`Loaded ${rainbowCards.length} rainbow parallels`)
+      const rainbowCardsData = rainbowResponse.data.cards || []
+      log.success(`Loaded ${rainbowCardsData.length} rainbow parallels`)
 
-      setRainbowCards(rainbowCards)
+      setRainbowCards(rainbowCardsData)
       log.performance('Complete rainbow view load', startTime)
 
     } catch (err) {
@@ -197,26 +126,13 @@ function RainbowView() {
   }
 
   const handleBackToCard = () => {
-    // Navigate back to the original card detail page using year/setSlug
-    if (year && setSlug) {
-      navigate(`/sets/${year}/${setSlug}/${seriesSlug}`)
-    } else {
-      navigate(`/card/${seriesSlug}/${cardNumber}/${playerName}`)
-    }
+    // Navigate back to the original card detail page by ID
+    navigate(`/cards/${cardId}`)
   }
 
   const handleCardClick = (card) => {
-    // Navigate to that specific card's detail page
-    const playerNames = card.card_player_teams?.map(cpt =>
-      `${cpt.player?.first_name || ''} ${cpt.player?.last_name || ''}`.trim()
-    ).filter(name => name).join(', ') || 'unknown'
-
-    const clickedSeriesSlug = card.series_rel?.slug || 'unknown'
-    const playerSlug = generateSlug(playerNames)
-
-    // Navigate to the specific card detail page
-    // Always use the simple /card/ route - CardDetail will handle canonical URL internally
-    navigate(`/card/${clickedSeriesSlug}/${card.card_number}/${playerSlug}`)
+    // Navigate to that specific card's detail page by ID
+    navigate(`/cards/${card.card_id}`)
   }
 
   const handleAddCard = (card) => {
@@ -328,8 +244,7 @@ function RainbowView() {
                             }}
                             title={`Go to ${team.name}`}
                             onClick={() => {
-                              const teamSlug = generateSlug(team.name)
-                              navigate(`/teams/${teamSlug}`)
+                              navigate(`/teams/${team.team_id}`)
                             }}
                           >
                             <span>{team.abbreviation}</span>
@@ -337,8 +252,11 @@ function RainbowView() {
                         )}
                         {/* Player Name */}
                         <h2 className="player-name clickable-link" onClick={() => {
-                          const playerSlug = generateSlug(trimmedName)
-                          navigate(`/players/${playerSlug}`)
+                          // Get player_id from cardInfo.player_ids array
+                          const playerId = cardInfo.player_ids?.[index] || cardInfo.card_player_teams?.[index]?.player?.player_id
+                          if (playerId) {
+                            navigate(`/players/${playerId}`)
+                          }
                         }}>
                           {trimmedName}
                           {cardInfo.is_rookie && index === 0 && (

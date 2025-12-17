@@ -102,22 +102,12 @@ function TeamsLanding() {
   }
 
   const handleTeamClick = (team) => {
-    const slug = `${team.name}`
-      .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, '')
-      .replace(/\s+/g, '-')
-      .replace(/-+/g, '-')
-      .trim()
-
     // Track visit for logged-in users
     if (isAuthenticated) {
-      trackTeamVisit({
-        ...team,
-        slug
-      })
+      trackTeamVisit(team)
     }
 
-    navigate(`/teams/${slug}`)
+    navigate(`/teams/${team.team_id}`)
   }
 
   const trackTeamVisit = async (team) => {

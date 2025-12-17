@@ -127,79 +127,31 @@ function PlayersLanding() {
   }
 
   const handlePlayerClick = (player, teamId = null) => {
-    // Handle null/empty last names
-    const fullName = `${player.first_name || ''} ${player.last_name || ''}`.trim()
-    const slug = fullName
-      .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, '')
-      .replace(/\s+/g, '-')
-      .replace(/-+/g, '-')
-      .trim()
-
     // Track visit for logged-in users
     if (isAuthenticated) {
-      trackPlayerVisit({
-        ...player,
-        slug
-      })
+      trackPlayerVisit(player)
     }
 
     // Navigate with optional team filter
-    const url = `/players/${slug}`
     if (teamId) {
-      navigate(url, { state: { selectedTeamId: teamId } })
+      navigate(`/players/${player.player_id}/${teamId}`)
     } else {
-      navigate(url)
+      navigate(`/players/${player.player_id}`)
     }
   }
 
   const handleTeamClick = (teamId) => {
-    // Navigate directly to the team page - this makes more sense when clicking a team circle
-    const teams = []
-    players.forEach(p => p.teams?.forEach(t => teams.push(t)))
-    const team = teams.find(t => t.team_id === teamId)
-    
-    if (team) {
-      const teamSlug = team.name
-        .toLowerCase()
-        .replace(/[^a-z0-9\s-]/g, '')
-        .replace(/\s+/g, '-')
-        .replace(/-+/g, '-')
-        .trim()
-      navigate(`/teams/${teamSlug}`)
-    }
+    navigate(`/teams/${teamId}`)
   }
 
   const createPlayerSpecificTeamHandler = (player) => (teamId) => {
     // Navigate to player page with team filter
-    const team = player.teams?.find(t => t.team_id === teamId)
-    if (team) {
-      // Handle null/empty last names
-      const fullName = `${player.first_name || ''} ${player.last_name || ''}`.trim()
-      const playerSlug = fullName
-        .toLowerCase()
-        .replace(/[^a-z0-9\s-]/g, '')
-        .replace(/\s+/g, '-')
-        .replace(/-+/g, '-')
-        .trim()
-      
-      const teamSlug = team.name
-        .toLowerCase()
-        .replace(/[^a-z0-9\s-]/g, '')
-        .replace(/\s+/g, '-')
-        .replace(/-+/g, '-')
-        .trim()
-      
-      // Track visit for logged-in users
-      if (isAuthenticated) {
-        trackPlayerVisit({
-          ...player,
-          slug: playerSlug
-        })
-      }
-      
-      navigate(`/players/${playerSlug}/${teamSlug}`)
+    // Track visit for logged-in users
+    if (isAuthenticated) {
+      trackPlayerVisit(player)
     }
+
+    navigate(`/players/${player.player_id}/${teamId}`)
   }
 
   const trackPlayerVisit = async (player) => {

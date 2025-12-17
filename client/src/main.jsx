@@ -127,24 +127,22 @@ createRoot(document.getElementById('root')).render(
               <Route path="/settings" element={<ProtectedRoute><ProfileManagement /></ProtectedRoute>} />
               <Route path="/collection" element={<ProtectedRoute><CollectionDashboard /></ProtectedRoute>} />
               <Route path="/players" element={<PlayersLanding />} />
-              <Route path="/players/:playerSlug" element={<PlayerDetail />} />
-              <Route path="/players/:playerSlug/:teamSlug" element={<PlayerDetail />} />
+              <Route path="/players/:playerId" element={<PlayerDetail />} />
+              <Route path="/players/:playerId/:teamId" element={<PlayerDetail />} />
               <Route path="/teams" element={<TeamsLanding />} />
-              <Route path="/teams/:teamSlug" element={<TeamDetail />} />
+              <Route path="/teams/:teamId" element={<TeamDetail />} />
               <Route path="/sets" element={<YearsPage />} />
               <Route path="/sets/:year" element={<SetsPage />} />
-              <Route path="/sets/:year/:setSlug" element={<SeriesPage />} />
-              
-              {/* SeriesDetail routes - ONLY THESE ARE ACTIVE */}
-              <Route path="/sets/:year/:setSlug/:seriesSlug" element={<SeriesDetail />} />
-              <Route path="/series/:seriesSlug" element={<SeriesDetail />} />
-              
-              {/* CardDetail routes */}
-              <Route path="/sets/:year/:setSlug/:seriesSlug/:cardNumber/:playerName" element={<CardDetail />} />
-              <Route path="/card/:seriesSlug/:cardNumber/:playerName" element={<CardDetail />} />
+              <Route path="/sets/:year/:setId" element={<SeriesPage />} />
+
+              {/* SeriesDetail route */}
+              <Route path="/series/:seriesId" element={<SeriesDetail />} />
+
+              {/* CardDetail route */}
+              <Route path="/cards/:cardId" element={<CardDetail />} />
 
               {/* RainbowView route - shows all parallel cards with same card number */}
-              <Route path="/rainbow/:year/:setSlug/:seriesSlug/:cardNumber/:playerName" element={<RainbowView />} />
+              <Route path="/rainbow/:cardId" element={<RainbowView />} />
 
               <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
               <Route path="/admin/users" element={<ProtectedRoute><AdminUsers /></ProtectedRoute>} />
@@ -155,9 +153,7 @@ createRoot(document.getElementById('root')).render(
               <Route path="/admin/series" element={<ProtectedRoute><AdminSeries /></ProtectedRoute>} />
               <Route path="/admin/cards" element={<ProtectedRoute><AdminCards /></ProtectedRoute>} />
               <Route path="/admin/cards-needing-reference" element={<ProtectedRoute><AdminCardsNeedingReference /></ProtectedRoute>} />
-              {/* <Route path="/admin/sets/:year/:setSlug" element={<ProtectedRoute><AdminSets /></ProtectedRoute>} /> */}
-              {/* <Route path="/admin/sets/:year/:setSlug/:seriesSlug" element={<ProtectedRoute><AdminSets /></ProtectedRoute>} /> */}
-              <Route path="/admin/cards/:year/:setSlug/:seriesSlug" element={<ProtectedRoute><AdminCards /></ProtectedRoute>} />
+              <Route path="/admin/cards/:seriesId" element={<ProtectedRoute><AdminCards /></ProtectedRoute>} />
               <Route path="/admin/import" element={<ProtectedRoute><AdminImport /></ProtectedRoute>} />
               
               {/* Design System Demo - Testing new CSS system */}

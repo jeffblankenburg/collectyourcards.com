@@ -16,22 +16,13 @@ import './CardDetailScoped.css'
 const log = createLogger('CardDetail')
 
 function CardDetail() {
-  // Handle both URL formats:
-  // 1. Canonical: /sets/:year/:setSlug/:seriesSlug/:cardNumber/:playerName
-  // 2. Simple: /card/:seriesSlug/:cardNumber/:playerName
-  const params = useParams()
+  // URL format: /cards/:cardId
+  const { cardId } = useParams()
   const navigate = useNavigate()
   const { isAuthenticated, user } = useAuth()
   const { success, error: showError } = useToast()
 
-  log.info('CardDetail mounted', { params, isAuthenticated, userRole: user?.role })
-
-  // Extract parameters
-  const year = params.year
-  const setSlug = params.setSlug
-  const seriesSlug = params.seriesSlug
-  const cardNumber = params.cardNumber
-  const playerName = params.playerName
+  log.info('CardDetail mounted', { cardId, isAuthenticated, userRole: user?.role })
   
   const [card, setCard] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -56,9 +47,6 @@ function CardDetail() {
   const [showSellModal, setShowSellModal] = useState(false)
   const [sellingPlatforms, setSellingPlatforms] = useState([])
 
-  // Determine which URL format we're using based on presence of year/setSlug
-  const isSimpleUrl = !year || !setSlug
-  
   // Check if user is admin
   const isAdmin = user && ['admin', 'superadmin', 'data_admin'].includes(user.role)
   
@@ -98,7 +86,7 @@ function CardDetail() {
 
   useEffect(() => {
     fetchCardDetails()
-  }, [year, setSlug, seriesSlug, cardNumber, playerName])
+  }, [cardId])
 
   // Set page title when card loads
   useEffect(() => {
@@ -160,21 +148,16 @@ function CardDetail() {
 
   const fetchCardDetails = async () => {
     const startTime = performance.now()
-    log.info('Fetching card details', {
-      seriesSlug,
-      cardNumber,
-      playerName,
-      urlFormat: isSimpleUrl ? 'simple' : 'canonical'
-    })
+    log.info('Fetching card details', { cardId })
 
     try {
       setLoading(true)
       setError(null)
 
-      // Always use simple API endpoint - both URL formats have the same card data
-      const response = await axios.get(`/api/card/${seriesSlug}/${cardNumber}/${playerName}`)
+      // Fetch card by ID
+      const response = await axios.get(`/api/cards/${cardId}`)
 
-      if (response.data.success) {
+      if (response.data.card) {
         const cardData = response.data.card
         setCard(cardData)
         log.success('Card details loaded', {
@@ -201,41 +184,8 @@ function CardDetail() {
       log.error('Failed to fetch card details', {
         error: err.message,
         status: err.response?.status,
-        seriesSlug,
-        cardNumber,
-        playerName
+        cardId
       })
-
-      // If card not found and we're using simple URL format, try to redirect to first card in series
-      if (err.response?.status === 404 && isSimpleUrl) {
-        log.debug('Card not found, attempting to redirect to first card in series')
-        try {
-          // Get first card in the series
-          const seriesResponse = await axios.get(`/api/cards?series_name=${seriesSlug.replace(/-/g, ' ')}&limit=1`)
-          const firstCard = seriesResponse.data.cards?.[0]
-
-          if (firstCard) {
-            const firstCardPlayerNames = getPlayerNamesFromCard(firstCard) || 'unknown'
-            const firstCardPlayerSlug = firstCardPlayerNames
-              .toLowerCase()
-              .replace(/,/g, '-') // Handle multiple players
-              .replace(/[^a-z0-9\s-]/g, '')
-              .replace(/\s+/g, '-')
-              .replace(/-+/g, '-')
-              .trim()
-
-            log.navigation(`/card/${seriesSlug}/${cardNumber}/${playerName}`,
-              `/card/${seriesSlug}/${firstCard.card_number}/${firstCardPlayerSlug}`,
-              { reason: 'Card not found, redirecting to first in series' })
-
-            // Redirect to first card in series
-            navigate(`/card/${seriesSlug}/${firstCard.card_number}/${firstCardPlayerSlug}`, { replace: true })
-            return
-          }
-        } catch (fallbackErr) {
-          log.error('Failed to find first card in series for fallback', fallbackErr)
-        }
-      }
 
       setError(err.response?.data?.message || 'Failed to load card details')
     } finally {
@@ -325,56 +275,40 @@ function CardDetail() {
   }
 
   const handleBackToSeries = () => {
-    if (isSimpleUrl && card) {
-      // For simple URLs, construct the series URL from card data
-      navigate(`/sets/${card.set_year}/${card.set_slug}/${card.series_slug}`)
+    if (card?.series_id) {
+      navigate(`/series/${card.series_id}`)
     } else {
-      // For complex URLs, use the existing params
-      navigate(`/sets/${year}/${setSlug}/${seriesSlug}`)
+      navigate('/sets')
     }
   }
 
-  const handleParallelSeriesChange = (selectedSeriesId) => {
+  const handleParallelSeriesChange = async (selectedSeriesId) => {
     if (!selectedSeriesId || !card) return
-    
-    // Find the selected series to get its slug
+
+    // Find the selected series
     const selectedSeries = parallelSeries.find(s => s.series_id === parseInt(selectedSeriesId))
     if (!selectedSeries) return
-    
-    // Use current card's actual player names to construct new URL
-    const playerNames = card.player_names || 'unknown'
-    const playerSlug = playerNames
-      .toLowerCase()
-      .replace(/,/g, '-') // Replace commas with dashes first
-      .replace(/[^a-z0-9\s-]/g, '') // Remove special chars except spaces and dashes
-      .replace(/\s+/g, '-') // Replace spaces with dashes
-      .replace(/-+/g, '-') // Collapse multiple dashes
-      .trim()
-    
-    
-    // Simply navigate to the same card number in the new series
-    // If the card doesn't exist, the page will handle the error and can redirect to first card
-    navigate(`/card/${selectedSeries.series_slug}/${card.card_number}/${playerSlug}`)
+
+    // Try to find the same card number in the selected parallel series
+    try {
+      const response = await axios.get(`/api/cards?series_id=${selectedSeriesId}&card_number=${encodeURIComponent(card.card_number)}&limit=1`)
+      const parallelCard = response.data.cards?.[0]
+
+      if (parallelCard) {
+        navigate(`/cards/${parallelCard.card_id}`)
+      } else {
+        // Card doesn't exist in this parallel series, navigate to series page
+        navigate(`/series/${selectedSeriesId}`)
+      }
+    } catch (err) {
+      log.error('Failed to find parallel card', err)
+      navigate(`/series/${selectedSeriesId}`)
+    }
   }
 
   const navigateToCard = (targetCard) => {
     if (!targetCard) return
-    
-    // Get player names for URL
-    const playerNames = getPlayerNamesFromCard(targetCard) || 'unknown'
-    
-    // Use simple URL format for navigation with series
-    const playerSlug = playerNames
-      .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, '')
-      .replace(/\s+/g, '-')
-      .replace(/-+/g, '-')
-      .trim()
-    
-    // Get series slug - use current card's series info if available
-    const targetSeriesSlug = card?.series_slug || seriesSlug || 'unknown'
-    
-    navigate(`/card/${targetSeriesSlug}/${targetCard.card_number}/${playerSlug}`)
+    navigate(`/cards/${targetCard.card_id}`)
   }
 
   const handlePreviousCard = () => {
@@ -671,7 +605,7 @@ function CardDetail() {
                       <div className="player-team-pair-header">
                         {/* Team Circle */}
                         {team && (
-                          <div 
+                          <div
                             className="card-team-circle clickable-team-circle"
                             style={{
                               '--team-primary': team.primary_color || '#333',
@@ -679,13 +613,7 @@ function CardDetail() {
                             }}
                             title={`Go to ${team.name}`}
                             onClick={() => {
-                              const teamSlug = team.name
-                                .toLowerCase()
-                                .replace(/[^a-z0-9\s-]/g, '')
-                                .replace(/\s+/g, '-')
-                                .replace(/-+/g, '-')
-                                .trim()
-                              navigate(`/teams/${teamSlug}`)
+                              navigate(`/teams/${team.team_id}`)
                             }}
                           >
                             <span>{team.abbreviation}</span>
@@ -693,13 +621,11 @@ function CardDetail() {
                         )}
                         {/* Player Name */}
                         <h2 className="player-name clickable-link" onClick={() => {
-                          const playerSlug = trimmedName
-                            .toLowerCase()
-                            .replace(/[^a-z0-9\s-]/g, '')
-                            .replace(/\s+/g, '-')
-                            .replace(/-+/g, '-')
-                            .trim()
-                          navigate(`/players/${playerSlug}`)
+                          // Get player_id from player_ids array or card_player_teams
+                          const playerId = card.player_ids?.[index] || card.card_player_teams?.[index]?.player?.player_id
+                          if (playerId) {
+                            navigate(`/players/${playerId}`)
+                          }
                         }}>
                           {trimmedName}
                           {card.is_rookie && index === 0 && (
@@ -775,16 +701,7 @@ function CardDetail() {
                   {parallelSeries.length > 1 && (
                     <button
                       onClick={() => {
-                        const playerSlug = card.player_names
-                          .toLowerCase()
-                          .replace(/[^a-z0-9\s-]/g, '')
-                          .replace(/\s+/g, '-')
-                          .replace(/-+/g, '-')
-                          .trim()
-                        // Use year/setSlug if available, otherwise use card data
-                        const rainbowYear = year || card.set_year
-                        const rainbowSetSlug = setSlug || card.set_slug
-                        navigate(`/rainbow/${rainbowYear}/${rainbowSetSlug}/${card.series_slug}/${card.card_number}/${playerSlug}`)
+                        navigate(`/rainbow/${card.card_id}`)
                       }}
                       className="squircle-button rainbow-button"
                       title="View all parallels (Rainbow View)"

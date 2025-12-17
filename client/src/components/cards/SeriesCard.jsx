@@ -29,10 +29,7 @@ function SeriesCard({ series, showBadge = false, customOnClick = null, hideSetNa
     if (customOnClick) {
       customOnClick()
     } else {
-      const seriesSlug = series.slug || series.series_id
-      const setSlug = series.set_slug || 'unknown-set'
-      const year = series.year || new Date().getFullYear()
-      navigate(`/sets/${year}/${setSlug}/${seriesSlug}`)
+      navigate(`/series/${series.series_id}`)
     }
   }
 

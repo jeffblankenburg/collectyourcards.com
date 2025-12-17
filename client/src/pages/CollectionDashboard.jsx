@@ -479,12 +479,10 @@ function CollectionDashboard() {
   }, [cardToSell, success, error, navigate])
 
   const handleCardClick = useCallback((card) => {
-    // Navigate to card detail page
-    const playerSlug = card.card_player_teams?.[0]?.player
-      ? `${card.card_player_teams[0].player.first_name}-${card.card_player_teams[0].player.last_name}`.toLowerCase().replace(/\s+/g, '-')
-      : 'unknown'
-    const seriesSlug = card.series_rel?.slug || 'unknown'
-    navigate(`/card/${seriesSlug}/${card.card_number}/${playerSlug}`)
+    // Navigate to card detail page by ID
+    if (card.card_id) {
+      navigate(`/cards/${card.card_id}`)
+    }
   }, [navigate])
 
   const handleEditModalClose = () => {

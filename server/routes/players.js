@@ -175,6 +175,116 @@ router.get('/by-slug/:slug', async (req, res) => {
   }
 })
 
+// GET /api/players/:id - Get player details by ID
+router.get('/:id', async (req, res) => {
+  try {
+    const playerId = parseInt(req.params.id)
+
+    if (isNaN(playerId)) {
+      return res.status(400).json({
+        error: 'Invalid player ID',
+        message: 'Player ID must be a number'
+      })
+    }
+
+    console.log(`🔍 Fetching player with ID: ${playerId}`)
+
+    // Get player by ID
+    const results = await prisma.$queryRaw`
+      SELECT
+        p.*,
+        display_card_photo.photo_url as display_card_front_image
+      FROM player p
+      LEFT JOIN card display_card ON p.display_card = display_card.card_id
+      LEFT JOIN user_card display_uc ON display_card.reference_user_card = display_uc.user_card_id
+      LEFT JOIN user_card_photo display_card_photo ON display_uc.user_card_id = display_card_photo.user_card AND display_card_photo.sort_order = 1
+      WHERE p.player_id = ${playerId}
+    `
+
+    if (results.length === 0) {
+      console.log(`❌ No player found with ID: ${playerId}`)
+      return res.status(404).json({
+        error: 'Player not found',
+        message: `No player found with ID: ${playerId}`
+      })
+    }
+
+    console.log(`✅ Found player: ${results[0].first_name} ${results[0].last_name}`)
+
+    // Convert BigInt to Number for JSON serialization
+    const player = {}
+    Object.keys(results[0]).forEach(key => {
+      player[key] = typeof results[0][key] === 'bigint' ? Number(results[0][key]) : results[0][key]
+    })
+
+    // Get team statistics for team circles with card counts
+    const teamResults = await prisma.$queryRaw`
+      SELECT DISTINCT
+        t.team_id,
+        t.name as team_name,
+        t.abbreviation,
+        t.primary_color,
+        t.secondary_color,
+        COUNT(DISTINCT c.card_id) as card_count
+      FROM team t
+      JOIN player_team pt ON t.team_id = pt.team
+      JOIN card_player_team cpt ON pt.player_team_id = cpt.player_team
+      JOIN card c ON cpt.card = c.card_id
+      WHERE pt.player = ${playerId}
+      GROUP BY t.team_id, t.name, t.abbreviation, t.primary_color, t.secondary_color
+    `
+
+    const teams = teamResults.map(team => ({
+      team_id: Number(team.team_id),
+      name: team.team_name,
+      abbreviation: team.abbreviation,
+      primary_color: team.primary_color,
+      secondary_color: team.secondary_color,
+      card_count: Number(team.card_count)
+    }))
+
+    // Get stats
+    const statsResults = await prisma.$queryRaw`
+      SELECT
+        COUNT(DISTINCT c.card_id) as total_cards,
+        COUNT(DISTINCT CASE WHEN c.is_rookie = 1 THEN c.card_id END) as rookie_cards,
+        COUNT(DISTINCT CASE WHEN c.is_autograph = 1 THEN c.card_id END) as autograph_cards,
+        COUNT(DISTINCT CASE WHEN c.is_relic = 1 THEN c.card_id END) as relic_cards,
+        COUNT(DISTINCT CASE WHEN c.print_run IS NOT NULL AND c.print_run > 0 THEN c.card_id END) as numbered_cards,
+        COUNT(DISTINCT c.series) as unique_series
+      FROM card c
+      JOIN card_player_team cpt ON c.card_id = cpt.card
+      JOIN player_team pt ON cpt.player_team = pt.player_team_id
+      WHERE pt.player = ${playerId}
+    `
+
+    const statsData = statsResults[0] || {}
+    const stats = {
+      total_cards: Number(statsData.total_cards) || 0,
+      rookie_cards: Number(statsData.rookie_cards) || 0,
+      autograph_cards: Number(statsData.autograph_cards) || 0,
+      relic_cards: Number(statsData.relic_cards) || 0,
+      numbered_cards: Number(statsData.numbered_cards) || 0,
+      unique_series: Number(statsData.unique_series) || 0
+    }
+
+    res.json({
+      player,
+      cards: [], // Cards loaded via separate API with infinite scrolling
+      teams,
+      stats
+    })
+
+  } catch (error) {
+    console.error('Error fetching player by ID:', error)
+    res.status(500).json({
+      error: 'Database error',
+      message: 'Failed to fetch player details',
+      details: error.message
+    })
+  }
+})
+
 // POST /api/players/track-visit - Track player visit (accepts both authenticated and anonymous visits)
 router.post('/track-visit', async (req, res) => {
   try {

@@ -18,7 +18,7 @@ const log = createLogger('PlayerDetail')
 function PlayerDetail() {
   const params = useParams()
   log.info('PlayerDetail mounted', params)
-  const { playerSlug, teamSlug } = useParams()
+  const { playerId, teamId } = useParams()
   const location = useLocation()
   const navigate = useNavigate()
   const { isAuthenticated, user } = useAuth()
@@ -49,7 +49,7 @@ function PlayerDetail() {
 
   useEffect(() => {
     fetchPlayerData()
-  }, [playerSlug])
+  }, [playerId])
 
   // Set page title
   useEffect(() => {
@@ -71,23 +71,13 @@ function PlayerDetail() {
   // Apply team filter from URL or navigation state
   useEffect(() => {
     if (teams.length > 0) {
-      // First check for teamSlug in URL
-      if (teamSlug) {
-        // Find team by matching slug
-        const matchingTeam = teams.find(team => {
-          const teamSlugGenerated = team.name
-            .toLowerCase()
-            .replace(/[^a-z0-9\s-]/g, '')
-            .replace(/\s+/g, '-')
-            .replace(/-+/g, '-')
-            .trim()
-          return teamSlugGenerated === teamSlug
-        })
-        
-        if (matchingTeam) {
-          setSelectedTeamIds([matchingTeam.team_id])
+      // First check for teamId in URL
+      if (teamId) {
+        const teamIdNum = parseInt(teamId)
+        const teamExists = teams.some(t => t.team_id === teamIdNum)
+        if (teamExists) {
+          setSelectedTeamIds([teamIdNum])
         }
-        // If teamSlug doesn't match any of the player's teams, ignore it (show all teams)
       } else if (location.state?.selectedTeamId) {
         // Fallback to navigation state
         const teamExists = teams.some(t => t.team_id === location.state.selectedTeamId)
@@ -96,12 +86,12 @@ function PlayerDetail() {
         }
       }
     }
-  }, [teams, teamSlug, location.state])
+  }, [teams, teamId, location.state])
 
   const fetchPlayerData = async () => {
     try {
       setLoading(true)
-      const response = await axios.get(`/api/players/by-slug/${playerSlug}`)
+      const response = await axios.get(`/api/players/${playerId}`)
       
       const { player: playerData, cards: cardsData, teams: teamsData, stats: statsData } = response.data
 
@@ -290,44 +280,14 @@ function PlayerDetail() {
 
   const handleSeriesClick = (series) => {
     if (series) {
-      // Use stored slug from database instead of generating dynamically
-      const slug = series.slug || series.name
-        .toLowerCase()
-        .replace(/[^a-z0-9\s-]/g, '')
-        .replace(/\s+/g, '-')
-        .replace(/-+/g, '-')
-        .trim()
-
-      // Use canonical URL with year/setSlug if available (from series_rel)
-      if (series.set_year && series.set_slug) {
-        navigate(`/sets/${series.set_year}/${series.set_slug}/${slug}`)
-      } else {
-        // Fallback to simple series route (will redirect to canonical)
-        navigate(`/series/${slug}`)
-      }
+      navigate(`/series/${series.series_id}`)
     }
   }
 
   const handleCardClick = (card) => {
     // Navigate to card detail page
-    if (card.series_rel && card.card_number) {
-      // Use stored slug from database instead of generating dynamically
-      const seriesSlug = card.series_rel.slug || card.series_rel.name
-        .toLowerCase()
-        .replace(/[^a-z0-9\s-]/g, '')
-        .replace(/\s+/g, '-')
-        .replace(/-+/g, '-')
-        .trim()
-
-      const playerSlug = card.card_player_teams?.[0]?.player ?
-        `${card.card_player_teams[0].player.first_name}-${card.card_player_teams[0].player.last_name}`
-          .toLowerCase()
-          .replace(/[^a-z0-9\s-]/g, '')
-          .replace(/\s+/g, '-')
-          .replace(/-+/g, '-')
-          .trim() : 'unknown'
-
-      navigate(`/card/${seriesSlug}/${card.card_number}/${playerSlug}`)
+    if (card.card_id) {
+      navigate(`/cards/${card.card_id}`)
     }
   }
 

@@ -18,13 +18,7 @@ function PlayerCard({ player, showBadge = false, onTeamClick = null, customOnCli
     if (customOnClick) {
       customOnClick()
     } else {
-      const slug = `${player.first_name}-${player.last_name}`
-        .toLowerCase()
-        .replace(/[^a-z0-9\s-]/g, '')
-        .replace(/\s+/g, '-')
-        .replace(/-+/g, '-')
-        .trim()
-      navigate(`/players/${slug}`)
+      navigate(`/players/${player.player_id}`)
     }
   }
 

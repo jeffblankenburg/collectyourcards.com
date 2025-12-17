@@ -824,6 +824,128 @@ router.post('/clear-cache', authMiddleware, async (req, res) => {
   }
 })
 
+// GET /api/cards/:id - Get card details by ID
+router.get('/:id', async (req, res) => {
+  try {
+    const cardId = parseInt(req.params.id)
+
+    if (isNaN(cardId)) {
+      return res.status(400).json({
+        error: 'Invalid card ID',
+        message: 'Card ID must be a number'
+      })
+    }
+
+    console.log(`🔍 Fetching card with ID: ${cardId}`)
+
+    // Get card by ID with all related data
+    const results = await prisma.$queryRawUnsafe(`
+      SELECT
+        c.card_id,
+        c.card_number,
+        c.series,
+        c.print_run,
+        c.is_rookie,
+        c.is_autograph,
+        c.is_relic,
+        c.reference_user_card,
+        s.series_id,
+        s.name as series_name,
+        s.slug as series_slug,
+        st.set_id,
+        st.name as set_name,
+        st.slug as set_slug,
+        st.year as set_year,
+        col.name as color_name,
+        col.hex_value as color_hex,
+        uc_photo.photo_url as front_image
+      FROM card c
+      LEFT JOIN series s ON c.series = s.series_id
+      LEFT JOIN [set] st ON s.[set] = st.set_id
+      LEFT JOIN color col ON s.color = col.color_id
+      LEFT JOIN user_card uc ON c.reference_user_card = uc.user_card_id
+      LEFT JOIN user_card_photo uc_photo ON uc.user_card_id = uc_photo.user_card AND uc_photo.sort_order = 1
+      WHERE c.card_id = ${cardId}
+    `)
+
+    if (results.length === 0) {
+      console.log(`❌ No card found with ID: ${cardId}`)
+      return res.status(404).json({
+        error: 'Card not found',
+        message: `No card found with ID: ${cardId}`
+      })
+    }
+
+    const card = results[0]
+    console.log(`✅ Found card: ${card.card_number} from ${card.series_name}`)
+
+    // Get players for this card
+    const playerResults = await prisma.$queryRawUnsafe(`
+      SELECT
+        p.player_id,
+        p.first_name,
+        p.last_name,
+        p.nick_name,
+        p.slug as player_slug,
+        t.team_id,
+        t.name as team_name,
+        t.abbreviation as team_abbreviation,
+        t.primary_color,
+        t.secondary_color
+      FROM card_player_team cpt
+      JOIN player_team pt ON cpt.player_team = pt.player_team_id
+      JOIN player p ON pt.player = p.player_id
+      LEFT JOIN team t ON pt.team = t.team_id
+      WHERE cpt.card = ${cardId}
+    `)
+
+    const players = playerResults.map(p => ({
+      player_id: Number(p.player_id),
+      first_name: p.first_name,
+      last_name: p.last_name,
+      nick_name: p.nick_name,
+      slug: p.player_slug,
+      team: p.team_id ? {
+        team_id: Number(p.team_id),
+        name: p.team_name,
+        abbreviation: p.team_abbreviation,
+        primary_color: p.primary_color,
+        secondary_color: p.secondary_color
+      } : null
+    }))
+
+    res.json({
+      card: {
+        card_id: Number(card.card_id),
+        card_number: card.card_number,
+        print_run: card.print_run ? Number(card.print_run) : null,
+        is_rookie: Boolean(card.is_rookie),
+        is_autograph: Boolean(card.is_autograph),
+        is_relic: Boolean(card.is_relic),
+        front_image: card.front_image,
+        series_id: card.series_id ? Number(card.series_id) : null,
+        series_name: card.series_name,
+        series_slug: card.series_slug,
+        set_id: card.set_id ? Number(card.set_id) : null,
+        set_name: card.set_name,
+        set_slug: card.set_slug,
+        set_year: card.set_year ? Number(card.set_year) : null,
+        color_name: card.color_name,
+        color_hex: card.color_hex,
+        players: players
+      }
+    })
+
+  } catch (error) {
+    console.error('Error fetching card by ID:', error)
+    res.status(500).json({
+      error: 'Database error',
+      message: 'Failed to fetch card details',
+      details: error.message
+    })
+  }
+})
+
 // Export router and cache for use in other routes
 module.exports = router
 module.exports.searchCache = searchCache

@@ -10,35 +10,12 @@ function CardCard({ card, showBadge = false, customOnClick = null }) {
     if (customOnClick) {
       customOnClick()
     } else {
-      // Use new simple URL format: /card/:seriesSlug/:cardNumber/:playerName
-      if (card.card_number && card.series_slug) {
-        // Get player name from available data
-        const playerName = card.player_name || card.player_names || card.title || 'unknown'
-        
-        // Create player slug
-        const playerSlug = playerName
-          .toLowerCase()
-          .replace(/[^a-z0-9\s-]/g, '')
-          .replace(/\s+/g, '-')
-          .replace(/-+/g, '-')
-          .trim()
-        
-        navigate(`/card/${card.series_slug}/${card.card_number}/${playerSlug}`)
-      } else if (card.set_slug && card.series_slug && card.card_slug) {
-        // Fallback to complex URL if series_slug is missing but other data is available
-        const year = card.set_year || card.year || new Date().getFullYear()
-        navigate(`/sets/${year}/${card.set_slug}/${card.series_slug}/${card.card_slug}`)
-      } else {
-        // Final fallback to series page
-        if (card.series_slug) {
-          // Use canonical URL with year/setSlug if available
-          if (card.set_year && card.set_slug) {
-            navigate(`/sets/${card.set_year}/${card.set_slug}/${card.series_slug}`)
-          } else {
-            // Fallback to simple series route (will redirect to canonical)
-            navigate(`/series/${card.series_slug}`)
-          }
-        }
+      // Navigate to card detail page by ID
+      if (card.card_id) {
+        navigate(`/cards/${card.card_id}`)
+      } else if (card.series_id) {
+        // Fallback to series page if no card_id
+        navigate(`/series/${card.series_id}`)
       }
     }
   }
