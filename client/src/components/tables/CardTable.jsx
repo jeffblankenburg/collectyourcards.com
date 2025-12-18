@@ -429,6 +429,7 @@ const CardTable = ({
       const dataToExport = sortedCards
 
       // Create headers that match the table columns
+      // Include "Qty Owned" column for authenticated users
       const headers = [
         'Card #',
         'Player(s)',
@@ -440,7 +441,8 @@ const CardTable = ({
         'Auto',
         'Relic',
         'Notes',
-        'Production Code'
+        'Production Code',
+        ...(isAuthenticated ? ['Qty Owned'] : [])
       ]
 
       const csvData = [
@@ -474,7 +476,8 @@ const CardTable = ({
             `"${auto}"`,
             `"${relic}"`,
             `"${card.notes || ''}"`,
-            `"${card.series_rel?.production_code || ''}"`
+            `"${card.series_rel?.production_code || ''}"`,
+            ...(isAuthenticated ? [`"${card.user_card_count || 0}"`] : [])
           ]
 
           return row.join(',')
