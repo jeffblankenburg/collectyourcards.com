@@ -973,7 +973,7 @@ const CardTable = ({
                                 `${cpt.player?.first_name || ''} ${cpt.player?.last_name || ''}`.trim()
                               ).join(', ') || ''
                               const searchQuery = `${card.series_rel?.set_name || ''} ${playerNames} #${card.card_number}`
-                              const ebayUrl = `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(searchQuery)}&_sacat=0&_from=R40&_trksid=p4624852.m570.l1313&mkcid=1&mkrid=711-53200-19255-0&siteid=0&campid=5339123359&customid=&toolid=10001&mkevt=1`
+                              const ebayUrl = `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(searchQuery)}&_sacat=0&_from=R40&_trksid=p4624852.m570.l1313&LH_BIN=1&_sop=15&mkcid=1&mkrid=711-53200-19255-0&siteid=0&campid=5339123359&customid=&toolid=10001&mkevt=1`
                               window.open(ebayUrl, '_blank')
                               setOpenMarketplaceDropdown(null)
                             }}
