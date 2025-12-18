@@ -819,7 +819,7 @@ function EditableSalesTable({
           <input
             type="date"
             className="sales-table-inline-date"
-            value={sale.sale_date ? sale.sale_date.split('T')[0] : new Date().toISOString().split('T')[0]}
+            value={sale.sale_date ? sale.sale_date.split('T')[0] : ''}
             onChange={(e) => handleDateChange(sale.sale_id, e.target.value)}
           />
         </div>
@@ -1062,7 +1062,7 @@ function EditableSalesTable({
         <input
           type="date"
           className="sales-table-inline-date"
-          value={sale.sale_date ? sale.sale_date.split('T')[0] : new Date().toISOString().split('T')[0]}
+          value={sale.sale_date ? sale.sale_date.split('T')[0] : ''}
           onChange={(e) => handleDateChange(sale.sale_id, e.target.value)}
         />
       </td>
