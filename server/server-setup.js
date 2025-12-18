@@ -3,6 +3,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const telemetryService = require('./services/telemetryService');
+const { logError, logApiError } = require('./utils/logger');
 require('dotenv').config();
 
 // Create Express app
@@ -414,8 +415,9 @@ try {
 
 // Global error handler
 app.use((err, req, res, next) => {
-  console.error('Global error:', err);
-  
+  // Use enhanced logger for clear error visibility
+  logApiError(req.originalUrl || req.path || 'unknown', req.method, err, req);
+
   // Don't expose internal errors in production
   if (config.environment === 'production') {
     res.status(500).json({

@@ -2,6 +2,7 @@ const express = require('express')
 const prisma = require('../config/prisma')
 const { authMiddleware } = require('../middleware/auth')
 const { sanitizeInput, sanitizeParams } = require('../middleware/inputSanitization')
+const { logApiError } = require('../utils/logger')
 const router = express.Router()
 
 // Helper function to create slug from list name
@@ -145,7 +146,7 @@ router.post('/copy', async (req, res) => {
       }
     })
   } catch (error) {
-    console.error('Error copying list:', error)
+    logApiError('/user/lists/copy', 'POST', error, req)
     res.status(500).json({ error: 'Failed to copy list', message: error.message })
   }
 })
@@ -187,7 +188,7 @@ router.get('/', async (req, res) => {
 
     res.json({ lists })
   } catch (error) {
-    console.error('Error fetching user lists:', error)
+    logApiError('/user/lists', 'GET', error, req)
     res.status(500).json({
       error: 'Database error',
       message: 'Failed to fetch lists'
@@ -241,7 +242,7 @@ router.post('/', async (req, res) => {
       }
     })
   } catch (error) {
-    console.error('Error creating list:', error)
+    logApiError('/user/lists', 'POST', error, req)
     res.status(500).json({
       error: 'Database error',
       message: 'Failed to create list'
@@ -384,7 +385,7 @@ router.get('/:slug', async (req, res) => {
       cards
     })
   } catch (error) {
-    console.error('Error fetching list details:', error)
+    logApiError('/user/lists/:slug', 'GET', error, req)
     res.status(500).json({
       error: 'Database error',
       message: 'Failed to fetch list details'
@@ -495,7 +496,7 @@ router.put('/:slug', async (req, res) => {
       }
     })
   } catch (error) {
-    console.error('Error updating list:', error)
+    logApiError('/user/lists/:slug', 'PUT', error, req)
     res.status(500).json({
       error: 'Database error',
       message: 'Failed to update list'
@@ -563,7 +564,7 @@ router.patch('/:slug/visibility', async (req, res) => {
       }
     })
   } catch (error) {
-    console.error('Error updating list visibility:', error)
+    logApiError('/user/lists/:slug/visibility', 'PATCH', error, req)
     res.status(500).json({
       error: 'Database error',
       message: 'Failed to update list visibility'
@@ -620,7 +621,7 @@ router.delete('/:slug', async (req, res) => {
       throw error
     }
   } catch (error) {
-    console.error('Error deleting list:', error)
+    logApiError('/user/lists/:slug', 'DELETE', error, req)
     res.status(500).json({
       error: 'Database error',
       message: 'Failed to delete list'
@@ -714,7 +715,7 @@ router.post('/:slug/cards', async (req, res) => {
       }
     }).then(result => res.json(result))
   } catch (error) {
-    console.error('Error adding cards to list:', error)
+    logApiError('/user/lists/:slug/cards', 'POST', error, req)
     res.status(500).json({
       error: 'Database error',
       message: 'Failed to add cards to list'
@@ -775,7 +776,7 @@ router.delete('/:slug/cards/:cardId', async (req, res) => {
       throw error
     }
   } catch (error) {
-    console.error('Error removing card from list:', error)
+    logApiError('/user/lists/:slug/cards/:cardId', 'DELETE', error, req)
     res.status(500).json({
       error: 'Database error',
       message: 'Failed to remove card from list'
@@ -817,7 +818,7 @@ router.get('/card/:cardId', async (req, res) => {
 
     res.json({ lists })
   } catch (error) {
-    console.error('Error checking card lists:', error)
+    logApiError('/user/lists/card/:cardId', 'GET', error, req)
     res.status(500).json({
       error: 'Database error',
       message: 'Failed to check card lists'

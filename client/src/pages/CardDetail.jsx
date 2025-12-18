@@ -596,7 +596,7 @@ function CardDetail() {
             <div className="card-subtitle">
               {/* Team-Player pairs */}
               <div className="player-team-pairs">
-                {card.player_names.split(',').map((playerName, index) => {
+                {(card.player_names || '').split(',').filter(Boolean).map((playerName, index) => {
                   const trimmedName = playerName.trim()
                   const team = card.teams?.[index] || card.primary_team
                   

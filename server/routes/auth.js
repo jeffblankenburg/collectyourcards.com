@@ -9,6 +9,7 @@ const { authMiddleware } = require('../middleware/auth')
 const rateLimiter = require('../middleware/rateLimiter')
 const telemetryService = require('../services/telemetryService')
 const { onUserLogin } = require('../middleware/achievementHooks')
+const { logApiError } = require('../utils/logger')
 
 const router = express.Router()
 
@@ -263,7 +264,7 @@ router.post('/register',
       })
 
     } catch (error) {
-      console.error('Registration error:', error)
+      logApiError('/auth/register', 'POST', error, req)
       await logAuthEvent(req.body.email, 'registration_failed', false, error.message, null, req)
       res.status(500).json({
         error: 'Registration failed',
@@ -413,7 +414,7 @@ router.post('/login',
       next()
 
     } catch (error) {
-      console.error('Login error:', error)
+      logApiError('/auth/login', 'POST', error, req)
       await logAuthEvent(req.body.email, 'login_failed', false, error.message, null, req)
       res.status(500).json({
         error: 'Login failed',
@@ -506,14 +507,8 @@ router.post('/verify-email',
       })
 
     } catch (error) {
-      console.error('Email verification error:', error)
-      console.error('Error stack:', error.stack)
-      console.error('Error details:', {
-        name: error.name,
-        message: error.message,
-        code: error.code
-      })
-      
+      logApiError('/auth/verify-email', 'POST', error, req)
+
       res.status(500).json({
         error: 'Verification failed',
         message: 'An internal error occurred. Please try again later.'
@@ -589,7 +584,7 @@ router.post('/resend-verification',
       }
 
     } catch (error) {
-      console.error('Resend verification error:', error)
+      logApiError('/auth/resend-verification', 'POST', error, req)
       res.status(500).json({
         error: 'Request failed',
         message: 'An internal error occurred. Please try again later.'
@@ -653,7 +648,7 @@ router.post('/forgot-password',
       })
 
     } catch (error) {
-      console.error('Password reset request error:', error)
+      logApiError('/auth/forgot-password', 'POST', error, req)
       res.status(500).json({
         error: 'Request failed',
         message: 'An internal error occurred. Please try again later.'
@@ -738,7 +733,7 @@ router.post('/reset-password',
       })
 
     } catch (error) {
-      console.error('Password reset error:', error)
+      logApiError('/auth/reset-password', 'POST', error, req)
       res.status(500).json({
         error: 'Reset failed',
         message: 'An internal error occurred. Please try again later.'
@@ -792,7 +787,7 @@ router.get('/profile', authMiddleware, async (req, res) => {
     })
 
   } catch (error) {
-    console.error('Profile fetch error:', error)
+    logApiError('/auth/profile', 'GET', error, req)
     res.status(500).json({
       error: 'Failed to fetch profile'
     })
@@ -823,7 +818,7 @@ router.post('/logout', authMiddleware, async (req, res) => {
     })
 
   } catch (error) {
-    console.error('Logout error:', error)
+    logApiError('/auth/logout', 'POST', error, req)
     res.status(500).json({
       error: 'Logout failed'
     })
@@ -845,7 +840,7 @@ router.post('/logout-all', authMiddleware, async (req, res) => {
     })
 
   } catch (error) {
-    console.error('Logout all error:', error)
+    logApiError('/auth/logout-all', 'POST', error, req)
     res.status(500).json({
       error: 'Logout all failed'
     })

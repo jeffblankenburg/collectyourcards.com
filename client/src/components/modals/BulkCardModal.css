@@ -34,6 +34,44 @@
   font-size: 0.9rem;
 }
 
+/* Action Mode Toggle */
+.bulk-card-modal .action-mode-toggle {
+  display: flex;
+  gap: 0.5rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 0.5rem;
+}
+
+.bulk-card-modal .action-mode-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.bulk-card-modal .action-mode-btn:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.bulk-card-modal .action-mode-btn.active {
+  background: rgba(59, 130, 246, 0.15);
+  border-color: rgba(59, 130, 246, 0.3);
+  color: #3b82f6;
+}
+
 /* Selected Cards Section */
 .selected-cards-section h5 {
   margin: 0 0 1rem 0;
@@ -239,6 +277,127 @@
 .bulk-card-modal .cancel-location-btn:hover {
   background: rgba(239, 68, 68, 0.2);
   border-color: rgba(239, 68, 68, 0.4);
+}
+
+/* List Section - mirrors location section styling */
+.bulk-card-modal .list-section {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.bulk-card-modal .list-section label {
+  display: block;
+  color: white;
+  font-weight: 500;
+  margin-bottom: 0.75rem;
+  font-size: 0.9rem;
+}
+
+.bulk-card-modal .list-controls {
+  width: 100%;
+}
+
+.bulk-card-modal .list-select-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.bulk-card-modal .loading-lists {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.9rem;
+  padding: 0.5rem 0;
+}
+
+.bulk-card-modal .new-list-btn {
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  border-radius: 6px;
+  padding: 0.75rem;
+  color: #22c55e;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bulk-card-modal .new-list-btn:hover {
+  background: rgba(34, 197, 94, 0.2);
+  border-color: rgba(34, 197, 94, 0.4);
+}
+
+.bulk-card-modal .new-list-input {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.bulk-card-modal .new-list-input .form-input {
+  flex: 1;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  color: white;
+  font-size: 0.9rem;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.bulk-card-modal .new-list-input .form-input:focus {
+  border-color: #3b82f6;
+  background: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.bulk-card-modal .new-list-input .form-input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.bulk-card-modal .create-list-btn {
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  border-radius: 6px;
+  padding: 0.75rem;
+  color: #22c55e;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bulk-card-modal .create-list-btn:hover {
+  background: rgba(34, 197, 94, 0.2);
+  border-color: rgba(34, 197, 94, 0.4);
+}
+
+.bulk-card-modal .cancel-list-btn {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 6px;
+  padding: 0.75rem;
+  color: #ef4444;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bulk-card-modal .cancel-list-btn:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+.bulk-card-modal .no-lists-hint {
+  margin: 0.75rem 0 0 0;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.85rem;
+  font-style: italic;
 }
 
 /* Modal Actions */
