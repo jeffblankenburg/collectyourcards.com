@@ -1744,7 +1744,7 @@ async function executePlayerOnlyQuery(tokens, limit) {
   // Add result type and format for consistency, including team data
   return tokens.player.slice(0, limit).map(player => ({
     type: 'player',
-    id: player.player_id,
+    player_id: player.player_id,
     name: `${player.first_name} ${player.last_name}`,
     first_name: player.first_name,
     last_name: player.last_name,
@@ -1980,7 +1980,7 @@ async function executePlayerCardNumberQuery(tokens, limit) {
   // First, add the player entity to results (so user can click to see all their cards)
   const playerEntity = {
     type: 'player',
-    id: player.player_id,
+    player_id: player.player_id,
     name: `${player.first_name} ${player.last_name}`,
     first_name: player.first_name,
     last_name: player.last_name,

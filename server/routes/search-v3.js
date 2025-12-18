@@ -448,7 +448,6 @@ function formatResults(rawResults) {
   return rawResults.map(row => {
     const base = {
       type: row.entity_type,
-      id: row.id,
       name: row.name,
       relevance: row.relevance
     }
@@ -457,6 +456,7 @@ function formatResults(rawResults) {
       case 'player':
         return {
           ...base,
+          player_id: Number(row.id),
           first_name: row.first_name,
           last_name: row.last_name,
           nick_name: row.nick_name,
@@ -469,6 +469,7 @@ function formatResults(rawResults) {
       case 'team':
         return {
           ...base,
+          team_id: Number(row.id),
           slug: row.slug,
           abbreviation: row.abbreviation,
           city: row.city,
@@ -480,6 +481,7 @@ function formatResults(rawResults) {
       case 'set':
         return {
           ...base,
+          set_id: Number(row.id),
           slug: row.slug,
           year: row.year,
           manufacturer_name: row.manufacturer_name
@@ -488,6 +490,7 @@ function formatResults(rawResults) {
       case 'series':
         return {
           ...base,
+          series_id: Number(row.id),
           slug: row.series_slug,
           series_name: row.series_name,
           set_name: row.set_name,
@@ -504,6 +507,7 @@ function formatResults(rawResults) {
       case 'card':
         return {
           ...base,
+          card_id: Number(row.id),
           card_number: row.card_number,
           series_name: row.series_name,
           series_slug: row.series_slug,
