@@ -154,7 +154,7 @@ router.post('/register',
   [
     body('email')
       .isEmail()
-      .normalizeEmail()
+      .normalizeEmail({ gmail_remove_dots: false })
       .withMessage('Valid email is required'),
     body('username')
       .trim()
@@ -278,7 +278,7 @@ router.post('/register',
 router.post('/login',
   authLimiter,
   [
-    body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
+    body('email').isEmail().normalizeEmail({ gmail_remove_dots: false }).withMessage('Valid email is required'),
     body('password').notEmpty().withMessage('Password is required')
   ],
   async (req, res, next) => {

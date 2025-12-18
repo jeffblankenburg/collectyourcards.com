@@ -1,30 +1,19 @@
 /**
  * GitHub Service for creating issues from feedback submissions
- * Uses GitHub CLI (gh) for authentication and API access
+ * Uses GitHub REST API with Personal Access Token
  */
-
-const { exec } = require('child_process')
-const { promisify } = require('util')
-
-const execAsync = promisify(exec)
 
 class GitHubService {
   constructor() {
     this.owner = 'jeffblankenburg'
     this.repo = 'collectyourcards.com'
-    this.isConfigured = false
-    this.checkConfiguration()
-  }
+    this.token = process.env.GITHUB_TOKEN
+    this.isConfigured = !!this.token
 
-  async checkConfiguration() {
-    try {
-      // Check if gh CLI is available and authenticated
-      await execAsync('gh auth status')
-      this.isConfigured = true
-      console.log('✅ GitHub CLI authenticated and ready')
-    } catch (error) {
-      console.log('⚠️  GitHub CLI not configured - GitHub issue creation disabled')
-      this.isConfigured = false
+    if (this.isConfigured) {
+      console.log('✅ GitHub API configured and ready')
+    } else {
+      console.log('⚠️  GITHUB_TOKEN not set - GitHub issue creation disabled')
     }
   }
 
@@ -108,6 +97,34 @@ ${stepsToReproduce}
     return body
   }
 
+  async apiRequest(endpoint, method = 'GET', body = null) {
+    const url = `https://api.github.com${endpoint}`
+
+    const options = {
+      method,
+      headers: {
+        'Accept': 'application/vnd.github+json',
+        'Authorization': `Bearer ${this.token}`,
+        'X-GitHub-Api-Version': '2022-11-28',
+        'User-Agent': 'CollectYourCards-FeedbackBot'
+      }
+    }
+
+    if (body) {
+      options.headers['Content-Type'] = 'application/json'
+      options.body = JSON.stringify(body)
+    }
+
+    const response = await fetch(url, options)
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      throw new Error(`GitHub API error ${response.status}: ${errorText}`)
+    }
+
+    return response.json()
+  }
+
   async createFeedbackIssue(data) {
     if (!this.isConfigured) {
       console.log('GitHub not configured, skipping issue creation')
@@ -128,49 +145,40 @@ ${stepsToReproduce}
         labels.push(priorityLabel)
       }
 
-      // Escape the body for shell
-      const escapedBody = body.replace(/'/g, "'\\''")
-      const escapedTitle = title.replace(/'/g, "'\\''")
+      // Create the issue using GitHub REST API
+      const issueData = await this.apiRequest(
+        `/repos/${this.owner}/${this.repo}/issues`,
+        'POST',
+        { title, body, labels }
+      )
 
-      // Create the issue using gh CLI
-      const labelArg = labels.map(l => `--label "${l}"`).join(' ')
-      const command = `gh issue create --repo ${this.owner}/${this.repo} --title '${escapedTitle}' --body '${escapedBody}' ${labelArg}`
-
-      const { stdout } = await execAsync(command)
-
-      // Parse the issue URL from stdout
-      const issueUrl = stdout.trim()
-      const issueNumber = parseInt(issueUrl.split('/').pop())
-
-      console.log(`✅ Created GitHub issue #${issueNumber}: ${issueUrl}`)
+      console.log(`✅ Created GitHub issue #${issueData.number}: ${issueData.html_url}`)
 
       return {
-        number: issueNumber,
-        url: issueUrl
+        number: issueData.number,
+        url: issueData.html_url
       }
 
     } catch (error) {
       console.error('Failed to create GitHub issue:', error.message)
 
       // Try to create without labels if label creation fails
-      if (error.message.includes('label')) {
+      if (error.message.includes('label') || error.message.includes('422')) {
         try {
           const title = `[${submissionType.toUpperCase()}] ${subject} (${referenceNumber})`
           const body = this.formatIssueBody(data)
-          const escapedBody = body.replace(/'/g, "'\\''")
-          const escapedTitle = title.replace(/'/g, "'\\''")
 
-          const command = `gh issue create --repo ${this.owner}/${this.repo} --title '${escapedTitle}' --body '${escapedBody}'`
-          const { stdout } = await execAsync(command)
+          const issueData = await this.apiRequest(
+            `/repos/${this.owner}/${this.repo}/issues`,
+            'POST',
+            { title, body }
+          )
 
-          const issueUrl = stdout.trim()
-          const issueNumber = parseInt(issueUrl.split('/').pop())
-
-          console.log(`✅ Created GitHub issue #${issueNumber} (without labels): ${issueUrl}`)
+          console.log(`✅ Created GitHub issue #${issueData.number} (without labels): ${issueData.html_url}`)
 
           return {
-            number: issueNumber,
-            url: issueUrl
+            number: issueData.number,
+            url: issueData.html_url
           }
         } catch (retryError) {
           console.error('Failed to create GitHub issue (retry):', retryError.message)
@@ -189,12 +197,13 @@ ${stepsToReproduce}
     }
 
     try {
-      const escapedComment = comment.replace(/'/g, "'\\''")
-      const command = `gh issue comment ${issueNumber} --repo ${this.owner}/${this.repo} --body '${escapedComment}'`
+      await this.apiRequest(
+        `/repos/${this.owner}/${this.repo}/issues/${issueNumber}/comments`,
+        'POST',
+        { body: comment }
+      )
 
-      await execAsync(command)
       console.log(`✅ Added comment to GitHub issue #${issueNumber}`)
-
       return true
     } catch (error) {
       console.error(`Failed to add comment to issue #${issueNumber}:`, error.message)
@@ -209,12 +218,15 @@ ${stepsToReproduce}
     }
 
     try {
-      const reasonArg = reason === 'not_planned' ? '--reason "not planned"' : ''
-      const command = `gh issue close ${issueNumber} --repo ${this.owner}/${this.repo} ${reasonArg}`
+      const stateReason = reason === 'not_planned' ? 'not_planned' : 'completed'
 
-      await execAsync(command)
+      await this.apiRequest(
+        `/repos/${this.owner}/${this.repo}/issues/${issueNumber}`,
+        'PATCH',
+        { state: 'closed', state_reason: stateReason }
+      )
+
       console.log(`✅ Closed GitHub issue #${issueNumber}`)
-
       return true
     } catch (error) {
       console.error(`Failed to close issue #${issueNumber}:`, error.message)

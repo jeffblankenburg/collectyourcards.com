@@ -84,6 +84,34 @@ Both "pink steven kwan" and "steven kwan pink" now:
 
 ---
 
+## 🔧 Environment Variable Changes
+
+### 6. GitHub Token for Issue Creation - NEW ✅
+**Status**: 🟡 **Requires production configuration**
+**Affected Feature**: Feedback form → GitHub issue creation
+**Issue**: The "Add GitHub Issue" button doesn't work in production
+
+**Problem**:
+The previous implementation used `gh` CLI which isn't available in Azure App Service. The service has been rewritten to use the GitHub REST API instead.
+
+**Solution Applied** ✅:
+- Rewrote `server/services/githubService.js` to use GitHub REST API with PAT
+- No longer requires `gh` CLI installation
+
+**Production Action Required**:
+1. Create a GitHub Personal Access Token (Classic) at https://github.com/settings/tokens
+   - Scope needed: `repo` (Full control of private repositories)
+   - Or for public repos only: `public_repo`
+2. Add to Azure App Service configuration:
+   ```
+   GITHUB_TOKEN=ghp_your_token_here
+   ```
+
+**Files Changed**: `server/services/githubService.js`
+**Priority**: Low - feature enhancement, not blocking
+
+---
+
 ## 📋 Other Pending Changes
 
 ### 3. No-Name Teams for Import System
