@@ -26,7 +26,7 @@ const SPORT_EMOJI = {
 const getSportEmoji = (sportName) => SPORT_EMOJI[sportName?.toLowerCase()] || '🏅'
 
 function Boxed() {
-  const { year } = useParams()
+  const { year, username } = useParams()
   const navigate = useNavigate()
   const { isAuthenticated } = useAuth()
 
@@ -36,15 +36,23 @@ function Boxed() {
   const [currentSlide, setCurrentSlide] = useState(0)
   const [isAnimating, setIsAnimating] = useState(false)
 
+  // Determine if viewing someone else's Boxed
+  const isPublicView = !!username
   const currentYear = new Date().getFullYear()
   const displayYear = year ? parseInt(year) : currentYear
 
   useEffect(() => {
-    document.title = `${displayYear} Boxed - Collect Your Cards`
-    if (isAuthenticated) {
+    const title = isPublicView
+      ? `${username}'s ${displayYear} Boxed - Collect Your Cards`
+      : `${displayYear} Boxed - Collect Your Cards`
+    document.title = title
+
+    if (isPublicView) {
+      fetchPublicBoxedData()
+    } else if (isAuthenticated) {
       fetchBoxedData()
     }
-  }, [displayYear, isAuthenticated])
+  }, [displayYear, isAuthenticated, username, isPublicView])
 
   const fetchBoxedData = async () => {
     setLoading(true)
@@ -55,6 +63,24 @@ function Boxed() {
     } catch (err) {
       console.error('Error fetching boxed data:', err)
       setError(err.response?.data?.error || 'Failed to load your year in cards')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const fetchPublicBoxedData = async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const response = await axios.get(`/api/user/wrapped/public/${username}/${displayYear}`)
+      setData(response.data)
+    } catch (err) {
+      console.error('Error fetching public boxed data:', err)
+      if (err.response?.status === 404) {
+        setError('This user\'s Boxed is not available or their profile is not public')
+      } else {
+        setError(err.response?.data?.error || 'Failed to load Boxed data')
+      }
     } finally {
       setLoading(false)
     }
@@ -438,7 +464,8 @@ function Boxed() {
     link.click()
   }, [data, displayYear])
 
-  if (!isAuthenticated) {
+  // Only require authentication for viewing your own Boxed (not public views)
+  if (!isPublicView && !isAuthenticated) {
     return (
       <div className="boxed-page">
         <div className="boxed-auth-required">
@@ -460,7 +487,7 @@ function Boxed() {
       <div className="boxed-page">
         <div className="boxed-loading">
           <div className="boxed-loading-box"></div>
-          <p>Opening your {displayYear} box...</p>
+          <p>Opening {isPublicView ? `${username}'s` : 'your'} {displayYear} box...</p>
         </div>
       </div>
     )
@@ -473,7 +500,7 @@ function Boxed() {
           <Icon name="alert-circle" size={48} />
           <h2>Oops!</h2>
           <p>{error}</p>
-          <button onClick={fetchBoxedData} className="boxed-retry-btn">
+          <button onClick={isPublicView ? fetchPublicBoxedData : fetchBoxedData} className="boxed-retry-btn">
             Try Again
           </button>
         </div>
@@ -498,7 +525,9 @@ function Boxed() {
             <div className="boxed-intro-year">{displayYear}</div>
             <div className="boxed-intro-brand">BOXED</div>
           </div>
-          <p className="boxed-intro-subtitle">Your year in cards, all wrapped up</p>
+          <p className="boxed-intro-subtitle">
+            {isPublicView ? `${data.user?.name || username}'s year in cards` : 'Your year in cards, all wrapped up'}
+          </p>
           <div className="boxed-intro-hint">
             <Icon name="chevron-right" size={20} />
             <span>Tap to open</span>
@@ -511,7 +540,7 @@ function Boxed() {
       id: 'cards-added',
       content: (
         <div className="boxed-slide boxed-slide-stats">
-          <div className="boxed-stat-label">This year you added</div>
+          <div className="boxed-stat-label">{isPublicView ? `This year ${data.user?.name || username} added` : 'This year you added'}</div>
           <div className="boxed-stat-box">
             <div className="boxed-stat-number">
               {data.collection.cards_added.toLocaleString()}
@@ -552,7 +581,7 @@ function Boxed() {
       id: 'total-collection',
       content: (
         <div className="boxed-slide boxed-slide-stats">
-          <div className="boxed-stat-label">Your collection now has</div>
+          <div className="boxed-stat-label">{isPublicView ? `${data.user?.name || username}'s collection has` : 'Your collection now has'}</div>
           <div className="boxed-stat-box">
             <div className="boxed-stat-number">
               {data.collection.total_collection_size.toLocaleString()}
@@ -581,7 +610,7 @@ function Boxed() {
       id: 'top-player',
       content: (
         <div className="boxed-slide boxed-slide-player">
-          <div className="boxed-stat-label">Your #1 player</div>
+          <div className="boxed-stat-label">{isPublicView ? `${data.user?.name || username}'s #1 player` : 'Your #1 player'}</div>
           <div className="boxed-player-box">
             <div className="boxed-player-name">{data.top_players[0].name}</div>
             <div className="boxed-player-count">{data.top_players[0].count} cards</div>
@@ -605,7 +634,7 @@ function Boxed() {
       id: 'top-team',
       content: (
         <div className="boxed-slide boxed-slide-team-list">
-          <div className="boxed-stat-label">Your #1 team</div>
+          <div className="boxed-stat-label">{isPublicView ? `${data.user?.name || username}'s #1 team` : 'Your #1 team'}</div>
           <div className="boxed-team-header-box" style={{
             background: data.top_teams[0].primary_color ? `linear-gradient(135deg, ${data.top_teams[0].primary_color} 0%, ${data.top_teams[0].secondary_color || data.top_teams[0].primary_color} 100%)` : undefined
           }}>
@@ -640,7 +669,7 @@ function Boxed() {
       id: 'top-sets',
       content: (
         <div className="boxed-slide boxed-slide-sets-list">
-          <div className="boxed-stat-label">Your #1 set</div>
+          <div className="boxed-stat-label">{isPublicView ? `${data.user?.name || username}'s #1 set` : 'Your #1 set'}</div>
           <div className="boxed-set-header-box">
             <div className="boxed-set-name">{data.top_sets[0].name}</div>
             <div className="boxed-set-count">{data.top_sets[0].count} cards</div>
@@ -664,7 +693,7 @@ function Boxed() {
       id: 'personality',
       content: (
         <div className="boxed-slide boxed-slide-personality">
-          <div className="boxed-stat-label">Your collector type</div>
+          <div className="boxed-stat-label">{isPublicView ? `${data.user?.name || username}'s collector type` : 'Your collector type'}</div>
           <div className="boxed-personality-box">
             <div className="boxed-personality-emoji">{data.personality.emoji}</div>
             <div className="boxed-personality-type">{data.personality.type}</div>
@@ -762,7 +791,7 @@ function Boxed() {
       id: 'patterns',
       content: (
         <div className="boxed-slide boxed-slide-patterns">
-          <div className="boxed-stat-label">Your collecting habits</div>
+          <div className="boxed-stat-label">{isPublicView ? `${data.user?.name || username}'s collecting habits` : 'Your collecting habits'}</div>
           <div className="boxed-patterns-main">
             <div className="boxed-pattern-hero">
               <div className="boxed-pattern-icon-large">
@@ -802,7 +831,7 @@ function Boxed() {
       id: 'engagement',
       content: (
         <div className="boxed-slide boxed-slide-engagement">
-          <div className="boxed-stat-label">Your community engagement</div>
+          <div className="boxed-stat-label">{isPublicView ? `${data.user?.name || username}'s community engagement` : 'Your community engagement'}</div>
           <div className="boxed-engagement-grid">
             {data.engagement.achievements_earned > 0 && (
               <div className="boxed-engagement-box">
@@ -855,7 +884,7 @@ function Boxed() {
       id: 'seller',
       content: (
         <div className="boxed-slide boxed-slide-seller">
-          <div className="boxed-stat-label">Your selling year</div>
+          <div className="boxed-stat-label">{isPublicView ? `${data.user?.name || username}'s selling year` : 'Your selling year'}</div>
           <div className="boxed-seller-grid">
             <div className="boxed-seller-box">
               <div className="boxed-seller-value">${data.seller_stats.total_revenue.toFixed(0)}</div>
@@ -948,7 +977,7 @@ function Boxed() {
 
             {/* Totals Section */}
             <div className="boxed-preview-totals-section">
-              <div className="boxed-preview-totals-header">My Collection Stats</div>
+              <div className="boxed-preview-totals-header">{isPublicView ? `${data.user?.name || username}'s Collection Stats` : 'My Collection Stats'}</div>
               <div className="boxed-preview-totals">
                 <div className="boxed-preview-total-item">
                   <div className="boxed-preview-total-value">{data.collection.total_collection_size.toLocaleString()}</div>
@@ -977,16 +1006,18 @@ function Boxed() {
 
           {/* Action buttons */}
           <div className="boxed-preview-actions">
-            <button
-              className="boxed-download-btn"
-              onClick={(e) => {
-                e.stopPropagation()
-                downloadShareImage()
-              }}
-            >
-              <Icon name="download" size={18} />
-              Download Image
-            </button>
+            {!isPublicView && (
+              <button
+                className="boxed-download-btn"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  downloadShareImage()
+                }}
+              >
+                <Icon name="download" size={18} />
+                Download Image
+              </button>
+            )}
             <button
               className="boxed-restart-btn"
               onClick={(e) => { e.stopPropagation(); goToSlide(0) }}
@@ -994,6 +1025,15 @@ function Boxed() {
               <Icon name="refresh-cw" size={18} />
               Replay
             </button>
+            {isPublicView && (
+              <button
+                className="boxed-view-profile-btn"
+                onClick={(e) => { e.stopPropagation(); navigate(`/${username}`) }}
+              >
+                <Icon name="user" size={18} />
+                View Profile
+              </button>
+            )}
           </div>
         </div>
       )

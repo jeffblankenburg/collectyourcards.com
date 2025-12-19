@@ -757,7 +757,7 @@
   margin-top: 1rem;
   width: 100%;
 }
-.boxed-download-btn, .boxed-restart-btn {
+.boxed-download-btn, .boxed-restart-btn, .boxed-view-profile-btn {
   flex: 1;
   display: flex;
   align-items: center;
@@ -789,6 +789,15 @@
 .boxed-restart-btn:hover {
   border-color: rgba(255, 255, 255, 0.4);
   color: white;
+}
+.boxed-view-profile-btn {
+  background: #10b981;
+  border: 2px solid #10b981;
+  color: white;
+}
+.boxed-view-profile-btn:hover {
+  background: #059669;
+  border-color: #059669;
 }
 
 /* === IMAGE PREVIEW SLIDE === */

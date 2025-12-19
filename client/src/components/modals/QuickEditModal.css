@@ -312,6 +312,26 @@
   pointer-events: none;
 }
 
+/* Label with action icon (e.g., eBay search) */
+.label-with-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.ebay-search-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  transition: color 0.2s ease;
+  text-decoration: none;
+}
+
+.ebay-search-link:hover {
+  color: #3b82f6;
+}
+
 /* Currency input styling */
 .currency-input-wrapper {
   display: flex;

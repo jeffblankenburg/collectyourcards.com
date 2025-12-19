@@ -867,4 +867,108 @@ router.get('/share/:shareToken', async (req, res) => {
   }
 })
 
+/**
+ * GET /api/user/wrapped/public/:username/:year
+ * Public endpoint to view a user's wrapped stats by username (requires public profile)
+ */
+router.get('/public/:username/:year', async (req, res) => {
+  try {
+    const { username, year: yearParam } = req.params
+    const year = parseInt(yearParam)
+
+    if (isNaN(year) || year < 2000 || year > new Date().getFullYear()) {
+      return res.status(400).json({ error: 'Invalid year' })
+    }
+
+    // Find user by username and check if they have a public profile
+    const user = await prisma.user.findFirst({
+      where: {
+        username: username,
+        is_public_profile: true
+      },
+      select: {
+        user_id: true,
+        username: true,
+        name: true,
+        avatar_url: true
+      }
+    })
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found or profile is not public' })
+    }
+
+    // Check for cached stats
+    const wrapped = await prisma.user_wrapped.findUnique({
+      where: {
+        user_id_year: { user_id: user.user_id, year }
+      }
+    })
+
+    if (!wrapped || !wrapped.stats_json) {
+      return res.status(404).json({ error: 'Boxed data not found for this year' })
+    }
+
+    res.json({
+      ...JSON.parse(wrapped.stats_json),
+      user: {
+        username: user.username,
+        name: user.name || null,
+        avatar_url: user.avatar_url || null
+      },
+      is_public_view: true
+    })
+  } catch (error) {
+    console.error('Error fetching public wrapped:', error)
+    res.status(500).json({ error: 'Failed to fetch wrapped stats' })
+  }
+})
+
+/**
+ * GET /api/user/wrapped/public/:username
+ * Get available years for a user's public wrapped stats
+ */
+router.get('/public/:username', async (req, res) => {
+  try {
+    const { username } = req.params
+
+    // Find user by username and check if they have a public profile
+    const user = await prisma.user.findFirst({
+      where: {
+        username: username,
+        is_public_profile: true
+      },
+      select: {
+        user_id: true,
+        username: true,
+        name: true,
+        avatar_url: true
+      }
+    })
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found or profile is not public' })
+    }
+
+    // Get all years with wrapped data for this user
+    const wrappedYears = await prisma.user_wrapped.findMany({
+      where: { user_id: user.user_id },
+      select: { year: true },
+      orderBy: { year: 'desc' }
+    })
+
+    res.json({
+      user: {
+        username: user.username,
+        name: user.name || null,
+        avatar_url: user.avatar_url || null
+      },
+      available_years: wrappedYears.map(w => w.year)
+    })
+  } catch (error) {
+    console.error('Error fetching public wrapped years:', error)
+    res.status(500).json({ error: 'Failed to fetch wrapped years' })
+  }
+})
+
 module.exports = router

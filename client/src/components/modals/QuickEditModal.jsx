@@ -6,6 +6,38 @@ import Icon from '../Icon'
 import ImageEditor from '../ImageEditor'
 import './QuickEditModal.css'
 
+// Generate eBay search URL for card pricing research
+const buildEbaySearchUrl = (card) => {
+  if (!card) return null
+
+  // Build search term: card_number + player names + series name
+  const parts = []
+
+  if (card.card_number) {
+    parts.push(card.card_number)
+  }
+
+  if (card.card_player_teams?.length > 0) {
+    card.card_player_teams.forEach(cpt => {
+      if (cpt.player?.name) {
+        parts.push(cpt.player.name)
+      }
+    })
+  }
+
+  if (card.series_rel?.name) {
+    parts.push(card.series_rel.name)
+  }
+
+  if (parts.length === 0) return null
+
+  const searchTerm = parts.join(' ')
+  const encodedSearch = encodeURIComponent(searchTerm)
+
+  // eBay URL: Buy It Now (LH_BIN=1) + Sort by newly listed (_sop=10)
+  return `https://www.ebay.com/sch/i.html?_nkw=${encodedSearch}&LH_BIN=1&_sop=10`
+}
+
 const QuickEditModal = ({ 
   isOpen, 
   onClose, 
@@ -443,7 +475,21 @@ const QuickEditModal = ({
                   </div>
                 </label>
                 <label>
-                  Estimated Value
+                  <span className="label-with-action">
+                    Estimated Value
+                    {buildEbaySearchUrl(card) && (
+                      <a
+                        href={buildEbaySearchUrl(card)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="ebay-search-link"
+                        title="Search eBay for pricing"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Icon name="help-circle" size={14} />
+                      </a>
+                    )}
+                  </span>
                   <div className="currency-input-wrapper">
                     <span className="currency-prefix">$</span>
                     <input

@@ -193,6 +193,7 @@ createRoot(document.getElementById('root')).render(
               {/* Boxed - Annual collection review */}
               <Route path="/boxed" element={<ProtectedRoute><Boxed /></ProtectedRoute>} />
               <Route path="/boxed/:year" element={<ProtectedRoute><Boxed /></ProtectedRoute>} />
+              <Route path="/boxed/:username/:year" element={<Boxed />} />
 
               {/* Public profile route - MUST BE LAST to avoid conflicts with other routes */}
               <Route path="/:username" element={<PublicProfile />} />
