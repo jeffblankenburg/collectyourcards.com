@@ -123,15 +123,47 @@ function Boxed() {
   }, [nextSlide, prevSlide, navigate])
 
   // Download shareable image
-  const downloadShareImage = useCallback(() => {
+  const downloadShareImage = useCallback(async () => {
     if (!data) return
+
+    // First, load the logo image to get its dimensions
+    const logoImg = new Image()
+    logoImg.crossOrigin = 'anonymous'
+
+    await new Promise((resolve, reject) => {
+      logoImg.onload = resolve
+      logoImg.onerror = reject
+      logoImg.src = `/images/${displayYear}_boxed.png`
+    })
+
+    // Calculate dimensions
+    const width = 1080
+    const logoMaxWidth = 340
+    const logoScale = logoMaxWidth / logoImg.width
+    const logoDrawWidth = logoImg.width * logoScale
+    const logoDrawHeight = logoImg.height * logoScale
+    const logoX = (width - logoDrawWidth) / 2
+    const logoY = 25
+
+    // Calculate content height to determine canvas size
+    const statsStartY = logoY + logoDrawHeight + 20
+    const cardsBoxHeight = 100
+    const listRowHeight = 28
+    const playersBoxHeight = 36 + (Math.min(data.top_players.length, 5) * listRowHeight) + 12
+    const teamsBoxHeight = 36 + (Math.min(data.top_teams.length, 5) * listRowHeight) + 12
+    const personalityBoxHeight = 70
+    const totalsHeaderHeight = 28
+    const totalsBoxHeight = 70
+    const sectionGap = 8
+
+    const contentEndY = statsStartY + cardsBoxHeight + sectionGap + playersBoxHeight + sectionGap + teamsBoxHeight + sectionGap + personalityBoxHeight + sectionGap + totalsHeaderHeight + totalsBoxHeight
+
+    // Dynamic height based on content + footer
+    const footerSpace = 55 // Space for footer text + bottom padding
+    const height = contentEndY + footerSpace
 
     const canvas = document.createElement('canvas')
     const ctx = canvas.getContext('2d')
-
-    // Image dimensions (1080x1350 - Instagram post size, 4:5 ratio)
-    const width = 1080
-    const height = 1350
     canvas.width = width
     canvas.height = height
 
@@ -157,82 +189,13 @@ function Boxed() {
 
     const centerX = width / 2
 
-    // === MAIN BOX ===
-    const boxWidth = 320
-    const boxHeight = 420
-    const boxX = (width - boxWidth) / 2
-    const boxY = 50
-
-    // Box background gradient
-    const boxGradient = ctx.createLinearGradient(boxX, boxY, boxX + boxWidth, boxY + boxHeight)
-    boxGradient.addColorStop(0, '#1e3a5f')
-    boxGradient.addColorStop(1, '#0f172a')
-    ctx.fillStyle = boxGradient
-    ctx.fillRect(boxX, boxY, boxWidth, boxHeight)
-
-    // Box border
-    ctx.strokeStyle = '#3b82f6'
-    ctx.lineWidth = 4
-    ctx.strokeRect(boxX, boxY, boxWidth, boxHeight)
-
-    // Inner border - shortened to not overlap with BOXED text
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)'
-    ctx.lineWidth = 1
-    ctx.strokeRect(boxX + 12, boxY + 12, boxWidth - 24, boxHeight - 130)
-
-    // Logo inside box (at the top)
-    ctx.font = '700 24px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif'
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)'
-    ctx.textAlign = 'center'
-    const logoText = 'Collect Your Cards'
-    const logoTextWidth = ctx.measureText(logoText).width
-    const logoTotalWidth = 20 + 8 + logoTextWidth // icon + gap + text
-    const logoStartX = centerX - logoTotalWidth / 2
-
-    // Card icon - small white rectangle
-    const iconX = logoStartX
-    const iconY = boxY + 32
-    const iconW = 16
-    const iconH = 22
-    const r = 3
-
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)'
-    ctx.beginPath()
-    ctx.moveTo(iconX + r, iconY)
-    ctx.lineTo(iconX + iconW - r, iconY)
-    ctx.quadraticCurveTo(iconX + iconW, iconY, iconX + iconW, iconY + r)
-    ctx.lineTo(iconX + iconW, iconY + iconH - r)
-    ctx.quadraticCurveTo(iconX + iconW, iconY + iconH, iconX + iconW - r, iconY + iconH)
-    ctx.lineTo(iconX + r, iconY + iconH)
-    ctx.quadraticCurveTo(iconX, iconY + iconH, iconX, iconY + iconH - r)
-    ctx.lineTo(iconX, iconY + r)
-    ctx.quadraticCurveTo(iconX, iconY, iconX + r, iconY)
-    ctx.closePath()
-    ctx.fill()
-
-    // Logo text
-    ctx.font = '700 20px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif'
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)'
-    ctx.textAlign = 'left'
-    ctx.fillText(logoText, iconX + iconW + 8, boxY + 48)
-    ctx.textAlign = 'center'
-
-    // Year
-    ctx.font = '900 120px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif'
-    ctx.fillStyle = '#ffffff'
-    ctx.fillText(displayYear.toString(), centerX, boxY + 200)
-
-    // BOXED
-    ctx.font = '800 48px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif'
-    ctx.fillStyle = '#60a5fa'
-    ctx.fillText('BOXED', centerX, boxY + 280)
+    // === BOXED LOGO IMAGE ===
+    ctx.drawImage(logoImg, logoX, logoY, logoDrawWidth, logoDrawHeight)
 
     // === STATS GRID ===
-    const statsStartY = boxY + boxHeight + 50
     const statBoxWidth = 700
-    const statBoxHeight = 100
     const statBoxX = (width - statBoxWidth) / 2
-    const statBoxPadding = 40 // Padding inside box for text
+    const statBoxPadding = 40
 
     // Helper function to fit text within max width
     const fitText = (text, maxWidth, baseSize, fontWeight = '700') => {
@@ -246,13 +209,13 @@ function Boxed() {
     }
 
     // Cards Added stat with growth
-    const cardsBoxHeight = 100
     ctx.fillStyle = 'rgba(255, 255, 255, 0.03)'
     ctx.fillRect(statBoxX, statsStartY, statBoxWidth, cardsBoxHeight)
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)'
     ctx.lineWidth = 2
     ctx.strokeRect(statBoxX, statsStartY, statBoxWidth, cardsBoxHeight)
 
+    ctx.textAlign = 'center'
     ctx.font = '500 14px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif'
     ctx.fillStyle = 'rgba(255, 255, 255, 0.5)'
     ctx.fillText('CARDS ADDED', centerX, statsStartY + 24)
@@ -272,9 +235,7 @@ function Boxed() {
     }
 
     // === TOP 5 PLAYERS ===
-    const playersY = statsStartY + cardsBoxHeight + 12
-    const listRowHeight = 28
-    const playersBoxHeight = 36 + (Math.min(data.top_players.length, 5) * listRowHeight) + 12
+    const playersY = statsStartY + cardsBoxHeight + sectionGap
 
     ctx.fillStyle = 'rgba(251, 191, 36, 0.06)'
     ctx.fillRect(statBoxX, playersY, statBoxWidth, playersBoxHeight)
@@ -311,8 +272,7 @@ function Boxed() {
     ctx.textAlign = 'center'
 
     // === TOP 5 TEAMS ===
-    const teamsY = playersY + playersBoxHeight + 12
-    const teamsBoxHeight = 36 + (Math.min(data.top_teams.length, 5) * listRowHeight) + 12
+    const teamsY = playersY + playersBoxHeight + sectionGap
 
     ctx.fillStyle = 'rgba(255, 255, 255, 0.03)'
     ctx.fillRect(statBoxX, teamsY, statBoxWidth, teamsBoxHeight)
@@ -367,8 +327,7 @@ function Boxed() {
     ctx.textAlign = 'center'
 
     // === COLLECTOR TYPE ===
-    const personalityY = teamsY + teamsBoxHeight + 12
-    const personalityBoxHeight = 70
+    const personalityY = teamsY + teamsBoxHeight + sectionGap
     ctx.fillStyle = 'rgba(255, 255, 255, 0.03)'
     ctx.fillRect(statBoxX, personalityY, statBoxWidth, personalityBoxHeight)
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)'
@@ -398,10 +357,8 @@ function Boxed() {
     ctx.textAlign = 'center'
 
     // === TOTALS SECTION ===
-    const totalsHeaderY = personalityY + personalityBoxHeight + 12
-    const totalsHeaderHeight = 28
+    const totalsHeaderY = personalityY + personalityBoxHeight + sectionGap
     const totalsY = totalsHeaderY + totalsHeaderHeight
-    const totalsBoxHeight = 70
     const totalsColWidth = statBoxWidth / 3
 
     // Header bar
@@ -450,12 +407,13 @@ function Boxed() {
     ctx.fillText(valueText, statBoxX + totalsColWidth * 2 + totalsColWidth / 2, totalsY + 52)
 
     // === FOOTER ===
-    ctx.font = '500 24px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif'
+    const footerY = totalsY + totalsBoxHeight + 35
+    ctx.font = '500 20px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif'
     ctx.fillStyle = 'rgba(255, 255, 255, 0.3)'
     const footerText = data.public_profile_url
       ? `See my collection at ${data.public_profile_url.replace('https://', '')}`
       : 'collectyourcards.com'
-    ctx.fillText(footerText, centerX, height - 40)
+    ctx.fillText(footerText, centerX, footerY)
 
     // Download
     const link = document.createElement('a')
@@ -517,14 +475,11 @@ function Boxed() {
       id: 'intro',
       content: (
         <div className="boxed-slide boxed-slide-intro">
-          <div className="boxed-intro-box">
-            <div className="boxed-intro-logo">
-              <div className="boxed-intro-logo-icon"></div>
-              <span>Collect Your Cards</span>
-            </div>
-            <div className="boxed-intro-year">{displayYear}</div>
-            <div className="boxed-intro-brand">BOXED</div>
-          </div>
+          <img
+            src={`/images/${displayYear}_boxed.png`}
+            alt={`${displayYear} Boxed`}
+            className="boxed-intro-image"
+          />
           <p className="boxed-intro-subtitle">
             {isPublicView ? `${data.user?.name || username}'s year in cards` : 'Your year in cards, all wrapped up'}
           </p>
@@ -909,15 +864,12 @@ function Boxed() {
         <div className="boxed-slide boxed-slide-preview">
           {/* Image preview matching the downloadable image */}
           <div className="boxed-preview-container">
-            {/* Year Box with logo inside */}
-            <div className="boxed-preview-year-box">
-              <div className="boxed-preview-logo">
-                <div className="boxed-preview-logo-icon"></div>
-                <span>Collect Your Cards</span>
-              </div>
-              <div className="boxed-preview-year">{displayYear}</div>
-              <div className="boxed-preview-brand">BOXED</div>
-            </div>
+            {/* Boxed logo image */}
+            <img
+              src={`/images/${displayYear}_boxed.png`}
+              alt={`${displayYear} Boxed`}
+              className="boxed-preview-image"
+            />
 
             {/* Cards Added */}
             <div className="boxed-preview-stat-box">

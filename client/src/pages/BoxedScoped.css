@@ -248,6 +248,14 @@
 .boxed-slide-intro {
   gap: 1.5rem;
 }
+/* Boxed logo image for intro slide */
+.boxed-intro-image {
+  max-width: 320px;
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 20px 40px rgba(0, 0, 0, 0.4));
+}
+/* Legacy box styles - kept for fallback */
 .boxed-intro-box {
   width: 220px;
   height: 280px;
@@ -835,6 +843,14 @@
   background: rgba(255, 255, 255, 0.9);
   border-radius: 2px;
 }
+/* Boxed logo image for preview */
+.boxed-preview-image {
+  max-width: 180px;
+  width: 100%;
+  height: auto;
+  margin: 0.5rem 0;
+}
+/* Legacy year-box styles - kept for fallback */
 .boxed-preview-year-box {
   width: 160px;
   background: linear-gradient(135deg, #1e3a5f 0%, #0f172a 100%);
