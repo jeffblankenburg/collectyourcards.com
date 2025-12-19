@@ -168,5 +168,74 @@
   .seller-set-detail-purchases-grid { grid-template-columns: 1fr; }
 }
 
+/* Collection Cards Table */
+.seller-set-detail-collection-table-wrapper {
+  overflow-x: auto;
+  background: rgba(255,255,255,0.03);
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+.seller-set-detail-collection-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+.seller-set-detail-collection-table th {
+  padding: 0.75rem;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(255,255,255,0.6);
+  background: rgba(255,255,255,0.05);
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+.seller-set-detail-collection-table td {
+  padding: 0.625rem 0.75rem;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  color: rgba(255,255,255,0.9);
+}
+.seller-set-detail-collection-table tbody tr:hover {
+  background: rgba(255,255,255,0.05);
+}
+.seller-set-detail-th-right { text-align: right; }
+.seller-set-detail-td-right { text-align: right; }
+.seller-set-detail-value-positive { color: #4ade80; }
+.seller-set-detail-value-negative { color: #f87171; }
+
+.seller-set-detail-color-tag {
+  display: inline-block;
+  padding: 0.125rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+.seller-set-detail-attr-tag {
+  display: inline-block;
+  padding: 0.125rem 0.375rem;
+  border-radius: 3px;
+  font-size: 0.625rem;
+  font-weight: 600;
+  margin-right: 0.25rem;
+  background: rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.8);
+}
+.seller-set-detail-attr-rc { background: #fbbf24; color: #000; }
+.seller-set-detail-attr-auto { background: #3b82f6; color: #fff; }
+.seller-set-detail-attr-relic { background: #8b5cf6; color: #fff; }
+.seller-set-detail-attr-print { background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.8); }
+
+.seller-set-detail-collection-table tfoot td {
+  padding: 0.75rem;
+  font-weight: 600;
+  background: rgba(255,255,255,0.05);
+  border-top: 2px solid rgba(255,255,255,0.15);
+}
+.seller-set-detail-collection-total-label {
+  text-align: right;
+  color: rgba(255,255,255,0.7);
+}
+
 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 .spinning { animation: spin 1s linear infinite; }

@@ -2052,31 +2052,27 @@ router.get('/set-investments', requireAuth, requireSeller, async (req, res) => {
       }
 
       // Get collection value for each set (user_cards with estimated_value)
+      // Query user_cards whose card's series is in our seriesIds
       const userCards = await prisma.user_card.findMany({
         where: {
           user: userId,
-          card_rel: {
-            series_rel: {
-              set: { in: setIds }
-            }
+          card_user_card_cardTocard: {
+            series: { in: seriesIds.map(id => BigInt(id)) }
           }
         },
         select: {
           estimated_value: true,
           purchase_price: true,
-          card_rel: {
-            select: {
-              series_rel: {
-                select: { set: true }
-              }
-            }
+          card_user_card_cardTocard: {
+            select: { series: true }
           }
         }
       })
 
       // Aggregate collection value by set
       for (const userCard of userCards) {
-        const setId = userCard.card_rel?.series_rel?.set
+        const seriesId = userCard.card_user_card_cardTocard?.series ? Number(userCard.card_user_card_cardTocard.series) : null
+        const setId = seriesId ? seriesSetMap.get(seriesId) : null
         if (setId && setMap.has(setId)) {
           const setData = setMap.get(setId)
           if (!setData.collection_data) {
@@ -2301,7 +2297,7 @@ router.get('/set-investments/:setId', requireAuth, requireSeller, async (req, re
     const userCards = seriesIds.length > 0 ? await prisma.user_card.findMany({
       where: {
         user: userId,
-        card_rel: {
+        card_user_card_cardTocard: {
           series: { in: seriesIds.map(id => BigInt(id)) }
         }
       },
@@ -2319,6 +2315,77 @@ router.get('/set-investments/:setId', requireAuth, requireSeller, async (req, re
     }, 0)
     const cardsInCollection = userCards.length
 
+    // Create series map for looking up series names (needed for collection cards and sales)
+    const seriesMap = new Map(seriesData.map(s => [Number(s.series_id), s]))
+
+    // Get detailed collection cards with estimated value > 0 for display
+    const collectionCardsWithValue = seriesIds.length > 0 ? await prisma.user_card.findMany({
+      where: {
+        user: userId,
+        estimated_value: { gt: 0 },
+        card_user_card_cardTocard: {
+          series: { in: seriesIds.map(id => BigInt(id)) }
+        }
+      },
+      include: {
+        card_user_card_cardTocard: {
+          include: {
+            color_card_colorTocolor: true,
+            card_player_team_card_player_team_cardTocard: {
+              include: {
+                player_team_card_player_team_player_teamToplayer_team: {
+                  include: {
+                    player_player_team_playerToplayer: true,
+                    team_player_team_teamToteam: true
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      orderBy: { estimated_value: 'desc' }
+    }) : []
+
+    // Format collection cards for response
+    const formattedCollectionCards = collectionCardsWithValue.map(uc => {
+      const card = uc.card_user_card_cardTocard
+      const playerTeams = card?.card_player_team_card_player_team_cardTocard || []
+      const colorData = card?.color_card_colorTocolor
+      const seriesId = card?.series ? Number(card.series) : null
+      const seriesInfo = seriesId ? seriesMap.get(seriesId) : null
+
+      const playerData = playerTeams.map(cpt => {
+        const pt = cpt.player_team_card_player_team_player_teamToplayer_team
+        const player = pt?.player_player_team_playerToplayer
+        const team = pt?.team_player_team_teamToteam
+        return {
+          player_id: player?.player_id ? Number(player.player_id) : null,
+          name: player ? `${player.first_name || ''} ${player.last_name || ''}`.trim() : null,
+          team_name: team?.name || null,
+          team_abbreviation: team?.abbreviation || null
+        }
+      }).filter(p => p.name)
+
+      return {
+        user_card_id: Number(uc.user_card_id),
+        card_id: card ? Number(card.card_id) : null,
+        card_number: card?.card_number || null,
+        players: playerData.map(p => p.name).join(', '),
+        player_data: playerData,
+        series_name: seriesInfo?.name || null,
+        color: colorData?.name || null,
+        color_hex: colorData?.hex_value || null,
+        is_rookie: card?.is_rookie || false,
+        is_autograph: card?.is_autograph || false,
+        is_relic: card?.is_relic || false,
+        print_run: card?.print_run || null,
+        estimated_value: parseFloat(uc.estimated_value) || 0,
+        purchase_price: parseFloat(uc.purchase_price) || 0,
+        value_gain: (parseFloat(uc.estimated_value) || 0) - (parseFloat(uc.purchase_price) || 0)
+      }
+    })
+
     const remainingHole = totalInvestment - salesRevenue
 
     // Cash Recovery % = net profit from sales / dollars spent
@@ -2326,9 +2393,6 @@ router.get('/set-investments/:setId', requireAuth, requireSeller, async (req, re
 
     // Total Recovery % = (net profit from sales + collection value gain) / dollars spent
     const totalRecoveryPercentage = totalInvestment > 0 ? (((netProfit + collectionValue) / totalInvestment) * 100) : 0
-
-    // Create series map for looking up series names
-    const seriesMap = new Map(seriesData.map(s => [Number(s.series_id), s]))
 
     // Format sales with card info (matching main /sales endpoint format)
     const formattedSales = sales.map(sale => {
@@ -2412,6 +2476,7 @@ router.get('/set-investments/:setId', requireAuth, requireSeller, async (req, re
         product_type_display: productTypesObj[p.product_type] || p.product_type
       })),
       sales: formattedSales,
+      collection_cards: formattedCollectionCards,
       summary: {
         total_investment: totalInvestment,
         total_products: totalProducts,

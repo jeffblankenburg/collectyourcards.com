@@ -179,7 +179,7 @@ function SellerSetDetail() {
     )
   }
 
-  const { set, purchases, sales, summary } = data
+  const { set, purchases, sales, collection_cards = [], summary } = data
 
   return (
     <div className="seller-set-detail-page">
@@ -330,6 +330,75 @@ function SellerSetDetail() {
           emptyMessage="No cards from this set have been listed or sold yet."
         />
       </div>
+
+      {collection_cards.length > 0 && (
+        <div className="seller-set-detail-section">
+          <h2><Icon name="star" size={20} /> Collection Cards with Value ({collection_cards.length})</h2>
+          <div className="seller-set-detail-collection-table-wrapper">
+            <table className="seller-set-detail-collection-table">
+              <thead>
+                <tr>
+                  <th>Card #</th>
+                  <th>Player(s)</th>
+                  <th>Series</th>
+                  <th>Color</th>
+                  <th>Attributes</th>
+                  <th className="seller-set-detail-th-right">Est. Value</th>
+                  <th className="seller-set-detail-th-right">Cost</th>
+                  <th className="seller-set-detail-th-right">Gain</th>
+                </tr>
+              </thead>
+              <tbody>
+                {collection_cards.map(card => (
+                  <tr key={card.user_card_id}>
+                    <td>{card.card_number || '-'}</td>
+                    <td>{card.players || '-'}</td>
+                    <td>{card.series_name || '-'}</td>
+                    <td>
+                      {card.color && (
+                        <span
+                          className="seller-set-detail-color-tag"
+                          style={{
+                            backgroundColor: card.color_hex || '#888',
+                            color: card.color_hex && parseInt(card.color_hex.replace('#', ''), 16) > 0xffffff / 2 ? '#000' : '#fff'
+                          }}
+                        >
+                          {card.color}
+                        </span>
+                      )}
+                    </td>
+                    <td>
+                      {card.is_rookie && <span className="seller-set-detail-attr-tag seller-set-detail-attr-rc">RC</span>}
+                      {card.is_autograph && <span className="seller-set-detail-attr-tag seller-set-detail-attr-auto">AUTO</span>}
+                      {card.is_relic && <span className="seller-set-detail-attr-tag seller-set-detail-attr-relic">RELIC</span>}
+                      {card.print_run && <span className="seller-set-detail-attr-tag seller-set-detail-attr-print">/{card.print_run}</span>}
+                    </td>
+                    <td className="seller-set-detail-td-right seller-set-detail-value-positive">{formatCurrency(card.estimated_value)}</td>
+                    <td className="seller-set-detail-td-right">{card.purchase_price > 0 ? formatCurrency(card.purchase_price) : '-'}</td>
+                    <td className={`seller-set-detail-td-right ${card.value_gain >= 0 ? 'seller-set-detail-value-positive' : 'seller-set-detail-value-negative'}`}>
+                      {formatCurrency(card.value_gain)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td colSpan="5" className="seller-set-detail-collection-total-label">Total Collection Value</td>
+                  <td className="seller-set-detail-td-right seller-set-detail-value-positive">
+                    {formatCurrency(collection_cards.reduce((sum, c) => sum + c.estimated_value, 0))}
+                  </td>
+                  <td className="seller-set-detail-td-right">
+                    {formatCurrency(collection_cards.reduce((sum, c) => sum + c.purchase_price, 0))}
+                  </td>
+                  <td className="seller-set-detail-td-right seller-set-detail-value-positive">
+                    {formatCurrency(collection_cards.reduce((sum, c) => sum + c.value_gain, 0))}
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      )}
 
       <ConfirmModal isOpen={!!deleteConfirm} onClose={() => setDeleteConfirm(null)} onConfirm={handleDeletePurchase} title="Delete Purchase" message={`Are you sure you want to delete this ${deleteConfirm?.product_type_display || 'purchase'}? This action cannot be undone.`} confirmText="Delete" confirmVariant="danger" icon="trash-2" />
     </div>
