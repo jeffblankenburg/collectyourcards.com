@@ -156,7 +156,8 @@ function Boxed() {
     const totalsBoxHeight = 70
     const sectionGap = 8
 
-    const contentEndY = statsStartY + cardsBoxHeight + sectionGap + playersBoxHeight + sectionGap + teamsBoxHeight + sectionGap + personalityBoxHeight + sectionGap + totalsHeaderHeight + totalsBoxHeight
+    const specialsBoxHeight = 70
+    const contentEndY = statsStartY + cardsBoxHeight + sectionGap + playersBoxHeight + sectionGap + teamsBoxHeight + sectionGap + personalityBoxHeight + sectionGap + totalsHeaderHeight + totalsBoxHeight + specialsBoxHeight
 
     // Dynamic height based on content + footer
     const footerSpace = 55 // Space for footer text + bottom padding
@@ -406,8 +407,41 @@ function Boxed() {
       : '$0'
     ctx.fillText(valueText, statBoxX + totalsColWidth * 2 + totalsColWidth / 2, totalsY + 52)
 
+    // === SPECIAL CARDS ROW (Row 2) ===
+    const specialsY = totalsY + totalsBoxHeight
+
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.03)'
+    ctx.fillRect(statBoxX, specialsY, statBoxWidth, specialsBoxHeight)
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)'
+    ctx.lineWidth = 2
+    ctx.strokeRect(statBoxX, specialsY, statBoxWidth, specialsBoxHeight)
+
+    // Rookies
+    ctx.font = '500 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif'
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)'
+    ctx.fillText('ROOKIES', statBoxX + totalsColWidth / 2, specialsY + 22)
+    ctx.font = '700 24px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif'
+    ctx.fillStyle = '#f59e0b'
+    ctx.fillText((data.attributes?.rookies || 0).toLocaleString(), statBoxX + totalsColWidth / 2, specialsY + 52)
+
+    // Autographs
+    ctx.font = '500 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif'
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)'
+    ctx.fillText('AUTOGRAPHS', statBoxX + totalsColWidth + totalsColWidth / 2, specialsY + 22)
+    ctx.font = '700 24px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif'
+    ctx.fillStyle = '#8b5cf6'
+    ctx.fillText((data.attributes?.autographs || 0).toLocaleString(), statBoxX + totalsColWidth + totalsColWidth / 2, specialsY + 52)
+
+    // Relics
+    ctx.font = '500 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif'
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)'
+    ctx.fillText('RELICS', statBoxX + totalsColWidth * 2 + totalsColWidth / 2, specialsY + 22)
+    ctx.font = '700 24px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif'
+    ctx.fillStyle = '#06b6d4'
+    ctx.fillText((data.attributes?.relics || 0).toLocaleString(), statBoxX + totalsColWidth * 2 + totalsColWidth / 2, specialsY + 52)
+
     // === FOOTER ===
-    const footerY = totalsY + totalsBoxHeight + 35
+    const footerY = specialsY + specialsBoxHeight + 35
     ctx.font = '500 20px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif'
     ctx.fillStyle = 'rgba(255, 255, 255, 0.3)'
     const footerText = data.public_profile_url
@@ -944,6 +978,21 @@ function Boxed() {
                     ${data.collection.total_value_added > 0 ? data.collection.total_value_added.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : '0'}
                   </div>
                   <div className="boxed-preview-total-label">Est. Value</div>
+                </div>
+              </div>
+              {/* Special Cards Row */}
+              <div className="boxed-preview-totals boxed-preview-totals-row2">
+                <div className="boxed-preview-total-item">
+                  <div className="boxed-preview-total-value boxed-rc">{data.attributes?.rookies?.toLocaleString() || 0}</div>
+                  <div className="boxed-preview-total-label">Rookies</div>
+                </div>
+                <div className="boxed-preview-total-item">
+                  <div className="boxed-preview-total-value boxed-auto">{data.attributes?.autographs?.toLocaleString() || 0}</div>
+                  <div className="boxed-preview-total-label">Autographs</div>
+                </div>
+                <div className="boxed-preview-total-item">
+                  <div className="boxed-preview-total-value boxed-relic">{data.attributes?.relics?.toLocaleString() || 0}</div>
+                  <div className="boxed-preview-total-label">Relics</div>
                 </div>
               </div>
             </div>

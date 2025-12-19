@@ -1046,6 +1046,20 @@
   text-transform: uppercase;
   margin-top: 0.125rem;
 }
+/* Second row of stats */
+.boxed-preview-totals-row2 {
+  border-top: none;
+}
+/* Special card type colors */
+.boxed-preview-total-value.boxed-rc {
+  color: #f59e0b;
+}
+.boxed-preview-total-value.boxed-auto {
+  color: #8b5cf6;
+}
+.boxed-preview-total-value.boxed-relic {
+  color: #06b6d4;
+}
 .boxed-preview-footer {
   font-size: 0.625rem;
   color: rgba(255, 255, 255, 0.3);
