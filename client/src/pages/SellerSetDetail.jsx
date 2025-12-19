@@ -220,9 +220,25 @@ function SellerSetDetail() {
           <div className="seller-set-detail-summary-value">{summary.cards_listed}</div>
         </div>
         <div className="seller-set-detail-summary-card">
-          <div className="seller-set-detail-summary-label">Recovery</div>
-          <div className="seller-set-detail-summary-value">{formatPercentage(summary.recovery_percentage)}</div>
+          <div className="seller-set-detail-summary-label">Cash Recovery</div>
+          <div className="seller-set-detail-summary-value">{formatPercentage(summary.cash_recovery_percentage)}</div>
         </div>
+        <div className="seller-set-detail-summary-card">
+          <div className="seller-set-detail-summary-label">Total Recovery</div>
+          <div className="seller-set-detail-summary-value" title="Includes collection value">{formatPercentage(summary.total_recovery_percentage)}</div>
+        </div>
+        {summary.collection_value > 0 && (
+          <div className="seller-set-detail-summary-card">
+            <div className="seller-set-detail-summary-label">Collection Value</div>
+            <div className="seller-set-detail-summary-value">{formatCurrency(summary.collection_value)}</div>
+          </div>
+        )}
+        {summary.cards_in_collection > 0 && (
+          <div className="seller-set-detail-summary-card">
+            <div className="seller-set-detail-summary-label">In Collection</div>
+            <div className="seller-set-detail-summary-value">{summary.cards_in_collection}</div>
+          </div>
+        )}
       </div>
 
       {showAddPurchase && (

@@ -2050,6 +2050,48 @@ router.get('/set-investments', requireAuth, requireSeller, async (req, res) => {
           setData.sales_data.total_net_profit += parseFloat(sale.net_profit) || 0
         }
       }
+
+      // Get collection value for each set (user_cards with estimated_value)
+      const userCards = await prisma.user_card.findMany({
+        where: {
+          user: userId,
+          card_rel: {
+            series_rel: {
+              set: { in: setIds }
+            }
+          }
+        },
+        select: {
+          estimated_value: true,
+          purchase_price: true,
+          card_rel: {
+            select: {
+              series_rel: {
+                select: { set: true }
+              }
+            }
+          }
+        }
+      })
+
+      // Aggregate collection value by set
+      for (const userCard of userCards) {
+        const setId = userCard.card_rel?.series_rel?.set
+        if (setId && setMap.has(setId)) {
+          const setData = setMap.get(setId)
+          if (!setData.collection_data) {
+            setData.collection_data = {
+              total_collection_value: 0,
+              cards_in_collection: 0
+            }
+          }
+          // Collection value = estimated_value - purchase_price (gain only)
+          const estimatedValue = parseFloat(userCard.estimated_value) || 0
+          const purchasePrice = parseFloat(userCard.purchase_price) || 0
+          setData.collection_data.total_collection_value += (estimatedValue - purchasePrice)
+          setData.collection_data.cards_in_collection += 1
+        }
+      }
     }
 
     // Calculate ROI metrics for each set
@@ -2059,12 +2101,23 @@ router.get('/set-investments', requireAuth, requireSeller, async (req, res) => {
         total_sales_count: 0,
         total_net_profit: 0
       }
+      const collectionData = setData.collection_data || {
+        total_collection_value: 0,
+        cards_in_collection: 0
+      }
 
       // "Hole" = Investment - Sales Revenue
       // Negative = still in the hole, Positive = in the profit
       const remaining_hole = setData.total_investment - salesData.total_sales_revenue
-      const recovery_percentage = setData.total_investment > 0
-        ? ((salesData.total_sales_revenue / setData.total_investment) * 100)
+
+      // Cash Recovery % = net profit from sales / dollars spent
+      const cash_recovery_percentage = setData.total_investment > 0
+        ? ((salesData.total_net_profit / setData.total_investment) * 100)
+        : 0
+
+      // Total Recovery % = (net profit from sales + collection value gain) / dollars spent
+      const total_recovery_percentage = setData.total_investment > 0
+        ? (((salesData.total_net_profit + collectionData.total_collection_value) / setData.total_investment) * 100)
         : 0
 
       return {
@@ -2086,8 +2139,12 @@ router.get('/set-investments', requireAuth, requireSeller, async (req, res) => {
         sales_revenue: salesData.total_sales_revenue,
         cards_sold: salesData.total_sales_count,
         net_profit_from_sales: salesData.total_net_profit,
+        collection_value: collectionData.total_collection_value,
+        cards_in_collection: collectionData.cards_in_collection,
         remaining_hole: remaining_hole,
-        recovery_percentage: recovery_percentage,
+        recovery_percentage: cash_recovery_percentage, // Keep for backwards compatibility
+        cash_recovery_percentage: cash_recovery_percentage,
+        total_recovery_percentage: total_recovery_percentage,
         is_profitable: remaining_hole < 0 // Negative remaining hole means profitable
       }
     })
@@ -2101,17 +2158,29 @@ router.get('/set-investments', requireAuth, requireSeller, async (req, res) => {
       acc.total_sales_revenue += inv.sales_revenue
       acc.total_cards_sold += inv.cards_sold
       acc.total_net_profit += inv.net_profit_from_sales
+      acc.total_collection_value += inv.collection_value
+      acc.total_cards_in_collection += inv.cards_in_collection
       return acc
     }, {
       total_investment: 0,
       total_sales_revenue: 0,
       total_cards_sold: 0,
-      total_net_profit: 0
+      total_net_profit: 0,
+      total_collection_value: 0,
+      total_cards_in_collection: 0
     })
 
     totals.remaining_hole = totals.total_investment - totals.total_sales_revenue
-    totals.recovery_percentage = totals.total_investment > 0
-      ? ((totals.total_sales_revenue / totals.total_investment) * 100)
+
+    // Cash Recovery % = net profit from sales / dollars spent
+    totals.cash_recovery_percentage = totals.total_investment > 0
+      ? ((totals.total_net_profit / totals.total_investment) * 100)
+      : 0
+    totals.recovery_percentage = totals.cash_recovery_percentage // Keep for backwards compatibility
+
+    // Total Recovery % = (net profit from sales + collection value gain) / dollars spent
+    totals.total_recovery_percentage = totals.total_investment > 0
+      ? (((totals.total_net_profit + totals.total_collection_value) / totals.total_investment) * 100)
       : 0
 
     // Get global product types, fallback to hardcoded defaults
@@ -2228,8 +2297,35 @@ router.get('/set-investments/:setId', requireAuth, requireSeller, async (req, re
     const salesRevenue = soldSales.reduce((sum, s) => sum + (parseFloat(s.sale_price) || 0), 0)
     const netProfit = soldSales.reduce((sum, s) => sum + (parseFloat(s.net_profit) || 0), 0)
 
+    // Get collection value for this set (user_cards with estimated_value)
+    const userCards = seriesIds.length > 0 ? await prisma.user_card.findMany({
+      where: {
+        user: userId,
+        card_rel: {
+          series: { in: seriesIds.map(id => BigInt(id)) }
+        }
+      },
+      select: {
+        estimated_value: true,
+        purchase_price: true
+      }
+    }) : []
+
+    // Calculate collection value = sum of (estimated_value - purchase_price) for all user_cards
+    const collectionValue = userCards.reduce((sum, uc) => {
+      const estimatedValue = parseFloat(uc.estimated_value) || 0
+      const purchasePrice = parseFloat(uc.purchase_price) || 0
+      return sum + (estimatedValue - purchasePrice)
+    }, 0)
+    const cardsInCollection = userCards.length
+
     const remainingHole = totalInvestment - salesRevenue
-    const recoveryPercentage = totalInvestment > 0 ? ((salesRevenue / totalInvestment) * 100) : 0
+
+    // Cash Recovery % = net profit from sales / dollars spent
+    const cashRecoveryPercentage = totalInvestment > 0 ? ((netProfit / totalInvestment) * 100) : 0
+
+    // Total Recovery % = (net profit from sales + collection value gain) / dollars spent
+    const totalRecoveryPercentage = totalInvestment > 0 ? (((netProfit + collectionValue) / totalInvestment) * 100) : 0
 
     // Create series map for looking up series names
     const seriesMap = new Map(seriesData.map(s => [Number(s.series_id), s]))
@@ -2325,8 +2421,12 @@ router.get('/set-investments/:setId', requireAuth, requireSeller, async (req, re
         cards_sold: soldSales.length,
         cards_listed: sales.filter(s => s.status === 'listed').length,
         net_profit: netProfit,
+        collection_value: collectionValue,
+        cards_in_collection: cardsInCollection,
         remaining_hole: remainingHole,
-        recovery_percentage: recoveryPercentage,
+        recovery_percentage: cashRecoveryPercentage, // Keep for backwards compatibility
+        cash_recovery_percentage: cashRecoveryPercentage,
+        total_recovery_percentage: totalRecoveryPercentage,
         is_profitable: remainingHole < 0
       },
       product_types: productTypesObj

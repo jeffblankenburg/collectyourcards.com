@@ -220,9 +220,25 @@ function SetPurchaseDetail() {
           <div className="detail-summary-value">{summary.cards_listed}</div>
         </div>
         <div className="detail-summary-card">
-          <div className="detail-summary-label">Recovery</div>
-          <div className="detail-summary-value">{formatPercentage(summary.recovery_percentage)}</div>
+          <div className="detail-summary-label">Cash Recovery</div>
+          <div className="detail-summary-value">{formatPercentage(summary.cash_recovery_percentage)}</div>
         </div>
+        <div className="detail-summary-card">
+          <div className="detail-summary-label">Total Recovery</div>
+          <div className="detail-summary-value" title="Includes collection value">{formatPercentage(summary.total_recovery_percentage)}</div>
+        </div>
+        {summary.collection_value > 0 && (
+          <div className="detail-summary-card">
+            <div className="detail-summary-label">Collection Value</div>
+            <div className="detail-summary-value">{formatCurrency(summary.collection_value)}</div>
+          </div>
+        )}
+        {summary.cards_in_collection > 0 && (
+          <div className="detail-summary-card">
+            <div className="detail-summary-label">In Collection</div>
+            <div className="detail-summary-value">{summary.cards_in_collection}</div>
+          </div>
+        )}
       </div>
 
       {showAddPurchase && (

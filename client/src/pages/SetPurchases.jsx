@@ -198,11 +198,25 @@ function SetPurchases() {
             <div className="purchase-summary-value">{totals.total_cards_sold}</div>
           </div>
           <div className="purchase-summary-card">
-            <div className="purchase-summary-label">Recovery</div>
+            <div className="purchase-summary-label">Cash Recovery</div>
             <div className="purchase-summary-value">
-              {formatPercentage(totals.recovery_percentage)}
+              {formatPercentage(totals.cash_recovery_percentage)}
             </div>
           </div>
+          <div className="purchase-summary-card">
+            <div className="purchase-summary-label">Total Recovery</div>
+            <div className="purchase-summary-value" title="Includes collection value">
+              {formatPercentage(totals.total_recovery_percentage)}
+            </div>
+          </div>
+          {totals.total_collection_value > 0 && (
+            <div className="purchase-summary-card">
+              <div className="purchase-summary-label">Collection Value</div>
+              <div className="purchase-summary-value">
+                {formatCurrency(totals.total_collection_value)}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -469,8 +483,8 @@ function SetPurchases() {
                       <span className="purchase-mobile-year">{inv.set_year}</span>
                       <span className="purchase-mobile-name">{inv.set_name}</span>
                     </div>
-                    <span className="purchase-mobile-recovery">
-                      {formatPercentage(inv.recovery_percentage)}
+                    <span className="purchase-mobile-recovery" title={inv.total_recovery_percentage > inv.cash_recovery_percentage ? 'Total (includes collection)' : 'Cash'}>
+                      {formatPercentage(inv.total_recovery_percentage || inv.cash_recovery_percentage)}
                     </span>
                   </div>
                   <div className="purchase-mobile-stats">
@@ -516,7 +530,8 @@ function SetPurchases() {
                     <th className="purchase-th-right">Cost/Card</th>
                     <th className="purchase-th-right">Revenue</th>
                     <th className="purchase-th-right">Sold</th>
-                    <th className="purchase-th-right">Recovery</th>
+                    <th className="purchase-th-right">Cash %</th>
+                    <th className="purchase-th-right">Total %</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -543,7 +558,10 @@ function SetPurchases() {
                       </td>
                       <td className="purchase-td-right">{inv.cards_sold}</td>
                       <td className="purchase-td-right">
-                        {formatPercentage(inv.recovery_percentage)}
+                        {formatPercentage(inv.cash_recovery_percentage)}
+                      </td>
+                      <td className="purchase-td-right" title="Includes collection value">
+                        {formatPercentage(inv.total_recovery_percentage)}
                       </td>
                     </tr>
                   ))}
