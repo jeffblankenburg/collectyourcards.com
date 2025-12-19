@@ -101,6 +101,7 @@ const SellerPlayerDetail = lazy(() => import('./pages/SellerPlayerDetail.jsx'))
 const SellerAdmin = lazy(() => import('./pages/SellerAdmin.jsx'))
 const AdminFeedback = lazy(() => import('./pages/AdminFeedback.jsx'))
 const AdminFeedbackDetail = lazy(() => import('./pages/AdminFeedbackDetail.jsx'))
+const Boxed = lazy(() => import('./pages/Boxed.jsx'))
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -188,6 +189,10 @@ createRoot(document.getElementById('root')).render(
 
               {/* Shared collection view route - MUST BE BEFORE username route */}
               <Route path="/shared/:slug" element={<SharedCollectionView />} />
+
+              {/* Boxed - Annual collection review */}
+              <Route path="/boxed" element={<ProtectedRoute><Boxed /></ProtectedRoute>} />
+              <Route path="/boxed/:year" element={<ProtectedRoute><Boxed /></ProtectedRoute>} />
 
               {/* Public profile route - MUST BE LAST to avoid conflicts with other routes */}
               <Route path="/:username" element={<PublicProfile />} />

@@ -507,6 +507,9 @@ model user {
   achievement_notifications                                   achievement_notifications[]
   admin_set_view                                              admin_set_view[]
   collection_view_collection_view_userTouser                  collection_view[]           @relation("collection_view_userTouser")
+  feedback_responses                                          feedback_response[]         @relation("feedback_response_responderTouser")
+  feedback_submissions_resolved                               feedback_submission[]       @relation("feedback_submission_resolverTouser")
+  feedback_submissions_submitted                              feedback_submission[]       @relation("feedback_submission_userTouser")
   product_purchases                                           product_purchase[]          @relation("product_purchase_userTouser")
   product_types                                               product_type[]              @relation("product_type_userTouser")
   sales                                                       sale[]                      @relation("sale_userTouser")
@@ -535,9 +538,7 @@ model user {
   user_streaks                                                user_streaks[]
   user_table_preferences_user_table_preferences_userTouser    user_table_preferences[]    @relation("user_table_preferences_userTouser")
   user_team_user_team_userTouser                              user_team[]                 @relation("user_team_userTouser")
-  feedback_submissions_submitted                              feedback_submission[]       @relation("feedback_submission_userTouser")
-  feedback_submissions_resolved                               feedback_submission[]       @relation("feedback_submission_resolverTouser")
-  feedback_responses                                          feedback_response[]         @relation("feedback_response_responderTouser")
+  user_wrapped                                                user_wrapped[]
 
   @@index([is_muted], map: "IX_user_is_muted")
   @@map("user")
@@ -1300,31 +1301,31 @@ model admin_set_view {
 }
 
 model feedback_submission {
-  feedback_id        BigInt              @id(map: "PK_feedback_submission") @default(autoincrement())
-  reference_number   String              @unique(map: "UQ_feedback_reference") @db.VarChar(20)
-  submission_type    String              @db.VarChar(20)
-  subject            String              @db.NVarChar(255)
-  description        String              @db.NVarChar(Max)
-  email              String              @db.VarChar(255)
-  user_id            BigInt?
-  page_url           String              @db.VarChar(500)
-  user_agent         String?             @db.VarChar(500)
-  screen_resolution  String?             @db.VarChar(50)
-  console_logs       String?             @db.NVarChar(Max)
-  screenshot_url     String?             @db.VarChar(500)
-  priority           String?             @db.VarChar(20)
-  steps_to_reproduce String?             @db.NVarChar(Max)
-  status             String              @default("new") @db.VarChar(20)
-  admin_notes        String?             @db.NVarChar(Max)
+  feedback_id         BigInt              @id(map: "PK_feedback_submission") @default(autoincrement())
+  reference_number    String              @unique(map: "UQ_feedback_reference") @db.VarChar(20)
+  submission_type     String              @db.VarChar(20)
+  subject             String              @db.NVarChar(255)
+  description         String              @db.NVarChar(Max)
+  email               String              @db.VarChar(255)
+  user_id             BigInt?
+  page_url            String              @db.VarChar(500)
+  user_agent          String?             @db.VarChar(500)
+  screen_resolution   String?             @db.VarChar(50)
+  console_logs        String?             @db.NVarChar(Max)
+  screenshot_url      String?             @db.VarChar(500)
+  priority            String?             @db.VarChar(20)
+  steps_to_reproduce  String?             @db.NVarChar(Max)
+  status              String              @default("new") @db.VarChar(20)
+  admin_notes         String?             @db.NVarChar(Max)
   github_issue_number Int?
-  github_issue_url   String?             @db.VarChar(500)
-  resolved_at        DateTime?           @db.DateTime
-  resolved_by        BigInt?
-  created_at         DateTime            @default(now()) @db.DateTime
-  updated_at         DateTime            @default(now()) @db.DateTime
-  user               user?               @relation("feedback_submission_userTouser", fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_feedback_submission_user")
-  resolver           user?               @relation("feedback_submission_resolverTouser", fields: [resolved_by], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_feedback_submission_resolver")
-  responses          feedback_response[]
+  github_issue_url    String?             @db.VarChar(500)
+  resolved_at         DateTime?           @db.DateTime
+  resolved_by         BigInt?
+  created_at          DateTime            @default(now()) @db.DateTime
+  updated_at          DateTime            @default(now()) @db.DateTime
+  responses           feedback_response[]
+  resolver            user?               @relation("feedback_submission_resolverTouser", fields: [resolved_by], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_feedback_submission_resolver")
+  user                user?               @relation("feedback_submission_userTouser", fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_feedback_submission_user")
 
   @@index([status], map: "IX_feedback_submission_status")
   @@index([submission_type], map: "IX_feedback_submission_type")
@@ -1341,8 +1342,24 @@ model feedback_response {
   is_internal  Boolean             @default(false)
   created_at   DateTime            @default(now()) @db.DateTime
   feedback     feedback_submission @relation(fields: [feedback_id], references: [feedback_id], onDelete: Cascade, onUpdate: NoAction, map: "FK_feedback_response_feedback")
-  responder    user                @relation("feedback_response_responderTouser", fields: [responder_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_feedback_response_responder")
+  responder    user                @relation("feedback_response_responderTouser", fields: [responder_id], references: [user_id], onUpdate: NoAction, map: "FK_feedback_response_responder")
 
   @@index([feedback_id], map: "IX_feedback_response_feedback")
   @@index([responder_id], map: "IX_feedback_response_responder")
+}
+
+model user_wrapped {
+  wrapped_id      BigInt   @id(map: "PK_user_wrapped") @default(autoincrement())
+  user_id         BigInt
+  year            Int
+  stats_json      String?  @db.NVarChar(Max)
+  generated_at    DateTime @default(now(), map: "DF__user_wrap__gener__2D12A970") @db.DateTime
+  share_token     String?  @db.VarChar(32)
+  share_image_url String?  @db.NVarChar(500)
+  user            user     @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction, map: "FK_user_wrapped_user")
+
+  @@unique([user_id, year], map: "UQ_user_wrapped_user_year")
+  @@index([share_token], map: "IX_user_wrapped_share_token")
+  @@index([user_id], map: "IX_user_wrapped_user_id")
+  @@index([year], map: "IX_user_wrapped_year")
 }

@@ -187,3 +187,36 @@ WHERE RIGHT(slug, 1) = '-';
 
 PRINT 'Generated slugs for ' + CAST(@@ROWCOUNT AS VARCHAR(10)) + ' series';
 GO
+
+-- ===========================================================
+-- User Wrapped (Year in Review) Table
+-- Date: 2025-12-19
+-- Description: Cache table for user's annual collection statistics
+-- ===========================================================
+
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'user_wrapped')
+BEGIN
+  CREATE TABLE user_wrapped (
+    wrapped_id BIGINT IDENTITY(1,1) NOT NULL,
+    user_id BIGINT NOT NULL,
+    year INT NOT NULL,
+    stats_json NVARCHAR(MAX) NULL,
+    generated_at DATETIME NOT NULL DEFAULT GETDATE(),
+    share_token VARCHAR(32) NULL,
+    share_image_url NVARCHAR(500) NULL,
+    CONSTRAINT PK_user_wrapped PRIMARY KEY (wrapped_id),
+    CONSTRAINT FK_user_wrapped_user FOREIGN KEY (user_id) REFERENCES [user](user_id) ON DELETE CASCADE,
+    CONSTRAINT UQ_user_wrapped_user_year UNIQUE (user_id, year)
+  );
+
+  CREATE INDEX IX_user_wrapped_user_id ON user_wrapped(user_id);
+  CREATE INDEX IX_user_wrapped_year ON user_wrapped(year);
+  CREATE INDEX IX_user_wrapped_share_token ON user_wrapped(share_token);
+
+  PRINT 'Created user_wrapped table';
+END
+ELSE
+BEGIN
+  PRINT 'user_wrapped table already exists';
+END
+GO
