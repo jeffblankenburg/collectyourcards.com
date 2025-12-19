@@ -26,6 +26,7 @@ router.get('/minimal', async (req, res) => {
       include_unassigned,
       only_unassigned,
       series_id,
+      set_id,
       is_rookie,
       is_autograph,
       is_relic,
@@ -36,6 +37,7 @@ router.get('/minimal', async (req, res) => {
     const includeUnassigned = include_unassigned === 'true'
     const onlyUnassigned = only_unassigned === 'true'
     const seriesFilter = series_id ? parseInt(series_id) : null
+    const setFilter = set_id ? parseInt(set_id) : null
     const rookieFilter = is_rookie === 'true'
     const autographFilter = is_autograph === 'true'
     const relicFilter = is_relic === 'true'
@@ -70,6 +72,16 @@ router.get('/minimal', async (req, res) => {
         whereClause += ` AND c.series = ${seriesIdNum}`
       } catch (err) {
         // Invalid series ID - skip filter
+      }
+    }
+
+    // Add set filter
+    if (setFilter) {
+      try {
+        const setIdNum = validateNumericId(setFilter, 'set_id')
+        whereClause += ` AND s.[set] = ${setIdNum}`
+      } catch (err) {
+        // Invalid set ID - skip filter
       }
     }
 
@@ -118,6 +130,7 @@ router.get('/minimal', async (req, res) => {
         s.name as series_name,
         s.series_id,
         s.slug as series_slug,
+        st.set_id,
         st.name as set_name,
         st.year as set_year,
         col.name as color,
@@ -189,6 +202,10 @@ router.get('/minimal', async (req, res) => {
           user_card_count: 1,
           date_added: row.date_added,
           location_name: row.location_name,
+          // Set info for set filter dropdown
+          set_id: typeof row.set_id === 'bigint' ? Number(row.set_id) : row.set_id,
+          set_name: row.set_name,
+          set_year: row.set_year,
           series_rel: {
             series_id: typeof row.series_id === 'bigint' ? Number(row.series_id) : row.series_id,
             name: row.series_name,

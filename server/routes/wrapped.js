@@ -70,24 +70,25 @@ async function calculateWrappedStats(userId, year) {
     : null
 
   // Separate bulk additions from singles
-  // Cards added within 2 seconds of each other are considered bulk
+  // Cards added within 10 seconds of each other are considered bulk
   const sortedCards = [...userCardsThisYear].sort((a, b) =>
     new Date(a.created).getTime() - new Date(b.created).getTime()
   )
 
   const singleCards = new Set()
   const bulkCards = new Set()
+  const BULK_THRESHOLD_MS = 10000 // 10 seconds
 
   for (let i = 0; i < sortedCards.length; i++) {
     const card = sortedCards[i]
     const cardTime = new Date(card.created).getTime()
     const cardId = Number(card.user_card_id)
 
-    // Check if this card was added within 2 seconds of another card
+    // Check if this card was added within 10 seconds of another card
     const hasNearbyBefore = i > 0 &&
-      (cardTime - new Date(sortedCards[i - 1].created).getTime()) < 2000
+      (cardTime - new Date(sortedCards[i - 1].created).getTime()) < BULK_THRESHOLD_MS
     const hasNearbyAfter = i < sortedCards.length - 1 &&
-      (new Date(sortedCards[i + 1].created).getTime() - cardTime) < 2000
+      (new Date(sortedCards[i + 1].created).getTime() - cardTime) < BULK_THRESHOLD_MS
 
     if (hasNearbyBefore || hasNearbyAfter) {
       bulkCards.add(cardId)

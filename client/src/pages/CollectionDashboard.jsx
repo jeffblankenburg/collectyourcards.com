@@ -55,6 +55,7 @@ function CollectionDashboard() {
   const [showSellConfirm, setShowSellConfirm] = useState(false)
   const [cardToSell, setCardToSell] = useState(null)
   const [sellLoading, setSellLoading] = useState(false)
+  const [selectedSetId, setSelectedSetId] = useState(null)
 
   const navigate = useNavigate()
 
@@ -146,6 +147,30 @@ function CollectionDashboard() {
       .sort((a, b) => b.card_count - a.card_count) // Sort by card count descending
   }, [cards])
 
+  // Calculate unique sets from current cards for the set filter dropdown
+  const availableSets = useMemo(() => {
+    const setMap = new Map()
+
+    cards.forEach(card => {
+      if (card.set_id && card.set_name) {
+        if (!setMap.has(card.set_id)) {
+          setMap.set(card.set_id, {
+            set_id: card.set_id,
+            name: card.set_name,
+            year: card.set_year
+          })
+        }
+      }
+    })
+
+    // Convert to array and sort by year desc, then name
+    return Array.from(setMap.values())
+      .sort((a, b) => {
+        if (b.year !== a.year) return b.year - a.year
+        return a.name.localeCompare(b.name)
+      })
+  }, [cards])
+
   // Memoize the API endpoint for filtered cards - using minimal endpoint for performance
   const apiEndpoint = useMemo(() => {
     const params = []
@@ -173,8 +198,13 @@ function CollectionDashboard() {
       params.push(teamParams)
     }
 
+    // Add set filtering
+    if (selectedSetId) {
+      params.push(`set_id=${selectedSetId}`)
+    }
+
     return `/api/user/collection/cards/minimal?${params.join('&')}`
-  }, [selectedLocationIds, activeFilters, selectedTeamIds])
+  }, [selectedLocationIds, activeFilters, selectedTeamIds, selectedSetId])
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -777,86 +807,116 @@ function CollectionDashboard() {
             </div>
             
             <div className="header-stats">
-            <div className="stat-item">
-              <Icon name="layers" size={18} />
-              <div className="stat-content">
-                <span className="stat-value">{formatNumber(filteredStats.total_cards)}</span>
-                <span className="stat-label">Cards</span>
-              </div>
-            </div>
-            <div className="stat-item">
-              <Icon name="value" size={18} />
-              <div className="stat-content">
-                <span className="stat-value">{formatCurrency(filteredStats.total_value)}</span>
-                <span className="stat-label">Value</span>
-              </div>
-            </div>
-            <div className="stat-item">
-              <Icon name="user" size={18} />
-              <div className="stat-content">
-                <span className="stat-value">{formatNumber(filteredStats.unique_players)}</span>
-                <span className="stat-label">Players</span>
-              </div>
-            </div>
-            <div
-              className="stat-item clickable achievement-stat"
-              onClick={() => navigate('/achievements')}
-              title="View your achievements"
-            >
-              <Icon name="trophy" size={18} />
-              <div className="stat-content">
-                <span className="stat-value">{formatNumber(achievementStats.total_achievements)}</span>
-                <span className="stat-label">Achievements</span>
-                {achievementStats.total_points > 0 && (
-                  <span className="achievement-points">{achievementStats.total_points.toLocaleString()} pts</span>
+                <div className="stat-item">
+                  <Icon name="layers" size={18} />
+                  <div className="stat-content">
+                    <span className="stat-value">{formatNumber(filteredStats.total_cards)}</span>
+                    <span className="stat-label">Cards</span>
+                  </div>
+                </div>
+                <div className="stat-item">
+                  <Icon name="value" size={18} />
+                  <div className="stat-content">
+                    <span className="stat-value">{formatCurrency(filteredStats.total_value)}</span>
+                    <span className="stat-label">Value</span>
+                  </div>
+                </div>
+                <div className="stat-item">
+                  <Icon name="user" size={18} />
+                  <div className="stat-content">
+                    <span className="stat-value">{formatNumber(filteredStats.unique_players)}</span>
+                    <span className="stat-label">Players</span>
+                  </div>
+                </div>
+                <div
+                  className="stat-item clickable achievement-stat"
+                  onClick={() => navigate('/achievements')}
+                  title="View your achievements"
+                >
+                  <Icon name="trophy" size={18} />
+                  <div className="stat-content">
+                    <span className="stat-value">{formatNumber(achievementStats.total_achievements)}</span>
+                    <span className="stat-label">Achievements</span>
+                    {achievementStats.total_points > 0 && (
+                      <span className="achievement-points">{achievementStats.total_points.toLocaleString()} pts</span>
+                    )}
+                  </div>
+                </div>
+                <div
+                  className={`stat-item clickable ${activeFilters.has('autos') ? 'active' : ''}`}
+                  onClick={() => handleFilterToggle('autos')}
+                  title="Click to filter by autographed cards"
+                >
+                  <Icon name="edit" size={18} />
+                  <div className="stat-content">
+                    <span className="stat-value">{formatNumber(filteredStats.autograph_cards)}</span>
+                    <span className="stat-label">Autos</span>
+                  </div>
+                </div>
+                <div
+                  className={`stat-item clickable ${activeFilters.has('relics') ? 'active' : ''}`}
+                  onClick={() => handleFilterToggle('relics')}
+                  title="Click to filter by relic cards"
+                >
+                  <Icon name="jersey" size={18} />
+                  <div className="stat-content">
+                    <span className="stat-value">{formatNumber(filteredStats.relic_cards)}</span>
+                    <span className="stat-label">Relics</span>
+                  </div>
+                </div>
+                <div
+                  className={`stat-item clickable ${activeFilters.has('graded') ? 'active' : ''}`}
+                  onClick={() => handleFilterToggle('graded')}
+                  title="Click to filter by graded cards"
+                >
+                  <Icon name="graded-slab" size={18} />
+                  <div className="stat-content">
+                    <span className="stat-value">{formatNumber(filteredStats.graded_cards)}</span>
+                    <span className="stat-label">Graded</span>
+                  </div>
+                </div>
+                <div
+                  className={`stat-item clickable ${activeFilters.has('rookies') ? 'active' : ''}`}
+                  onClick={() => handleFilterToggle('rookies')}
+                  title="Click to filter by rookie cards"
+                >
+                  <span className="rc-tag">RC</span>
+                  <div className="stat-content">
+                    <span className="stat-value">{formatNumber(filteredStats.rookie_cards)}</span>
+                    <span className="stat-label">Rookies</span>
+                  </div>
+                </div>
+
+                {/* Set Filter Dropdown - Styled like other stat boxes */}
+                {availableSets.length > 0 && (
+                  <div className={`stat-item set-filter-stat ${selectedSetId ? 'has-selection' : ''}`}>
+                    <Icon name="package" size={18} />
+                    <div className="stat-content">
+                      <span className="stat-value">
+                        {selectedSetId
+                          ? availableSets.find(s => s.set_id === selectedSetId)?.name || 'Selected'
+                          : formatNumber(availableSets.length)
+                        }
+                      </span>
+                      {!selectedSetId && <span className="stat-label">Sets</span>}
+                    </div>
+                    <select
+                      value={selectedSetId || ''}
+                      onChange={(e) => setSelectedSetId(e.target.value ? Number(e.target.value) : null)}
+                      className="set-filter-select"
+                      title="Filter by set"
+                    >
+                      <option value="">All Sets</option>
+                      {availableSets.map(set => (
+                        <option key={set.set_id} value={set.set_id}>
+                          {set.name}
+                        </option>
+                      ))}
+                    </select>
+                    <Icon name="chevron-down" size={14} className="set-filter-caret" />
+                  </div>
                 )}
-              </div>
             </div>
-            <div
-              className={`stat-item clickable ${activeFilters.has('autos') ? 'active' : ''}`}
-              onClick={() => handleFilterToggle('autos')}
-              title="Click to filter by autographed cards"
-            >
-              <Icon name="edit" size={18} />
-              <div className="stat-content">
-                <span className="stat-value">{formatNumber(filteredStats.autograph_cards)}</span>
-                <span className="stat-label">Autos</span>
-              </div>
-            </div>
-            <div
-              className={`stat-item clickable ${activeFilters.has('relics') ? 'active' : ''}`}
-              onClick={() => handleFilterToggle('relics')}
-              title="Click to filter by relic cards"
-            >
-              <Icon name="jersey" size={18} />
-              <div className="stat-content">
-                <span className="stat-value">{formatNumber(filteredStats.relic_cards)}</span>
-                <span className="stat-label">Relics</span>
-              </div>
-            </div>
-            <div
-              className={`stat-item clickable ${activeFilters.has('graded') ? 'active' : ''}`}
-              onClick={() => handleFilterToggle('graded')}
-              title="Click to filter by graded cards"
-            >
-              <Icon name="graded-slab" size={18} />
-              <div className="stat-content">
-                <span className="stat-value">{formatNumber(filteredStats.graded_cards)}</span>
-                <span className="stat-label">Graded</span>
-              </div>
-            </div>
-            <div
-              className={`stat-item clickable ${activeFilters.has('rookies') ? 'active' : ''}`}
-              onClick={() => handleFilterToggle('rookies')}
-              title="Click to filter by rookie cards"
-            >
-              <span className="rc-tag">RC</span>
-              <div className="stat-content">
-                <span className="stat-value">{formatNumber(filteredStats.rookie_cards)}</span>
-                <span className="stat-label">Rookies</span>
-              </div>
-            </div>
-          </div>
           </div>
         </header>
 
@@ -942,6 +1002,7 @@ function CollectionDashboard() {
             loading={cardsLoading}
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
+            autoFocusSearch={true}
             viewMode={viewMode}
             onViewModeChange={setViewMode}
             showGalleryToggle={true}

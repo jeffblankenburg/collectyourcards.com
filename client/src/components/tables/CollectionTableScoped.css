@@ -719,33 +719,38 @@
     flex-direction: column;
     align-items: stretch;
   }
-  
+
+  .collection-table-container .collection-table-controls-left {
+    flex-direction: column;
+    max-width: none;
+  }
+
   .collection-table-container .collection-table-search-container {
     max-width: none;
   }
-  
+
   .collection-table-container .collection-table-wrapper {
     overflow-x: scroll;
   }
-  
+
   .collection-table-container .collection-table {
     font-size: 0.8rem;
   }
-  
+
   .collection-table-container .collection-table thead th {
     padding: 0.5rem 0.25rem;
   }
-  
+
   .collection-table-container .collection-table tbody td {
     padding: 0.5rem 0.25rem;
   }
-  
+
   .collection-table-container .player-info {
     flex-direction: column;
     align-items: flex-start;
     gap: 0.25rem;
   }
-  
+
   /* Gallery responsive styles handled by GalleryCard component */
 }
 

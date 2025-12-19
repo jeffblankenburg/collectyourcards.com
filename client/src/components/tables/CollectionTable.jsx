@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react'
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import Icon from '../Icon'
 import { CardCard, GalleryCard } from '../cards'
@@ -35,6 +35,7 @@ const CollectionTable = ({
   onViewModeChange = null,
   searchQuery = '',
   onSearchChange = null,
+  autoFocusSearch = false, // Auto-focus search input on mount
   maxHeight = null, // Custom height for the table wrapper
   showDownload = true,
   downloadFilename = 'collection',
@@ -77,6 +78,20 @@ const CollectionTable = ({
   })
   const [isResizing, setIsResizing] = useState(false)
   const [resizingColumn, setResizingColumn] = useState(null)
+
+  // Ref for search input auto-focus
+  const searchInputRef = useRef(null)
+
+  // Auto-focus search input on mount if requested
+  useEffect(() => {
+    if (autoFocusSearch && searchInputRef.current) {
+      // Small delay to ensure DOM is ready
+      const timer = setTimeout(() => {
+        searchInputRef.current?.focus()
+      }, 100)
+      return () => clearTimeout(timer)
+    }
+  }, [autoFocusSearch])
 
   // Helper function to format date added
   const formatDateAdded = (dateString) => {
@@ -465,6 +480,7 @@ const CollectionTable = ({
             {showSearch && (
               <div className="collection-table-search-container">
                 <input
+                  ref={searchInputRef}
                   type="text"
                   placeholder="Search collection..."
                   value={searchQuery}
@@ -562,6 +578,7 @@ const CollectionTable = ({
           {showSearch && (
             <div className="collection-table-search-container">
               <input
+                ref={searchInputRef}
                 type="text"
                 placeholder="Search collection..."
                 value={searchQuery}

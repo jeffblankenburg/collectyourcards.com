@@ -82,7 +82,6 @@
 .collection-dashboard-page .header-stats {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  grid-template-rows: repeat(2, 1fr);
   gap: 0.75rem;
   max-width: 560px;
   flex: 0 0 auto;
@@ -207,6 +206,48 @@
 .collection-dashboard-page .collection-team-filters .clear-filters-btn {
   font-size: 0.8rem;
   padding: 0.4rem 0.8rem;
+}
+
+/* Set Filter Dropdown - Styled like other stat boxes, spans 2 columns */
+.collection-dashboard-page .stat-item.set-filter-stat {
+  position: relative;
+  cursor: pointer;
+  grid-column: span 2;
+}
+
+.collection-dashboard-page .stat-item.set-filter-stat:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.collection-dashboard-page .stat-item.set-filter-stat .set-filter-select {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.collection-dashboard-page .stat-item.set-filter-stat .set-filter-select option {
+  background: #1f2937;
+  color: white;
+}
+
+.collection-dashboard-page .stat-item.set-filter-stat .set-filter-caret {
+  color: rgba(255, 255, 255, 0.6);
+  margin-left: auto;
+}
+
+.collection-dashboard-page .stat-item.set-filter-stat.has-selection .stat-value {
+  font-size: 0.825rem;
+  line-height: 1.2;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Location Tags Section */
@@ -1002,7 +1043,8 @@
   .collection-dashboard-page .stat-item .stat-label {
     font-size: 0.7rem;
   }
-  
+
+
   .collection-dashboard-page .location-tags {
     gap: 0.5rem;
   }
