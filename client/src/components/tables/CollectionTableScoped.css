@@ -762,3 +762,16 @@
     transform: rotate(360deg);
   }
 }
+
+/* eBay lookup link for estimated value */
+.collection-table-container .ebay-lookup-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.5);
+  transition: color 0.2s ease;
+}
+
+.collection-table-container .ebay-lookup-link:hover {
+  color: #3b82f6;
+}

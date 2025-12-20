@@ -7,6 +7,42 @@ import ColumnPicker from '../ColumnPicker'
 import { COLLECTION_TABLE_COLUMNS, getDefaultVisibleColumns } from '../../utils/tableColumnDefinitions'
 import './CollectionTableScoped.css'
 
+// Generate eBay search URL for card pricing research
+// Uses card number, player name(s), and series name only
+const buildEbaySearchUrl = (card) => {
+  if (!card) return null
+
+  const parts = []
+
+  // Card number
+  if (card.card_number) {
+    parts.push(card.card_number)
+  }
+
+  // Player name(s)
+  if (card.card_player_teams?.length > 0) {
+    card.card_player_teams.forEach(cpt => {
+      if (cpt.player?.name) {
+        parts.push(cpt.player.name)
+      } else if (cpt.player?.first_name || cpt.player?.last_name) {
+        parts.push(`${cpt.player.first_name || ''} ${cpt.player.last_name || ''}`.trim())
+      }
+    })
+  }
+
+  // Series name
+  if (card.series_rel?.name) {
+    parts.push(card.series_rel.name)
+  }
+
+  if (parts.length === 0) return null
+
+  const searchTerm = parts.join(' ')
+  const encodedSearch = encodeURIComponent(searchTerm)
+
+  return `https://www.ebay.com/sch/i.html?_nkw=${encodedSearch}&LH_BIN=1&_sop=10`
+}
+
 /**
  * CollectionTable - Reusable component for displaying user's card collection (user_card table)
  * Used on collection pages, trade lists, want lists, etc.
@@ -942,7 +978,20 @@ const CollectionTable = ({
                   {formatCurrency(card.purchase_price)}
                 </td>
                 <td className="value-cell">
-                  {formatCurrency(card.estimated_value)}
+                  {card.estimated_value != null && card.estimated_value !== 0 ? (
+                    formatCurrency(card.estimated_value)
+                  ) : (
+                    <a
+                      href={buildEbaySearchUrl(card) || 'https://www.ebay.com/sch/i.html?_nkw=baseball+card&LH_BIN=1&_sop=10'}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="ebay-lookup-link"
+                      title="Search eBay for pricing"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Icon name="help-circle" size={16} />
+                    </a>
+                  )}
                 </td>
                 <td className="current-value-cell">
                   {formatCurrency(card.current_value)}
