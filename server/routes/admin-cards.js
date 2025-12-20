@@ -25,7 +25,7 @@ const upload = multer({
 // POST /api/admin/cards - Create a new card
 router.post('/', requireDataAdmin, async (req, res) => {
   try {
-    const { series_id, card_number, sort_order, is_rookie, is_autograph, is_relic, is_short_print, print_run, notes, players } = req.body
+    const { series_id, card_number, sort_order, is_rookie, is_autograph, is_relic, is_short_print, print_run, notes, color_id, players } = req.body
 
     // Validate required fields
     if (!series_id) {
@@ -55,6 +55,7 @@ router.post('/', requireDataAdmin, async (req, res) => {
       is_short_print: Boolean(is_short_print),
       print_run: print_run ? parseInt(print_run) : null,
       notes: notes?.trim() || null,
+      color: color_id ? parseInt(color_id) : null,
       created: new Date()
     }
 
@@ -129,7 +130,7 @@ router.post('/', requireDataAdmin, async (req, res) => {
 router.put('/:id', requireDataAdmin, async (req, res) => {
   try {
     const cardId = parseInt(req.params.id)
-    const { card_number, sort_order, is_rookie, is_autograph, is_relic, is_short_print, print_run, notes, players } = req.body
+    const { card_number, sort_order, is_rookie, is_autograph, is_relic, is_short_print, print_run, notes, color_id, players } = req.body
 
     if (!cardId) {
       return res.status(400).json({ error: 'Card ID is required' })
@@ -144,7 +145,8 @@ router.put('/:id', requireDataAdmin, async (req, res) => {
       is_relic: Boolean(is_relic),
       is_short_print: Boolean(is_short_print),
       print_run: print_run ? parseInt(print_run) : null,
-      notes: notes?.trim() || null
+      notes: notes?.trim() || null,
+      color: color_id ? parseInt(color_id) : null
     }
 
     // Check if card exists

@@ -533,3 +533,18 @@
     justify-content: center;
   }
 }
+
+/* Color Select Styles */
+.admin-cards-color-select {
+  flex: 1;
+}
+
+.admin-cards-color-preview {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-left: 0.5rem;
+  white-space: nowrap;
+}

@@ -278,7 +278,7 @@
 
 .admin-series-page .table-header {
   display: grid;
-  grid-template-columns: 180px 80px 1fr 60px 120px 100px 100px 100px 120px 120px;
+  grid-template-columns: 210px 80px 1fr 60px 120px 100px 100px 100px 120px 120px;
   padding: 1rem;
   background: rgba(255, 255, 255, 0.1);
   border-bottom: 1px solid rgba(255, 255, 255, 0.2);
@@ -320,7 +320,7 @@
 /* Series Rows */
 .admin-series-page .series-row {
   display: grid;
-  grid-template-columns: 180px 80px 1fr 60px 120px 100px 100px 100px 120px 120px;
+  grid-template-columns: 210px 80px 1fr 60px 120px 100px 100px 100px 120px 120px;
   padding: 1rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   align-items: center;
@@ -350,6 +350,7 @@
 .admin-series-page .col-actions {
   display: flex;
   gap: 0.5rem;
+  margin-right: 10px;
 }
 
 .admin-series-page .col-id {
@@ -542,7 +543,7 @@
 @media (max-width: 1200px) {
   .admin-series-page .table-header,
   .admin-series-page .series-row {
-    grid-template-columns: 180px 80px 1fr 60px 100px 80px 80px 100px;
+    grid-template-columns: 210px 80px 1fr 60px 100px 80px 80px 100px;
   }
 
   .admin-series-page .col-header:nth-child(8),
@@ -1372,4 +1373,485 @@
   .admin-series-page .modal-actions {
     padding: 1rem;
   }
+}
+
+/* Copy Cards Button - matches other action buttons */
+.admin-series-page .copy-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  padding: 0.5rem;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.admin-series-page .copy-btn:hover {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: rgba(59, 130, 246, 0.3);
+  color: #93c5fd;
+}
+
+/* Copy Cards Modal */
+.admin-series-page .copy-cards-modal {
+  max-width: 700px;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.admin-series-page .copy-cards-modal .modal-header h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.admin-series-page .copy-modal-content {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* Source Info */
+.admin-series-page .copy-source-info {
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.admin-series-page .copy-source-info .source-label {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  text-transform: uppercase;
+  margin-bottom: 0.25rem;
+}
+
+.admin-series-page .copy-source-info .source-name {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #f1f5f9;
+}
+
+.admin-series-page .copy-source-info .source-cards {
+  font-size: 0.875rem;
+  color: #60a5fa;
+  margin-top: 0.25rem;
+}
+
+/* Field Hint */
+.admin-series-page .field-hint {
+  font-size: 0.75rem;
+  color: #64748b;
+  margin-top: 0.25rem;
+}
+
+/* Preview Section */
+.admin-series-page .copy-preview-section {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.admin-series-page .copy-preview-section h4 {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #cbd5e1;
+  margin: 0 0 0.75rem 0;
+}
+
+.admin-series-page .copy-preview-loading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #94a3b8;
+  font-size: 0.875rem;
+  padding: 0.5rem 0;
+}
+
+.admin-series-page .copy-preview-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.admin-series-page .copy-preview-count {
+  font-size: 0.9rem;
+  color: #cbd5e1;
+}
+
+.admin-series-page .copy-preview-count strong {
+  color: #3b82f6;
+  font-size: 1.1rem;
+}
+
+.admin-series-page .copy-preview-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.admin-series-page .copy-preview-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.375rem 0.5rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+
+.admin-series-page .copy-preview-card .card-num {
+  color: #f1f5f9;
+  font-weight: 500;
+  min-width: 50px;
+}
+
+.admin-series-page .copy-preview-card .card-player {
+  color: #94a3b8;
+  flex: 1;
+}
+
+.admin-series-page .copy-preview-card .rc-badge {
+  background: #f59e0b;
+  color: white;
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 2px 5px;
+  border-radius: 3px;
+}
+
+.admin-series-page .copy-preview-more {
+  font-size: 0.8rem;
+  color: #64748b;
+  font-style: italic;
+  padding-left: 0.5rem;
+}
+
+.admin-series-page .copy-preview-empty {
+  color: #64748b;
+  font-size: 0.875rem;
+  font-style: italic;
+}
+
+/* Target Series Section */
+.admin-series-page .copy-targets-section {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 1rem;
+}
+
+.admin-series-page .copy-targets-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.admin-series-page .copy-targets-header h4 {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #cbd5e1;
+  margin: 0;
+}
+
+.admin-series-page .copy-targets-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.admin-series-page .select-all-btn,
+.admin-series-page .clear-all-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: #cbd5e1;
+  font-size: 0.75rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.admin-series-page .select-all-btn:hover:not(:disabled),
+.admin-series-page .clear-all-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.15);
+  color: #f1f5f9;
+}
+
+.admin-series-page .select-all-btn:disabled,
+.admin-series-page .clear-all-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.admin-series-page .selected-count {
+  font-size: 0.75rem;
+  color: #64748b;
+  margin-left: 0.5rem;
+}
+
+/* Copy Targets List (rows) */
+.admin-series-page .copy-targets-list {
+  display: flex;
+  flex-direction: column;
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+}
+
+.admin-series-page .copy-targets-list-header {
+  display: grid;
+  grid-template-columns: 30px 1fr 60px 100px 80px;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  background: rgba(255, 255, 255, 0.05);
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  position: sticky;
+  top: 0;
+}
+
+.admin-series-page .copy-target-row {
+  display: grid;
+  grid-template-columns: 30px 1fr 60px 100px 80px;
+  gap: 0.75rem;
+  padding: 0.625rem 0.75rem;
+  align-items: center;
+  cursor: pointer;
+  transition: all 0.15s;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.admin-series-page .copy-target-row:last-child {
+  border-bottom: none;
+}
+
+.admin-series-page .copy-target-row:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.admin-series-page .copy-target-row.selected {
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.admin-series-page .copy-target-row .col-checkbox {
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.admin-series-page .copy-target-row.selected .col-checkbox {
+  color: #3b82f6;
+}
+
+.admin-series-page .copy-target-row .col-name {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #f1f5f9;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-series-page .copy-target-row .col-cards {
+  font-size: 0.8rem;
+  color: #94a3b8;
+  text-align: center;
+}
+
+.admin-series-page .copy-target-row .col-color {
+  display: flex;
+  justify-content: center;
+}
+
+.admin-series-page .copy-target-row .color-tag-small {
+  font-size: 0.7rem;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.admin-series-page .copy-target-row .no-color {
+  color: #64748b;
+  font-size: 0.8rem;
+}
+
+.admin-series-page .copy-target-row .col-print-run {
+  font-size: 0.8rem;
+  color: #94a3b8;
+  text-align: center;
+}
+
+.admin-series-page .no-targets-message {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1.5rem;
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+/* Results Section */
+.admin-series-page .copy-results-section {
+  background: rgba(16, 185, 129, 0.05);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.admin-series-page .copy-results-section h4 {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #10b981;
+  margin: 0 0 0.75rem 0;
+}
+
+.admin-series-page .copy-results-summary {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.admin-series-page .result-stat {
+  flex: 1;
+  text-align: center;
+  padding: 0.75rem;
+  border-radius: 6px;
+}
+
+.admin-series-page .result-stat.success {
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.admin-series-page .result-stat.warning {
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.admin-series-page .result-stat .stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  display: block;
+}
+
+.admin-series-page .result-stat.success .stat-value {
+  color: #10b981;
+}
+
+.admin-series-page .result-stat.warning .stat-value {
+  color: #f59e0b;
+}
+
+.admin-series-page .result-stat .stat-label {
+  font-size: 0.7rem;
+  color: #94a3b8;
+  text-transform: uppercase;
+}
+
+.admin-series-page .copy-results-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.admin-series-page .result-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.375rem 0.5rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+
+.admin-series-page .result-row .result-series {
+  flex: 1;
+  color: #f1f5f9;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-series-page .result-row .result-created {
+  color: #10b981;
+  font-weight: 500;
+}
+
+.admin-series-page .result-row .result-skipped {
+  color: #64748b;
+  font-size: 0.75rem;
+}
+
+/* Warning */
+.admin-series-page .copy-warning {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: rgba(59, 130, 246, 0.1);
+  border-radius: 6px;
+  font-size: 0.85rem;
+  color: #60a5fa;
+}
+
+/* Execute Button */
+.admin-series-page .copy-execute-btn {
+  background: linear-gradient(135deg, #10b981, #059669) !important;
+}
+
+.admin-series-page .copy-execute-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #059669, #047857) !important;
+}
+
+/* Responsive for Copy Modal */
+@media (max-width: 600px) {
+  .admin-series-page .copy-cards-modal {
+    max-width: 100%;
+    margin: 0.5rem;
+  }
+
+  .admin-series-page .copy-targets-list-header,
+  .admin-series-page .copy-target-row {
+    grid-template-columns: 30px 1fr 50px 70px;
+  }
+
+  .admin-series-page .copy-targets-list-header .col-print-run,
+  .admin-series-page .copy-target-row .col-print-run {
+    display: none;
+  }
+
+  .admin-series-page .copy-results-summary {
+    flex-direction: column;
+  }
+}
+
+/* Color Select Row */
+.admin-series-page .color-select-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.admin-series-page .color-select-row select {
+  flex: 1;
+}
+
+.admin-series-page .color-preview-tag {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  white-space: nowrap;
 }

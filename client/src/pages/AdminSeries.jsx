@@ -65,6 +65,16 @@ function AdminSeries() {
   const { addToast } = useToast()
   const searchTimeoutRef = useRef(null)
 
+  // Copy Cards Modal state
+  const [showCopyModal, setShowCopyModal] = useState(false)
+  const [copySourceSeries, setCopySourceSeries] = useState(null)
+  const [copyCardRange, setCopyCardRange] = useState('')
+  const [copyTargetIds, setCopyTargetIds] = useState([])
+  const [copyPreview, setCopyPreview] = useState(null)
+  const [copyPreviewLoading, setCopyPreviewLoading] = useState(false)
+  const [copying, setCopying] = useState(false)
+  const [copyResults, setCopyResults] = useState(null)
+
   // Memoized color tag component to prevent forced reflow
   const ColorTag = useCallback(({ colorName, colorHex }) => {
     if (!colorName) return null
@@ -96,7 +106,7 @@ function AdminSeries() {
   }, [])
 
   // Memoized series row component to prevent unnecessary re-renders
-  const SeriesRow = React.memo(({ seriesItem, onEdit, onDuplicate, onViewCards, onUpload }) => {
+  const SeriesRow = React.memo(({ seriesItem, onEdit, onDuplicate, onViewCards, onUpload, onCopyCards, hasSetContext }) => {
     // Check highlighting conditions:
     // 1. Zero cards entered
     // 2. Zero cards
@@ -144,13 +154,22 @@ function AdminSeries() {
           >
             <Icon name="upload" size={16} />
           </button>
-          <button 
+          <button
             className="view-btn"
             title="View cards"
             onClick={() => onViewCards(seriesItem)}
           >
             <Icon name="grid" size={16} />
           </button>
+          {hasSetContext && seriesItem.card_entered_count > 0 && (
+            <button
+              className="copy-btn"
+              title="Copy cards to other series"
+              onClick={() => onCopyCards(seriesItem)}
+            >
+              <Icon name="copy" size={16} />
+            </button>
+          )}
         </div>
         <div className="col-id">{seriesItem.series_id}</div>
         <div className="col-name">
@@ -387,7 +406,7 @@ function AdminSeries() {
     setEditForm({
       name: seriesItem.name || '',
       is_base: seriesItem.is_base || false,
-      color: seriesItem.color || '',
+      color: seriesItem.color_id || seriesItem.color || '',
       card_count: seriesItem.card_count || '',
       card_entered_count: seriesItem.card_entered_count || '',
       rookie_count: seriesItem.rookie_count || '',
@@ -629,6 +648,7 @@ function AdminSeries() {
         name: editForm.name.trim(),
         set_id: Number(editForm.set_id),
         is_base: editForm.is_base || false,
+        color_id: editForm.color ? Number(editForm.color) : null,
         card_count: editForm.card_count ? Number(editForm.card_count) : null,
         card_entered_count: editForm.card_entered_count ? Number(editForm.card_entered_count) : null,
         rookie_count: editForm.rookie_count ? Number(editForm.rookie_count) : null,
@@ -696,6 +716,111 @@ function AdminSeries() {
     setDeletingSeries(series)
     setShowDeleteModal(true)
   }, [])
+
+  // Copy Cards Modal handlers
+  const handleShowCopyModal = useCallback(async (seriesItem) => {
+    setCopySourceSeries(seriesItem)
+    setCopyCardRange('')
+    setCopyTargetIds([])
+    setCopyPreview(null)
+    setCopyResults(null)
+    setShowCopyModal(true)
+
+    // Load all series for the set so we can show target options
+    if (seriesItem.set_id) {
+      await loadSeriesForSet(seriesItem.set_id)
+    }
+  }, [loadSeriesForSet])
+
+  // Load copy preview when source or range changes
+  const loadCopyPreview = useCallback(async () => {
+    if (!copySourceSeries) return
+
+    setCopyPreviewLoading(true)
+    try {
+      const params = { source_series_id: copySourceSeries.series_id }
+      if (copyCardRange.trim()) {
+        params.card_range = copyCardRange.trim()
+      }
+      const response = await axios.get('/api/admin/series/preview-copy', { params })
+      setCopyPreview(response.data)
+    } catch (error) {
+      console.error('Error loading copy preview:', error)
+      addToast(error.response?.data?.message || 'Failed to load preview', 'error')
+      setCopyPreview(null)
+    } finally {
+      setCopyPreviewLoading(false)
+    }
+  }, [copySourceSeries, copyCardRange, addToast])
+
+  // Debounced preview loading
+  useEffect(() => {
+    if (!showCopyModal || !copySourceSeries) return
+
+    const timer = setTimeout(() => {
+      loadCopyPreview()
+    }, 500)
+
+    return () => clearTimeout(timer)
+  }, [showCopyModal, copySourceSeries, copyCardRange, loadCopyPreview])
+
+  const toggleCopyTarget = useCallback((seriesId) => {
+    setCopyTargetIds(prev => {
+      if (prev.includes(seriesId)) {
+        return prev.filter(id => id !== seriesId)
+      } else {
+        return [...prev, seriesId]
+      }
+    })
+    setCopyResults(null)
+  }, [])
+
+  const selectAllCopyTargets = useCallback(() => {
+    const parallelIds = seriesForSet
+      .filter(s => s.series_id !== copySourceSeries?.series_id)
+      .map(s => s.series_id)
+    setCopyTargetIds(parallelIds)
+    setCopyResults(null)
+  }, [seriesForSet, copySourceSeries])
+
+  const clearCopyTargets = useCallback(() => {
+    setCopyTargetIds([])
+    setCopyResults(null)
+  }, [])
+
+  const executeCopyCards = useCallback(async () => {
+    if (!copySourceSeries || copyTargetIds.length === 0) {
+      addToast('Please select target series', 'error')
+      return
+    }
+
+    setCopying(true)
+    setCopyResults(null)
+    try {
+      const response = await axios.post('/api/admin/series/copy-cards', {
+        source_series_id: copySourceSeries.series_id,
+        target_series_ids: copyTargetIds,
+        card_range: copyCardRange.trim() || null
+      })
+
+      setCopyResults(response.data)
+      addToast(`Successfully copied cards to ${response.data.summary.target_series_count} series`, 'success')
+
+      // Refresh series list to show updated card counts
+      loadSeries(searchTerm)
+    } catch (error) {
+      console.error('Error copying cards:', error)
+      addToast(error.response?.data?.message || 'Failed to copy cards', 'error')
+    } finally {
+      setCopying(false)
+    }
+  }, [copySourceSeries, copyTargetIds, copyCardRange, addToast, loadSeries, searchTerm])
+
+  // Get parallel series for copy modal (only series that have source as their parent)
+  const copyTargetSeries = seriesForSet.filter(s =>
+    s.series_id !== copySourceSeries?.series_id &&
+    s.parallel_of_series === copySourceSeries?.series_id
+  )
 
   if (loading) {
     return (
@@ -880,6 +1005,8 @@ function AdminSeries() {
               onDuplicate={handleShowDuplicateModal}
               onUpload={handleUpload}
               onViewCards={handleViewCards}
+              onCopyCards={handleShowCopyModal}
+              hasSetContext={!!setId}
             />
           ))}
         </div>
@@ -1072,6 +1199,35 @@ function AdminSeries() {
                       <span>Is Base Series</span>
                       {editForm.is_base && <Icon name="check" size={16} className="hof-check" />}
                     </button>
+                  </div>
+
+                  <div className="form-field-row">
+                    <label className="field-label">Color</label>
+                    <div className="color-select-row">
+                      <select
+                        className="field-input"
+                        value={editForm.color || ''}
+                        onChange={(e) => setEditForm({...editForm, color: e.target.value ? parseInt(e.target.value) : null})}
+                      >
+                        <option value="">No color assigned</option>
+                        {availableColors.map(color => (
+                          <option key={color.color_id} value={color.color_id}>
+                            {color.name}
+                          </option>
+                        ))}
+                      </select>
+                      {editForm.color && (
+                        <span
+                          className="color-preview-tag"
+                          style={{
+                            backgroundColor: availableColors.find(c => c.color_id === editForm.color)?.hex_value || '#666',
+                            color: isLightColor(availableColors.find(c => c.color_id === editForm.color)?.hex_value) ? '#000' : '#fff'
+                          }}
+                        >
+                          {availableColors.find(c => c.color_id === editForm.color)?.name}
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   <div className="form-field-row">
@@ -1529,8 +1685,235 @@ function AdminSeries() {
           </div>
         </div>
       )}
+
+      {/* Copy Cards Modal */}
+      {showCopyModal && copySourceSeries && (
+        <div className="modal-overlay" onClick={() => !copying && setShowCopyModal(false)}>
+          <div className="edit-player-modal copy-cards-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>
+                <Icon name="copy" size={20} />
+                Copy Cards to Other Series
+              </h3>
+              <button className="close-btn" onClick={() => !copying && setShowCopyModal(false)}>
+                <Icon name="x" size={20} />
+              </button>
+            </div>
+
+            <div className="copy-modal-content">
+              {/* Source Info */}
+              <div className="copy-source-info">
+                <div className="source-label">Source Series:</div>
+                <div className="source-name">{copySourceSeries.name}</div>
+                <div className="source-cards">{copySourceSeries.card_entered_count || 0} cards available</div>
+              </div>
+
+              {/* Card Range Input */}
+              <div className="form-field-row">
+                <label className="field-label">Card Range (Optional)</label>
+                <input
+                  type="text"
+                  className="field-input"
+                  value={copyCardRange}
+                  onChange={(e) => setCopyCardRange(e.target.value)}
+                  placeholder="e.g., 501-725 or leave empty for all cards"
+                  disabled={copying}
+                />
+                <span className="field-hint">Leave empty to copy all cards. Use "501-725" for a range.</span>
+              </div>
+
+              {/* Preview */}
+              <div className="copy-preview-section">
+                <h4>Cards to Copy</h4>
+                {copyPreviewLoading ? (
+                  <div className="copy-preview-loading">
+                    <div className="card-icon-spinner small"></div>
+                    <span>Loading preview...</span>
+                  </div>
+                ) : copyPreview ? (
+                  <div className="copy-preview-content">
+                    <div className="copy-preview-count">
+                      <strong>{copyPreview.total_cards}</strong> cards will be copied
+                    </div>
+                    {copyPreview.preview_cards.length > 0 && (
+                      <div className="copy-preview-list">
+                        {copyPreview.preview_cards.slice(0, 5).map(card => (
+                          <div key={card.card_id} className="copy-preview-card">
+                            <span className="card-num">#{card.card_number}</span>
+                            <span className="card-player">{card.players.join(', ') || 'Unknown'}</span>
+                            {card.is_rookie && <span className="rc-badge">RC</span>}
+                          </div>
+                        ))}
+                        {copyPreview.total_cards > 5 && (
+                          <div className="copy-preview-more">
+                            ...and {copyPreview.total_cards - 5} more cards
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="copy-preview-empty">Enter a valid range to see preview</div>
+                )}
+              </div>
+
+              {/* Target Series Selection */}
+              <div className="copy-targets-section">
+                <div className="copy-targets-header">
+                  <h4>Select Target Series</h4>
+                  <div className="copy-targets-actions">
+                    <button
+                      type="button"
+                      className="select-all-btn"
+                      onClick={selectAllCopyTargets}
+                      disabled={copyTargetSeries.length === 0 || copying}
+                    >
+                      Select All
+                    </button>
+                    <button
+                      type="button"
+                      className="clear-all-btn"
+                      onClick={clearCopyTargets}
+                      disabled={copyTargetIds.length === 0 || copying}
+                    >
+                      Clear
+                    </button>
+                    <span className="selected-count">{copyTargetIds.length} selected</span>
+                  </div>
+                </div>
+
+                {copyTargetSeries.length === 0 ? (
+                  <div className="no-targets-message">
+                    <Icon name="alert-circle" size={20} />
+                    <span>No other series in this set to copy to.</span>
+                  </div>
+                ) : (
+                  <div className="copy-targets-list">
+                    <div className="copy-targets-list-header">
+                      <span className="col-checkbox"></span>
+                      <span className="col-name">Series Name</span>
+                      <span className="col-cards">Cards</span>
+                      <span className="col-color">Color</span>
+                      <span className="col-print-run">Print Run</span>
+                    </div>
+                    {copyTargetSeries.map(targetSeries => (
+                      <div
+                        key={targetSeries.series_id}
+                        className={`copy-target-row ${copyTargetIds.includes(targetSeries.series_id) ? 'selected' : ''}`}
+                        onClick={() => !copying && toggleCopyTarget(targetSeries.series_id)}
+                      >
+                        <div className="col-checkbox">
+                          <Icon
+                            name={copyTargetIds.includes(targetSeries.series_id) ? 'check-circle' : 'circle'}
+                            size={18}
+                          />
+                        </div>
+                        <div className="col-name">{targetSeries.name}</div>
+                        <div className="col-cards">{targetSeries.card_entered_count || 0}</div>
+                        <div className="col-color">
+                          {targetSeries.color_name ? (
+                            <span
+                              className="color-tag-small"
+                              style={{
+                                backgroundColor: targetSeries.color_hex || '#666',
+                                color: targetSeries.color_hex && isLightColor(targetSeries.color_hex) ? '#000' : '#fff'
+                              }}
+                            >
+                              {targetSeries.color_name}
+                            </span>
+                          ) : (
+                            <span className="no-color">—</span>
+                          )}
+                        </div>
+                        <div className="col-print-run">
+                          {targetSeries.print_run_display || targetSeries.min_print_run || '—'}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Results (shown after copy) */}
+              {copyResults && (
+                <div className="copy-results-section">
+                  <h4>Results</h4>
+                  <div className="copy-results-summary">
+                    <div className="result-stat success">
+                      <span className="stat-value">{copyResults.summary.total_cards_created}</span>
+                      <span className="stat-label">Cards Created</span>
+                    </div>
+                    <div className="result-stat warning">
+                      <span className="stat-value">{copyResults.summary.total_cards_skipped}</span>
+                      <span className="stat-label">Skipped (Exist)</span>
+                    </div>
+                  </div>
+                  <div className="copy-results-detail">
+                    {copyResults.results.map(result => (
+                      <div key={result.series_id} className={`result-row ${result.status}`}>
+                        <span className="result-series">{result.series_name}</span>
+                        <span className="result-created">+{result.cards_created}</span>
+                        {result.cards_skipped > 0 && (
+                          <span className="result-skipped">({result.cards_skipped} skipped)</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Warning */}
+              {copyTargetIds.length > 0 && !copyResults && (
+                <div className="copy-warning">
+                  <Icon name="info" size={16} />
+                  <span>Cards already existing in target series (by card number) will be skipped.</span>
+                </div>
+              )}
+            </div>
+
+            <div className="modal-actions">
+              <button
+                className="cancel-btn"
+                onClick={() => setShowCopyModal(false)}
+                disabled={copying}
+              >
+                {copyResults ? 'Close' : 'Cancel'}
+              </button>
+              {!copyResults && (
+                <button
+                  className="save-btn copy-execute-btn"
+                  onClick={executeCopyCards}
+                  disabled={copying || copyTargetIds.length === 0 || !copyPreview?.total_cards}
+                >
+                  {copying ? (
+                    <>
+                      <div className="card-icon-spinner small"></div>
+                      Copying Cards...
+                    </>
+                  ) : (
+                    <>
+                      <Icon name="copy" size={16} />
+                      Copy to {copyTargetIds.length} Series
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
+}
+
+// Helper function to determine if a color is light
+function isLightColor(hexColor) {
+  if (!hexColor) return false
+  const hex = hexColor.replace('#', '')
+  const r = parseInt(hex.substr(0, 2), 16)
+  const g = parseInt(hex.substr(2, 2), 16)
+  const b = parseInt(hex.substr(4, 2), 16)
+  return (r + g + b) > 400
 }
 
 export default AdminSeries

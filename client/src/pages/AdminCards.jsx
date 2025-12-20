@@ -36,6 +36,7 @@ function AdminCards() {
   const [showImageEditor, setShowImageEditor] = useState(false)
   const [editingImage, setEditingImage] = useState(null) // { imageUrl, side: 'front'|'back' }
   const [currentAssignedImages, setCurrentAssignedImages] = useState({ front: null, back: null })
+  const [availableColors, setAvailableColors] = useState([])
   const { addToast } = useToast()
 
   // Function to determine text color based on background brightness
@@ -75,6 +76,7 @@ function AdminCards() {
       loadSeriesBySlug(year, setSlug, seriesSlug)
     }
     loadPlayersAndTeams()
+    loadColors()
   }, [year, setSlug, seriesSlug, seriesIdFromQuery])
 
   // Load cards when we have selectedSeries data
@@ -190,6 +192,15 @@ function AdminCards() {
     // Remove the initial loading since we'll search on-demand
   }
 
+  const loadColors = async () => {
+    try {
+      const response = await axios.get('/api/admin/series/colors')
+      setAvailableColors(response.data.colors || [])
+    } catch (error) {
+      console.error('Error loading colors:', error)
+    }
+  }
+
   const handleAddCard = () => {
     setEditingCard(null) // null indicates we're adding a new card
     setEditForm({
@@ -200,7 +211,8 @@ function AdminCards() {
       is_relic: false,
       is_short_print: false,
       print_run: '',
-      notes: ''
+      notes: '',
+      color_id: ''
     })
     setCardPlayers([])
     setShowEditModal(true)
@@ -216,7 +228,8 @@ function AdminCards() {
       is_relic: card.is_relic || false,
       is_short_print: card.is_short_print || false,
       print_run: card.print_run || '',
-      notes: card.notes || ''
+      notes: card.notes || '',
+      color_id: card.color || ''
     })
     // Set current players for this card
     setCardPlayers(card.card_player_teams || [])
@@ -389,6 +402,7 @@ function AdminCards() {
         is_short_print: editForm.is_short_print,
         print_run: editForm.print_run ? parseInt(editForm.print_run) : null,
         notes: editForm.notes.trim(),
+        color_id: editForm.color_id ? parseInt(editForm.color_id) : null,
         players: playersToSave
       }
 
@@ -791,6 +805,40 @@ function AdminCards() {
                     onKeyDown={handleKeyDown}
                     placeholder="Enter print run (optional)"
                   />
+                </div>
+
+                <div className="admin-cards-form-row">
+                  <label className="admin-cards-form-label">Color</label>
+                  <select
+                    className="admin-cards-form-input admin-cards-color-select"
+                    value={editForm.color_id}
+                    onChange={(e) => handleFormChange('color_id', e.target.value)}
+                  >
+                    <option value="">No color (use series default)</option>
+                    {availableColors.map(color => (
+                      <option
+                        key={color.color_id}
+                        value={color.color_id}
+                        style={{
+                          backgroundColor: color.hex_value || '#666',
+                          color: color.hex_value && getTextColor(color.hex_value)
+                        }}
+                      >
+                        {color.name}
+                      </option>
+                    ))}
+                  </select>
+                  {editForm.color_id && (
+                    <span
+                      className="admin-cards-color-preview"
+                      style={{
+                        backgroundColor: availableColors.find(c => c.color_id === parseInt(editForm.color_id))?.hex_value || '#666',
+                        color: getTextColor(availableColors.find(c => c.color_id === parseInt(editForm.color_id))?.hex_value)
+                      }}
+                    >
+                      {availableColors.find(c => c.color_id === parseInt(editForm.color_id))?.name}
+                    </span>
+                  )}
                 </div>
 
                 <div className="admin-cards-form-row">

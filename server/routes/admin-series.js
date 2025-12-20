@@ -282,6 +282,13 @@ router.put('/series/:id', async (req, res) => {
         is_base: true,
         parallel_of_series: true,
         color: true,
+        color_color_colorToseries: {
+          select: {
+            color_id: true,
+            color: true,
+            hex_value: true
+          }
+        },
         min_print_run: true,
         max_print_run: true,
         print_run_display: true,
@@ -320,7 +327,12 @@ router.put('/series/:id', async (req, res) => {
       series: {
         ...updatedSeries,
         series_id: Number(updatedSeries.series_id),
-        parallel_of_series: updatedSeries.parallel_of_series ? Number(updatedSeries.parallel_of_series) : null
+        parallel_of_series: updatedSeries.parallel_of_series ? Number(updatedSeries.parallel_of_series) : null,
+        color_rel: updatedSeries.color_color_colorToseries ? {
+          color_id: updatedSeries.color_color_colorToseries.color_id,
+          color: updatedSeries.color_color_colorToseries.color,
+          hex_value: updatedSeries.color_color_colorToseries.hex_value
+        } : null
       }
     })
 
@@ -660,6 +672,402 @@ router.delete('/series/:id', async (req, res) => {
     res.status(500).json({
       error: 'Internal server error',
       message: 'Failed to delete series'
+    })
+  }
+})
+
+// POST /api/admin/series/copy-cards - Copy cards from one series to existing target series
+// This is for partial set releases (e.g., Heritage High Number)
+router.post('/series/copy-cards', async (req, res) => {
+  try {
+    console.log('[Copy Cards] Starting card copy operation')
+    console.log('[Copy Cards] Request body:', JSON.stringify(req.body, null, 2))
+    console.log('[Copy Cards] source_series_id type:', typeof req.body.source_series_id)
+    console.log('[Copy Cards] target_series_ids:', req.body.target_series_ids, 'isArray:', Array.isArray(req.body.target_series_ids))
+
+    const { source_series_id, target_series_ids, card_range, copy_options } = req.body
+
+    // Validate inputs
+    if (!source_series_id) {
+      return res.status(400).json({
+        error: 'Invalid input',
+        message: 'Source series ID is required'
+      })
+    }
+
+    if (!target_series_ids || !Array.isArray(target_series_ids) || target_series_ids.length === 0) {
+      return res.status(400).json({
+        error: 'Invalid input',
+        message: 'At least one target series ID is required'
+      })
+    }
+
+    // Parse card range if provided (format: "501-725" or "1-50,75-100")
+    let sortOrderFilter = null
+    if (card_range && card_range.trim()) {
+      try {
+        const ranges = card_range.split(',').map(r => r.trim())
+        const sortOrders = []
+
+        for (const range of ranges) {
+          if (range.includes('-')) {
+            const [start, end] = range.split('-').map(n => parseInt(n.trim()))
+            if (isNaN(start) || isNaN(end) || start < 1 || end < start) {
+              throw new Error(`Invalid range: ${range}`)
+            }
+            for (let i = start; i <= end; i++) {
+              sortOrders.push(i)
+            }
+          } else {
+            const num = parseInt(range.trim())
+            if (isNaN(num) || num < 1) {
+              throw new Error(`Invalid card number: ${range}`)
+            }
+            sortOrders.push(num)
+          }
+        }
+
+        sortOrderFilter = sortOrders
+        console.log('[Copy Cards] Card range filter:', card_range, '→', sortOrders.length, 'cards')
+      } catch (rangeError) {
+        console.log('[Copy Cards] Invalid card range:', rangeError.message)
+        return res.status(400).json({
+          error: 'Invalid input',
+          message: `Invalid card range format: ${rangeError.message}. Use format like "501-725" or "1-50,75-100"`
+        })
+      }
+    }
+
+    // Verify source series exists
+    const sourceSeries = await prisma.series.findUnique({
+      where: { series_id: BigInt(source_series_id) },
+      include: {
+        set_series_setToset: {
+          select: { set_id: true, name: true }
+        }
+      }
+    })
+
+    if (!sourceSeries) {
+      return res.status(404).json({
+        error: 'Not found',
+        message: 'Source series not found'
+      })
+    }
+
+    // Get source cards with player associations
+    const whereClause = { series: BigInt(source_series_id) }
+    if (sortOrderFilter) {
+      whereClause.sort_order = { in: sortOrderFilter }
+    }
+
+    const sourceCards = await prisma.card.findMany({
+      where: whereClause,
+      include: {
+        card_player_team_card_player_team_cardTocard: {
+          select: { player_team: true }
+        }
+      },
+      orderBy: { sort_order: 'asc' }
+    })
+
+    console.log('[Copy Cards] Found', sourceCards.length, 'source cards to copy')
+
+    if (sourceCards.length === 0) {
+      return res.status(400).json({
+        error: 'No cards found',
+        message: 'No cards found in source series matching the specified range'
+      })
+    }
+
+    // Process each target series
+    const results = []
+    let totalCardsCreated = 0
+    let totalSkipped = 0
+
+    for (const targetSeriesId of target_series_ids) {
+      const targetBigInt = BigInt(targetSeriesId)
+
+      // Verify target series exists
+      const targetSeries = await prisma.series.findUnique({
+        where: { series_id: targetBigInt },
+        select: {
+          series_id: true,
+          name: true,
+          color: true,
+          min_print_run: true,
+          set: true
+        }
+      })
+
+      if (!targetSeries) {
+        results.push({
+          series_id: Number(targetSeriesId),
+          series_name: 'Unknown',
+          status: 'error',
+          message: 'Target series not found',
+          cards_created: 0,
+          cards_skipped: 0
+        })
+        continue
+      }
+
+      // Get existing card sort_orders in target series to avoid duplicates
+      const existingCards = await prisma.card.findMany({
+        where: { series: targetBigInt },
+        select: { sort_order: true }
+      })
+      const existingSortOrders = new Set(existingCards.map(c => c.sort_order))
+
+      let cardsCreated = 0
+      let cardsSkipped = 0
+
+      // Copy cards that don't already exist
+      for (const sourceCard of sourceCards) {
+        if (existingSortOrders.has(sourceCard.sort_order)) {
+          cardsSkipped++
+          continue
+        }
+
+        // Create the new card - use target series' color and print_run
+        // Note: card_number_indexed is a computed column, so we don't include it
+        const newCard = await prisma.card.create({
+          data: {
+            sort_order: sourceCard.sort_order,
+            card_number: sourceCard.card_number,
+            is_rookie: sourceCard.is_rookie,
+            is_autograph: sourceCard.is_autograph,
+            is_relic: sourceCard.is_relic,
+            print_run: targetSeries.min_print_run || null, // Use target series' print run
+            series: targetBigInt,
+            color: targetSeries.color, // Use target series' color
+            notes: sourceCard.notes,
+            is_short_print: sourceCard.is_short_print,
+            created: new Date()
+          }
+        })
+
+        // Copy player_team associations
+        if (sourceCard.card_player_team_card_player_team_cardTocard &&
+            sourceCard.card_player_team_card_player_team_cardTocard.length > 0) {
+          for (const cpt of sourceCard.card_player_team_card_player_team_cardTocard) {
+            await prisma.card_player_team.create({
+              data: {
+                card: newCard.card_id,
+                player_team: cpt.player_team
+              }
+            })
+          }
+        }
+
+        cardsCreated++
+      }
+
+      // Update target series card_entered_count
+      const newCardCount = await prisma.card.count({
+        where: { series: targetBigInt }
+      })
+      await prisma.series.update({
+        where: { series_id: targetBigInt },
+        data: { card_entered_count: newCardCount }
+      })
+
+      results.push({
+        series_id: Number(targetSeriesId),
+        series_name: targetSeries.name,
+        status: 'success',
+        cards_created: cardsCreated,
+        cards_skipped: cardsSkipped
+      })
+
+      totalCardsCreated += cardsCreated
+      totalSkipped += cardsSkipped
+
+      // Trigger auto-regeneration for the set
+      if (targetSeries.set) {
+        triggerAutoRegeneration(targetSeries.set, 'cards', {
+          action: 'copy',
+          source_series_id: Number(source_series_id),
+          target_series_id: Number(targetSeriesId),
+          cards_created: cardsCreated
+        })
+      }
+    }
+
+    // Log admin action
+    try {
+      await prisma.admin_action_log.create({
+        data: {
+          user_id: BigInt(req.user.userId),
+          action_type: 'CARDS_COPIED',
+          entity_type: 'series',
+          entity_id: source_series_id.toString(),
+          old_values: null,
+          new_values: JSON.stringify({
+            source_series_id: Number(source_series_id),
+            source_series_name: sourceSeries.name,
+            card_range: card_range || 'all',
+            source_cards_count: sourceCards.length,
+            target_count: target_series_ids.length,
+            total_created: totalCardsCreated,
+            total_skipped: totalSkipped,
+            results
+          }),
+          ip_address: req.ip,
+          user_agent: req.get('User-Agent'),
+          created: new Date()
+        }
+      })
+    } catch (logError) {
+      console.warn('[Copy Cards] Failed to log admin action:', logError.message)
+    }
+
+    res.json({
+      success: true,
+      message: `Copied cards to ${results.filter(r => r.status === 'success').length} series`,
+      summary: {
+        source_series: sourceSeries.name,
+        source_cards_count: sourceCards.length,
+        total_cards_created: totalCardsCreated,
+        total_cards_skipped: totalSkipped,
+        target_series_count: target_series_ids.length
+      },
+      results
+    })
+
+  } catch (error) {
+    console.error('[Copy Cards] Error:', error.message)
+    console.error('[Copy Cards] Stack:', error.stack)
+    res.status(500).json({
+      error: 'Database error',
+      message: 'Failed to copy cards',
+      details: error.message,
+      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined
+    })
+  }
+})
+
+// GET /api/admin/series/preview-copy - Preview which cards would be copied
+router.get('/series/preview-copy', async (req, res) => {
+  try {
+    const { source_series_id, card_range } = req.query
+
+    if (!source_series_id) {
+      return res.status(400).json({
+        error: 'Invalid input',
+        message: 'Source series ID is required'
+      })
+    }
+
+    // Parse card range if provided
+    let sortOrderFilter = null
+    if (card_range && card_range.trim()) {
+      try {
+        const ranges = card_range.split(',').map(r => r.trim())
+        const sortOrders = []
+
+        for (const range of ranges) {
+          if (range.includes('-')) {
+            const [start, end] = range.split('-').map(n => parseInt(n.trim()))
+            if (isNaN(start) || isNaN(end) || start < 1 || end < start) {
+              throw new Error(`Invalid range: ${range}`)
+            }
+            for (let i = start; i <= end; i++) {
+              sortOrders.push(i)
+            }
+          } else {
+            const num = parseInt(range.trim())
+            if (isNaN(num) || num < 1) {
+              throw new Error(`Invalid card number: ${range}`)
+            }
+            sortOrders.push(num)
+          }
+        }
+
+        sortOrderFilter = sortOrders
+      } catch (rangeError) {
+        return res.status(400).json({
+          error: 'Invalid input',
+          message: `Invalid card range format: ${rangeError.message}`
+        })
+      }
+    }
+
+    // Get series info
+    const series = await prisma.series.findUnique({
+      where: { series_id: BigInt(source_series_id) },
+      include: {
+        set_series_setToset: {
+          select: { set_id: true, name: true, year: true }
+        }
+      }
+    })
+
+    if (!series) {
+      return res.status(404).json({
+        error: 'Not found',
+        message: 'Source series not found'
+      })
+    }
+
+    // Get cards preview
+    const whereClause = { series: BigInt(source_series_id) }
+    if (sortOrderFilter) {
+      whereClause.sort_order = { in: sortOrderFilter }
+    }
+
+    const cards = await prisma.card.findMany({
+      where: whereClause,
+      include: {
+        card_player_team_card_player_team_cardTocard: {
+          include: {
+            player_team_card_player_team_player_teamToplayer_team: {
+              include: {
+                player_player_team_playerToplayer: {
+                  select: { first_name: true, last_name: true }
+                }
+              }
+            }
+          }
+        }
+      },
+      orderBy: { sort_order: 'asc' },
+      take: 50 // Limit preview to first 50 cards
+    })
+
+    const totalCards = await prisma.card.count({
+      where: whereClause
+    })
+
+    res.json({
+      series: {
+        series_id: Number(series.series_id),
+        name: series.name,
+        set_name: series.set_series_setToset?.name,
+        set_year: series.set_series_setToset?.year
+      },
+      total_cards: totalCards,
+      preview_cards: cards.map(card => ({
+        card_id: Number(card.card_id),
+        card_number: card.card_number,
+        sort_order: card.sort_order,
+        is_rookie: card.is_rookie,
+        players: card.card_player_team_card_player_team_cardTocard.map(cpt => {
+          const pt = cpt.player_team_card_player_team_player_teamToplayer_team
+          const player = pt?.player_player_team_playerToplayer
+          return player ? `${player.first_name} ${player.last_name}` : null
+        }).filter(Boolean)
+      })),
+      showing_first: Math.min(50, totalCards),
+      has_more: totalCards > 50
+    })
+
+  } catch (error) {
+    console.error('[Preview Copy] Error:', error)
+    res.status(500).json({
+      error: 'Database error',
+      message: 'Failed to preview cards',
+      details: error.message
     })
   }
 })
