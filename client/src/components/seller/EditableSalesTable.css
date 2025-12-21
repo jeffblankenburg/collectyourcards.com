@@ -7,6 +7,90 @@
   overflow: hidden;
 }
 
+/* Date Range Filter */
+.sales-table-date-filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.sales-table-date-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.sales-table-date-preset {
+  padding: 0.375rem 0.625rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.sales-table-date-preset:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.sales-table-date-preset.active {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: rgba(59, 130, 246, 0.4);
+  color: #60a5fa;
+}
+
+.sales-table-date-inputs {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-left: auto;
+}
+
+.sales-table-date-input-group {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.sales-table-date-input-group label {
+  font-size: 0.6875rem;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.sales-table-date-input {
+  padding: 0.375rem 0.5rem;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.75rem;
+  font-family: inherit;
+  width: 130px;
+}
+
+.sales-table-date-input:focus {
+  outline: none;
+  border-color: rgba(59, 130, 246, 0.5);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+}
+
+.sales-table-date-input::-webkit-calendar-picker-indicator {
+  filter: invert(0.7);
+  cursor: pointer;
+}
+
 /* Header with count and download button */
 .sales-table-header {
   display: flex;
@@ -20,6 +104,43 @@
 .sales-table-count {
   font-size: 0.8125rem;
   color: rgba(255, 255, 255, 0.6);
+}
+
+.sales-table-count-filtered {
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.75rem;
+}
+
+/* Mobile responsive for date filter */
+@media (max-width: 768px) {
+  .sales-table-date-filter {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .sales-table-date-inputs {
+    margin-left: 0;
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .sales-table-date-presets {
+    width: 100%;
+  }
+
+  .sales-table-date-preset {
+    font-size: 0.6875rem;
+    padding: 0.3rem 0.5rem;
+  }
+
+  .sales-table-date-inputs {
+    flex-wrap: wrap;
+  }
+
+  .sales-table-date-input {
+    width: 110px;
+  }
 }
 
 .sales-table-download-btn {

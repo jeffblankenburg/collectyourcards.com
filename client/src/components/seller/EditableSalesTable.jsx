@@ -12,6 +12,46 @@ import ConfirmModal from '../modals/ConfirmModal'
 import OrderSuppliesModal from './OrderSuppliesModal'
 import './EditableSalesTable.css'
 
+// Helper to get date range presets
+const getDatePresets = () => {
+  const now = new Date()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+
+  // Last 30 days (default)
+  const last30Days = new Date(today)
+  last30Days.setDate(last30Days.getDate() - 30)
+
+  // This month
+  const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+
+  // Last month
+  const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+  const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0)
+
+  // Last quarter (last 3 full months)
+  const lastQuarterStart = new Date(now.getFullYear(), now.getMonth() - 3, 1)
+  const lastQuarterEnd = new Date(now.getFullYear(), now.getMonth(), 0)
+
+  // Year to date
+  const yearStart = new Date(now.getFullYear(), 0, 1)
+
+  return {
+    last30: { start: last30Days, end: today, label: 'Last 30 Days' },
+    thisMonth: { start: thisMonthStart, end: today, label: 'This Month' },
+    lastMonth: { start: lastMonthStart, end: lastMonthEnd, label: 'Last Month' },
+    lastQuarter: { start: lastQuarterStart, end: lastQuarterEnd, label: 'Last Quarter' },
+    ytd: { start: yearStart, end: today, label: 'Year to Date' },
+    all: { start: null, end: null, label: 'All Time' }
+  }
+}
+
+// Format date for input[type="date"]
+const formatDateForInput = (date) => {
+  if (!date) return ''
+  const d = new Date(date)
+  return d.toISOString().split('T')[0]
+}
+
 // Calculate text color based on background brightness
 const getContrastColor = (hexColor) => {
   if (!hexColor) return '#ffffff'
@@ -53,6 +93,12 @@ function EditableSalesTable({
   const inputRef = useRef(null)
   const orderInputRef = useRef(null)
   const pendingEditRef = useRef(null) // Track next cell to edit after save
+
+  // Date range filter state - default to last 30 days
+  const datePresets = useMemo(() => getDatePresets(), [])
+  const [dateRangeStart, setDateRangeStart] = useState(() => datePresets.last30.start)
+  const [dateRangeEnd, setDateRangeEnd] = useState(() => datePresets.last30.end)
+  const [activePreset, setActivePreset] = useState('last30')
 
   // Focus input when editing starts
   useEffect(() => {
@@ -650,9 +696,48 @@ function EditableSalesTable({
     }))
   }
 
-  const sortedSales = useMemo(() => {
+  // Apply date preset
+  const applyDatePreset = (presetKey) => {
+    const preset = datePresets[presetKey]
+    setDateRangeStart(preset.start)
+    setDateRangeEnd(preset.end)
+    setActivePreset(presetKey)
+  }
+
+  // Handle custom date change
+  const handleDateRangeChange = (field, value) => {
+    const date = value ? new Date(value + 'T00:00:00') : null
+    if (field === 'start') {
+      setDateRangeStart(date)
+    } else {
+      setDateRangeEnd(date)
+    }
+    setActivePreset('custom')
+  }
+
+  // Filter sales by date range
+  const filteredSales = useMemo(() => {
     if (!sales.length) return sales
-    const sorted = [...sales].sort((a, b) => {
+    if (!dateRangeStart && !dateRangeEnd) return sales
+
+    return sales.filter(sale => {
+      if (!sale.sale_date) return true // Include sales without dates
+      const saleDate = new Date(sale.sale_date)
+      saleDate.setHours(0, 0, 0, 0)
+
+      if (dateRangeStart && saleDate < dateRangeStart) return false
+      if (dateRangeEnd) {
+        const endOfDay = new Date(dateRangeEnd)
+        endOfDay.setHours(23, 59, 59, 999)
+        if (saleDate > endOfDay) return false
+      }
+      return true
+    })
+  }, [sales, dateRangeStart, dateRangeEnd])
+
+  const sortedSales = useMemo(() => {
+    if (!filteredSales.length) return filteredSales
+    const sorted = [...filteredSales].sort((a, b) => {
       const aVal = getSortValue(a, sortConfig.key)
       const bVal = getSortValue(b, sortConfig.key)
 
@@ -665,7 +750,7 @@ function EditableSalesTable({
       return sortConfig.direction === 'asc' ? aStr.localeCompare(bStr) : bStr.localeCompare(aStr)
     })
     return sorted
-  }, [sales, sortConfig])
+  }, [filteredSales, sortConfig])
 
   const renderSortHeader = (key, label, align = 'left') => {
     const isActive = sortConfig.key === key
@@ -1379,9 +1464,76 @@ function EditableSalesTable({
 
   return (
     <div className="sales-table-container">
+      {/* Date Range Filter */}
+      <div className="sales-table-date-filter">
+        <div className="sales-table-date-presets">
+          <button
+            className={`sales-table-date-preset ${activePreset === 'last30' ? 'active' : ''}`}
+            onClick={() => applyDatePreset('last30')}
+          >
+            Last 30 Days
+          </button>
+          <button
+            className={`sales-table-date-preset ${activePreset === 'thisMonth' ? 'active' : ''}`}
+            onClick={() => applyDatePreset('thisMonth')}
+          >
+            This Month
+          </button>
+          <button
+            className={`sales-table-date-preset ${activePreset === 'lastMonth' ? 'active' : ''}`}
+            onClick={() => applyDatePreset('lastMonth')}
+          >
+            Last Month
+          </button>
+          <button
+            className={`sales-table-date-preset ${activePreset === 'lastQuarter' ? 'active' : ''}`}
+            onClick={() => applyDatePreset('lastQuarter')}
+          >
+            Last Quarter
+          </button>
+          <button
+            className={`sales-table-date-preset ${activePreset === 'ytd' ? 'active' : ''}`}
+            onClick={() => applyDatePreset('ytd')}
+          >
+            Year to Date
+          </button>
+          <button
+            className={`sales-table-date-preset ${activePreset === 'all' ? 'active' : ''}`}
+            onClick={() => applyDatePreset('all')}
+          >
+            All Time
+          </button>
+        </div>
+        <div className="sales-table-date-inputs">
+          <div className="sales-table-date-input-group">
+            <label>From</label>
+            <input
+              type="date"
+              value={formatDateForInput(dateRangeStart)}
+              onChange={(e) => handleDateRangeChange('start', e.target.value)}
+              className="sales-table-date-input"
+            />
+          </div>
+          <div className="sales-table-date-input-group">
+            <label>To</label>
+            <input
+              type="date"
+              value={formatDateForInput(dateRangeEnd)}
+              onChange={(e) => handleDateRangeChange('end', e.target.value)}
+              className="sales-table-date-input"
+            />
+          </div>
+        </div>
+      </div>
+
       {/* Header with selection actions */}
       <div className="sales-table-header">
-        <span className="sales-table-count">{sortedSales.length} sale{sortedSales.length !== 1 ? 's' : ''}</span>
+        <span className="sales-table-count">
+          {sortedSales.length} sale{sortedSales.length !== 1 ? 's' : ''}
+          {filteredSales.length !== sales.length && (
+            <span className="sales-table-count-filtered"> (of {sales.length} total)</span>
+          )}
+        </span>
         <div className="sales-table-header-actions">
           {selectedSales.size > 0 && (
             <div className="sales-table-selection-bar">
