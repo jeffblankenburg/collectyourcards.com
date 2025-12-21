@@ -40,7 +40,7 @@ const buildEbaySearchUrl = (card) => {
   const searchTerm = parts.join(' ')
   const encodedSearch = encodeURIComponent(searchTerm)
 
-  return `https://www.ebay.com/sch/i.html?_nkw=${encodedSearch}&LH_BIN=1&_sop=10`
+  return `https://www.ebay.com/sch/i.html?_nkw=${encodedSearch}&LH_Sold=1&LH_Complete=1&_sop=13`
 }
 
 /**
@@ -982,7 +982,7 @@ const CollectionTable = ({
                     formatCurrency(card.estimated_value)
                   ) : (
                     <a
-                      href={buildEbaySearchUrl(card) || 'https://www.ebay.com/sch/i.html?_nkw=baseball+card&LH_BIN=1&_sop=10'}
+                      href={buildEbaySearchUrl(card) || 'https://www.ebay.com/sch/i.html?_nkw=baseball+card&LH_Sold=1&LH_Complete=1&_sop=13'}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="ebay-lookup-link"

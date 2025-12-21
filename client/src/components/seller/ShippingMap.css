@@ -99,13 +99,23 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
-/* Top Cities List */
-.shipping-map-cities {
+/* Top Cities and States Lists Container */
+.shipping-map-lists {
+  display: flex;
+  gap: 1.5rem;
   padding: 0.5rem 0;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.shipping-map-cities h4 {
+/* Top Cities List */
+.shipping-map-cities,
+.shipping-map-states {
+  flex: 1;
+  min-width: 0;
+}
+
+.shipping-map-cities h4,
+.shipping-map-states h4 {
   margin: 0 0 0.5rem 0;
   font-size: 0.6875rem;
   font-weight: 600;
@@ -114,7 +124,8 @@
   letter-spacing: 0.5px;
 }
 
-.shipping-map-cities ul {
+.shipping-map-cities ul,
+.shipping-map-states ul {
   list-style: none;
   margin: 0;
   padding: 0;
@@ -123,14 +134,16 @@
   gap: 0.375rem;
 }
 
-.shipping-map-cities li {
+.shipping-map-cities li,
+.shipping-map-states li {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   font-size: 0.75rem;
 }
 
-.shipping-map-city-rank {
+.shipping-map-city-rank,
+.shipping-map-state-rank {
   width: 16px;
   height: 16px;
   display: flex;
@@ -144,7 +157,8 @@
   flex-shrink: 0;
 }
 
-.shipping-map-city-name {
+.shipping-map-city-name,
+.shipping-map-state-name {
   flex: 1;
   color: rgba(255, 255, 255, 0.9);
   overflow: hidden;
@@ -152,7 +166,8 @@
   white-space: nowrap;
 }
 
-.shipping-map-city-count {
+.shipping-map-city-count,
+.shipping-map-state-count {
   color: #64b5f6;
   font-weight: 600;
   font-size: 0.75rem;
@@ -457,7 +472,13 @@
     aspect-ratio: 1.4 / 1;
   }
 
-  .shipping-map-cities li {
+  .shipping-map-lists {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .shipping-map-cities li,
+  .shipping-map-states li {
     font-size: 0.6875rem;
   }
 

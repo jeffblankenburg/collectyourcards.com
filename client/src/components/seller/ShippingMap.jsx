@@ -40,6 +40,15 @@ function ShippingMap({ sales = [] }) {
   // Get top cities for mini view
   const topCities = useMemo(() => getTopCities(sales, 5), [sales])
 
+  // Get top 5 states
+  const topStates = useMemo(() => {
+    const stateEntries = Object.entries(stateCounts)
+      .map(([state, count]) => ({ state, stateName: getStateName(state), count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5)
+    return stateEntries
+  }, [stateCounts])
+
   // Get all cities with coordinates for fullscreen view
   const citiesWithCoords = useMemo(() => getCitiesWithCoordinates(sales), [sales])
 
@@ -223,19 +232,40 @@ function ShippingMap({ sales = [] }) {
         )}
       </div>
 
-      {/* Top Cities List */}
-      {topCities.length > 0 && (
-        <div className="shipping-map-cities">
-          <h4>Top Destinations</h4>
-          <ul>
-            {topCities.map((item, index) => (
-              <li key={`${item.city}-${item.state}`}>
-                <span className="shipping-map-city-rank">{index + 1}</span>
-                <span className="shipping-map-city-name">{item.city}, {item.state}</span>
-                <span className="shipping-map-city-count">{item.count}</span>
-              </li>
-            ))}
-          </ul>
+      {/* Top Cities and States Lists - Side by Side */}
+      {(topCities.length > 0 || topStates.length > 0) && (
+        <div className="shipping-map-lists">
+          {/* Top Cities */}
+          {topCities.length > 0 && (
+            <div className="shipping-map-cities">
+              <h4>Top Cities</h4>
+              <ul>
+                {topCities.map((item, index) => (
+                  <li key={`${item.city}-${item.state}`}>
+                    <span className="shipping-map-city-rank">{index + 1}</span>
+                    <span className="shipping-map-city-name">{item.city}, {item.state}</span>
+                    <span className="shipping-map-city-count">{item.count}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Top States */}
+          {topStates.length > 0 && (
+            <div className="shipping-map-states">
+              <h4>Top States</h4>
+              <ul>
+                {topStates.map((item, index) => (
+                  <li key={item.state}>
+                    <span className="shipping-map-state-rank">{index + 1}</span>
+                    <span className="shipping-map-state-name">{item.stateName}</span>
+                    <span className="shipping-map-state-count">{item.count}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       )}
 

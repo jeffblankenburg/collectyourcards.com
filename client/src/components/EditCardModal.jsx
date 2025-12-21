@@ -37,8 +37,8 @@ const buildEbaySearchUrl = (card) => {
   const searchTerm = parts.join(' ')
   const encodedSearch = encodeURIComponent(searchTerm)
 
-  // eBay URL: Buy It Now (LH_BIN=1) + Sort by newly listed (_sop=10)
-  return `https://www.ebay.com/sch/i.html?_nkw=${encodedSearch}&LH_BIN=1&_sop=10`
+  // eBay URL: Sold listings only (LH_Sold=1, LH_Complete=1) + Sort by price+shipping lowest (_sop=13)
+  return `https://www.ebay.com/sch/i.html?_nkw=${encodedSearch}&LH_Sold=1&LH_Complete=1&_sop=13`
 }
 
 const EditCardModal = ({
