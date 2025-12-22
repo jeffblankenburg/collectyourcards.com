@@ -539,6 +539,7 @@ model user {
   user_table_preferences_user_table_preferences_userTouser    user_table_preferences[]    @relation("user_table_preferences_userTouser")
   user_team_user_team_userTouser                              user_team[]                 @relation("user_team_userTouser")
   user_wrapped                                                user_wrapped[]
+  campaign_visits                                             campaign_visit[]
 
   @@index([is_muted], map: "IX_user_is_muted")
   @@map("user")
@@ -1362,4 +1363,24 @@ model user_wrapped {
   @@index([share_token], map: "IX_user_wrapped_share_token")
   @@index([user_id], map: "IX_user_wrapped_user_id")
   @@index([year], map: "IX_user_wrapped_year")
+}
+
+// Campaign tracking for QR code marketing campaigns
+model campaign_visit {
+  visit_id       BigInt   @id(map: "PK_campaign_visit") @default(autoincrement())
+  campaign_code  String   @db.VarChar(50)
+  session_id     String   @db.VarChar(64)
+  user_id        BigInt?
+  ip_address     String?  @db.VarChar(45)
+  user_agent     String?  @db.VarChar(500)
+  referrer       String?  @db.NVarChar(500)
+  visited_at     DateTime @default(now(), map: "DF__campaign__visit__01") @db.DateTime
+  signed_up_at   DateTime? @db.DateTime
+  first_card_at  DateTime? @db.DateTime
+  user           user?    @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_campaign_visit_user")
+
+  @@index([campaign_code], map: "IX_campaign_visit_campaign")
+  @@index([session_id], map: "IX_campaign_visit_session")
+  @@index([user_id], map: "IX_campaign_visit_user")
+  @@index([visited_at], map: "IX_campaign_visit_date")
 }

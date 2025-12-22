@@ -55,6 +55,9 @@ function CollectionDashboard() {
   const [showSellConfirm, setShowSellConfirm] = useState(false)
   const [cardToSell, setCardToSell] = useState(null)
   const [sellLoading, setSellLoading] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [cardToDelete, setCardToDelete] = useState(null)
+  const [deleteLoading, setDeleteLoading] = useState(false)
   const [selectedSetId, setSelectedSetId] = useState(null)
 
   const navigate = useNavigate()
@@ -434,21 +437,33 @@ function CollectionDashboard() {
     })
   }, [])
 
-  const handleDeleteCard = useCallback(async (card) => {
-    // Remove confirmation dialog per CLAUDE.md rules - NO JAVASCRIPT ALERTS
-    log.info('Deleting card from collection', { user_card_id: card.user_card_id })
+  const handleDeleteCard = useCallback((card) => {
+    // Show confirmation dialog before deleting
+    setCardToDelete(card)
+    setShowDeleteConfirm(true)
+  }, [])
+
+  const confirmDeleteCard = useCallback(async () => {
+    if (!cardToDelete) return
+
+    log.info('Deleting card from collection', { user_card_id: cardToDelete.user_card_id })
+    setDeleteLoading(true)
 
     try {
-      await axios.delete(`/api/user/cards/${card.user_card_id}`)
-      success(`Card ${card.card_number} removed from collection`)
+      await axios.delete(`/api/user/cards/${cardToDelete.user_card_id}`)
+      success(`Card ${cardToDelete.card_number} removed from collection`)
 
       // Refresh the cards list (stats will auto-recalculate via useMemo)
-      setCards(prev => prev.filter(c => c.user_card_id !== card.user_card_id))
+      setCards(prev => prev.filter(c => c.user_card_id !== cardToDelete.user_card_id))
+      setShowDeleteConfirm(false)
+      setCardToDelete(null)
     } catch (err) {
       log.error('Failed to delete card', err)
       error('Failed to delete card: ' + (err.response?.data?.error || err.message))
+    } finally {
+      setDeleteLoading(false)
     }
-  }, [success, error])
+  }, [cardToDelete, success, error])
 
   const handleFavoriteToggle = useCallback(async (card) => {
     try {
@@ -1358,6 +1373,39 @@ function CollectionDashboard() {
               </p>
               <p className="warning-text">
                 You can restore this card to your collection later by removing it from the Seller Dashboard.
+              </p>
+            </>
+          )
+        }
+      />
+
+      {/* Delete Card Confirmation Modal */}
+      <ConfirmModal
+        isOpen={showDeleteConfirm}
+        onClose={() => {
+          setShowDeleteConfirm(false)
+          setCardToDelete(null)
+        }}
+        onConfirm={confirmDeleteCard}
+        title="Delete This Card?"
+        icon="trash-2"
+        confirmText="Delete Card"
+        confirmVariant="danger"
+        loading={deleteLoading}
+        message={
+          cardToDelete && (
+            <>
+              <p>You are about to permanently delete this card from your collection:</p>
+              <div className="confirm-card-preview">
+                <div className="card-info">
+                  <span className="card-name">
+                    #{cardToDelete.card_number} - {cardToDelete.card_player_teams?.[0]?.player?.first_name} {cardToDelete.card_player_teams?.[0]?.player?.last_name}
+                  </span>
+                  <span className="card-series">{cardToDelete.series_rel?.name}</span>
+                </div>
+              </div>
+              <p className="warning-text" style={{ marginTop: '1rem' }}>
+                This action cannot be undone.
               </p>
             </>
           )

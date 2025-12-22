@@ -1,0 +1,764 @@
+/* StartLanding Page - Completely Scoped Styles */
+/* Landing page for QR code marketing campaign */
+
+.start-landing-page {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  min-height: calc(100vh - 140px);
+  color: white;
+}
+
+/* ==================== LOADING & ERROR STATES ==================== */
+
+.start-landing-loading,
+.start-landing-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  gap: 1rem;
+  text-align: center;
+  padding: 2rem;
+}
+
+.start-landing-spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid rgba(255, 255, 255, 0.1);
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: start-landing-spin 0.8s linear infinite;
+}
+
+@keyframes start-landing-spin {
+  to { transform: rotate(360deg); }
+}
+
+.start-landing-error h2 {
+  font-size: 1.5rem;
+  margin: 0.5rem 0;
+}
+
+.start-landing-error p {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* ==================== HERO SECTION (Generic) ==================== */
+
+.start-landing-hero {
+  padding: 4rem 2rem 3rem;
+  text-align: center;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.start-landing-hero-content {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.start-landing-hero h1 {
+  font-size: 3rem;
+  font-weight: 800;
+  margin: 0 0 1rem;
+  background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1.2;
+}
+
+.start-landing-hero-subtitle {
+  font-size: 1.375rem;
+  color: rgba(255, 255, 255, 0.85);
+  margin: 0 0 2.5rem;
+  line-height: 1.6;
+}
+
+.start-landing-cta-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.start-landing-cta-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 1rem 2.5rem;
+  border-radius: 12px;
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 1.125rem;
+  transition: all 0.2s ease;
+  border: none;
+  cursor: pointer;
+}
+
+.start-landing-cta-button.primary {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.4);
+}
+
+.start-landing-cta-button.primary:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.5);
+  text-decoration: none;
+  color: white;
+}
+
+.start-landing-cta-note {
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.6);
+  margin: 0;
+}
+
+/* ==================== FEATURES SECTION ==================== */
+
+.start-landing-features {
+  padding: 4rem 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.start-landing-features h2 {
+  text-align: center;
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0 0 3rem;
+  color: #e5e7eb;
+}
+
+.start-landing-feature-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.start-landing-feature-card {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  padding: 2rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.2s ease;
+}
+
+.start-landing-feature-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.start-landing-feature-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(139, 92, 246, 0.2) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.25rem;
+  color: #60a5fa;
+}
+
+.start-landing-feature-card h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0 0 0.75rem;
+  color: #e5e7eb;
+}
+
+.start-landing-feature-card p {
+  font-size: 0.9375rem;
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* ==================== CARD VIEW LAYOUT ==================== */
+
+.start-landing-card-view {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Card Hero Section */
+.start-landing-card-hero {
+  padding: 2rem;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(139, 92, 246, 0.08) 100%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.start-landing-card-content {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 2rem;
+  max-width: 1000px;
+  margin: 0 auto;
+  align-items: start;
+}
+
+/* ==================== CARD STACK ==================== */
+
+.start-landing-card-stack-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* Navigation controls row */
+.start-landing-stack-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+
+/* Navigation arrows */
+.start-landing-stack-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #e5e7eb;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.start-landing-stack-nav:hover:not(.disabled) {
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(1.1);
+}
+
+.start-landing-stack-nav.disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* Card stack container */
+.start-landing-card-stack {
+  position: relative;
+  width: 220px;
+  height: 320px;
+  perspective: 1000px;
+}
+
+/* Individual stacked card */
+.start-landing-stacked-card {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  border-radius: 8px;
+  overflow: hidden;
+  /* Default offset for cards behind - overridden by inline styles */
+  transform: translateX(calc(var(--stack-offset) * 20px)) scale(0.95);
+  opacity: 0.5;
+  filter: brightness(0.7);
+}
+
+.start-landing-stacked-card.active {
+  transform: translateX(0) translateY(0) scale(1) !important;
+  opacity: 1 !important;
+  filter: brightness(1) !important;
+  cursor: default;
+}
+
+.start-landing-stacked-card:not(.active):hover {
+  opacity: 0.7;
+  filter: brightness(0.85);
+}
+
+/* Card image within stack */
+.start-landing-stacked-card .start-landing-card-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.start-landing-stacked-card.active .start-landing-card-image,
+.start-landing-stacked-card.active .start-landing-card-placeholder {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.start-landing-card-image {
+  max-width: 100%;
+  max-height: 400px;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.start-landing-card-placeholder {
+  width: 100%;
+  height: 100%;
+  background: #1e293b;
+  border: 2px dashed rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.start-landing-card-placeholder span {
+  font-size: 0.75rem;
+}
+
+/* Card counter */
+.start-landing-card-counter {
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 500;
+  min-width: 60px;
+  text-align: center;
+}
+
+/* Card Details */
+.start-landing-card-details {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* Player Section */
+.start-landing-players-section {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1.25rem;
+}
+
+.start-landing-player-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.start-landing-player-row .team-circle-base {
+  text-decoration: none;
+}
+
+.start-landing-player-link {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #e5e7eb;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.start-landing-player-link:hover {
+  color: #60a5fa;
+}
+
+/* Card Meta - 2 column grid */
+.start-landing-card-meta {
+  display: grid;
+  grid-template-columns: 100px 1fr;
+  gap: 1rem;
+}
+
+.start-landing-card-number-row,
+.start-landing-card-series,
+.start-landing-card-set,
+.start-landing-card-manufacturer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.start-landing-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.start-landing-value {
+  font-size: 0.9375rem;
+  color: #e5e7eb;
+  font-weight: 500;
+}
+
+.start-landing-link {
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.start-landing-link:hover {
+  color: #60a5fa;
+}
+
+/* Card Tags - uses design system cardcard-tag classes */
+.start-landing-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+
+/* Community Stats */
+.start-landing-community-stats {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.start-landing-community-stats h4 {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0 0 0.75rem;
+}
+
+.start-landing-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+.start-landing-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.start-landing-stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #60a5fa;
+}
+
+.start-landing-stat-label {
+  font-size: 0.6875rem;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+}
+
+/* ==================== AUTH SECTION ==================== */
+
+.start-landing-auth-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.start-landing-auth-container {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 2rem;
+}
+
+.start-landing-auth-header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.start-landing-auth-header h2 {
+  font-size: 1.375rem;
+  font-weight: 700;
+  color: #e5e7eb;
+  margin: 0 0 0.5rem;
+}
+
+.start-landing-auth-header p {
+  font-size: 0.9375rem;
+  color: rgba(255, 255, 255, 0.6);
+  margin: 0;
+}
+
+/* Auth Toggle */
+.start-landing-auth-toggle {
+  display: flex;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 4px;
+  margin-bottom: 1.5rem;
+}
+
+.start-landing-toggle-btn {
+  flex: 1;
+  padding: 0.75rem;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.start-landing-toggle-btn.active {
+  background: #3b82f6;
+  color: white;
+}
+
+.start-landing-toggle-btn:not(.active):hover {
+  color: #e5e7eb;
+}
+
+/* Auth Form */
+.start-landing-auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.start-landing-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.start-landing-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.start-landing-form-group label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.start-landing-form-group input {
+  padding: 0.75rem 1rem;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  color: #e5e7eb;
+  font-size: 0.9375rem;
+  transition: all 0.15s ease;
+}
+
+.start-landing-form-group input::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.start-landing-form-group input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.start-landing-form-group input.error {
+  border-color: #ef4444;
+}
+
+.start-landing-error-text {
+  font-size: 0.75rem;
+  color: #f87171;
+}
+
+.start-landing-submit-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  margin-top: 0.5rem;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  border: none;
+  border-radius: 10px;
+  color: white;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.start-landing-submit-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+}
+
+.start-landing-submit-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.start-landing-btn-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: start-landing-spin 0.6s linear infinite;
+}
+
+.start-landing-forgot {
+  text-align: center;
+  margin-top: 1rem;
+}
+
+.start-landing-forgot a {
+  font-size: 0.875rem;
+  color: #60a5fa;
+  text-decoration: none;
+}
+
+.start-landing-forgot a:hover {
+  text-decoration: underline;
+}
+
+/* Benefits */
+.start-landing-benefits {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.start-landing-benefits h3 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #e5e7eb;
+  margin: 0 0 1.25rem;
+}
+
+.start-landing-benefits ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+}
+
+.start-landing-benefits li {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.9375rem;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.start-landing-benefits li svg {
+  color: #4ade80;
+  flex-shrink: 0;
+}
+
+/* ==================== RESPONSIVE DESIGN ==================== */
+
+@media (max-width: 900px) {
+  .start-landing-auth-section {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .start-landing-benefits {
+    order: -1;
+    padding: 1.5rem;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 12px;
+  }
+}
+
+@media (max-width: 768px) {
+  .start-landing-card-content {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .start-landing-card-stack-container {
+    order: -1;
+  }
+
+  .start-landing-card-stack {
+    width: 200px;
+    height: 290px;
+  }
+
+  .start-landing-stack-controls {
+    gap: 0.75rem;
+  }
+
+  .start-landing-stack-nav {
+    width: 32px;
+    height: 32px;
+  }
+
+  .start-landing-card-image {
+    max-height: 300px;
+  }
+
+  .start-landing-player-link {
+    font-size: 1.25rem;
+  }
+
+  .start-landing-stats-grid {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+
+  .start-landing-stat {
+    flex-direction: row;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
+  .start-landing-stat-value {
+    font-size: 1.125rem;
+  }
+
+  .start-landing-hero h1 {
+    font-size: 2rem;
+  }
+
+  .start-landing-hero-subtitle {
+    font-size: 1.125rem;
+  }
+
+  .start-landing-feature-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .start-landing-card-hero,
+  .start-landing-auth-section {
+    padding: 1.5rem 1rem;
+  }
+
+  .start-landing-form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .start-landing-auth-container {
+    padding: 1.5rem;
+  }
+
+  .start-landing-card-meta {
+    grid-template-columns: 1fr;
+  }
+
+  .start-landing-cta-button {
+    width: 100%;
+    max-width: 100%;
+  }
+}

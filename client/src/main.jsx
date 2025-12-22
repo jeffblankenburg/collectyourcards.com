@@ -102,6 +102,8 @@ const SellerAdmin = lazy(() => import('./pages/SellerAdmin.jsx'))
 const AdminFeedback = lazy(() => import('./pages/AdminFeedback.jsx'))
 const AdminFeedbackDetail = lazy(() => import('./pages/AdminFeedbackDetail.jsx'))
 const Boxed = lazy(() => import('./pages/Boxed.jsx'))
+const StartLanding = lazy(() => import('./pages/StartLanding.jsx'))
+const AdminCampaigns = lazy(() => import('./pages/AdminCampaigns.jsx'))
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -178,6 +180,7 @@ createRoot(document.getElementById('root')).render(
               <Route path="/admin/seller" element={<ProtectedRoute><SellerAdmin /></ProtectedRoute>} />
               <Route path="/admin/feedback" element={<ProtectedRoute><AdminFeedback /></ProtectedRoute>} />
               <Route path="/admin/feedback/:id" element={<ProtectedRoute><AdminFeedbackDetail /></ProtectedRoute>} />
+              <Route path="/admin/campaigns" element={<ProtectedRoute><AdminCampaigns /></ProtectedRoute>} />
 
               {/* Lists routes - MUST BE BEFORE username route */}
               <Route path="/lists" element={<ProtectedRoute><Lists /></ProtectedRoute>} />
@@ -194,6 +197,10 @@ createRoot(document.getElementById('root')).render(
               <Route path="/boxed" element={<ProtectedRoute><Boxed /></ProtectedRoute>} />
               <Route path="/boxed/:year" element={<ProtectedRoute><Boxed /></ProtectedRoute>} />
               <Route path="/boxed/:username/:year" element={<Boxed />} />
+
+              {/* Start - QR code landing page for marketing campaign */}
+              <Route path="/start" element={<StartLanding />} />
+              <Route path="/start/:cardId" element={<StartLanding />} />
 
               {/* Public profile route - MUST BE LAST to avoid conflicts with other routes */}
               <Route path="/:username" element={<PublicProfile />} />

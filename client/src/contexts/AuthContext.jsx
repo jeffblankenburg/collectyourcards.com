@@ -84,6 +84,23 @@ export const AuthProvider = ({ children }) => {
       // Track signup in Google Analytics
       trackSignup('email')
 
+      // Track campaign signup if coming from a campaign landing page
+      const campaignSessionId = sessionStorage.getItem('campaign_session_id')
+      if (campaignSessionId) {
+        try {
+          await axios.post('/api/campaign/signup', {
+            session_id: campaignSessionId,
+            email: userData.email
+          })
+          // Clear session after tracking
+          sessionStorage.removeItem('campaign_session_id')
+          sessionStorage.removeItem('campaign_code')
+        } catch (campaignError) {
+          console.error('Failed to track campaign signup:', campaignError)
+          // Don't fail registration if campaign tracking fails
+        }
+      }
+
       return {
         success: true,
         message: response.data.message || 'Registration successful! Please check your email to verify your account.'

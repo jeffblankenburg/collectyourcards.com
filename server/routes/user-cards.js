@@ -214,6 +214,31 @@ router.post('/counts', async (req, res) => {
   }
 })
 
+// Helper function to check and track first card for campaign
+const trackFirstCardIfNeeded = async (userId) => {
+  try {
+    // Check if user has any other cards
+    const cardCount = await prisma.$queryRaw`
+      SELECT COUNT(*) as count FROM user_card WHERE [user] = ${BigInt(parseInt(userId))} AND sold_at IS NULL
+    `
+
+    // If this is their first card (count is now 1 after insert)
+    if (cardCount[0] && Number(cardCount[0].count) === 1) {
+      // Update campaign tracking for this user
+      await prisma.$executeRaw`
+        UPDATE campaign_visit
+        SET first_card_at = GETDATE()
+        WHERE user_id = ${BigInt(parseInt(userId))}
+        AND first_card_at IS NULL
+      `
+      console.log('Tracked first card for campaign user:', userId)
+    }
+  } catch (error) {
+    // Don't fail if tracking fails
+    console.error('Failed to track first card for campaign:', error.message)
+  }
+}
+
 // POST /api/user/cards - Add a card to user's collection
 router.post('/', async (req, res, next) => {
   try {
@@ -340,6 +365,9 @@ router.post('/', async (req, res, next) => {
       has_grade: !!grade,
       has_price: !!purchase_price
     })
+
+    // Track first card for campaign conversion (async, don't block response)
+    trackFirstCardIfNeeded(userId)
 
     res.status(201).json({
       message: 'Card added to collection successfully',

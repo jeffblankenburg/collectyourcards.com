@@ -655,3 +655,37 @@ Each entry should include:
   WHERE TABLE_NAME IN ('feedback_submission', 'feedback_response');
   ```
 - **Expected Result**: Both tables exist
+
+### 2025-12-21: Campaign Visit Tracking Table for QR Code Marketing
+- **Date**: 2025-12-21
+- **Change Type**: Schema (CREATE TABLE)
+- **Description**:
+  - Created `campaign_visit` table to track QR code marketing campaign conversions
+  - Tracks: page visits, signups, and first card additions
+  - Used for /start landing page (print mailer QR code campaign)
+  - Links to user table to track full conversion funnel
+  - Session-based tracking to prevent duplicate visit counts
+- **Tables Affected**: `campaign_visit` (new)
+- **Columns**:
+  - `visit_id` (BIGINT, PK) - Unique visit identifier
+  - `campaign_code` (VARCHAR(50)) - Campaign identifier (e.g., 'print-mailer-2025')
+  - `session_id` (VARCHAR(64)) - Client session ID for deduplication
+  - `user_id` (BIGINT, nullable, FK) - Links to user if they signed up
+  - `ip_address` (VARCHAR(45)) - Visitor IP
+  - `user_agent` (VARCHAR(500)) - Browser info
+  - `referrer` (NVARCHAR(500)) - Referring URL
+  - `visited_at` (DATETIME) - Initial visit timestamp
+  - `signed_up_at` (DATETIME, nullable) - When user created account
+  - `first_card_at` (DATETIME, nullable) - When user added first card
+- **Indexes**:
+  - `IX_campaign_visit_campaign` - For filtering by campaign
+  - `IX_campaign_visit_session` - For session deduplication
+  - `IX_campaign_visit_user` - For user lookup
+  - `IX_campaign_visit_date` - For date range queries
+- **Status**: ✅ Applied via Prisma db push
+- **Verification Query**:
+  ```sql
+  SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'campaign_visit';
+  SELECT COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'campaign_visit';
+  ```
+- **Expected Result**: Table exists with all columns listed above

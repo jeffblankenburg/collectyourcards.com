@@ -544,7 +544,7 @@ function SeriesDetail() {
             defaultSort="sort_order"
             downloadFilename={`${series.name?.replace(/[^a-zA-Z0-9]/g, '_') || 'series'}_cards`}
             maxHeight="800px"
-            autoFocusSearch={false}
+            autoFocusSearch={true}
           />
         )}
 
