@@ -236,7 +236,7 @@ function SellerDashboard() {
     const topPlayers = Object.values(playerStats)
       .filter(p => p.name !== 'Unknown')
       .sort((a, b) => b.profit - a.profit)
-      .slice(0, 5)
+      .slice(0, 15)
 
     const topTeams = Object.values(teamStats)
       .filter(t => t.name !== 'Unknown')
@@ -247,7 +247,7 @@ function SellerDashboard() {
     const mostSoldPlayers = Object.values(playerStats)
       .filter(p => p.name !== 'Unknown')
       .sort((a, b) => b.count - a.count)
-      .slice(0, 5)
+      .slice(0, 15)
 
     const mostSoldTeams = Object.values(teamStats)
       .filter(t => t.name !== 'Unknown')
@@ -257,7 +257,7 @@ function SellerDashboard() {
     const mostSoldSets = Object.values(setStats)
       .filter(s => s.name !== 'Unknown Set')
       .sort((a, b) => b.count - a.count)
-      .slice(0, 5)
+      .slice(0, 15)
 
     // Overall totals - sold only
     // Revenue = sale_price + shipping_charged (total money received)
