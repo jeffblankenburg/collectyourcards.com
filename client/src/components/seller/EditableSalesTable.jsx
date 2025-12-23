@@ -502,12 +502,33 @@ function EditableSalesTable({
     })
   }
 
+  // Filter sales by date range - must be before groupedSalesData
+  const filteredSales = useMemo(() => {
+    if (!sales.length) return sales
+    if (!dateRangeStart && !dateRangeEnd) return sales
+
+    return sales.filter(sale => {
+      if (!sale.sale_date) return true // Include sales without dates
+      const saleDate = new Date(sale.sale_date)
+      saleDate.setHours(0, 0, 0, 0)
+
+      if (dateRangeStart && saleDate < dateRangeStart) return false
+      if (dateRangeEnd) {
+        const endOfDay = new Date(dateRangeEnd)
+        endOfDay.setHours(23, 59, 59, 999)
+        if (saleDate > endOfDay) return false
+      }
+      return true
+    })
+  }, [sales, dateRangeStart, dateRangeEnd])
+
   // Group sales by order_id for display, with sorting support
   const groupedSalesData = useMemo(() => {
     const orders = new Map() // order_id -> { order info, sales: [] }
     const ungrouped = []
 
-    sales.forEach(sale => {
+    // Use filteredSales to respect date range filter
+    filteredSales.forEach(sale => {
       if (sale.order_id) {
         if (!orders.has(sale.order_id)) {
           orders.set(sale.order_id, {
@@ -533,7 +554,7 @@ function EditableSalesTable({
     })
 
     return { orders: Array.from(orders.values()), ungrouped }
-  }, [sales])
+  }, [filteredSales])
 
   // Helper to get sort value from a sale
   const getSortValue = (sale, key) => {
@@ -714,26 +735,6 @@ function EditableSalesTable({
     }
     setActivePreset('custom')
   }
-
-  // Filter sales by date range
-  const filteredSales = useMemo(() => {
-    if (!sales.length) return sales
-    if (!dateRangeStart && !dateRangeEnd) return sales
-
-    return sales.filter(sale => {
-      if (!sale.sale_date) return true // Include sales without dates
-      const saleDate = new Date(sale.sale_date)
-      saleDate.setHours(0, 0, 0, 0)
-
-      if (dateRangeStart && saleDate < dateRangeStart) return false
-      if (dateRangeEnd) {
-        const endOfDay = new Date(dateRangeEnd)
-        endOfDay.setHours(23, 59, 59, 999)
-        if (saleDate > endOfDay) return false
-      }
-      return true
-    })
-  }, [sales, dateRangeStart, dateRangeEnd])
 
   const sortedSales = useMemo(() => {
     if (!filteredSales.length) return filteredSales
