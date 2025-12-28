@@ -37,6 +37,8 @@ function AdminCards() {
   const [editingImage, setEditingImage] = useState(null) // { imageUrl, side: 'front'|'back' }
   const [currentAssignedImages, setCurrentAssignedImages] = useState({ front: null, back: null })
   const [availableColors, setAvailableColors] = useState([])
+  const [uploadingDirectImage, setUploadingDirectImage] = useState(false)
+  const [directUploadPreviews, setDirectUploadPreviews] = useState({ front: null, back: null })
   const { addToast } = useToast()
 
   // Function to determine text color based on background brightness
@@ -249,6 +251,7 @@ function AdminCards() {
     setSaving(false)
     setCommunityImages([])
     setCurrentReferenceUserCard(null)
+    setDirectUploadPreviews({ front: null, back: null })
   }
 
   const loadCommunityImages = async (cardId) => {
@@ -361,6 +364,86 @@ function AdminCards() {
     }
   }
 
+  // Handle direct image upload (front or back)
+  const handleDirectImageSelect = (e, side) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Validate file type
+    if (!['image/jpeg', 'image/jpg', 'image/png', 'image/webp'].includes(file.type)) {
+      addToast('Only JPEG, PNG, and WebP images are allowed', 'error')
+      return
+    }
+
+    // Validate file size (10MB max)
+    if (file.size > 10 * 1024 * 1024) {
+      addToast('File size must be less than 10MB', 'error')
+      return
+    }
+
+    // Create preview URL
+    const previewUrl = URL.createObjectURL(file)
+    setDirectUploadPreviews(prev => ({
+      ...prev,
+      [side]: { file, previewUrl }
+    }))
+  }
+
+  const handleDirectImageUpload = async (side) => {
+    if (!editingCard || !directUploadPreviews[side]?.file) return
+
+    try {
+      setUploadingDirectImage(true)
+
+      const formData = new FormData()
+      const fieldName = `${side}_image` // 'front_image' or 'back_image'
+      formData.append(fieldName, directUploadPreviews[side].file)
+
+      const response = await axios.put(`/api/admin/cards/${editingCard.card_id}/reference-image`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      })
+
+      // Update currentAssignedImages from API response
+      setCurrentAssignedImages({
+        front: response.data.front_image_url || null,
+        back: response.data.back_image_url || null
+      })
+
+      // Clear reference_user_card since we're using a direct upload
+      setCurrentReferenceUserCard(null)
+
+      // Clear the preview for this side
+      if (directUploadPreviews[side]?.previewUrl) {
+        URL.revokeObjectURL(directUploadPreviews[side].previewUrl)
+      }
+      setDirectUploadPreviews(prev => ({
+        ...prev,
+        [side]: null
+      }))
+
+      addToast(`${side === 'front' ? 'Front' : 'Back'} image uploaded successfully!`, 'success')
+
+      // Reload cards list to update the main table
+      loadCardsForSeries(selectedSeries.series_id)
+    } catch (error) {
+      console.error('Error uploading image:', error)
+      addToast(`Failed to upload image: ${error.response?.data?.message || error.message}`, 'error')
+    } finally {
+      setUploadingDirectImage(false)
+    }
+  }
+
+  const handleClearDirectUpload = (side) => {
+    if (directUploadPreviews[side]?.previewUrl) {
+      URL.revokeObjectURL(directUploadPreviews[side].previewUrl)
+    }
+    setDirectUploadPreviews(prev => ({
+      ...prev,
+      [side]: null
+    }))
+  }
 
   const handleFormChange = (field, value) => {
     setEditForm(prev => ({
@@ -684,12 +767,12 @@ function AdminCards() {
                         </div>
                       </td>
                       <td className="image-indicator-cell center">
-                        {card.reference_user_card && (
+                        {(card.reference_user_card || card.front_image_path || card.back_image_path) && (
                           <Icon
                             name="image"
                             size={18}
                             style={{ color: '#10b981' }}
-                            title="Card has assigned image"
+                            title={card.reference_user_card ? 'Card has community reference image' : 'Card has uploaded image'}
                           />
                         )}
                       </td>
@@ -1056,6 +1139,105 @@ function AdminCards() {
                             )}
                           </div>
                         </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Direct Image Upload Section */}
+                {editingCard && (
+                  <div className="admin-cards-community-images-section">
+                    <div className="admin-cards-community-images-header">
+                      <span className="admin-cards-community-images-title">
+                        <Icon name="upload" size={16} style={{ marginRight: '8px' }} />
+                        Upload Images Directly
+                      </span>
+                    </div>
+                    <div className="admin-cards-direct-upload-grid">
+                      {/* Front Image Upload */}
+                      <div className="admin-cards-direct-upload-slot">
+                        <div className="admin-cards-direct-upload-label">Front Image</div>
+                        {directUploadPreviews.front ? (
+                          <div className="admin-cards-direct-upload-preview">
+                            <img src={directUploadPreviews.front.previewUrl} alt="Front preview" />
+                            <div className="admin-cards-direct-upload-actions">
+                              <button
+                                type="button"
+                                className="admin-cards-upload-btn"
+                                onClick={() => handleDirectImageUpload('front')}
+                                disabled={uploadingDirectImage}
+                              >
+                                {uploadingDirectImage ? (
+                                  <><div className="card-icon-spinner tiny"></div> Uploading...</>
+                                ) : (
+                                  <><Icon name="check" size={14} /> Save</>
+                                )}
+                              </button>
+                              <button
+                                type="button"
+                                className="admin-cards-cancel-upload-btn"
+                                onClick={() => handleClearDirectUpload('front')}
+                                disabled={uploadingDirectImage}
+                              >
+                                <Icon name="x" size={14} />
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <label className="admin-cards-direct-upload-dropzone">
+                            <input
+                              type="file"
+                              accept="image/jpeg,image/jpg,image/png,image/webp"
+                              onChange={(e) => handleDirectImageSelect(e, 'front')}
+                              style={{ display: 'none' }}
+                            />
+                            <Icon name="image" size={32} />
+                            <span>Click to select front image</span>
+                          </label>
+                        )}
+                      </div>
+
+                      {/* Back Image Upload */}
+                      <div className="admin-cards-direct-upload-slot">
+                        <div className="admin-cards-direct-upload-label">Back Image</div>
+                        {directUploadPreviews.back ? (
+                          <div className="admin-cards-direct-upload-preview">
+                            <img src={directUploadPreviews.back.previewUrl} alt="Back preview" />
+                            <div className="admin-cards-direct-upload-actions">
+                              <button
+                                type="button"
+                                className="admin-cards-upload-btn"
+                                onClick={() => handleDirectImageUpload('back')}
+                                disabled={uploadingDirectImage}
+                              >
+                                {uploadingDirectImage ? (
+                                  <><div className="card-icon-spinner tiny"></div> Uploading...</>
+                                ) : (
+                                  <><Icon name="check" size={14} /> Save</>
+                                )}
+                              </button>
+                              <button
+                                type="button"
+                                className="admin-cards-cancel-upload-btn"
+                                onClick={() => handleClearDirectUpload('back')}
+                                disabled={uploadingDirectImage}
+                              >
+                                <Icon name="x" size={14} />
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <label className="admin-cards-direct-upload-dropzone">
+                            <input
+                              type="file"
+                              accept="image/jpeg,image/jpg,image/png,image/webp"
+                              onChange={(e) => handleDirectImageSelect(e, 'back')}
+                              style={{ display: 'none' }}
+                            />
+                            <Icon name="image" size={32} />
+                            <span>Click to select back image</span>
+                          </label>
+                        )}
                       </div>
                     </div>
                   </div>
