@@ -29,6 +29,7 @@ router.get('/card/:cardId', async (req, res) => {
     }
 
     // Get card details with all related info
+    // Images are stored directly on the card record (front_image_path/back_image_path)
     const results = await prisma.$queryRaw`
       SELECT
         c.card_id,
@@ -38,7 +39,6 @@ router.get('/card/:cardId', async (req, res) => {
         c.is_relic,
         c.print_run,
         c.notes as card_notes,
-        c.reference_user_card,
         s.series_id,
         s.name as series_name,
         s.slug as series_slug,
@@ -50,8 +50,8 @@ router.get('/card/:cardId', async (req, res) => {
         s.parallel_of_series,
         col.name as color_name,
         col.hex_value as color_hex,
-        front_photo.photo_url as front_image_url,
-        back_photo.photo_url as back_image_url,
+        c.front_image_path as front_image_url,
+        c.back_image_path as back_image_url,
         STRING_AGG(CONCAT(p.first_name, ' ', p.last_name), ', ') as player_names,
         STRING_AGG(CONVERT(varchar(max), CONCAT(p.player_id, '|', p.first_name, '|', p.last_name, '|', t.team_id, '|', t.name, '|', t.abbreviation, '|', ISNULL(t.primary_color, ''), '|', ISNULL(t.secondary_color, ''))), '~') as player_team_data
       FROM card c
@@ -59,17 +59,14 @@ router.get('/card/:cardId', async (req, res) => {
       JOIN [set] st ON s.[set] = st.set_id
       LEFT JOIN manufacturer m ON st.manufacturer = m.manufacturer_id
       LEFT JOIN color col ON s.color = col.color_id
-      LEFT JOIN user_card ref_uc ON c.reference_user_card = ref_uc.user_card_id
-      LEFT JOIN user_card_photo front_photo ON ref_uc.user_card_id = front_photo.user_card AND front_photo.sort_order = 1
-      LEFT JOIN user_card_photo back_photo ON ref_uc.user_card_id = back_photo.user_card AND back_photo.sort_order = 2
       LEFT JOIN card_player_team cpt ON c.card_id = cpt.card
       LEFT JOIN player_team pt ON cpt.player_team = pt.player_team_id
       LEFT JOIN player p ON pt.player = p.player_id
       LEFT JOIN team t ON pt.team = t.team_id
       WHERE c.card_id = ${cardIdNum}
-      GROUP BY c.card_id, c.card_number, c.is_rookie, c.is_autograph, c.is_relic, c.print_run, c.notes, c.reference_user_card,
+      GROUP BY c.card_id, c.card_number, c.is_rookie, c.is_autograph, c.is_relic, c.print_run, c.notes,
                s.series_id, s.name, s.slug, st.set_id, st.name, st.slug, st.year, m.name, s.parallel_of_series, col.name, col.hex_value,
-               front_photo.photo_url, back_photo.photo_url
+               c.front_image_path, c.back_image_path
     `
 
     if (results.length === 0) {
@@ -267,6 +264,7 @@ router.get('/cards/:cardIds', async (req, res) => {
     // Fetch all cards in parallel
     const cardPromises = parsedEntries.map(async ({ cardId: cardIdNum, purchasePrice }) => {
       // Get card details with all related info
+      // Images are stored directly on the card record (front_image_path/back_image_path)
       const results = await prisma.$queryRaw`
         SELECT
           c.card_id,
@@ -276,7 +274,6 @@ router.get('/cards/:cardIds', async (req, res) => {
           c.is_relic,
           c.print_run,
           c.notes as card_notes,
-          c.reference_user_card,
           s.series_id,
           s.name as series_name,
           s.slug as series_slug,
@@ -288,8 +285,8 @@ router.get('/cards/:cardIds', async (req, res) => {
           s.parallel_of_series,
           col.name as color_name,
           col.hex_value as color_hex,
-          front_photo.photo_url as front_image_url,
-          back_photo.photo_url as back_image_url,
+          c.front_image_path as front_image_url,
+          c.back_image_path as back_image_url,
           STRING_AGG(CONCAT(p.first_name, ' ', p.last_name), ', ') as player_names,
           STRING_AGG(CONVERT(varchar(max), CONCAT(p.player_id, '|', p.first_name, '|', p.last_name, '|', t.team_id, '|', t.name, '|', t.abbreviation, '|', ISNULL(t.primary_color, ''), '|', ISNULL(t.secondary_color, ''))), '~') as player_team_data
         FROM card c
@@ -297,17 +294,14 @@ router.get('/cards/:cardIds', async (req, res) => {
         JOIN [set] st ON s.[set] = st.set_id
         LEFT JOIN manufacturer m ON st.manufacturer = m.manufacturer_id
         LEFT JOIN color col ON s.color = col.color_id
-        LEFT JOIN user_card ref_uc ON c.reference_user_card = ref_uc.user_card_id
-        LEFT JOIN user_card_photo front_photo ON ref_uc.user_card_id = front_photo.user_card AND front_photo.sort_order = 1
-        LEFT JOIN user_card_photo back_photo ON ref_uc.user_card_id = back_photo.user_card AND back_photo.sort_order = 2
         LEFT JOIN card_player_team cpt ON c.card_id = cpt.card
         LEFT JOIN player_team pt ON cpt.player_team = pt.player_team_id
         LEFT JOIN player p ON pt.player = p.player_id
         LEFT JOIN team t ON pt.team = t.team_id
         WHERE c.card_id = ${cardIdNum}
-        GROUP BY c.card_id, c.card_number, c.is_rookie, c.is_autograph, c.is_relic, c.print_run, c.notes, c.reference_user_card,
+        GROUP BY c.card_id, c.card_number, c.is_rookie, c.is_autograph, c.is_relic, c.print_run, c.notes,
                  s.series_id, s.name, s.slug, st.set_id, st.name, st.slug, st.year, m.name, s.parallel_of_series, col.name, col.hex_value,
-                 front_photo.photo_url, back_photo.photo_url
+                 c.front_image_path, c.back_image_path
       `
 
       if (results.length === 0) {

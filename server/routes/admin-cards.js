@@ -519,21 +519,21 @@ router.put('/:id/reference-image', requireDataAdmin, upload.fields([
       throw new Error('Failed to process any images from the selected user_card')
     }
 
-    // Update the card with reference and optimized image URLs
+    // Update the card with optimized image URLs (no reference pointer needed - we own the copies)
     await prisma.card.update({
       where: { card_id: cardId },
       data: {
-        reference_user_card: BigInt(user_card_id),
+        reference_user_card: null, // Clear any old reference - we now have our own copies
         front_image_path: processingResults.front_image_url,
         back_image_path: processingResults.back_image_url
       }
     })
 
-    console.log(`✓ Reference updated successfully for card ${cardId}`)
+    console.log(`✓ Images copied and saved successfully for card ${cardId}`)
 
     res.json({
-      message: 'Reference image updated and optimized successfully',
-      reference_user_card: Number(user_card_id),
+      message: 'Images copied and saved successfully',
+      reference_user_card: null,
       front_image_url: processingResults.front_image_url,
       back_image_url: processingResults.back_image_url,
       processing_summary: {

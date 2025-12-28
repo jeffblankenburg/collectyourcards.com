@@ -231,7 +231,7 @@ function AdminCards() {
       is_short_print: card.is_short_print || false,
       print_run: card.print_run || '',
       notes: card.notes || '',
-      color_id: card.color || ''
+      color_id: card.color_id || ''
     })
     // Set current players for this card
     setCardPlayers(card.card_player_teams || [])
