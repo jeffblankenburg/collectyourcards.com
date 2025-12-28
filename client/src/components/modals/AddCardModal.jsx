@@ -50,12 +50,12 @@ const AddCardModal = ({
 
   useEffect(() => {
     if (card && isOpen) {
-      // Reset form for new card
+      // Reset form for new card, pre-populating purchase_price if provided (e.g., from QR code URL)
       setFormData({
         random_code: generateRandomCode(),
         serial_number: '',
         user_location: '',
-        purchase_price: '',
+        purchase_price: card.purchase_price != null ? String(card.purchase_price) : '',
         estimated_value: '',
         notes: '',
         aftermarket_autograph: false,

@@ -193,38 +193,67 @@ router.get('/card/:cardId', async (req, res) => {
 })
 
 // GET /api/campaign/cards/:cardIds - Get multiple card details for QR code landing page
-// cardIds should be comma-separated (e.g., "12345,67890,11111")
+// cardIds should be comma-separated, optionally with price (e.g., "12345-54.95,67890,11111-5.50")
 router.get('/cards/:cardIds', async (req, res) => {
   try {
     const { cardIds } = req.params
 
-    // Parse and validate card IDs
-    const cardIdStrings = cardIds.split(',').map(id => id.trim()).filter(id => id)
+    // Parse card entries (format: "cardId" or "cardId-price")
+    const cardEntries = cardIds.split(',').map(entry => entry.trim()).filter(entry => entry)
 
-    if (cardIdStrings.length === 0) {
+    if (cardEntries.length === 0) {
       return res.status(400).json({
         error: 'Invalid card IDs',
         message: 'At least one card ID is required'
       })
     }
 
-    if (cardIdStrings.length > 20) {
+    if (cardEntries.length > 20) {
       return res.status(400).json({
         error: 'Too many cards',
         message: 'Maximum of 20 cards allowed per request'
       })
     }
 
-    const cardIdNums = []
-    for (const idStr of cardIdStrings) {
+    // Parse each entry into { cardId, purchasePrice }
+    const parsedEntries = []
+    for (const entry of cardEntries) {
+      // Check if entry contains a price (format: cardId-price)
+      const hyphenIndex = entry.indexOf('-')
+      let cardIdStr, priceStr
+
+      if (hyphenIndex > 0) {
+        cardIdStr = entry.substring(0, hyphenIndex)
+        priceStr = entry.substring(hyphenIndex + 1)
+      } else {
+        cardIdStr = entry
+        priceStr = null
+      }
+
+      // Validate card ID
+      let cardIdNum
       try {
-        cardIdNums.push(validateNumericId(idStr, 'cardId'))
+        cardIdNum = validateNumericId(cardIdStr, 'cardId')
       } catch (err) {
         return res.status(400).json({
           error: 'Invalid card ID',
-          message: `Card ID "${idStr}" must be a valid number`
+          message: `Card ID "${cardIdStr}" must be a valid number`
         })
       }
+
+      // Validate price if provided
+      let purchasePrice = null
+      if (priceStr) {
+        purchasePrice = parseFloat(priceStr)
+        if (isNaN(purchasePrice) || purchasePrice < 0) {
+          return res.status(400).json({
+            error: 'Invalid price',
+            message: `Price "${priceStr}" for card ${cardIdStr} must be a valid positive number`
+          })
+        }
+      }
+
+      parsedEntries.push({ cardId: cardIdNum, purchasePrice })
     }
 
     // Get total user count for percentage calculation (only fetch once)
@@ -236,7 +265,7 @@ router.get('/cards/:cardIds', async (req, res) => {
     const totalUsers = Number(userCountResult[0]?.total_users || 1)
 
     // Fetch all cards in parallel
-    const cardPromises = cardIdNums.map(async (cardIdNum) => {
+    const cardPromises = parsedEntries.map(async ({ cardId: cardIdNum, purchasePrice }) => {
       // Get card details with all related info
       const results = await prisma.$queryRaw`
         SELECT
@@ -347,6 +376,7 @@ router.get('/cards/:cardIds', async (req, res) => {
         color_hex: card.color_hex,
         print_run: card.print_run ? Number(card.print_run) : null,
         card_notes: card.card_notes,
+        purchase_price: purchasePrice, // Price from URL if provided
         teams: teams,
         primary_team: teams[0] || null,
         front_image_url: card.front_image_url || null,
@@ -381,7 +411,7 @@ router.get('/cards/:cardIds', async (req, res) => {
 
     cardResults.forEach((result, idx) => {
       if (result.error) {
-        errors.push({ card_id: cardIdNums[idx], error: result.error })
+        errors.push({ card_id: parsedEntries[idx].cardId, error: result.error })
       } else {
         cards.push(result)
       }
@@ -391,7 +421,7 @@ router.get('/cards/:cardIds', async (req, res) => {
       success: true,
       cards: cards,
       errors: errors.length > 0 ? errors : undefined,
-      total_requested: cardIdNums.length,
+      total_requested: parsedEntries.length,
       total_found: cards.length
     })
 

@@ -99,18 +99,11 @@ function StartLanding() {
 
         let fetchedCards = []
 
-        if (cardIds.length === 1) {
-          // Single card - use existing endpoint
-          const response = await axios.get(`/api/campaign/card/${cardIds[0]}`)
-          if (response.data.success && response.data.card) {
-            fetchedCards = [response.data.card]
-          }
-        } else {
-          // Multiple cards - use new endpoint
-          const response = await axios.get(`/api/campaign/cards/${cardId}`)
-          if (response.data.success && response.data.cards) {
-            fetchedCards = response.data.cards
-          }
+        // Always use the multi-card endpoint - it handles both single and multiple cards,
+        // and supports the price format (e.g., "529664-19.98")
+        const response = await axios.get(`/api/campaign/cards/${cardId}`)
+        if (response.data.success && response.data.cards) {
+          fetchedCards = response.data.cards
         }
 
         if (fetchedCards.length > 0) {
@@ -524,6 +517,15 @@ function StartLanding() {
                   </span>
                 )}
               </div>
+
+              {/* Purchase Price - shown if provided in URL */}
+              {currentCard.purchase_price != null && (
+                <div className="start-landing-purchase-price">
+                  <Icon name="dollar-sign" size={16} />
+                  <span className="start-landing-price-label">Your Price:</span>
+                  <span className="start-landing-price-value">${currentCard.purchase_price.toFixed(2)}</span>
+                </div>
+              )}
 
               {/* Community Stats */}
               {currentCard.community_stats && (

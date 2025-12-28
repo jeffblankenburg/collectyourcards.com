@@ -412,6 +412,32 @@
   gap: 0.5rem;
 }
 
+/* Purchase Price - displayed when price is included in QR code URL */
+.start-landing-purchase-price {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(5, 150, 105, 0.15) 100%);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 8px;
+}
+
+.start-landing-purchase-price svg {
+  color: #10b981;
+}
+
+.start-landing-price-label {
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.start-landing-price-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #10b981;
+}
 
 /* Community Stats */
 .start-landing-community-stats {
