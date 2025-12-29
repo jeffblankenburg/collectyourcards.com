@@ -282,24 +282,49 @@
 }
 
 @media (max-width: 480px) {
+  .search-results-page {
+    padding: 0.75rem;
+  }
+
   .search-results-page .search-summary h1 {
     font-size: 1.3rem;
   }
-  
+
   .search-results-page .no-results h2 {
     font-size: 1.3rem;
   }
-  
+
   .search-results-page .empty-state h2 {
     font-size: 1.5rem;
   }
-  
+
   .search-results-page .browse-links {
     gap: 0.5rem;
   }
-  
+
+  /* Touch-friendly browse links */
   .search-results-page .browse-link {
-    padding: 0.6rem 1rem;
-    font-size: 0.9rem;
+    padding: 0.75rem 1rem;
+    font-size: 16px;
+    min-height: 48px;
+  }
+
+  /* Touch-friendly search tabs */
+  .search-results-page .search-tab {
+    min-height: 44px;
+    padding: 0.75rem 1rem;
+    font-size: 16px;
+  }
+
+  /* Touch-friendly sort select */
+  .search-results-page .sort-select {
+    min-height: 44px;
+    font-size: 16px;
+    padding: 0.75rem 1rem;
+  }
+
+  /* Ensure grid items are touch-friendly */
+  .search-results-page .grid-responsive {
+    gap: 0.75rem;
   }
 }

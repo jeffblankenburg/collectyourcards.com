@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
+import { useIsMobile } from '../../hooks/useIsMobile'
 import Icon from '../Icon'
 import { CardCard, GalleryCard } from '../cards'
 import PhotoCountHover from './PhotoCountHover'
@@ -80,6 +81,7 @@ const CollectionTable = ({
   showColumnPicker = true // Whether to show the column picker (false for non-owners of shared views)
 }) => {
   const { isAuthenticated } = useAuth()
+  const isMobile = useIsMobile(768) // Switch to mobile view below 768px
   const [sortField, setSortField] = useState('series_name')
   const [sortDirection, setSortDirection] = useState('asc')
   const [visibleColumns, setVisibleColumns] = useState(
@@ -393,6 +395,160 @@ const CollectionTable = ({
     }).format(value)
   }
 
+  // Mobile Card Component - renders each collection card as a compact card on mobile
+  const MobileCollectionCard = ({ card }) => {
+    const playerName = card.card_player_teams?.[0]?.player
+      ? `${card.card_player_teams[0].player.first_name || ''} ${card.card_player_teams[0].player.last_name || ''}`.trim()
+      : ''
+    const teamAbbr = card.card_player_teams?.[0]?.team?.abbreviation
+    const teamColors = card.card_player_teams?.[0]?.team
+
+    return (
+      <div
+        className="collection-mobile-card"
+        onClick={() => onCardClick?.(card)}
+      >
+        {/* Card Header - Number, Player, Team */}
+        <div className="collection-mobile-card-header">
+          <div className="collection-mobile-card-main">
+            <span className="collection-mobile-card-number">#{card.card_number}</span>
+            {teamColors && (
+              <div
+                className="team-circle-base team-circle-sm"
+                style={{
+                  '--primary-color': teamColors.primary_color || '#333',
+                  '--secondary-color': teamColors.secondary_color || '#666'
+                }}
+              >
+                {teamAbbr}
+              </div>
+            )}
+            <span className="collection-mobile-card-player">{playerName}</span>
+            {card.is_rookie && <span className="cardcard-tag cardcard-rc">RC</span>}
+          </div>
+          <div className="collection-mobile-card-actions">
+            {onFavoriteToggle && (
+              <button
+                className={`collection-mobile-action-btn favorite ${card.is_special ? 'active' : ''}`}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onFavoriteToggle(card)
+                }}
+              >
+                <Icon name="star" size={18} />
+              </button>
+            )}
+            {onEditCard && (
+              <button
+                className="collection-mobile-action-btn edit"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onEditCard(card)
+                }}
+              >
+                <Icon name="edit" size={18} />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Series Name */}
+        <div className="collection-mobile-card-series">
+          {card.series_rel?.name}
+        </div>
+
+        {/* Tags Row - Color, Auto, Relic, SP */}
+        <div className="collection-mobile-card-tags">
+          {card.color_rel?.color && (
+            <span
+              className="cardcard-tag cardcard-color"
+              style={{
+                backgroundColor: card.color_rel?.hex_color || '#ec4899',
+                color: card.color_rel?.hex_color ? (
+                  parseInt(card.color_rel.hex_color.slice(1, 3), 16) +
+                  parseInt(card.color_rel.hex_color.slice(3, 5), 16) +
+                  parseInt(card.color_rel.hex_color.slice(5, 7), 16) > 400
+                  ? '#000000' : '#ffffff'
+                ) : '#ffffff'
+              }}
+            >
+              {card.color_rel.color}
+            </span>
+          )}
+          {card.is_autograph && <span className="cardcard-tag cardcard-insert">AUTO</span>}
+          {card.is_relic && <span className="cardcard-tag cardcard-relic">RELIC</span>}
+          {card.is_short_print && <span className="cardcard-tag cardcard-sp">SP</span>}
+          {card.serial_number && (
+            <span className="collection-mobile-serial">
+              {card.serial_number}{card.print_run ? `/${card.print_run}` : ''}
+            </span>
+          )}
+        </div>
+
+        {/* Stats Row - Price, Value, Location */}
+        <div className="collection-mobile-card-stats">
+          {card.purchase_price != null && (
+            <div className="collection-mobile-stat">
+              <span className="collection-mobile-stat-label">Paid</span>
+              <span className="collection-mobile-stat-value">{formatCurrency(card.purchase_price)}</span>
+            </div>
+          )}
+          {card.estimated_value != null && card.estimated_value !== 0 && (
+            <div className="collection-mobile-stat">
+              <span className="collection-mobile-stat-label">Est.</span>
+              <span className="collection-mobile-stat-value">{formatCurrency(card.estimated_value)}</span>
+            </div>
+          )}
+          {card.current_value != null && card.current_value !== 0 && (
+            <div className="collection-mobile-stat">
+              <span className="collection-mobile-stat-label">Current</span>
+              <span className="collection-mobile-stat-value">{formatCurrency(card.current_value)}</span>
+            </div>
+          )}
+          {card.grade && (
+            <div className="collection-mobile-stat">
+              <span className="collection-mobile-stat-label">Grade</span>
+              <span className="collection-mobile-stat-value">
+                {card.grading_agency_abbr ? `${card.grading_agency_abbr} ` : ''}{card.grade}
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Footer - Location and Photos */}
+        <div className="collection-mobile-card-footer">
+          {card.location_name && (
+            <div className="collection-mobile-location">
+              <Icon name="map-pin" size={12} />
+              <span>{card.location_name}</span>
+            </div>
+          )}
+          {card.photo_count > 0 && (
+            <div className="collection-mobile-photos">
+              <Icon name="camera" size={12} />
+              <span>{card.photo_count}</span>
+            </div>
+          )}
+          {card.random_code && (
+            <div className="collection-mobile-code">
+              <span className="code-tag">{card.random_code}</span>
+            </div>
+          )}
+          {onDeleteCard && (
+            <button
+              className="collection-mobile-action-btn delete"
+              onClick={(e) => {
+                e.stopPropagation()
+                onDeleteCard(card)
+              }}
+            >
+              <Icon name="trash" size={16} />
+            </button>
+          )}
+        </div>
+      </div>
+    )
+  }
 
   const handleDownload = async () => {
     try {
@@ -653,7 +809,23 @@ const CollectionTable = ({
         </div>
       </div>
 
-      {/* Table */}
+      {/* Mobile Card View */}
+      {isMobile && (
+        <div className="collection-mobile-cards-container">
+          {sortedCards.map((card) => (
+            <MobileCollectionCard key={card.user_card_id} card={card} />
+          ))}
+          {sortedCards.length === 0 && (
+            <div className="collection-mobile-empty">
+              <Icon name="inbox" size={32} />
+              <p>No cards found</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Desktop Table */}
+      {!isMobile && (
       <div
         className="collection-table-wrapper"
         style={{
@@ -1053,6 +1225,7 @@ const CollectionTable = ({
           </tbody>
         </table>
       </div>
+      )}
 
       {/* Footer */}
       <div className="collection-table-footer">

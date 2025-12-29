@@ -353,13 +353,30 @@
   }
 
   .sets-page .sport-filter-btn {
-    width: 30px;
-    height: 30px;
+    width: 44px;
+    height: 44px;
   }
 
   .sets-page .sport-filter-btn svg {
-    width: 16px;
-    height: 16px;
+    width: 20px;
+    height: 20px;
+  }
+
+  /* Touch-friendly search input */
+  .sets-page .search-box input {
+    min-height: 44px;
+    font-size: 16px;
+    padding: 0.75rem 1rem 0.75rem 2.75rem;
+  }
+
+  /* Touch-friendly action buttons */
+  .sets-page .action-button {
+    min-height: 48px;
+  }
+
+  /* Touch-friendly set cards */
+  .sets-page .set-card {
+    min-height: 60px;
   }
 }
 

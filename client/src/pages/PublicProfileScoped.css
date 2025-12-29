@@ -1068,3 +1068,61 @@
     gap: 0.5rem;
   }
 }
+
+@media (max-width: 480px) {
+  .public-profile-page .profile-container {
+    padding: 0.75rem;
+  }
+
+  /* Touch-friendly back home button */
+  .back-home-btn {
+    min-height: 44px;
+    font-size: 16px;
+    padding: 0.75rem 1.5rem;
+  }
+
+  /* Touch-friendly follow button */
+  .public-profile-page .follow-btn {
+    min-height: 44px;
+    font-size: 16px;
+    padding: 0.75rem 1rem;
+  }
+
+  /* Touch-friendly edit profile button */
+  .public-profile-page .edit-profile-btn {
+    min-height: 44px;
+    font-size: 16px;
+    padding: 0.5rem 0.75rem;
+  }
+
+  /* Touch-friendly stat items */
+  .public-profile-page .stat-item {
+    min-height: 60px;
+    padding: 0.75rem;
+  }
+
+  /* Touch-friendly list cards */
+  .public-profile-page .list-card {
+    min-height: 80px;
+    padding: 1rem;
+  }
+
+  /* Touch-friendly achievement items */
+  .public-profile-page .achievement-item {
+    min-height: 60px;
+    padding: 1rem;
+  }
+
+  /* Touch-friendly view all achievements link */
+  .public-profile-page .view-all-achievements {
+    min-height: 44px;
+    font-size: 16px;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  /* Touch-friendly gallery cards */
+  .gallery-card {
+    min-height: 200px;
+  }
+}

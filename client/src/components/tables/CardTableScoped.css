@@ -696,35 +696,107 @@
 
 /* Responsive Design */
 @media (max-width: 768px) {
+  .card-table-container {
+    width: 100%;
+    margin-left: 0;
+  }
+
   .card-table-container .card-table-controls {
     flex-direction: column;
     align-items: stretch;
+    gap: 0.75rem;
   }
-  
+
+  .card-table-container .card-table-controls-left {
+    max-width: none;
+  }
+
   .card-table-container .card-table-search-container {
     max-width: none;
   }
-  
+
   .card-table-container .card-table-view-toggle {
     justify-content: center;
   }
-  
+
   .card-table-container .card-table {
     font-size: 0.8rem;
   }
-  
+
   .card-table-container .card-table thead th {
     padding: 0.5rem 0.25rem;
   }
-  
+
   .card-table-container .card-table tbody td {
     padding: 0.5rem 0.25rem;
   }
-  
+
   .card-table-container .player-info {
     flex-direction: column;
     align-items: flex-start;
     gap: 0.25rem;
+  }
+
+  .card-table-container .card-table-footer {
+    flex-direction: column;
+    gap: 0.75rem;
+    text-align: center;
+  }
+
+  .card-table-container .card-table-actions {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .card-table-container .card-table-controls {
+    padding: 0;
+  }
+
+  .card-table-container .card-table-search-input {
+    padding: 0.625rem 0.75rem;
+    font-size: 16px; /* Prevent iOS zoom */
+  }
+
+  .card-table-container .card-table-view-toggle .card-table-toggle-button {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.8rem;
+  }
+
+  .card-table-container .card-table {
+    font-size: 0.75rem;
+  }
+
+  .card-table-container .card-table thead th,
+  .card-table-container .card-table tbody td {
+    padding: 0.375rem 0.25rem;
+    min-width: 50px;
+  }
+
+  .card-table-container .card-table-player-name,
+  .card-table-container .card-table-series-name {
+    font-size: 0.7rem;
+  }
+
+  .card-table-container .color-tag,
+  .card-table-container .print-run-tag {
+    font-size: 0.55rem;
+    padding: 0.1rem 0.25rem;
+  }
+
+  .card-table-container .card-table-footer {
+    padding: 0.75rem;
+    font-size: 0.8rem;
+  }
+
+  .card-table-container .card-table-download-button {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.8rem;
+  }
+
+  .card-table-container .bulk-action-button {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.8rem;
   }
 }
 

@@ -997,115 +997,202 @@
   box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
 }
 
-/* Responsive Design */
-@media (max-width: 1200px) {
+/* ===========================================
+   RESPONSIVE DESIGN - Mobile Only
+   Desktop styles are the base - these only override for mobile
+   =========================================== */
+
+/* Tablets (768px - 1023px) */
+@media (max-width: 1023px) {
   .collection-dashboard-page .header-stats {
-    gap: 0.5rem;
+    min-width: 380px;
     max-width: 480px;
+    gap: 0.5rem;
   }
-  
+
   .collection-dashboard-page .stat-item {
-    padding: 0.4rem 0.6rem;
+    padding: 0.5rem 0.6rem;
   }
 }
 
-@media (max-width: 768px) {
+/* Large phones and small tablets (max 767px) */
+@media (max-width: 767px) {
   .collection-dashboard-page .dashboard-container {
-    padding: 1rem;
+    padding: 0.75rem;
   }
-  
+
   .collection-dashboard-page .dashboard-header {
     padding: 1rem;
   }
-  
+
   .collection-dashboard-page .header-top {
     flex-direction: column;
     align-items: flex-start;
     gap: 1rem;
   }
-  
+
+  .collection-dashboard-page .header-title {
+    max-width: 100%;
+    width: 100%;
+  }
+
   .collection-dashboard-page .header-stats {
+    min-width: unset;
+    max-width: 100%;
+    width: 100%;
     grid-template-columns: repeat(2, 1fr);
-    grid-template-rows: repeat(4, 1fr);
     gap: 0.5rem;
-    max-width: 300px;
   }
-  
+
   .collection-dashboard-page .stat-item {
-    min-width: 90px;
-    padding: 0.5rem 0.75rem;
+    min-height: 48px;
+    padding: 0.5rem;
   }
-  
+
   .collection-dashboard-page .stat-item .stat-value {
     font-size: 1rem;
   }
-  
+
   .collection-dashboard-page .stat-item .stat-label {
-    font-size: 0.7rem;
+    font-size: 0.65rem;
   }
 
+  .collection-dashboard-page .stat-item.set-filter-stat {
+    grid-column: span 2;
+  }
 
+  /* Location tags - horizontal scroll on mobile */
   .collection-dashboard-page .location-tags {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
     gap: 0.5rem;
   }
-  
-  .collection-dashboard-page .location-tag {
-    padding: 0.4rem 0.8rem;
-    font-size: 0.8rem;
+
+  .collection-dashboard-page .location-tags::-webkit-scrollbar {
+    display: none;
   }
-  
+
+  .collection-dashboard-page .location-tag {
+    flex-shrink: 0;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8rem;
+    min-height: 44px; /* Touch-friendly */
+  }
+
+  .collection-dashboard-page .add-location-btn,
+  .collection-dashboard-page .manage-locations-btn {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
   .collection-dashboard-page .section-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 1rem;
   }
-  
+
+  /* Modal adjustments */
   .collection-dashboard-page .modal-overlay {
     padding: 0.5rem;
+    align-items: flex-end;
   }
-  
-  .collection-dashboard-page .modal-footer {
+
+  .collection-dashboard-page .add-location-modal,
+  .collection-dashboard-page .manage-locations-modal,
+  .collection-dashboard-page .reassign-modal {
+    max-height: 85vh;
+    border-radius: 16px 16px 0 0;
+  }
+
+  .collection-dashboard-page .form-actions {
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 0.5rem;
   }
-  
-  .collection-dashboard-page .btn-secondary,
-  .collection-dashboard-page .btn-primary {
+
+  .collection-dashboard-page .btn-cancel,
+  .collection-dashboard-page .btn-submit {
     width: 100%;
     justify-content: center;
+    min-height: 48px;
+    font-size: 1rem;
+  }
+
+  /* Form inputs - prevent iOS zoom */
+  .collection-dashboard-page .form-group input,
+  .collection-dashboard-page .form-group select {
+    font-size: 16px;
+    min-height: 48px;
   }
 }
 
-@media (max-width: 480px) {
+/* Small phones (320px - 479px) */
+@media (max-width: 479px) {
   .collection-dashboard-page .dashboard-container {
-    padding: 0.75rem;
+    padding: 0.5rem;
   }
-  
+
   .collection-dashboard-page .dashboard-header {
     padding: 0.75rem;
   }
-  
+
   .collection-dashboard-page .dashboard-title {
     font-size: 1.25rem;
   }
-  
+
+  .collection-dashboard-page .title-icon {
+    display: none;
+  }
+
   .collection-dashboard-page .header-stats {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.5rem;
+    gap: 0.375rem;
   }
-  
+
   .collection-dashboard-page .stat-item {
-    min-width: auto;
-    justify-content: space-between;
+    padding: 0.375rem 0.5rem;
+    min-height: 44px;
+    gap: 0.25rem;
   }
-  
-  .collection-dashboard-page .location-tags {
-    flex-direction: column;
-    align-items: stretch;
+
+  .collection-dashboard-page .stat-item > svg {
+    width: 14px;
+    height: 14px;
   }
-  
-  .collection-dashboard-page .location-tag {
-    justify-content: space-between;
+
+  .collection-dashboard-page .stat-item .stat-value {
+    font-size: 0.9rem;
+  }
+
+  .collection-dashboard-page .stat-item .stat-label {
+    font-size: 0.6rem;
+  }
+
+  .collection-dashboard-page .rc-tag {
+    font-size: 0.6rem;
+    padding: 0.125rem 0.25rem;
+  }
+
+  /* Team filter circles - smaller on very small screens */
+  .collection-dashboard-page .collection-team-filters .team-circle {
+    width: 32px;
+    height: 32px;
+  }
+
+  .collection-dashboard-page .collection-team-filters .team-abbreviation {
+    font-size: 0.5rem;
+  }
+
+  /* Achievement points hide on very small */
+  .collection-dashboard-page .achievement-points {
+    display: none;
+  }
+
+  /* Unassigned cards header */
+  .collection-dashboard-page .unassigned-cards-header {
+    margin: 0.5rem;
+    padding: 0.75rem;
+    font-size: 0.8rem;
   }
 }

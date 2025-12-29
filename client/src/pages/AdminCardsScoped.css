@@ -677,4 +677,35 @@
   .admin-cards-direct-upload-grid {
     grid-template-columns: 1fr;
   }
+
+  /* Touch-friendly form inputs */
+  .admin-cards-form-input,
+  .admin-cards-form-select,
+  .admin-cards-form-checkbox-label {
+    min-height: 44px;
+    font-size: 16px; /* Prevent iOS zoom */
+  }
+
+  .admin-cards-save-btn,
+  .admin-cards-cancel-btn {
+    min-height: 48px;
+    font-size: 1rem;
+  }
+
+  .admin-cards-close-btn {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  /* Modal sheet style on very small screens */
+  .admin-cards-modal-overlay {
+    padding: 0;
+    align-items: flex-end;
+  }
+
+  .admin-cards-edit-modal {
+    max-width: 100%;
+    max-height: 95vh;
+    border-radius: 16px 16px 0 0;
+  }
 }

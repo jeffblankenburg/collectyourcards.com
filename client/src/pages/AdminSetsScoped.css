@@ -1605,4 +1605,47 @@
   .admin-sets-page .col-manufacturer {
     display: none;
   }
+
+  /* Modal sheet style */
+  .admin-sets-page .modal-overlay {
+    padding: 0;
+    align-items: flex-end;
+  }
+
+  .admin-sets-page .edit-modal {
+    max-width: 100%;
+    max-height: 95vh;
+    border-radius: 16px 16px 0 0;
+  }
+
+  .admin-sets-page .modal-actions {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .admin-sets-page .cancel-btn,
+  .admin-sets-page .save-btn,
+  .admin-sets-page .btn-cancel,
+  .admin-sets-page .btn-primary {
+    min-height: 48px;
+  }
+
+  /* Touch-friendly inputs */
+  .admin-sets-page input[type="text"],
+  .admin-sets-page input[type="number"],
+  .admin-sets-page select {
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  .admin-sets-page .search-input {
+    font-size: 16px;
+    min-height: 44px;
+  }
+
+  .admin-sets-page .action-btn,
+  .admin-sets-page .edit-btn {
+    min-width: 44px;
+    min-height: 44px;
+  }
 }

@@ -892,3 +892,77 @@
     grid-column: span 2;
   }
 }
+
+/* Small phones - touch-friendly improvements */
+@media (max-width: 480px) {
+  .seller-dashboard-page {
+    padding: 0.75rem;
+  }
+
+  .seller-dashboard-page .seller-dashboard-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .seller-dashboard-page .seller-dashboard-title h1 {
+    font-size: 1.25rem;
+  }
+
+  .seller-dashboard-page .seller-dashboard-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .seller-dashboard-page .seller-nav-btn {
+    flex: 1;
+    min-width: calc(50% - 0.25rem);
+    justify-content: center;
+    min-height: 44px;
+    padding: 0.625rem 0.75rem;
+  }
+
+  .seller-dashboard-page .seller-nav-btn span {
+    display: none;
+  }
+
+  .seller-dashboard-page .seller-refresh-btn {
+    min-height: 44px;
+    padding: 0.625rem 0.75rem;
+  }
+
+  .seller-dashboard-page .seller-summary-card {
+    padding: 0.5rem;
+  }
+
+  .seller-dashboard-page .seller-summary-label {
+    font-size: 0.65rem;
+  }
+
+  .seller-dashboard-page .seller-summary-value {
+    font-size: 0.9rem;
+  }
+
+  /* Mobile card touch improvements */
+  .seller-dashboard-page .seller-mobile-field .seller-inline-select,
+  .seller-dashboard-page .seller-mobile-field .seller-inline-date,
+  .seller-dashboard-page .seller-mobile-field .seller-inline-input,
+  .seller-dashboard-page .seller-mobile-field .seller-editable-cell {
+    min-height: 44px;
+    font-size: 16px; /* Prevent iOS zoom */
+    padding: 0.5rem;
+  }
+
+  .seller-dashboard-page .seller-delete-btn {
+    width: 44px;
+    height: 44px;
+  }
+
+  .seller-dashboard-page .seller-mobile-card-header {
+    padding: 0.625rem 0.75rem;
+  }
+
+  .seller-dashboard-page .seller-mobile-card-grid {
+    padding: 0.625rem 0.75rem;
+    gap: 0.625rem;
+  }
+}

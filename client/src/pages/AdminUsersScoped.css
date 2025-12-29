@@ -808,6 +808,39 @@
   .admin-users-page .btn-primary {
     width: 100%;
     justify-content: center;
+    min-height: 48px;
+  }
+
+  /* Modal sheet style */
+  .admin-users-page .modal-overlay {
+    padding: 0;
+    align-items: flex-end;
+  }
+
+  .admin-users-page .edit-modal {
+    max-width: 100%;
+    max-height: 95vh;
+    border-radius: 16px 16px 0 0;
+  }
+
+  /* Touch-friendly inputs */
+  .admin-users-page input[type="text"],
+  .admin-users-page input[type="email"],
+  .admin-users-page input[type="password"],
+  .admin-users-page select {
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  .admin-users-page .search-input {
+    font-size: 16px;
+    min-height: 44px;
+  }
+
+  .admin-users-page .action-btn,
+  .admin-users-page .edit-btn {
+    min-width: 44px;
+    min-height: 44px;
   }
 }
 

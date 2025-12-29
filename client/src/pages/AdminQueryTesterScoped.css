@@ -417,3 +417,170 @@
     align-self: flex-start;
   }
 }
+
+@media (max-width: 480px) {
+  .admin-query-tester {
+    padding: 10px;
+  }
+
+  .admin-query-tester .page-header {
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+  }
+
+  .admin-query-tester .header-content h1 {
+    font-size: 1.4rem;
+    gap: 10px;
+  }
+
+  .admin-query-tester .header-content p {
+    font-size: 0.85rem;
+  }
+
+  .admin-query-tester .query-tester-container {
+    gap: 15px;
+  }
+
+  .admin-query-tester .query-input-section {
+    padding: 15px;
+    border-radius: 8px;
+  }
+
+  .admin-query-tester .input-group label {
+    font-size: 0.85rem;
+  }
+
+  .admin-query-tester .user-select,
+  .admin-query-tester .achievement-select {
+    padding: 0.625rem;
+    font-size: 16px; /* Prevent iOS zoom */
+    border-radius: 6px;
+  }
+
+  .admin-query-tester .query-input-group label {
+    font-size: 0.85rem;
+  }
+
+  .admin-query-tester .query-textarea {
+    padding: 10px;
+    font-size: 16px; /* Prevent iOS zoom */
+    min-height: 120px;
+    border-radius: 6px;
+  }
+
+  .admin-query-tester .query-hints {
+    padding: 8px;
+    font-size: 0.8rem;
+    flex-wrap: wrap;
+  }
+
+  .admin-query-tester .execute-button,
+  .admin-query-tester .clear-button {
+    padding: 10px 16px;
+    font-size: 0.85rem;
+    border-radius: 6px;
+    gap: 6px;
+  }
+
+  .admin-query-tester .query-results-section {
+    padding: 15px;
+    border-radius: 8px;
+  }
+
+  .admin-query-tester .query-results-section h3 {
+    font-size: 1.1rem;
+    margin-bottom: 12px;
+  }
+
+  .admin-query-tester .result-summary {
+    padding: 10px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .admin-query-tester .status {
+    font-size: 0.7rem;
+    padding: 3px 10px;
+  }
+
+  .admin-query-tester .execution-time,
+  .admin-query-tester .row-count {
+    font-size: 0.8rem;
+  }
+
+  .admin-query-tester .result-table-container {
+    border-radius: 6px;
+  }
+
+  .admin-query-tester .result-table {
+    font-size: 0.8rem;
+  }
+
+  .admin-query-tester .result-table th {
+    padding: 8px 10px;
+    font-size: 0.75rem;
+  }
+
+  .admin-query-tester .result-table td {
+    padding: 8px 10px;
+    font-size: 0.75rem;
+  }
+
+  .admin-query-tester .no-results {
+    padding: 25px 15px;
+  }
+
+  .admin-query-tester .no-results p {
+    font-size: 0.9rem;
+  }
+
+  .admin-query-tester .error-message {
+    padding: 10px;
+    border-radius: 6px;
+  }
+
+  .admin-query-tester .error-message pre {
+    font-size: 0.8rem;
+  }
+
+  .admin-query-tester .query-history-section {
+    padding: 15px;
+    border-radius: 8px;
+  }
+
+  .admin-query-tester .query-history-section h3 {
+    font-size: 1.1rem;
+    margin-bottom: 12px;
+  }
+
+  .admin-query-tester .history-list {
+    gap: 10px;
+  }
+
+  .admin-query-tester .history-entry {
+    padding: 10px;
+    border-radius: 6px;
+  }
+
+  .admin-query-tester .history-header {
+    gap: 6px;
+    font-size: 0.8rem;
+  }
+
+  .admin-query-tester .history-time,
+  .admin-query-tester .history-user {
+    font-size: 0.75rem;
+  }
+
+  .admin-query-tester .load-button {
+    padding: 3px 6px;
+    font-size: 0.7rem;
+  }
+
+  .admin-query-tester .history-query {
+    font-size: 0.75rem;
+    padding: 8px;
+  }
+}

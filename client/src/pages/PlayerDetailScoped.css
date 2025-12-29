@@ -590,11 +590,29 @@
     padding: 1rem;
     border-radius: 12px;
   }
-  
+
   .player-detail-page .admin-edit-button {
     bottom: 1rem;
     right: 1rem;
     width: 48px;
     height: 48px;
+  }
+
+  /* Touch-friendly team circles */
+  .player-detail-page .team-circle {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  /* Touch-friendly search input */
+  .player-detail-page .search-input,
+  .player-detail-page input[type="text"] {
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  /* Touch-friendly action buttons */
+  .player-detail-page .action-button {
+    min-height: 48px;
   }
 }

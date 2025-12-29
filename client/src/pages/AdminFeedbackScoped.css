@@ -461,6 +461,10 @@
 }
 
 @media (max-width: 480px) {
+  .admin-feedback-page {
+    padding: 0.75rem;
+  }
+
   .admin-feedback-stats {
     grid-template-columns: 1fr 1fr;
   }
@@ -471,5 +475,43 @@
 
   .admin-feedback-stat-value {
     font-size: 24px;
+  }
+
+  /* Touch-friendly refresh button */
+  .admin-feedback-refresh-btn {
+    min-height: 44px;
+    font-size: 16px;
+    padding: 0.75rem 1rem;
+  }
+
+  /* Touch-friendly search input - prevent iOS zoom */
+  .admin-feedback-search input {
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  .admin-feedback-search {
+    min-height: 44px;
+    padding: 0.75rem;
+  }
+
+  /* Touch-friendly filter selects */
+  .admin-feedback-filter-group select {
+    min-height: 44px;
+    font-size: 16px;
+    padding: 0.75rem 2rem 0.75rem 0.75rem;
+  }
+
+  /* Touch-friendly action buttons */
+  .admin-feedback-action-btn {
+    width: 44px;
+    height: 44px;
+  }
+
+  /* Touch-friendly pagination buttons */
+  .admin-feedback-page-btn {
+    min-height: 44px;
+    font-size: 16px;
+    padding: 0.75rem 1.25rem;
   }
 }

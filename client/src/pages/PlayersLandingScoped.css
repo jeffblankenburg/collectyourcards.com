@@ -359,13 +359,24 @@
   }
   
   .players-landing-page .search-box input {
-    padding: 0.6rem 1rem 0.6rem 2.5rem;
-    font-size: 0.8rem;
+    min-height: 44px;
+    padding: 0.75rem 1rem 0.75rem 2.75rem;
+    font-size: 16px;
   }
-  
+
   .players-landing-page .search-box svg {
-    left: 0.75rem;
-    width: 18px;
-    height: 18px;
+    left: 0.85rem;
+    width: 20px;
+    height: 20px;
+  }
+
+  /* Touch-friendly player cards */
+  .players-landing-page .player-card {
+    min-height: 60px;
+  }
+
+  /* Touch-friendly action buttons */
+  .players-landing-page .action-button {
+    min-height: 48px;
   }
 }

@@ -623,3 +623,77 @@
     justify-content: center;
   }
 }
+
+@media (max-width: 480px) {
+  .blog-page {
+    padding: 0.75rem;
+  }
+
+  /* Touch-friendly search input - prevent iOS zoom */
+  .blog-search-input {
+    min-height: 44px;
+    font-size: 16px;
+    padding: 0.75rem 2.5rem 0.75rem 2.75rem;
+  }
+
+  /* Touch-friendly search button */
+  .blog-search-button {
+    min-height: 44px;
+    font-size: 16px;
+    padding: 0.75rem 1.25rem;
+  }
+
+  /* Touch-friendly category select */
+  .blog-category-select {
+    min-height: 44px;
+    font-size: 16px;
+    padding: 0.75rem;
+  }
+
+  /* Touch-friendly clear filters button */
+  .blog-clear-filters {
+    min-height: 44px;
+    font-size: 16px;
+    padding: 0.75rem 1rem;
+  }
+
+  /* Touch-friendly search clear button */
+  .blog-search-clear {
+    min-width: 32px;
+    min-height: 32px;
+    padding: 0.5rem;
+  }
+
+  /* Touch-friendly pagination buttons */
+  .blog-pagination-button {
+    min-height: 44px;
+    font-size: 16px;
+    padding: 0.75rem 1.25rem;
+  }
+
+  /* Touch-friendly back button */
+  .blog-back-button {
+    min-height: 44px;
+    font-size: 16px;
+    padding: 0.75rem 1rem;
+  }
+
+  /* Touch-friendly retry button */
+  .retry-button {
+    min-height: 44px;
+    font-size: 16px;
+    padding: 0.75rem 1.5rem;
+  }
+
+  /* Touch-friendly original link button */
+  .blog-post-original-link {
+    min-height: 44px;
+    font-size: 16px;
+    padding: 0.75rem 1.25rem;
+  }
+
+  /* Touch-friendly post cards */
+  .blog-post-card {
+    min-height: 60px;
+  }
+}

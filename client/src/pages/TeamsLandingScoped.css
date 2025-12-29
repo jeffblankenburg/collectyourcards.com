@@ -422,4 +422,27 @@
     margin-right: 0;
     min-width: 70px;
   }
+
+  /* Touch-friendly search input */
+  .teams-landing-page .search-box input {
+    min-height: 44px;
+    padding: 0.75rem 1rem 0.75rem 2.75rem;
+    font-size: 16px;
+  }
+
+  .teams-landing-page .search-box svg {
+    left: 0.85rem;
+    width: 20px;
+    height: 20px;
+  }
+
+  /* Touch-friendly team cards */
+  .teams-landing-page .team-card {
+    min-height: 60px;
+  }
+
+  /* Touch-friendly action buttons */
+  .teams-landing-page .action-button {
+    min-height: 48px;
+  }
 }

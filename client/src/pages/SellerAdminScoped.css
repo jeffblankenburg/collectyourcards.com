@@ -488,9 +488,12 @@
     align-items: flex-start;
   }
 
+  /* Touch-friendly buttons */
   .seller-admin-add-btn {
     width: 100%;
     justify-content: center;
+    min-height: 44px;
+    font-size: 16px;
   }
 
   .seller-admin-form-actions {
@@ -501,6 +504,45 @@
   .seller-admin-submit-btn {
     width: 100%;
     justify-content: center;
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  /* Touch-friendly nav buttons */
+  .seller-admin-nav-btn {
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  /* Touch-friendly back link */
+  .seller-admin-back {
+    width: 44px;
+    height: 44px;
+  }
+
+  /* Touch-friendly tabs */
+  .seller-admin-tab {
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  /* Touch-friendly form inputs - prevent iOS zoom */
+  .seller-admin-input {
+    min-height: 44px;
+    font-size: 16px;
+    padding: 0.75rem;
+  }
+
+  /* Touch-friendly action buttons */
+  .seller-admin-action-btn {
+    width: 44px;
+    height: 44px;
+  }
+
+  /* Touch-friendly seed button */
+  .seller-admin-seed-btn {
+    min-height: 44px;
+    font-size: 16px;
   }
 }
 

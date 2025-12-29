@@ -598,9 +598,30 @@
 
   .achievements-page .stat-card {
     padding: 0.75rem;
+    min-height: 60px;
   }
 
   .achievements-page .achievement-card {
     padding: 1rem;
+  }
+
+  /* Touch-friendly filter selects - prevent iOS zoom */
+  .achievements-page .filter-select {
+    min-height: 44px;
+    font-size: 16px;
+    padding: 0.75rem;
+  }
+
+  /* Touch-friendly category cards */
+  .achievements-page .category-card {
+    min-height: 60px;
+    padding: 1rem;
+  }
+
+  /* Touch-friendly clear filters button */
+  .achievements-page .clear-filters-btn {
+    min-height: 44px;
+    font-size: 16px;
+    padding: 0.75rem 1.5rem;
   }
 }

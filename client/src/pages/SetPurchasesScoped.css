@@ -582,10 +582,46 @@
     flex-direction: column;
   }
 
+  /* Touch-friendly form buttons */
   .purchase-form-cancel,
   .purchase-form-submit {
     width: 100%;
     justify-content: center;
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  /* Touch-friendly nav buttons */
+  .purchase-nav-btn,
+  .purchase-add-btn {
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  /* Touch-friendly form inputs - prevent iOS zoom */
+  .purchase-form-input,
+  .purchase-form-select,
+  .purchase-form-textarea {
+    min-height: 44px;
+    font-size: 16px;
+    padding: 0.75rem;
+  }
+
+  /* Touch-friendly mobile cards */
+  .purchase-mobile-card {
+    min-height: 60px;
+  }
+
+  /* Touch-friendly label button */
+  .purchase-label-btn {
+    width: 32px;
+    height: 32px;
+  }
+
+  /* Touch-friendly clear button */
+  .purchase-set-clear {
+    width: 36px;
+    height: 36px;
   }
 }
 

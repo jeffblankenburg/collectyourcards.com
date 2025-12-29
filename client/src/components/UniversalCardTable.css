@@ -699,19 +699,41 @@ td.user-card-count-cell {
   .cards-table {
     font-size: 0.8rem;
   }
-  
+
   .cards-table th,
   .cards-table td {
     padding: 0.5rem 0.4rem;
   }
-  
+
   .color-badge {
     font-size: 0.7rem;
     padding: 0.2rem 0.4rem;
   }
-  
+
   .table-footer {
     padding: 1rem;
+  }
+
+  /* Touch-friendly action buttons */
+  .action-button {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 0.5rem;
+  }
+
+  .action-button span {
+    display: none;
+  }
+
+  /* Touch-friendly table controls */
+  .table-search-input {
+    font-size: 16px; /* Prevent iOS zoom */
+    min-height: 44px;
+  }
+
+  .add-card-btn {
+    min-width: 44px;
+    min-height: 44px;
   }
 }
 

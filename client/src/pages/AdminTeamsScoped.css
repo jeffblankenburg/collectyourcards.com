@@ -695,7 +695,14 @@
   }
 
   .admin-teams-page .modal-overlay {
-    padding: 1rem;
+    padding: 0;
+    align-items: flex-end;
+  }
+
+  .admin-teams-page .edit-modal {
+    max-width: 100%;
+    max-height: 95vh;
+    border-radius: 16px 16px 0 0;
   }
 
   .admin-teams-page .modal-content {
@@ -704,5 +711,35 @@
 
   .admin-teams-page .modal-actions {
     padding: 1rem;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .admin-teams-page .btn-cancel,
+  .admin-teams-page .btn-save,
+  .admin-teams-page .cancel-btn,
+  .admin-teams-page .save-btn {
+    width: 100%;
+    justify-content: center;
+    min-height: 48px;
+  }
+
+  /* Touch-friendly inputs */
+  .admin-teams-page input[type="text"],
+  .admin-teams-page input[type="color"],
+  .admin-teams-page select {
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  .admin-teams-page .search-input {
+    font-size: 16px;
+    min-height: 44px;
+  }
+
+  .admin-teams-page .action-btn,
+  .admin-teams-page .edit-btn {
+    min-width: 44px;
+    min-height: 44px;
   }
 }

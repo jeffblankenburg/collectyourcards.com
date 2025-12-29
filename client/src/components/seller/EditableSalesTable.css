@@ -1093,6 +1093,40 @@ tr.sales-table-grouped-row:has(+ tr.sales-table-order-row) td {
   }
 }
 
+/* Small phones - touch-friendly improvements */
+@media (max-width: 480px) {
+  .sales-table-header-actions {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .sales-table-mobile-field .sales-table-inline-select,
+  .sales-table-mobile-field .sales-table-inline-date,
+  .sales-table-mobile-field .sales-table-inline-input,
+  .sales-table-mobile-field .sales-table-editable-cell {
+    min-height: 44px;
+    font-size: 16px; /* Prevent iOS zoom */
+  }
+
+  .sales-table-mobile-card {
+    margin-bottom: 0.75rem;
+  }
+
+  .sales-table-mobile-card-header {
+    padding: 0.625rem 0.75rem;
+  }
+
+  .sales-table-mobile-card-grid {
+    padding: 0.625rem 0.75rem;
+    gap: 0.5rem;
+  }
+
+  .sales-table-delete-btn {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
 /* Spinning animation for loader */
 @keyframes spin {
   from { transform: rotate(0deg); }

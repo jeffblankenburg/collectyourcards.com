@@ -164,8 +164,26 @@
   .seller-set-detail-summary-cards { display: grid; grid-template-columns: repeat(2, 1fr); }
   .seller-set-detail-form-grid { grid-template-columns: 1fr; }
   .seller-set-detail-form-actions { flex-direction: column; }
-  .seller-set-detail-form-cancel, .seller-set-detail-form-submit { width: 100%; justify-content: center; }
+  .seller-set-detail-form-cancel, .seller-set-detail-form-submit { width: 100%; justify-content: center; min-height: 44px; font-size: 16px; }
   .seller-set-detail-purchases-grid { grid-template-columns: 1fr; }
+
+  /* Touch-friendly back button */
+  .seller-set-detail-back-btn { min-height: 44px; font-size: 16px; }
+
+  /* Touch-friendly back link */
+  .seller-set-detail-back-link { width: 44px; height: 44px; }
+
+  /* Touch-friendly add button */
+  .seller-set-detail-add-btn { min-height: 44px; font-size: 16px; }
+
+  /* Touch-friendly form inputs - prevent iOS zoom */
+  .seller-set-detail-form-input,
+  .seller-set-detail-form-select,
+  .seller-set-detail-form-textarea { min-height: 44px; font-size: 16px; padding: 0.75rem; }
+
+  /* Touch-friendly purchase action buttons */
+  .seller-set-detail-purchase-edit,
+  .seller-set-detail-purchase-delete { width: 44px; height: 44px; }
 }
 
 /* Collection Cards Table */

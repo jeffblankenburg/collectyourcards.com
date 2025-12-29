@@ -492,19 +492,25 @@
     padding: 1rem;
   }
 
+  /* Touch-friendly mode toggle buttons */
   .auth-page .mode-button {
-    padding: 0.5rem 0.75rem;
-    font-size: 0.85rem;
+    padding: 0.75rem;
+    font-size: 16px;
+    min-height: 44px;
   }
 
+  /* Touch-friendly form inputs - prevent iOS zoom */
   .auth-page .form-group input {
-    padding: 0.625rem 0.875rem;
-    font-size: 0.9rem;
+    padding: 0.75rem 1rem;
+    font-size: 16px;
+    min-height: 44px;
   }
 
+  /* Touch-friendly submit button */
   .auth-page .auth-button {
-    padding: 0.875rem;
-    font-size: 0.95rem;
+    padding: 1rem;
+    font-size: 16px;
+    min-height: 48px;
   }
 
   .auth-page .form-group.horizontal {
@@ -514,6 +520,52 @@
   }
 
   .auth-page .form-group.horizontal label {
-    font-size: 0.85rem;
+    font-size: 16px;
+  }
+
+  /* Touch-friendly password toggle */
+  .auth-page .password-toggle {
+    min-width: 44px;
+    min-height: 44px;
+    right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Touch-friendly checkbox */
+  .auth-page .checkbox-label {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    font-size: 16px;
+  }
+
+  .auth-page .checkbox-label input[type="checkbox"] {
+    width: 24px;
+    height: 24px;
+  }
+
+  /* Touch-friendly forgot password link */
+  .auth-page .forgot-password-link {
+    min-height: 44px;
+    padding: 0.5rem;
+    font-size: 16px;
+  }
+
+  /* Touch-friendly copy button */
+  .auth-page .copy-button {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 0.5rem 0.75rem;
+    font-size: 16px;
+  }
+
+  /* Touch-friendly footer links */
+  .auth-page .auth-footer a {
+    display: inline-block;
+    min-height: 44px;
+    line-height: 44px;
+    padding: 0 0.25rem;
   }
 }

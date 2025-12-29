@@ -1204,18 +1204,22 @@
     gap: 0.75rem;
     justify-content: space-between;
   }
-  
+
   .mobile-menu-toggle {
-    display: block;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     order: 1;
+    min-width: 44px;
+    min-height: 44px;
   }
-  
+
   .header-logo {
     order: 2;
     flex: 1;
     text-align: center;
   }
-  
+
   .header-logo h1 {
     font-size: 1.3rem;
   }
@@ -1225,38 +1229,52 @@
     flex-direction: column;
     top: 60px;
   }
-  
+
+  /* Touch-friendly mobile nav links */
+  .mobile-nav-link {
+    min-height: 48px;
+    padding: 1rem;
+  }
+
   .header-search {
     display: none; /* Hide search on mobile - available in mobile menu if needed */
   }
-  
+
   .header-user {
     order: 3;
   }
-  
+
   .user-avatar-button {
     padding: 0.4rem;
     border-radius: 50%;
+    min-width: 44px;
+    min-height: 44px;
   }
-  
+
   .user-name {
     display: none;
   }
-  
+
   .user-dropdown {
-    min-width: 200px;
+    min-width: 280px;
     right: 0;
   }
-  
+
+  /* Touch-friendly dropdown items */
+  .dropdown-item {
+    min-height: 48px;
+  }
+
   .auth-buttons {
     gap: 0.5rem;
   }
-  
+
   .header-button {
     padding: 0.4rem 0.8rem;
     font-size: 0.85rem;
+    min-height: 44px;
   }
-  
+
   .header-button.secondary {
     display: none; /* Hide secondary button on mobile */
   }
@@ -1267,29 +1285,128 @@
     padding: 0 0.75rem;
     height: 56px;
   }
-  
+
   .mobile-nav {
     top: 56px;
   }
-  
+
   .header-logo h1 {
     font-size: 1.1rem;
     font-weight: 600;
   }
-  
+
   .mobile-menu-toggle {
     padding: 0.4rem;
+    min-width: 44px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
-  
+
   .header-button {
     padding: 0.4rem 0.6rem;
     font-size: 0.8rem;
+    min-height: 44px;
+    min-width: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
-  
+
   .user-avatar-small {
     width: 28px;
     height: 28px;
     font-size: 0.75rem;
+  }
+
+  /* Touch-friendly user avatar button */
+  .user-avatar-button {
+    min-width: 44px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Touch-friendly mobile nav links */
+  .mobile-nav-link {
+    min-height: 48px;
+    padding: 0.75rem 1rem;
+    font-size: 16px;
+  }
+
+  /* Touch-friendly dropdown items */
+  .dropdown-item {
+    min-height: 48px;
+    padding: 0.75rem 1rem;
+    font-size: 16px;
+  }
+
+  /* Touch-friendly notification items */
+  .notification-item {
+    min-height: 48px;
+    padding: 0.75rem 1rem;
+  }
+
+  /* Touch-friendly mark all read button */
+  .mark-all-read {
+    min-height: 44px;
+    padding: 0.5rem 0.75rem;
+  }
+
+  /* Full-width user dropdown on small screens */
+  .user-dropdown {
+    position: fixed;
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    border-radius: 16px 16px 0 0;
+    max-height: 70vh;
+    min-width: 100%;
+    animation: slideUp 0.3s ease-out;
+  }
+
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(100%);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Overlay behind dropdown */
+  .user-menu::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+
+  .user-menu:has(.user-dropdown)::before {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* Search input in mobile dropdown - prevent iOS zoom */
+  .search-input {
+    font-size: 16px;
+    min-height: 44px;
+  }
+
+  .search-input-container {
+    min-height: 44px;
   }
 }
 
@@ -1297,13 +1414,25 @@
   .header-logo h1 {
     font-size: 0.95rem;
   }
-  
+
   .header-container {
     padding: 0 0.5rem;
   }
-  
+
+  /* Maintain touch-friendly sizes on smallest screens */
   .mobile-nav-link {
     padding: 0.75rem;
-    font-size: 0.95rem;
+    font-size: 16px;
+    min-height: 48px;
+  }
+
+  .mobile-menu-toggle {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .dropdown-item {
+    min-height: 48px;
+    font-size: 16px;
   }
 }

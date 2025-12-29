@@ -2022,3 +2022,34 @@
     padding: 0.5rem 0;
   }
 }
+
+/* Very small phones - touch improvements */
+@media (max-width: 400px) {
+  /* Touch-friendly form inputs */
+  .admin-players-page .form-input,
+  .admin-players-page .form-select,
+  .admin-players-page input[type="text"],
+  .admin-players-page select {
+    min-height: 44px;
+    font-size: 16px; /* Prevent iOS zoom */
+  }
+
+  .admin-players-page .save-btn,
+  .admin-players-page .cancel-btn,
+  .admin-players-page .reassign-btn {
+    min-height: 48px;
+    font-size: 1rem;
+  }
+
+  .admin-players-page .action-btn,
+  .admin-players-page .edit-btn,
+  .admin-players-page .delete-btn {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .admin-players-page .search-input {
+    font-size: 16px;
+    min-height: 44px;
+  }
+}

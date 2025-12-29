@@ -717,3 +717,95 @@
     grid-template-columns: 1fr;
   }
 }
+
+@media (max-width: 480px) {
+  .supplies-management-page {
+    padding: 0.75rem;
+  }
+
+  .supplies-management-page .supplies-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .supplies-management-page .supplies-header-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  /* Touch-friendly navigation buttons */
+  .supplies-management-page .supplies-nav-btn,
+  .supplies-management-page .supplies-refresh-btn {
+    min-height: 44px;
+    font-size: 16px;
+    padding: 0.75rem 1rem;
+  }
+
+  /* Touch-friendly tabs */
+  .supplies-management-page .supplies-tab {
+    min-height: 44px;
+    font-size: 16px;
+    padding: 0.75rem 1rem;
+  }
+
+  /* Touch-friendly form inputs - prevent iOS zoom */
+  .supplies-management-page .supplies-input,
+  .supplies-management-page .supplies-select {
+    min-height: 44px;
+    font-size: 16px;
+    padding: 0.75rem;
+  }
+
+  .supplies-management-page .supplies-inline-input,
+  .supplies-management-page .supplies-inline-select {
+    min-height: 44px;
+    font-size: 16px;
+    padding: 0.75rem 0.5rem;
+  }
+
+  /* Touch-friendly add button */
+  .supplies-management-page .supplies-add-btn {
+    min-height: 44px;
+    font-size: 16px;
+    padding: 0.75rem 1rem;
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Touch-friendly icon buttons */
+  .supplies-management-page .supplies-icon-btn {
+    width: 44px;
+    height: 44px;
+  }
+
+  /* Touch-friendly empty state button */
+  .supplies-management-page .supplies-empty button {
+    min-height: 44px;
+    font-size: 16px;
+    padding: 0.75rem 1rem;
+  }
+
+  /* Touch-friendly image upload */
+  .supplies-management-page .supplies-image-upload {
+    width: 48px;
+    height: 48px;
+  }
+
+  /* Touch-friendly source link */
+  .supplies-management-page .supplies-source-link {
+    width: 44px;
+    height: 44px;
+  }
+
+  /* Touch-friendly modal close button */
+  .supplies-image-modal-close {
+    width: 44px;
+    height: 44px;
+  }
+
+  /* Touch-friendly list items */
+  .supplies-management-page .supplies-list-item {
+    min-height: 60px;
+    padding: 1rem;
+  }
+}

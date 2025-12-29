@@ -675,6 +675,10 @@
 }
 
 @media (max-width: 480px) {
+  .admin-dashboard {
+    padding: 0.75rem;
+  }
+
   .admin-dashboard .dashboard-header h1 {
     font-size: 1.5rem;
   }
@@ -697,6 +701,25 @@
 
   .admin-dashboard .metric-value {
     font-size: 1.5rem;
+  }
+
+  /* Touch-friendly buttons */
+  .admin-dashboard .refresh-btn {
+    min-height: 44px;
+    font-size: 16px;
+    padding: 0.75rem 1.25rem;
+  }
+
+  .admin-dashboard .action-btn {
+    min-height: 44px;
+    font-size: 16px;
+    padding: 0.75rem 1rem;
+  }
+
+  .admin-dashboard .aggregate-btn {
+    min-height: 44px;
+    font-size: 16px;
+    padding: 0.75rem 1rem;
   }
 }
 

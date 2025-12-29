@@ -920,3 +920,64 @@
     justify-content: center;
   }
 }
+
+@media (max-width: 480px) {
+  .profile-management-page {
+    padding: 0.75rem;
+  }
+
+  /* Touch-friendly form inputs - prevent iOS zoom */
+  .profile-management-page .form-input,
+  .profile-management-page .form-textarea {
+    min-height: 44px;
+    font-size: 16px;
+    padding: 0.75rem 1rem;
+  }
+
+  /* Touch-friendly buttons */
+  .profile-management-page .save-btn,
+  .profile-management-page .view-profile-btn,
+  .profile-management-page .view-profile-btn-header {
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  .profile-management-page .change-password-link {
+    min-height: 44px;
+    font-size: 16px;
+    padding: 0.75rem;
+  }
+
+  .profile-management-page .update-username-btn {
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  .profile-management-page .manage-favorites-btn {
+    min-height: 48px;
+    font-size: 16px;
+  }
+
+  .profile-management-page .upload-btn {
+    min-height: 44px;
+    font-size: 16px;
+    padding: 0.75rem 1.25rem;
+  }
+
+  .profile-management-page .delete-picture-btn {
+    min-height: 44px;
+    font-size: 16px;
+    padding: 0.75rem 1rem;
+  }
+
+  /* Touch-friendly checkbox */
+  .profile-management-page .form-checkbox {
+    width: 24px;
+    height: 24px;
+  }
+
+  .profile-management-page .checkbox-label {
+    min-height: 60px;
+    padding: 1rem;
+  }
+}

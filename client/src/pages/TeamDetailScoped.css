@@ -546,4 +546,21 @@
     width: 48px;
     height: 48px;
   }
+
+  /* Touch-friendly search input */
+  .team-detail-page .search-input,
+  .team-detail-page input[type="text"] {
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  /* Touch-friendly action buttons */
+  .team-detail-page .action-button {
+    min-height: 48px;
+  }
+
+  /* Touch-friendly player cards */
+  .team-detail-page .player-card {
+    min-height: 60px;
+  }
 }
