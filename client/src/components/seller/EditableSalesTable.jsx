@@ -1024,6 +1024,15 @@ function EditableSalesTable({
         )}
       </td>
 
+      {/* Card ID with link */}
+      <td>
+        {!sale.is_bulk_sale && sale.card_info?.card_id ? (
+          <Link to={`/cards/${sale.card_info.card_id}`} className="sales-table-card-id-link">
+            {sale.card_info.card_id}
+          </Link>
+        ) : '-'}
+      </td>
+
       {/* Card # or Bulk indicator */}
       <td>
         {sale.is_bulk_sale ? (
@@ -1568,6 +1577,7 @@ function EditableSalesTable({
           <colgroup>
             <col style={{ width: '36px' }} />
             <col style={{ width: '70px' }} />
+            <col style={{ width: '60px' }} />
             <col style={{ width: '180px' }} />
             <col style={{ width: '160px' }} />
             <col style={{ width: '100px' }} />
@@ -1599,6 +1609,7 @@ function EditableSalesTable({
                   title="Select all ungrouped"
                 />
               </th>
+              <th>ID</th>
               {renderSortHeader('card_number', 'Card #')}
               {renderSortHeader('player', 'Player')}
               {renderSortHeader('series', 'Series')}

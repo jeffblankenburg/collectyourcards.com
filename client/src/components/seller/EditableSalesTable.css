@@ -659,6 +659,17 @@ tr.sales-table-grouped-row:has(+ tr.sales-table-order-row) td {
   text-decoration: underline;
 }
 
+/* Card ID Column */
+.sales-table-card-id-link {
+  color: var(--color-primary);
+  text-decoration: none;
+  font-size: 0.75rem;
+}
+
+.sales-table-card-id-link:hover {
+  text-decoration: underline;
+}
+
 /* Series Column */
 .sales-table-td-series {
   max-width: 160px;
