@@ -8,6 +8,7 @@ import SaveViewModal from '../components/modals/SaveViewModal'
 import ConfirmModal from '../components/modals/ConfirmModal'
 import SavedViewsDropdown from '../components/SavedViewsDropdown'
 import TeamFilterCircles from '../components/TeamFilterCircles'
+import PullToRefresh from '../components/PullToRefresh'
 import Icon from '../components/Icon'
 import axios from 'axios'
 import { createLogger } from '../utils/logger'
@@ -379,6 +380,14 @@ function CollectionDashboard() {
       setCardsLoading(false)
     }
   }
+
+  // Pull-to-refresh handler for mobile
+  const handleRefresh = useCallback(async () => {
+    log.debug('Pull-to-refresh triggered')
+    await fetchCards(apiEndpoint)
+    await fetchAchievementStats()
+    success('Collection refreshed')
+  }, [apiEndpoint])
 
   const handleCreateLocation = async () => {
     if (!newLocationName.trim()) {
@@ -796,6 +805,7 @@ function CollectionDashboard() {
   }
 
   return (
+    <PullToRefresh onRefresh={handleRefresh} disabled={cardsLoading}>
     <div className="collection-dashboard-page">
       <div className="dashboard-container">
         
@@ -1412,6 +1422,7 @@ function CollectionDashboard() {
         }
       />
     </div>
+    </PullToRefresh>
   )
 }
 

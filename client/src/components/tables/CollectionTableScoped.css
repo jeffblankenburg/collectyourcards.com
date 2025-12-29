@@ -715,26 +715,42 @@
 
 /* Responsive Design */
 @media (max-width: 768px) {
+  .collection-table-container {
+    overflow-x: hidden; /* Prevent horizontal scroll on container */
+  }
+
   .collection-table-container .collection-table-controls {
     flex-direction: column;
     align-items: stretch;
+    gap: 0.75rem;
+    padding: 0 0.5rem;
   }
 
   .collection-table-container .collection-table-controls-left {
     flex-direction: column;
     max-width: none;
+    width: 100%;
+    gap: 0.5rem;
   }
 
   .collection-table-container .collection-table-search-container {
     max-width: none;
+    width: 100%;
+  }
+
+  .collection-table-container .collection-table-search-input {
+    width: 100%;
   }
 
   .collection-table-container .collection-table-wrapper {
-    overflow-x: scroll;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 8px;
   }
 
   .collection-table-container .collection-table {
     font-size: 0.8rem;
+    min-width: 700px; /* Set minimum width for tables with many columns */
   }
 
   .collection-table-container .collection-table thead th {
@@ -745,10 +761,38 @@
     padding: 0.5rem 0.25rem;
   }
 
+  /* Hide less important columns on tablet */
+  .collection-table-container .notes-header,
+  .collection-table-container .notes-cell,
+  .collection-table-container .production-code-header,
+  .collection-table-container .production-code-cell {
+    display: none;
+  }
+
   .collection-table-container .player-info {
     flex-direction: column;
     align-items: flex-start;
     gap: 0.25rem;
+  }
+
+  /* Reduce min-width on columns */
+  .collection-table-container .player-header,
+  .collection-table-container .player-cell,
+  .collection-table-container .series-header,
+  .collection-table-container .series-cell {
+    min-width: 120px;
+  }
+
+  .collection-table-container .collection-table-footer {
+    flex-direction: column;
+    gap: 0.75rem;
+    text-align: center;
+    padding: 0.75rem;
+  }
+
+  .collection-table-container .collection-table-actions {
+    justify-content: center;
+    flex-wrap: wrap;
   }
 
   /* Gallery responsive styles handled by GalleryCard component */

@@ -1,0 +1,104 @@
+/* Pull to Refresh Component */
+
+.pull-to-refresh-container {
+  position: relative;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+.pull-to-refresh-indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 50px;
+  pointer-events: none;
+  z-index: 10;
+  transition: opacity 0.1s ease;
+}
+
+.pull-to-refresh-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: #4f46e5;
+  border-radius: 50%;
+  color: white;
+  transition: transform 0.1s ease;
+}
+
+.pull-to-refresh-indicator.ready .pull-to-refresh-icon {
+  background: #10b981;
+}
+
+.pull-to-refresh-indicator.refreshing .pull-to-refresh-icon {
+  background: #4f46e5;
+}
+
+.pull-to-refresh-icon .spinning {
+  animation: ptr-spin 1s linear infinite;
+}
+
+@keyframes ptr-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.pull-to-refresh-text {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.pull-to-refresh-indicator.ready .pull-to-refresh-text {
+  color: #10b981;
+}
+
+.pull-to-refresh-indicator.refreshing .pull-to-refresh-text {
+  color: #4f46e5;
+}
+
+.pull-to-refresh-content {
+  transition: transform 0.1s ease;
+  will-change: transform;
+}
+
+/* Hide on desktop */
+@media (min-width: 769px) {
+  .pull-to-refresh-indicator {
+    display: none;
+  }
+
+  .pull-to-refresh-content {
+    transform: none !important;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .pull-to-refresh-text {
+    color: #9ca3af;
+  }
+
+  .pull-to-refresh-indicator.ready .pull-to-refresh-text {
+    color: #34d399;
+  }
+
+  .pull-to-refresh-indicator.refreshing .pull-to-refresh-text {
+    color: #818cf8;
+  }
+}

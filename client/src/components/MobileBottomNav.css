@@ -1,0 +1,219 @@
+/* Mobile Bottom Navigation - Only visible on mobile devices */
+
+.mobile-bottom-nav {
+  display: none; /* Hidden by default, shown on mobile */
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background: #ffffff;
+  border-top: 1px solid #e5e7eb;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.mobile-bottom-nav-container {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  height: 60px;
+  max-width: 500px;
+  margin: 0 auto;
+  padding: 0 8px;
+}
+
+.mobile-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 56px;
+  min-height: 48px;
+  padding: 6px 12px;
+  color: #6b7280;
+  text-decoration: none;
+  font-size: 0.65rem;
+  font-weight: 500;
+  transition: color 0.2s ease;
+  background: none;
+  border: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-nav-item:hover,
+.mobile-nav-item:focus {
+  color: #4f46e5;
+  outline: none;
+}
+
+.mobile-nav-item.active {
+  color: #4f46e5;
+}
+
+.mobile-nav-item.active span {
+  font-weight: 600;
+}
+
+.mobile-nav-item svg {
+  flex-shrink: 0;
+}
+
+.mobile-nav-item span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 60px;
+}
+
+/* Central Add Button - FAB style */
+.mobile-nav-add-btn {
+  position: relative;
+}
+
+.mobile-nav-add-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  border-radius: 50%;
+  color: white;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.mobile-nav-add-btn:hover .mobile-nav-add-icon,
+.mobile-nav-add-btn:focus .mobile-nav-add-icon {
+  transform: scale(1.05);
+  box-shadow: 0 6px 16px rgba(79, 70, 229, 0.5);
+}
+
+.mobile-nav-add-btn:active .mobile-nav-add-icon {
+  transform: scale(0.95);
+}
+
+.mobile-nav-add-btn span {
+  color: #4f46e5;
+  font-weight: 600;
+}
+
+/* User Avatar in Nav */
+.mobile-nav-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid transparent;
+}
+
+.mobile-nav-item.active .mobile-nav-avatar {
+  border-color: #4f46e5;
+}
+
+.mobile-nav-avatar-fallback {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mobile-nav-item.active .mobile-nav-avatar-fallback {
+  box-shadow: 0 0 0 2px #4f46e5;
+}
+
+/* iOS Safe Area - For devices with home indicator */
+.mobile-bottom-nav-safe-area {
+  height: env(safe-area-inset-bottom, 0px);
+  background: #ffffff;
+}
+
+/* Show on mobile devices only */
+@media (max-width: 768px) {
+  .mobile-bottom-nav {
+    display: block;
+  }
+}
+
+/* Very small screens */
+@media (max-width: 360px) {
+  .mobile-bottom-nav-container {
+    padding: 0 4px;
+  }
+
+  .mobile-nav-item {
+    min-width: 48px;
+    padding: 6px 8px;
+    font-size: 0.6rem;
+  }
+
+  .mobile-nav-item span {
+    max-width: 50px;
+  }
+
+  .mobile-nav-add-icon {
+    width: 40px;
+    height: 40px;
+  }
+}
+
+/* Landscape orientation adjustments */
+@media (max-width: 768px) and (orientation: landscape) {
+  .mobile-bottom-nav-container {
+    height: 50px;
+  }
+
+  .mobile-nav-item {
+    gap: 1px;
+    font-size: 0.6rem;
+  }
+
+  .mobile-nav-item svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .mobile-nav-add-icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .mobile-nav-add-icon svg {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .mobile-bottom-nav {
+    background: #1f2937;
+    border-top-color: #374151;
+  }
+
+  .mobile-nav-item {
+    color: #9ca3af;
+  }
+
+  .mobile-nav-item:hover,
+  .mobile-nav-item:focus,
+  .mobile-nav-item.active {
+    color: #818cf8;
+  }
+
+  .mobile-nav-add-btn span {
+    color: #818cf8;
+  }
+
+  .mobile-bottom-nav-safe-area {
+    background: #1f2937;
+  }
+}

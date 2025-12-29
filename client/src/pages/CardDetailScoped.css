@@ -1301,7 +1301,7 @@
 
 @media (max-width: 480px) {
   .card-detail-page .admin-edit-button {
-    bottom: 1rem;
+    bottom: 80px; /* Above mobile bottom nav */
     right: 1rem;
     width: 48px;
     height: 48px;
@@ -1323,5 +1323,169 @@
   /* Image container touch-friendly */
   .card-detail-page .card-image-container {
     min-height: 200px;
+  }
+
+  /* Card images - make them larger and centered on mobile */
+  .card-detail-page .card-images-header {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .card-detail-page .card-image {
+    max-height: 200px;
+    max-width: 100%;
+  }
+
+  .card-detail-page .card-image-placeholder {
+    width: 120px;
+    height: 180px;
+  }
+
+  /* Larger touch targets for stat boxes */
+  .card-detail-page .card-stats-header .stat-box {
+    min-height: 56px;
+    padding: 0.5rem;
+  }
+
+  .card-detail-page .card-stats-header .stat-box label {
+    font-size: 0.7rem;
+  }
+
+  .card-detail-page .card-stats-header .stat-box .stat-value {
+    font-size: 1rem;
+  }
+
+  /* Navigation buttons - larger touch targets */
+  .card-detail-page .nav-card-button {
+    min-height: 44px;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8rem;
+  }
+
+  /* Full-screen image viewer mobile optimization */
+  .card-detail-page .card-image-viewer-overlay {
+    padding: 1rem;
+  }
+
+  .card-detail-page .card-image-viewer-close {
+    top: -2.5rem;
+    width: 40px;
+    height: 40px;
+  }
+
+  .card-detail-page .card-image-viewer-nav-btn {
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+  }
+
+  /* Card header right section stacking */
+  .card-detail-page .card-header-right-section {
+    flex-direction: column;
+    gap: 1rem;
+    width: 100%;
+  }
+
+  .card-detail-page .card-stats-header {
+    min-width: 100%;
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* Parallels dropdown - full width on mobile */
+  .card-detail-page .nav-parallels-dropdown-menu {
+    min-width: 280px;
+    max-width: calc(100vw - 2rem);
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .card-detail-page .nav-parallel-item {
+    padding: 1rem;
+  }
+
+  .card-detail-page .nav-parallel-name {
+    font-size: 0.9rem;
+  }
+
+  /* Squircle buttons - larger touch targets */
+  .card-detail-page .squircle-button {
+    width: 44px;
+    height: 44px;
+  }
+
+  .card-detail-page .player-action-buttons {
+    gap: 0.75rem;
+  }
+}
+
+/* Extra small screens (320px) */
+@media (max-width: 360px) {
+  .card-detail-page {
+    padding: 0.25rem;
+  }
+
+  .card-detail-page .card-header {
+    padding: 0.75rem;
+    gap: 1rem;
+  }
+
+  .card-detail-page .card-title {
+    font-size: 1.4rem;
+  }
+
+  .card-detail-page .player-name {
+    font-size: 1rem;
+  }
+
+  .card-detail-page .series-info {
+    font-size: 0.85rem;
+  }
+
+  .card-detail-page .card-content {
+    padding: 0.75rem;
+  }
+
+  .card-detail-page .card-info-item {
+    padding: 0.75rem;
+  }
+
+  .card-detail-page .card-info-item label {
+    font-size: 0.65rem;
+  }
+
+  .card-detail-page .card-info-item span {
+    font-size: 0.8rem;
+  }
+
+  .card-detail-page .card-stats-header .stat-box {
+    height: 50px;
+    padding: 0.375rem;
+  }
+
+  .card-detail-page .card-stats-header .logo-image {
+    width: 60px;
+    height: 60px;
+  }
+
+  .card-detail-page .card-tag {
+    padding: 0.375rem 0.5rem;
+    font-size: 0.65rem;
+  }
+
+  .card-detail-page .action-button {
+    padding: 0.625rem 1rem;
+    font-size: 0.9rem;
+  }
+
+  .card-detail-page .nav-card-button {
+    max-width: 140px;
+  }
+
+  .card-detail-page .card-image {
+    max-height: 160px;
+  }
+
+  .card-detail-page .card-image-placeholder {
+    width: 100px;
+    height: 150px;
   }
 }

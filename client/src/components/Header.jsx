@@ -259,8 +259,95 @@ function Header() {
         {/* Mobile Navigation Menu */}
         {showMobileMenu && (
           <nav className="mobile-nav" ref={mobileMenuRef}>
-            {!isAuthenticated && (
+            {/* Search in mobile menu */}
+            <div className="mobile-nav-search">
+              <UniversalSearch />
+            </div>
+
+            <div className="mobile-nav-divider" />
+
+            {/* Browse Links */}
+            <Link
+              to="/players"
+              className={`mobile-nav-link ${isActive('/players') ? 'active' : ''}`}
+            >
+              <Icon name="player" size={20} />
+              <span>Players</span>
+            </Link>
+            <Link
+              to="/teams"
+              className={`mobile-nav-link ${isActive('/teams') ? 'active' : ''}`}
+            >
+              <Icon name="users" size={20} />
+              <span>Teams</span>
+            </Link>
+            <Link
+              to="/sets"
+              className={`mobile-nav-link ${isActive('/sets') ? 'active' : ''}`}
+            >
+              <Icon name="series" size={20} />
+              <span>Sets</span>
+            </Link>
+
+            {isAuthenticated ? (
               <>
+                <div className="mobile-nav-divider" />
+
+                <Link
+                  to="/collection"
+                  className={`mobile-nav-link ${isActive('/collection') ? 'active' : ''}`}
+                >
+                  <Icon name="collections" size={20} />
+                  <span>My Collection</span>
+                </Link>
+                <Link
+                  to="/lists"
+                  className={`mobile-nav-link ${isActive('/lists') ? 'active' : ''}`}
+                >
+                  <Icon name="list" size={20} />
+                  <span>My Lists</span>
+                </Link>
+                <Link
+                  to="/achievements"
+                  className={`mobile-nav-link ${isActive('/achievements') ? 'active' : ''}`}
+                >
+                  <Icon name="trophy" size={20} />
+                  <span>Achievements</span>
+                </Link>
+
+                <div className="mobile-nav-divider" />
+
+                <Link
+                  to="/profile"
+                  className={`mobile-nav-link ${isActive('/profile') ? 'active' : ''}`}
+                >
+                  <Icon name="profile" size={20} />
+                  <span>Profile Settings</span>
+                </Link>
+                <Link
+                  to="/notifications"
+                  className={`mobile-nav-link ${isActive('/notifications') ? 'active' : ''}`}
+                >
+                  <Icon name="bell" size={20} />
+                  <span>Notifications</span>
+                  {unreadNotifications > 0 && (
+                    <span className="mobile-nav-badge">{unreadNotifications > 99 ? '99+' : unreadNotifications}</span>
+                  )}
+                </Link>
+
+                <div className="mobile-nav-divider" />
+
+                <button
+                  className="mobile-nav-link logout"
+                  onClick={handleLogout}
+                >
+                  <Icon name="logout" size={20} />
+                  <span>Sign Out</span>
+                </button>
+              </>
+            ) : (
+              <>
+                <div className="mobile-nav-divider" />
                 <Link to="/auth/login" className="mobile-nav-link primary">
                   <Icon name="user" size={20} />
                   <span>Sign In</span>

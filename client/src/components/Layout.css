@@ -18,3 +18,16 @@
   padding-top: 0; /* No extra padding needed since user nav is now in document flow */
 }
 
+/* Mobile bottom nav spacing - ensure footer and content aren't hidden */
+@media (max-width: 768px) {
+  .app-layout {
+    padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* Landscape mobile adjustments */
+@media (max-width: 768px) and (orientation: landscape) {
+  .app-layout {
+    padding-bottom: calc(50px + env(safe-area-inset-bottom, 0px));
+  }
+}

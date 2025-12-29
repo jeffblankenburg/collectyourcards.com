@@ -539,22 +539,171 @@
 }
 
 @media (max-width: 480px) {
-  .quick-edit-modal {
-    width: 95%;
-    max-height: 95vh;
+  /* Bottom sheet behavior on mobile */
+  .quick-edit-overlay {
+    align-items: flex-end;
+    padding: 0;
   }
-  
+
+  .quick-edit-modal {
+    width: 100%;
+    max-width: 100%;
+    max-height: 90vh;
+    border-radius: 20px 20px 0 0;
+    animation: quickEditSlideUp 0.3s ease-out;
+  }
+
+  @keyframes quickEditSlideUp {
+    from {
+      transform: translateY(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  /* Pull handle indicator */
+  .quick-edit-modal::before {
+    content: '';
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 40px;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 2px;
+    z-index: 10;
+  }
+
+  .quick-edit-header {
+    padding: 1.5rem 1rem 1rem 1rem;
+  }
+
+  .quick-edit-title h3 {
+    font-size: 1.1rem;
+  }
+
+  .quick-edit-close {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0.5rem;
+  }
+
   .quick-edit-two-col,
   .quick-edit-three-col {
     grid-template-columns: 1fr;
   }
-  
+
   .quick-edit-form {
     padding: 1rem;
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
   }
-  
+
+  /* Touch-friendly inputs */
+  .quick-edit-row input,
+  .quick-edit-row select,
+  .quick-edit-row textarea {
+    min-height: 48px;
+    font-size: 16px; /* Prevent iOS zoom */
+    padding: 0.75rem;
+  }
+
+  .quick-edit-row textarea {
+    min-height: 80px;
+  }
+
   .quick-edit-checkboxes {
     flex-direction: column;
     gap: 0.75rem;
+  }
+
+  /* Larger touch targets for checkboxes */
+  .checkbox-label,
+  .simple-checkbox-label {
+    min-height: 44px;
+    padding: 0.5rem 0;
+  }
+
+  .checkbox-label input[type="checkbox"],
+  .simple-checkbox-label input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+  }
+
+  /* Sticky actions at bottom */
+  .quick-edit-actions {
+    position: sticky;
+    bottom: 0;
+    background: #1e293b;
+    padding: 1rem;
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+    margin: 0 -1rem;
+    width: calc(100% + 2rem);
+    border-radius: 0;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .quick-edit-actions button {
+    min-height: 48px;
+    font-size: 1rem;
+    border-radius: 12px;
+    justify-content: center;
+  }
+
+  /* Photo grid adjustments */
+  .photo-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .remove-photo {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+/* Extra small screens */
+@media (max-width: 360px) {
+  .quick-edit-header {
+    padding: 1.25rem 0.75rem 0.75rem 0.75rem;
+  }
+
+  .quick-edit-title h3 {
+    font-size: 1rem;
+  }
+
+  .quick-edit-player-name {
+    font-size: 0.8rem;
+  }
+
+  .quick-edit-series {
+    font-size: 0.75rem;
+  }
+
+  .quick-edit-form {
+    padding: 0.75rem;
+    padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .quick-edit-row label {
+    font-size: 0.8rem;
+  }
+
+  .photo-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+  }
+
+  .quick-edit-actions {
+    padding: 0.75rem;
+    padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .quick-edit-actions button {
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
   }
 }
