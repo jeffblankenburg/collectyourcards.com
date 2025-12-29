@@ -1309,7 +1309,7 @@ function EditableSalesTable({
             <Icon name={isExpanded ? 'chevron-down' : 'chevron-right'} size={14} />
           </td>
           {/* Card # - show shipment info */}
-          <td colSpan={4}>
+          <td colSpan={5}>
             <div className="sales-table-order-header">
               <Icon name="package" size={14} />
               <span className="sales-table-order-label">Combined Shipment</span>
