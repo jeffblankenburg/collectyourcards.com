@@ -131,12 +131,19 @@ router.get('/', async (req, res) => {
 
       // Create a set of recently viewed team IDs
       const recentlyViewedIds = new Set(recentlyViewedSerialized.map(t => t.team_id))
-      
+
       // Filter out recently viewed teams from regular results to avoid duplicates
       const otherTeams = serializedTeams.filter(t => !recentlyViewedIds.has(t.team_id))
-      
-      // Combine: recently viewed first, then others
+
+      // Combine and maintain sort order (don't put recently viewed first - breaks alphabetical)
       finalTeamsList = [...recentlyViewedSerialized, ...otherTeams]
+
+      // Re-sort the combined list to maintain proper order
+      finalTeamsList.sort((a, b) => {
+        const aVal = a.name?.toLowerCase() || ''
+        const bVal = b.name?.toLowerCase() || ''
+        return sortDirection === 'DESC' ? bVal.localeCompare(aVal) : aVal.localeCompare(bVal)
+      })
     }
 
     res.json({
