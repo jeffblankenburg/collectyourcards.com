@@ -1,0 +1,159 @@
+/* SwipeableCard - Swipe-to-reveal actions for mobile */
+
+.swipeable-card-container {
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+  margin-bottom: 8px;
+}
+
+/* Action containers - positioned behind the card */
+.swipeable-action-container {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: stretch;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+}
+
+.swipeable-action-container.visible {
+  pointer-events: auto;
+}
+
+.swipeable-action-container.left {
+  left: 0;
+  padding-left: 8px;
+  gap: 4px;
+}
+
+.swipeable-action-container.right {
+  right: 0;
+  padding-right: 8px;
+  justify-content: flex-end;
+}
+
+/* Individual action buttons */
+.swipeable-action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 60px;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+  gap: 4px;
+}
+
+.swipeable-action:active {
+  transform: scale(0.95);
+}
+
+/* Edit action - blue */
+.swipeable-action.edit {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+}
+
+.swipeable-action.edit:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+}
+
+/* Favorite action - yellow/gold */
+.swipeable-action.favorite {
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  color: #1a1a2e;
+}
+
+.swipeable-action.favorite.active {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+
+.swipeable-action.favorite:hover {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+
+/* Delete action - red */
+.swipeable-action.delete {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: white;
+}
+
+.swipeable-action.delete:hover {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+}
+
+/* Card content wrapper */
+.swipeable-card-content {
+  position: relative;
+  background: rgba(26, 26, 46, 0.95);
+  border-radius: 12px;
+  z-index: 1;
+  will-change: transform;
+  touch-action: pan-y pinch-zoom;
+}
+
+.swipeable-card-content.swiping {
+  user-select: none;
+}
+
+/* Hint indicator for first-time users */
+.swipeable-hint {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 11px;
+  pointer-events: none;
+  animation: swipeHint 2s ease-in-out infinite;
+}
+
+@keyframes swipeHint {
+  0%, 100% {
+    opacity: 0.3;
+    transform: translateY(-50%) translateX(0);
+  }
+  50% {
+    opacity: 0.6;
+    transform: translateY(-50%) translateX(-5px);
+  }
+}
+
+/* Dark mode adjustments */
+@media (prefers-color-scheme: dark) {
+  .swipeable-card-content {
+    background: rgba(26, 26, 46, 0.98);
+  }
+}
+
+/* Ensure icons are visible */
+.swipeable-action svg {
+  flex-shrink: 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 360px) {
+  .swipeable-action {
+    min-width: 50px;
+    padding: 6px 8px;
+    font-size: 10px;
+  }
+
+  .swipeable-action svg {
+    width: 20px;
+    height: 20px;
+  }
+}

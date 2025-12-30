@@ -9,6 +9,7 @@ import ConfirmModal from '../components/modals/ConfirmModal'
 import SavedViewsDropdown from '../components/SavedViewsDropdown'
 import TeamFilterCircles from '../components/TeamFilterCircles'
 import PullToRefresh from '../components/PullToRefresh'
+import FloatingActionButton from '../components/FloatingActionButton'
 import Icon from '../components/Icon'
 import axios from 'axios'
 import { createLogger } from '../utils/logger'
@@ -1420,6 +1421,15 @@ function CollectionDashboard() {
             </>
           )
         }
+      />
+
+      {/* Floating Action Button for mobile quick add */}
+      <FloatingActionButton
+        onQuickAdd={() => {
+          // Open the edit modal with a new empty card for quick add
+          // This could be enhanced to show a quick-add modal
+          setSearchQuery('')
+        }}
       />
     </div>
     </PullToRefresh>

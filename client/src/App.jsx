@@ -97,9 +97,9 @@ function App() {
               <p>Share your cards, your lists, and even your profile with your social networks and friends</p>
             </div>
             <div className="home-page-feature-card">
-              <Icon name="monitor" size={24} />
-              <h4>Add eBay Purchases Automatically</h4>
-              <p>Bought a card on eBay? It is automatically added to your collection</p>
+              <Icon name="mobile" size={24} />
+              <h4>Collect Anywhere</h4>
+              <p>Full mobile experience - manage your collection from your phone or tablet</p>
             </div>
           </div>
         </div>

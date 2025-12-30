@@ -95,11 +95,6 @@ function Dashboard() {
                 <p>Bulk import from Excel or CSV files</p>
               </button>
               <button className="action-card" disabled>
-                <div className="action-icon">🔗</div>
-                <h3>Connect eBay</h3>
-                <p>Auto-track your eBay purchases</p>
-              </button>
-              <button className="action-card" disabled>
                 <div className="action-icon"><Icon name="mobile" size={20} /></div>
                 <h3>Scan Cards</h3>
                 <p>Use camera to identify and add cards</p>

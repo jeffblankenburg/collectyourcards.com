@@ -117,7 +117,9 @@ import {
   Tag,
   GripVertical,
   Calculator,
-  Maximize2
+  Maximize2,
+  Wifi,
+  WifiOff
 } from 'lucide-react'
 
 // Icon mapping for consistent usage across the app
@@ -193,7 +195,9 @@ const iconMap = {
   'loader': Activity,
   'clock': Clock,
   'circle': Circle,
-  
+  'wifi': Wifi,
+  'wifi-off': WifiOff,
+
   // Form & Interaction
   'eye': Eye,
   'eye-off': EyeOff,

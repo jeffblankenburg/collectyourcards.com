@@ -3,6 +3,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { useIsMobile } from '../../hooks/useIsMobile'
 import Icon from '../Icon'
 import { CardCard, GalleryCard } from '../cards'
+import SwipeableCard from '../SwipeableCard'
 import PhotoCountHover from './PhotoCountHover'
 import ColumnPicker from '../ColumnPicker'
 import { COLLECTION_TABLE_COLUMNS, getDefaultVisibleColumns } from '../../utils/tableColumnDefinitions'
@@ -396,6 +397,7 @@ const CollectionTable = ({
   }
 
   // Mobile Card Component - renders each collection card as a compact card on mobile
+  // Note: Edit/Delete/Favorite actions are handled by the SwipeableCard wrapper
   const MobileCollectionCard = ({ card }) => {
     const playerName = card.card_player_teams?.[0]?.player
       ? `${card.card_player_teams[0].player.first_name || ''} ${card.card_player_teams[0].player.last_name || ''}`.trim()
@@ -426,30 +428,12 @@ const CollectionTable = ({
             <span className="collection-mobile-card-player">{playerName}</span>
             {card.is_rookie && <span className="cardcard-tag cardcard-rc">RC</span>}
           </div>
-          <div className="collection-mobile-card-actions">
-            {onFavoriteToggle && (
-              <button
-                className={`collection-mobile-action-btn favorite ${card.is_special ? 'active' : ''}`}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onFavoriteToggle(card)
-                }}
-              >
-                <Icon name="star" size={18} />
-              </button>
-            )}
-            {onEditCard && (
-              <button
-                className="collection-mobile-action-btn edit"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onEditCard(card)
-                }}
-              >
-                <Icon name="edit" size={18} />
-              </button>
-            )}
-          </div>
+          {/* Favorite indicator (visual only - action via swipe) */}
+          {card.is_special && (
+            <div className="collection-mobile-favorite-indicator">
+              <Icon name="star" size={16} />
+            </div>
+          )}
         </div>
 
         {/* Series Name */}
@@ -515,7 +499,7 @@ const CollectionTable = ({
           )}
         </div>
 
-        {/* Footer - Location and Photos */}
+        {/* Footer - Location, Photos, Code (swipe hint) */}
         <div className="collection-mobile-card-footer">
           {card.location_name && (
             <div className="collection-mobile-location">
@@ -534,17 +518,10 @@ const CollectionTable = ({
               <span className="code-tag">{card.random_code}</span>
             </div>
           )}
-          {onDeleteCard && (
-            <button
-              className="collection-mobile-action-btn delete"
-              onClick={(e) => {
-                e.stopPropagation()
-                onDeleteCard(card)
-              }}
-            >
-              <Icon name="trash" size={16} />
-            </button>
-          )}
+          {/* Swipe hint for touch devices */}
+          <div className="collection-mobile-swipe-hint">
+            <Icon name="chevron-left" size={12} />
+          </div>
         </div>
       </div>
     )
@@ -809,11 +786,19 @@ const CollectionTable = ({
         </div>
       </div>
 
-      {/* Mobile Card View */}
+      {/* Mobile Card View with Swipe Actions */}
       {isMobile && (
         <div className="collection-mobile-cards-container">
           {sortedCards.map((card) => (
-            <MobileCollectionCard key={card.user_card_id} card={card} />
+            <SwipeableCard
+              key={card.user_card_id}
+              onEdit={onEditCard ? () => onEditCard(card) : null}
+              onDelete={onDeleteCard ? () => onDeleteCard(card) : null}
+              onFavorite={onFavoriteToggle ? () => onFavoriteToggle(card) : null}
+              isFavorite={card.is_special}
+            >
+              <MobileCollectionCard card={card} />
+            </SwipeableCard>
           ))}
           {sortedCards.length === 0 && (
             <div className="collection-mobile-empty">

@@ -6,7 +6,8 @@ import axios from 'axios'
 import Icon from '../components/Icon'
 import FavoriteCardsModal from '../components/modals/FavoriteCardsModal'
 import ChangePasswordModal from '../components/modals/ChangePasswordModal'
-import EBayAccountSection from '../components/EBayAccountSection'
+// eBay integration temporarily disabled
+// import EBayAccountSection from '../components/EBayAccountSection'
 import './ProfileManagementScoped.css'
 
 function ProfileManagement() {
@@ -615,8 +616,8 @@ function ProfileManagement() {
             </div>
           </div>
 
-          {/* eBay Integration Section */}
-          <EBayAccountSection />
+          {/* eBay Integration Section - temporarily disabled */}
+          {/* <EBayAccountSection /> */}
 
           <div className="form-section">
             <h3>

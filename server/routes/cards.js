@@ -915,6 +915,30 @@ router.get('/:id', async (req, res) => {
       } : null
     }))
 
+    // Build player_names aggregate and card_player_teams structure for frontend
+    const playerNames = players.map(p =>
+      `${p.first_name || ''} ${p.last_name || ''}`.trim()
+    ).filter(Boolean).join(', ')
+
+    const playerIds = players.map(p => p.player_id)
+
+    const cardPlayerTeams = players.map(p => ({
+      player: {
+        player_id: p.player_id,
+        first_name: p.first_name,
+        last_name: p.last_name,
+        nick_name: p.nick_name,
+        slug: p.slug
+      },
+      team: p.team
+    }))
+
+    const teams = players
+      .filter(p => p.team)
+      .map(p => p.team)
+
+    const primaryTeam = teams[0] || null
+
     res.json({
       card: {
         card_id: Number(card.card_id),
@@ -923,7 +947,8 @@ router.get('/:id', async (req, res) => {
         is_rookie: Boolean(card.is_rookie),
         is_autograph: Boolean(card.is_autograph),
         is_relic: Boolean(card.is_relic),
-        front_image: card.front_image,
+        front_image_url: card.front_image,
+        back_image_url: null, // TODO: add back image support
         series_id: card.series_id ? Number(card.series_id) : null,
         series_name: card.series_name,
         series_slug: card.series_slug,
@@ -933,7 +958,14 @@ router.get('/:id', async (req, res) => {
         set_year: card.set_year ? Number(card.set_year) : null,
         color_name: card.color_name,
         color_hex: card.color_hex,
-        players: players
+        // Player data in multiple formats for frontend compatibility
+        players: players,
+        player_names: playerNames,
+        player_ids: playerIds,
+        card_player_teams: cardPlayerTeams,
+        teams: teams,
+        primary_team: primaryTeam,
+        cyc_population: 0 // TODO: calculate from user_card count
       }
     })
 

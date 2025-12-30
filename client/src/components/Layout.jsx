@@ -5,6 +5,7 @@ import Footer from './Footer/Footer'
 import AdminNavigation from './AdminNavigation'
 import UserNavigation from './UserNavigation'
 import MobileBottomNav from './MobileBottomNav'
+import OfflineIndicator from './OfflineIndicator'
 import { FeedbackWidget } from './Feedback'
 import './Layout.css'
 
@@ -16,6 +17,7 @@ function Layout({ children }) {
 
   return (
     <div className={`app-layout ${isAdmin ? 'has-admin-nav' : ''}`}>
+      <OfflineIndicator />
       <Header />
       <UserNavigation />
       {isAdmin && <AdminNavigation />}
