@@ -689,8 +689,8 @@ router.get('/carousel', async (req, res) => {
         set_slug: row.set_slug,
         player_name: `${row.first_name || ''} ${row.last_name || ''}`.trim(),
         player_slug: playerSlug,
-        // URL for CardDetail page
-        url: `/sets/${row.set_year}/${row.set_slug}/${row.series_slug}/${encodeURIComponent(row.card_number)}/${playerSlug}`
+        // URL for CardDetail page (simplified URL structure)
+        url: `/cards/${Number(row.card_id)}`
       }
     })
 
@@ -850,6 +850,8 @@ router.get('/:id', async (req, res) => {
         c.is_autograph,
         c.is_relic,
         c.reference_user_card,
+        c.front_image_path,
+        c.back_image_path,
         s.series_id,
         s.name as series_name,
         s.slug as series_slug,
@@ -859,13 +861,15 @@ router.get('/:id', async (req, res) => {
         st.year as set_year,
         col.name as color_name,
         col.hex_value as color_hex,
-        uc_photo.photo_url as front_image
+        uc_front.photo_url as user_front_image,
+        uc_back.photo_url as user_back_image
       FROM card c
       LEFT JOIN series s ON c.series = s.series_id
       LEFT JOIN [set] st ON s.[set] = st.set_id
       LEFT JOIN color col ON s.color = col.color_id
       LEFT JOIN user_card uc ON c.reference_user_card = uc.user_card_id
-      LEFT JOIN user_card_photo uc_photo ON uc.user_card_id = uc_photo.user_card AND uc_photo.sort_order = 1
+      LEFT JOIN user_card_photo uc_front ON uc.user_card_id = uc_front.user_card AND uc_front.sort_order = 1
+      LEFT JOIN user_card_photo uc_back ON uc.user_card_id = uc_back.user_card AND uc_back.sort_order = 2
       WHERE c.card_id = ${cardId}
     `)
 
@@ -939,6 +943,10 @@ router.get('/:id', async (req, res) => {
 
     const primaryTeam = teams[0] || null
 
+    // Use card's own images first, fall back to user photos from reference_user_card
+    const frontImageUrl = card.front_image_path || card.user_front_image || null
+    const backImageUrl = card.back_image_path || card.user_back_image || null
+
     res.json({
       card: {
         card_id: Number(card.card_id),
@@ -947,8 +955,8 @@ router.get('/:id', async (req, res) => {
         is_rookie: Boolean(card.is_rookie),
         is_autograph: Boolean(card.is_autograph),
         is_relic: Boolean(card.is_relic),
-        front_image_url: card.front_image,
-        back_image_url: null, // TODO: add back image support
+        front_image_url: frontImageUrl,
+        back_image_url: backImageUrl,
         series_id: card.series_id ? Number(card.series_id) : null,
         series_name: card.series_name,
         series_slug: card.series_slug,
