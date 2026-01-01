@@ -9,7 +9,7 @@ import './YearsPageScoped.css'
 function YearsPage() {
   const navigate = useNavigate()
   const { addToast } = useToast()
-  
+
   const [years, setYears] = useState([])
   const [filteredYears, setFilteredYears] = useState([])
   const [loading, setLoading] = useState(false)

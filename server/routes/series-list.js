@@ -110,6 +110,59 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
   }
 })
 
+// GET /api/series-list/search - Search series by name
+router.get('/search', optionalAuthMiddleware, async (req, res) => {
+  try {
+    const { q, limit = 10 } = req.query
+
+    if (!q || q.length < 2) {
+      return res.json({ series: [] })
+    }
+
+    const searchTerm = q.replace(/'/g, "''") // Escape single quotes
+    const limitNum = Math.min(parseInt(limit) || 10, 50)
+
+    const results = await prisma.$queryRawUnsafe(`
+      SELECT TOP ${limitNum}
+        s.series_id,
+        s.name,
+        s.slug,
+        s.card_count,
+        st.set_id,
+        st.name as set_name,
+        st.year as set_year
+      FROM series s
+      LEFT JOIN [set] st ON s.[set] = st.set_id
+      WHERE s.name LIKE '%${searchTerm}%'
+         OR st.name LIKE '%${searchTerm}%'
+         OR CONCAT(st.year, ' ', st.name, ' ', s.name) LIKE '%${searchTerm}%'
+      ORDER BY
+        CASE WHEN s.name LIKE '${searchTerm}%' THEN 0 ELSE 1 END,
+        st.year DESC,
+        st.name,
+        s.name
+    `)
+
+    const series = results.map(s => ({
+      series_id: Number(s.series_id),
+      name: s.name,
+      slug: s.slug,
+      card_count: Number(s.card_count || 0),
+      set_id: s.set_id ? Number(s.set_id) : null,
+      set_name: s.set_name,
+      set_year: s.set_year ? Number(s.set_year) : null
+    }))
+
+    res.json({ series })
+  } catch (error) {
+    console.error('Error searching series:', error)
+    res.status(500).json({
+      error: 'Database error',
+      message: 'Failed to search series'
+    })
+  }
+})
+
 // GET /api/series-list/:id - Get series details by ID
 router.get('/:id', optionalAuthMiddleware, async (req, res) => {
   try {

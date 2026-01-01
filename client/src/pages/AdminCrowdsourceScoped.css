@@ -1,0 +1,615 @@
+/* Admin Crowdsource Review Page - Completely Scoped Styles */
+
+.admin-crowd-page {
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  min-height: calc(100vh - 80px);
+  color: white;
+}
+
+/* Header */
+.admin-crowd-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+}
+
+.admin-crowd-header-left h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin: 0 0 0.25rem 0;
+  background: linear-gradient(135deg, #e5e7eb 0%, #f3f4f6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.admin-crowd-header-left p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.875rem;
+}
+
+.admin-crowd-refresh-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  color: white;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.admin-crowd-refresh-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.admin-crowd-refresh-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.spinning {
+  animation: adminCrowdSpin 1s linear infinite;
+}
+
+@keyframes adminCrowdSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Stats */
+.admin-crowd-stats {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.admin-crowd-stat-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 1rem 1.5rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  min-width: 100px;
+}
+
+.admin-crowd-stat-card svg {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.admin-crowd-stat-pending {
+  background: rgba(251, 191, 36, 0.1);
+  border-color: rgba(251, 191, 36, 0.3);
+}
+
+.admin-crowd-stat-pending svg {
+  color: #fbbf24;
+}
+
+.admin-crowd-stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: white;
+}
+
+.admin-crowd-stat-label {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Filters */
+.admin-crowd-filters {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.admin-crowd-filter-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.admin-crowd-filter-group select {
+  padding: 0.5rem 2rem 0.5rem 0.75rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  color: white;
+  font-size: 0.875rem;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.5rem center;
+}
+
+.admin-crowd-filter-group select option {
+  background: #1e293b;
+  color: white;
+}
+
+.admin-crowd-results-info {
+  margin-left: auto;
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Loading and Empty States */
+.admin-crowd-loading,
+.admin-crowd-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 4rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.admin-crowd-empty svg {
+  color: #22c55e;
+}
+
+.admin-crowd-empty h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: white;
+}
+
+.admin-crowd-empty p {
+  margin: 0;
+}
+
+/* Submissions List */
+.admin-crowd-submissions-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.admin-crowd-submission-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 1rem;
+  transition: all 0.2s ease;
+}
+
+.admin-crowd-submission-card:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.admin-crowd-submission-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.admin-crowd-submission-type {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.75rem;
+  background: color-mix(in srgb, var(--type-color) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--type-color) 30%, transparent);
+  border-radius: 4px;
+  color: var(--type-color);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.admin-crowd-submission-time {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Submission Details */
+.admin-crowd-submission-details {
+  margin-bottom: 0.75rem;
+}
+
+.admin-crowd-detail-row {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+  font-size: 0.875rem;
+}
+
+.admin-crowd-detail-label {
+  color: rgba(255, 255, 255, 0.5);
+  min-width: 100px;
+}
+
+.admin-crowd-detail-value {
+  color: white;
+}
+
+.admin-crowd-detail-flags {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.admin-crowd-flag {
+  padding: 0.125rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.admin-crowd-flag-rc {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+}
+
+.admin-crowd-flag-auto {
+  background: rgba(59, 130, 246, 0.2);
+  color: #3b82f6;
+}
+
+.admin-crowd-flag-relic {
+  background: rgba(139, 92, 246, 0.2);
+  color: #8b5cf6;
+}
+
+.admin-crowd-flag-sp {
+  background: rgba(251, 191, 36, 0.2);
+  color: #fbbf24;
+}
+
+.admin-crowd-flag-print {
+  background: rgba(34, 197, 94, 0.2);
+  color: #22c55e;
+}
+
+/* Changes (for card edits) */
+.admin-crowd-changes {
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+.admin-crowd-changes strong {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.admin-crowd-change-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  margin-bottom: 0.25rem;
+}
+
+.admin-crowd-change-row > span:first-child {
+  min-width: 80px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.admin-crowd-change-from {
+  color: #ef4444;
+  text-decoration: line-through;
+}
+
+.admin-crowd-change-arrow {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.admin-crowd-change-to {
+  color: #22c55e;
+  font-weight: 500;
+}
+
+/* Submission Notes */
+.admin-crowd-submission-notes {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 0.75rem;
+}
+
+.admin-crowd-submission-notes svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+/* Submission Footer */
+.admin-crowd-submission-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.admin-crowd-submitter {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.admin-crowd-submitter-name {
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.admin-crowd-trust-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.125rem 0.5rem;
+  background: color-mix(in srgb, var(--trust-color) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--trust-color) 30%, transparent);
+  border-radius: 4px;
+  color: var(--trust-color);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.admin-crowd-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.admin-crowd-approve-btn,
+.admin-crowd-reject-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.admin-crowd-approve-btn {
+  background: rgba(34, 197, 94, 0.15);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  color: #22c55e;
+}
+
+.admin-crowd-approve-btn:hover {
+  background: rgba(34, 197, 94, 0.25);
+  border-color: rgba(34, 197, 94, 0.5);
+}
+
+.admin-crowd-reject-btn {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+}
+
+.admin-crowd-reject-btn:hover {
+  background: rgba(239, 68, 68, 0.25);
+  border-color: rgba(239, 68, 68, 0.5);
+}
+
+/* Modal */
+.admin-crowd-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.admin-crowd-modal {
+  background: #1e293b;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  width: 100%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.admin-crowd-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.admin-crowd-modal-header h3 {
+  margin: 0;
+  font-size: 1.125rem;
+  color: white;
+}
+
+.admin-crowd-modal-close {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  padding: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.admin-crowd-modal-close:hover {
+  color: white;
+}
+
+.admin-crowd-modal-body {
+  padding: 1.25rem;
+}
+
+.admin-crowd-review-notes {
+  margin-top: 1rem;
+}
+
+.admin-crowd-review-notes label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.admin-crowd-review-notes label .required {
+  color: #ef4444;
+}
+
+.admin-crowd-review-notes textarea {
+  width: 100%;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  color: white;
+  font-size: 0.875rem;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.admin-crowd-review-notes textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+.admin-crowd-review-notes textarea::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.admin-crowd-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.admin-crowd-cancel-btn {
+  padding: 0.5rem 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  color: white;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.admin-crowd-cancel-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.admin-crowd-confirm-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.admin-crowd-confirm-btn.approve {
+  background: #22c55e;
+  border: 1px solid #22c55e;
+  color: white;
+}
+
+.admin-crowd-confirm-btn.approve:hover:not(:disabled) {
+  background: #16a34a;
+}
+
+.admin-crowd-confirm-btn.reject {
+  background: #ef4444;
+  border: 1px solid #ef4444;
+  color: white;
+}
+
+.admin-crowd-confirm-btn.reject:hover:not(:disabled) {
+  background: #dc2626;
+}
+
+.admin-crowd-confirm-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .admin-crowd-page {
+    padding: 1rem;
+  }
+
+  .admin-crowd-header {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .admin-crowd-stats {
+    gap: 0.5rem;
+  }
+
+  .admin-crowd-stat-card {
+    padding: 0.75rem 1rem;
+    min-width: 80px;
+  }
+
+  .admin-crowd-filters {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .admin-crowd-results-info {
+    margin-left: 0;
+  }
+
+  .admin-crowd-submission-footer {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+
+  .admin-crowd-actions {
+    width: 100%;
+  }
+
+  .admin-crowd-approve-btn,
+  .admin-crowd-reject-btn {
+    flex: 1;
+    justify-content: center;
+  }
+}

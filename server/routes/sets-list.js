@@ -69,4 +69,56 @@ router.get('/', async (req, res) => {
   }
 })
 
+// GET /api/sets-list/search - Search sets by name
+router.get('/search', async (req, res) => {
+  try {
+    const { q, limit = 10 } = req.query
+
+    if (!q || q.length < 2) {
+      return res.json({ sets: [] })
+    }
+
+    const searchTerm = q.replace(/'/g, "''") // Escape single quotes
+    const limitNum = Math.min(parseInt(limit) || 10, 50)
+
+    const results = await prisma.$queryRawUnsafe(`
+      SELECT TOP ${limitNum}
+        st.set_id,
+        st.name,
+        st.slug,
+        st.year,
+        m.name as manufacturer_name,
+        ISNULL(SUM(s.card_count), 0) as total_card_count
+      FROM [set] st
+      LEFT JOIN manufacturer m ON st.manufacturer = m.manufacturer_id
+      LEFT JOIN series s ON st.set_id = s.[set]
+      WHERE st.name LIKE '%${searchTerm}%'
+         OR m.name LIKE '%${searchTerm}%'
+         OR CONCAT(st.year, ' ', st.name) LIKE '%${searchTerm}%'
+      GROUP BY st.set_id, st.name, st.slug, st.year, m.name
+      ORDER BY
+        CASE WHEN st.name LIKE '${searchTerm}%' THEN 0 ELSE 1 END,
+        st.year DESC,
+        st.name
+    `)
+
+    const sets = results.map(s => ({
+      set_id: Number(s.set_id),
+      name: s.name,
+      slug: s.slug,
+      year: Number(s.year || 0),
+      manufacturer_name: s.manufacturer_name,
+      total_card_count: Number(s.total_card_count)
+    }))
+
+    res.json({ sets })
+  } catch (error) {
+    console.error('Error searching sets:', error)
+    res.status(500).json({
+      error: 'Database error',
+      message: 'Failed to search sets'
+    })
+  }
+})
+
 module.exports = router

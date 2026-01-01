@@ -135,6 +135,35 @@
   color: rgba(255, 255, 255, 0.5);
 }
 
+/* Suggest Set Button */
+.years-page .suggest-set-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  background: rgba(59, 130, 246, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 8px;
+  color: #60a5fa;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  margin-left: 1rem;
+}
+
+.years-page .suggest-set-btn:hover {
+  background: rgba(59, 130, 246, 0.25);
+  border-color: rgba(59, 130, 246, 0.5);
+  color: #93c5fd;
+  transform: translateY(-1px);
+}
+
+.years-page .suggest-set-btn:active {
+  transform: translateY(0);
+}
+
 /* Empty State */
 .years-page .empty-state {
   display: flex;
@@ -216,33 +245,41 @@
   .years-page {
     padding: 1rem;
   }
-  
+
   .years-page .grid-header-title h1 {
     font-size: 2rem !important;
   }
-  
+
   .years-page .years-grid-unified {
     grid-template-columns: 1fr;
     gap: 1rem;
   }
-  
+
   /* On mobile, stack header elements */
   .years-page .grid-header-title {
     grid-column: 1 / -1;
     grid-row: 1;
     justify-content: center;
   }
-  
+
   .years-page .grid-header-search {
     grid-column: 1 / -1;
     grid-row: 2;
     justify-content: center;
     padding-top: 0;
     margin-bottom: 0.25rem;
+    flex-wrap: wrap;
+    gap: 0.75rem;
   }
-  
+
   .years-page .search-box {
     max-width: 100%;
+  }
+
+  .years-page .suggest-set-btn {
+    margin-left: 0;
+    width: 100%;
+    justify-content: center;
   }
 }
 

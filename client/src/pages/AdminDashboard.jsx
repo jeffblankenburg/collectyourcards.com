@@ -1089,6 +1089,10 @@ function AdminDashboard() {
             Quick Actions
           </h2>
           <div className="action-buttons">
+            <button className="action-btn" onClick={() => window.location.href = '/admin/crowdsource'}>
+              <Icon name="users" size={16} />
+              Review Submissions
+            </button>
             <button className="action-btn" onClick={() => window.location.href = '/seller'}>
               <Icon name="dollar-sign" size={16} />
               Seller Dashboard

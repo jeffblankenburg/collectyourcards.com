@@ -8,215 +8,204 @@
 -- at the bottom or clear the file.
 -- ============================================================================
 
+-- ============================================================================
+-- CROWDSOURCING SYSTEM - Set, Series, and Card Submissions
+-- Date: 2025-12-31
+-- Description: Tables for users to submit new sets, series, and cards for review
+-- ============================================================================
 
--- ===========================================================
--- User Feedback System Tables
--- Date: 2025-12-09
--- Description: Tables for user feedback, bug reports, feature requests
--- ===========================================================
-
--- Create feedback_submission table
-IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'feedback_submission')
+-- Set Submissions table
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'set_submissions')
 BEGIN
-  CREATE TABLE feedback_submission (
-    feedback_id BIGINT IDENTITY(1,1) NOT NULL,
-    reference_number VARCHAR(20) NOT NULL,
-    submission_type VARCHAR(20) NOT NULL,
-    subject NVARCHAR(255) NOT NULL,
-    description NVARCHAR(MAX) NOT NULL,
-    email VARCHAR(255) NOT NULL,
-    user_id BIGINT NULL,
-    page_url VARCHAR(500) NOT NULL,
-    user_agent VARCHAR(500) NULL,
-    screen_resolution VARCHAR(50) NULL,
-    console_logs NVARCHAR(MAX) NULL,
-    screenshot_url VARCHAR(500) NULL,
-    priority VARCHAR(20) NULL,
-    steps_to_reproduce NVARCHAR(MAX) NULL,
-    status VARCHAR(20) NOT NULL DEFAULT 'new',
-    admin_notes NVARCHAR(MAX) NULL,
-    github_issue_number INT NULL,
-    github_issue_url VARCHAR(500) NULL,
-    resolved_at DATETIME NULL,
-    resolved_by BIGINT NULL,
-    created_at DATETIME NOT NULL DEFAULT GETDATE(),
-    updated_at DATETIME NOT NULL DEFAULT GETDATE(),
-    CONSTRAINT PK_feedback_submission PRIMARY KEY (feedback_id),
-    CONSTRAINT UQ_feedback_reference UNIQUE (reference_number),
-    CONSTRAINT FK_feedback_submission_user FOREIGN KEY (user_id) REFERENCES [user](user_id) ON DELETE NO ACTION,
-    CONSTRAINT FK_feedback_submission_resolver FOREIGN KEY (resolved_by) REFERENCES [user](user_id) ON DELETE NO ACTION
-  );
+    CREATE TABLE set_submissions (
+        submission_id BIGINT IDENTITY(1,1) PRIMARY KEY,
+        user_id BIGINT NOT NULL,
 
-  -- Create indexes for feedback_submission
-  CREATE INDEX IX_feedback_submission_status ON feedback_submission(status);
-  CREATE INDEX IX_feedback_submission_type ON feedback_submission(submission_type);
-  CREATE INDEX IX_feedback_submission_user ON feedback_submission(user_id);
-  CREATE INDEX IX_feedback_submission_created ON feedback_submission(created_at DESC);
-  CREATE INDEX IX_feedback_submission_email ON feedback_submission(email);
+        -- Proposed set data
+        proposed_name NVARCHAR(255) NOT NULL,
+        proposed_year INT NOT NULL,
+        proposed_sport NVARCHAR(50) NOT NULL,
+        proposed_manufacturer NVARCHAR(100) NULL,
+        proposed_description NVARCHAR(MAX) NULL,
 
-  PRINT 'Created feedback_submission table with indexes';
-END
-ELSE
-BEGIN
-  PRINT 'feedback_submission table already exists';
+        -- Submission metadata
+        submission_notes NVARCHAR(MAX) NULL,
+        status NVARCHAR(20) NOT NULL DEFAULT 'pending',
+
+        -- If approved, link to created set (INT to match set.set_id)
+        created_set_id INT NULL,
+
+        -- Review info
+        reviewed_by BIGINT NULL,
+        reviewed_at DATETIME NULL,
+        review_notes NVARCHAR(MAX) NULL,
+
+        -- Timestamps
+        created_at DATETIME NOT NULL DEFAULT GETDATE(),
+        updated_at DATETIME NULL,
+
+        CONSTRAINT FK_set_submissions_user FOREIGN KEY (user_id) REFERENCES [user](user_id),
+        CONSTRAINT FK_set_submissions_reviewer FOREIGN KEY (reviewed_by) REFERENCES [user](user_id),
+        CONSTRAINT FK_set_submissions_created_set FOREIGN KEY (created_set_id) REFERENCES [set](set_id),
+        CONSTRAINT CK_set_submissions_status CHECK (status IN ('pending', 'approved', 'rejected'))
+    );
+
+    CREATE INDEX IX_set_submissions_user ON set_submissions(user_id);
+    CREATE INDEX IX_set_submissions_status ON set_submissions(status);
+    CREATE INDEX IX_set_submissions_created ON set_submissions(created_at DESC);
+
+    PRINT 'Created set_submissions table';
 END
 GO
 
--- Create feedback_response table
-IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'feedback_response')
+-- Series Submissions table
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'series_submissions')
 BEGIN
-  CREATE TABLE feedback_response (
-    response_id BIGINT IDENTITY(1,1) NOT NULL,
-    feedback_id BIGINT NOT NULL,
-    responder_id BIGINT NOT NULL,
-    message NVARCHAR(MAX) NOT NULL,
-    is_internal BIT NOT NULL DEFAULT 0,
-    created_at DATETIME NOT NULL DEFAULT GETDATE(),
-    CONSTRAINT PK_feedback_response PRIMARY KEY (response_id),
-    CONSTRAINT FK_feedback_response_feedback FOREIGN KEY (feedback_id) REFERENCES feedback_submission(feedback_id) ON DELETE CASCADE,
-    CONSTRAINT FK_feedback_response_responder FOREIGN KEY (responder_id) REFERENCES [user](user_id) ON DELETE NO ACTION
-  );
+    CREATE TABLE series_submissions (
+        submission_id BIGINT IDENTITY(1,1) PRIMARY KEY,
+        user_id BIGINT NOT NULL,
 
-  -- Create indexes for feedback_response
-  CREATE INDEX IX_feedback_response_feedback ON feedback_response(feedback_id);
-  CREATE INDEX IX_feedback_response_responder ON feedback_response(responder_id);
+        -- Target set (existing or pending submission) - INT to match set.set_id
+        set_id INT NULL,
+        set_submission_id BIGINT NULL,
 
-  PRINT 'Created feedback_response table with indexes';
-END
-ELSE
-BEGIN
-  PRINT 'feedback_response table already exists';
-END
-GO
+        -- Proposed series data
+        proposed_name NVARCHAR(255) NOT NULL,
+        proposed_description NVARCHAR(MAX) NULL,
+        proposed_base_card_count INT NULL,
+        proposed_is_parallel BIT NOT NULL DEFAULT 0,
+        proposed_parallel_name NVARCHAR(100) NULL,
+        proposed_print_run INT NULL,
 
--- ===========================================================
--- Fix Bulk-Added Card Random Codes
--- Date: 2025-12-15
--- Description: Generate new random codes for user_card records with
---              codes longer than 4 characters (caused by bug in
---              BulkCardModal generating 8-char uppercase-only codes)
--- ===========================================================
+        -- Submission metadata
+        submission_notes NVARCHAR(MAX) NULL,
+        status NVARCHAR(20) NOT NULL DEFAULT 'pending',
 
--- First, show how many records will be affected
-DECLARE @affected_count INT;
-SELECT @affected_count = COUNT(*) FROM user_card WHERE LEN(random_code) > 4;
-PRINT 'Records with random_code > 4 characters: ' + CAST(@affected_count AS VARCHAR(10));
+        -- If approved, link to created series
+        created_series_id BIGINT NULL,
 
--- Generate new 4-character random codes using mixed case + digits
--- Character set: 0123456789abcdefghijkmnopqrstuvwxyzABCDEFGHJKMNOPQRSTUVWXYZ
--- (excludes ambiguous characters like l, I, O, 0 in some positions)
-UPDATE user_card
-SET random_code = (
-    SELECT
-        SUBSTRING('0123456789abcdefghijkmnopqrstuvwxyzABCDEFGHJKMNOPQRSTUVWXYZ', ABS(CHECKSUM(NEWID())) % 60 + 1, 1) +
-        SUBSTRING('0123456789abcdefghijkmnopqrstuvwxyzABCDEFGHJKMNOPQRSTUVWXYZ', ABS(CHECKSUM(NEWID())) % 60 + 1, 1) +
-        SUBSTRING('0123456789abcdefghijkmnopqrstuvwxyzABCDEFGHJKMNOPQRSTUVWXYZ', ABS(CHECKSUM(NEWID())) % 60 + 1, 1) +
-        SUBSTRING('0123456789abcdefghijkmnopqrstuvwxyzABCDEFGHJKMNOPQRSTUVWXYZ', ABS(CHECKSUM(NEWID())) % 60 + 1, 1)
-)
-WHERE LEN(random_code) > 4;
+        -- Review info
+        reviewed_by BIGINT NULL,
+        reviewed_at DATETIME NULL,
+        review_notes NVARCHAR(MAX) NULL,
 
-PRINT 'Updated ' + CAST(@@ROWCOUNT AS VARCHAR(10)) + ' user_card records with new random codes';
-GO
+        -- Timestamps
+        created_at DATETIME NOT NULL DEFAULT GETDATE(),
+        updated_at DATETIME NULL,
 
--- ===========================================================
--- Regenerate Missing Series Slugs
--- Date: 2025-12-17
--- Description: Generate slugs for any series with NULL or empty slugs
---              Uses same algorithm as client-side generateSlug()
--- ===========================================================
+        CONSTRAINT FK_series_submissions_user FOREIGN KEY (user_id) REFERENCES [user](user_id),
+        CONSTRAINT FK_series_submissions_set FOREIGN KEY (set_id) REFERENCES [set](set_id),
+        CONSTRAINT FK_series_submissions_set_submission FOREIGN KEY (set_submission_id) REFERENCES set_submissions(submission_id),
+        CONSTRAINT FK_series_submissions_reviewer FOREIGN KEY (reviewed_by) REFERENCES [user](user_id),
+        CONSTRAINT FK_series_submissions_created_series FOREIGN KEY (created_series_id) REFERENCES series(series_id),
+        CONSTRAINT CK_series_submissions_status CHECK (status IN ('pending', 'approved', 'rejected')),
+        CONSTRAINT CK_series_submissions_set_ref CHECK (set_id IS NOT NULL OR set_submission_id IS NOT NULL)
+    );
 
--- First, show how many series are missing slugs
-DECLARE @missing_slugs INT;
-SELECT @missing_slugs = COUNT(*) FROM series WHERE slug IS NULL OR slug = '';
-PRINT 'Series with missing slugs: ' + CAST(@missing_slugs AS VARCHAR(10));
+    CREATE INDEX IX_series_submissions_user ON series_submissions(user_id);
+    CREATE INDEX IX_series_submissions_set ON series_submissions(set_id);
+    CREATE INDEX IX_series_submissions_status ON series_submissions(status);
+    CREATE INDEX IX_series_submissions_created ON series_submissions(created_at DESC);
 
--- Generate slugs for series with NULL or empty slugs
--- Algorithm: lowercase, & -> and, remove apostrophes, special chars -> hyphens, clean up double hyphens
-UPDATE series
-SET slug = LTRIM(RTRIM(
-    REPLACE(
-        REPLACE(
-            REPLACE(
-                REPLACE(
-                    REPLACE(
-                        REPLACE(
-                            REPLACE(
-                                REPLACE(
-                                    REPLACE(
-                                        REPLACE(
-                                            REPLACE(
-                                                REPLACE(
-                                                    REPLACE(
-                                                        LOWER(name),
-                                                        '&', 'and'
-                                                    ),
-                                                    '''', ''
-                                                ),
-                                                ' ', '-'
-                                            ),
-                                            '/', '-'
-                                        ),
-                                        '.', ''
-                                    ),
-                                    '(', ''
-                                ),
-                                ')', ''
-                            ),
-                            ',', ''
-                        ),
-                        '!', ''
-                    ),
-                    '?', ''
-                ),
-                ':', ''
-            ),
-            '--', '-'
-        ),
-        '--', '-'
-    )
-))
-WHERE slug IS NULL OR slug = '';
-
--- Clean leading hyphens
-UPDATE series SET slug = SUBSTRING(slug, 2, LEN(slug))
-WHERE LEFT(slug, 1) = '-';
-
--- Clean trailing hyphens
-UPDATE series SET slug = SUBSTRING(slug, 1, LEN(slug) - 1)
-WHERE RIGHT(slug, 1) = '-';
-
-PRINT 'Generated slugs for ' + CAST(@@ROWCOUNT AS VARCHAR(10)) + ' series';
-GO
-
--- ===========================================================
--- User Wrapped (Year in Review) Table
--- Date: 2025-12-19
--- Description: Cache table for user's annual collection statistics
--- ===========================================================
-
-IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'user_wrapped')
-BEGIN
-  CREATE TABLE user_wrapped (
-    wrapped_id BIGINT IDENTITY(1,1) NOT NULL,
-    user_id BIGINT NOT NULL,
-    year INT NOT NULL,
-    stats_json NVARCHAR(MAX) NULL,
-    generated_at DATETIME NOT NULL DEFAULT GETDATE(),
-    share_token VARCHAR(32) NULL,
-    share_image_url NVARCHAR(500) NULL,
-    CONSTRAINT PK_user_wrapped PRIMARY KEY (wrapped_id),
-    CONSTRAINT FK_user_wrapped_user FOREIGN KEY (user_id) REFERENCES [user](user_id) ON DELETE CASCADE,
-    CONSTRAINT UQ_user_wrapped_user_year UNIQUE (user_id, year)
-  );
-
-  CREATE INDEX IX_user_wrapped_user_id ON user_wrapped(user_id);
-  CREATE INDEX IX_user_wrapped_year ON user_wrapped(year);
-  CREATE INDEX IX_user_wrapped_share_token ON user_wrapped(share_token);
-
-  PRINT 'Created user_wrapped table';
-END
-ELSE
-BEGIN
-  PRINT 'user_wrapped table already exists';
+    PRINT 'Created series_submissions table';
 END
 GO
+
+-- Card Submissions table (for new cards, not edits to existing)
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'card_submissions')
+BEGIN
+    CREATE TABLE card_submissions (
+        submission_id BIGINT IDENTITY(1,1) PRIMARY KEY,
+        user_id BIGINT NOT NULL,
+
+        -- Target series (existing or pending submission)
+        series_id BIGINT NULL,
+        series_submission_id BIGINT NULL,
+
+        -- Batch tracking (for bulk submissions)
+        batch_id NVARCHAR(50) NULL,
+        batch_sequence INT NULL,
+
+        -- Proposed card data
+        proposed_card_number NVARCHAR(50) NOT NULL,
+        proposed_player_names NVARCHAR(500) NULL,
+        proposed_team_names NVARCHAR(500) NULL,
+        proposed_is_rookie BIT NOT NULL DEFAULT 0,
+        proposed_is_autograph BIT NOT NULL DEFAULT 0,
+        proposed_is_relic BIT NOT NULL DEFAULT 0,
+        proposed_is_short_print BIT NOT NULL DEFAULT 0,
+        proposed_print_run INT NULL,
+        proposed_notes NVARCHAR(MAX) NULL,
+
+        -- Matched entities (filled in during review)
+        matched_player_ids NVARCHAR(200) NULL,
+        matched_team_ids NVARCHAR(200) NULL,
+
+        -- Submission metadata
+        submission_notes NVARCHAR(MAX) NULL,
+        status NVARCHAR(20) NOT NULL DEFAULT 'pending',
+
+        -- If approved, link to created card
+        created_card_id BIGINT NULL,
+
+        -- Review info
+        reviewed_by BIGINT NULL,
+        reviewed_at DATETIME NULL,
+        review_notes NVARCHAR(MAX) NULL,
+
+        -- Timestamps
+        created_at DATETIME NOT NULL DEFAULT GETDATE(),
+        updated_at DATETIME NULL,
+
+        CONSTRAINT FK_card_submissions_user FOREIGN KEY (user_id) REFERENCES [user](user_id),
+        CONSTRAINT FK_card_submissions_series FOREIGN KEY (series_id) REFERENCES series(series_id),
+        CONSTRAINT FK_card_submissions_series_submission FOREIGN KEY (series_submission_id) REFERENCES series_submissions(submission_id),
+        CONSTRAINT FK_card_submissions_reviewer FOREIGN KEY (reviewed_by) REFERENCES [user](user_id),
+        CONSTRAINT FK_card_submissions_created_card FOREIGN KEY (created_card_id) REFERENCES card(card_id),
+        CONSTRAINT CK_card_submissions_status CHECK (status IN ('pending', 'approved', 'rejected')),
+        CONSTRAINT CK_card_submissions_series_ref CHECK (series_id IS NOT NULL OR series_submission_id IS NOT NULL)
+    );
+
+    CREATE INDEX IX_card_submissions_user ON card_submissions(user_id);
+    CREATE INDEX IX_card_submissions_series ON card_submissions(series_id);
+    CREATE INDEX IX_card_submissions_batch ON card_submissions(batch_id);
+    CREATE INDEX IX_card_submissions_status ON card_submissions(status);
+    CREATE INDEX IX_card_submissions_created ON card_submissions(created_at DESC);
+
+    PRINT 'Created card_submissions table';
+END
+GO
+
+-- Add new submission type counts to contributor_stats
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'contributor_stats' AND COLUMN_NAME = 'set_submissions')
+BEGIN
+    ALTER TABLE contributor_stats ADD set_submissions INT NOT NULL DEFAULT 0;
+    ALTER TABLE contributor_stats ADD series_submissions INT NOT NULL DEFAULT 0;
+    ALTER TABLE contributor_stats ADD card_submissions INT NOT NULL DEFAULT 0;
+
+    PRINT 'Added submission type columns to contributor_stats';
+END
+GO
+
+-- ============================================================================
+-- CROWDSOURCING ENHANCEMENTS - January 2026
+-- Date: 2026-01-01
+-- Description: Add parallel series parent tracking and color field for cards
+-- ============================================================================
+
+-- Add proposed_parallel_of_series to series_submissions for linking to parent series
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'series_submissions' AND COLUMN_NAME = 'proposed_parallel_of_series')
+BEGIN
+    ALTER TABLE series_submissions ADD proposed_parallel_of_series BIGINT NULL;
+    PRINT 'Added proposed_parallel_of_series column to series_submissions';
+END
+GO
+
+-- Add proposed_color to card_submissions for card color/variant info
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'card_submissions' AND COLUMN_NAME = 'proposed_color')
+BEGIN
+    ALTER TABLE card_submissions ADD proposed_color NVARCHAR(100) NULL;
+    PRINT 'Added proposed_color column to card_submissions';
+END
+GO
+

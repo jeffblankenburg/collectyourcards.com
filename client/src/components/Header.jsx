@@ -479,8 +479,16 @@ function Header() {
                     <Icon name="profile" size={16} className="dropdown-icon" />
                     Profile Settings
                   </Link>
-                  <Link 
-                    to="/help" 
+                  <Link
+                    to="/contributions"
+                    className="dropdown-item"
+                    onClick={() => setShowUserMenu(false)}
+                  >
+                    <Icon name="users" size={16} className="dropdown-icon" />
+                    My Contributions
+                  </Link>
+                  <Link
+                    to="/help"
                     className="dropdown-item"
                     onClick={() => setShowUserMenu(false)}
                   >

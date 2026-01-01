@@ -1,0 +1,226 @@
+/* SuggestSetModal - Scoped Styles */
+
+.suggest-set-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.suggest-set-modal {
+  background: #1e293b;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+}
+
+.suggest-set-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.suggest-set-modal-header h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.suggest-set-modal-header h2 svg {
+  color: #a855f7;
+}
+
+.suggest-set-modal-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: rgba(255, 255, 255, 0.05);
+  border: none;
+  border-radius: 8px;
+  color: #9ca3af;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.suggest-set-modal-close:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+.suggest-set-modal-intro {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 1rem 1.5rem;
+  background: rgba(59, 130, 246, 0.1);
+  margin: 0;
+}
+
+.suggest-set-modal-intro svg {
+  color: #3b82f6;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.suggest-set-modal-intro p {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #9ca3af;
+  line-height: 1.5;
+}
+
+.suggest-set-form {
+  padding: 1.5rem;
+}
+
+.suggest-set-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+@media (max-width: 480px) {
+  .suggest-set-form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.suggest-set-form-row {
+  margin-bottom: 1rem;
+}
+
+.suggest-set-form-row label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #d1d5db;
+}
+
+.suggest-set-required {
+  color: #ef4444;
+}
+
+.suggest-set-form-row input,
+.suggest-set-form-row select,
+.suggest-set-form-row textarea {
+  width: 100%;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: #ffffff;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.suggest-set-form-row input:focus,
+.suggest-set-form-row select:focus,
+.suggest-set-form-row textarea:focus {
+  outline: none;
+  border-color: #a855f7;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.suggest-set-form-row input::placeholder,
+.suggest-set-form-row textarea::placeholder {
+  color: #6b7280;
+}
+
+.suggest-set-form-row select {
+  cursor: pointer;
+}
+
+.suggest-set-form-row select option {
+  background: #1e293b;
+  color: #ffffff;
+}
+
+.suggest-set-form-row textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.suggest-set-form-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.suggest-set-cancel-btn {
+  flex: 1;
+  padding: 12px 20px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: #9ca3af;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.suggest-set-cancel-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+.suggest-set-submit-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: #a855f7;
+  border: none;
+  border-radius: 8px;
+  color: #ffffff;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.suggest-set-submit-btn:hover:not(:disabled) {
+  background: #9333ea;
+}
+
+.suggest-set-submit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.suggest-set-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: suggest-set-spin 0.8s linear infinite;
+}
+
+@keyframes suggest-set-spin {
+  to { transform: rotate(360deg); }
+}

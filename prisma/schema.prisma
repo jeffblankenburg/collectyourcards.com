@@ -25,30 +25,31 @@ model admin_action_log {
 }
 
 model card {
-  card_id                                       BigInt             @id(map: "PK_card") @default(autoincrement())
+  card_id                                       BigInt                  @id(map: "PK_card") @default(autoincrement())
   sort_order                                    Int?
-  card_number                                   String?            @db.NVarChar(Max)
-  is_rookie                                     Boolean            @default(false, map: "DEFAULT_card_is_rookie")
-  is_autograph                                  Boolean            @default(false, map: "DEFAULT_card_is_autograph")
-  is_relic                                      Boolean            @default(false, map: "DEFAULT_card_is_relic")
+  card_number                                   String?                 @db.NVarChar(Max)
+  is_rookie                                     Boolean                 @default(false, map: "DEFAULT_card_is_rookie")
+  is_autograph                                  Boolean                 @default(false, map: "DEFAULT_card_is_autograph")
+  is_relic                                      Boolean                 @default(false, map: "DEFAULT_card_is_relic")
   print_run                                     Int?
   series                                        BigInt?
   color                                         Int?
-  notes                                         String?            @db.NVarChar(Max)
-  created                                       DateTime           @default(now(), map: "DEFAULT_card_created") @db.DateTime
-  created_month                                 DateTime?          @db.Date
-  card_number_indexed                           String?            @db.NVarChar(100)
+  notes                                         String?                 @db.NVarChar(Max)
+  created                                       DateTime                @default(now(), map: "DEFAULT_card_created") @db.DateTime
+  created_month                                 DateTime?               @db.Date
+  card_number_indexed                           String?                 @db.NVarChar(100)
   reference_user_card                           BigInt?
-  is_short_print                                Boolean            @default(false, map: "DF__card__is_short_p__1C1D2798")
-  front_image_path                              String?            @db.NVarChar(Max)
-  back_image_path                               String?            @db.NVarChar(Max)
-  color_card_colorTocolor                       color?             @relation("card_colorTocolor", fields: [color], references: [color_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_card_color")
-  user_card_card_reference_user_cardTouser_card user_card?         @relation("card_reference_user_cardTouser_card", fields: [reference_user_card], references: [user_card_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_card_reference_user_card")
-  card_player_team_card_player_team_cardTocard  card_player_team[] @relation("card_player_team_cardTocard")
-  card_variation_card_variation_cardTocard      card_variation[]   @relation("card_variation_cardTocard")
-  player_player_display_cardTocard              player[]           @relation("player_display_cardTocard")
-  sales                                         sale[]             @relation("sale_cardTocard")
-  user_card_user_card_cardTocard                user_card[]        @relation("user_card_cardTocard")
+  is_short_print                                Boolean                 @default(false, map: "DF__card__is_short_p__1C1D2798")
+  front_image_path                              String?                 @db.NVarChar(Max)
+  back_image_path                               String?                 @db.NVarChar(Max)
+  color_card_colorTocolor                       color?                  @relation("card_colorTocolor", fields: [color], references: [color_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_card_color")
+  user_card_card_reference_user_cardTouser_card user_card?              @relation("card_reference_user_cardTouser_card", fields: [reference_user_card], references: [user_card_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_card_reference_user_card")
+  card_edit_submissions                         card_edit_submissions[]
+  card_player_team_card_player_team_cardTocard  card_player_team[]      @relation("card_player_team_cardTocard")
+  card_variation_card_variation_cardTocard      card_variation[]        @relation("card_variation_cardTocard")
+  player_player_display_cardTocard              player[]                @relation("player_display_cardTocard")
+  sales                                         sale[]                  @relation("sale_cardTocard")
+  user_card_user_card_cardTocard                user_card[]             @relation("user_card_cardTocard")
 
   @@index([created_month], map: "idx_card_created_month")
   @@index([series], map: "IX_card_series_optimized")
@@ -473,73 +474,76 @@ model team {
 }
 
 model user {
-  user_id                                                     BigInt                      @id(map: "PK_user") @default(autoincrement())
-  name                                                        String?                     @db.NVarChar(Max)
-  email                                                       String?                     @unique @db.NVarChar(255)
-  created                                                     DateTime?                   @default(now(), map: "DEFAULT_user_created") @db.DateTime
-  created_at                                                  DateTime?                   @db.DateTime
-  first_name                                                  String?                     @db.NVarChar(100)
-  is_active                                                   Boolean?                    @default(true, map: "DF__user__is_active__03BB8E22")
-  is_verified                                                 Boolean?                    @default(false, map: "DF__user__is_verifie__02C769E9")
-  last_login                                                  DateTime?                   @db.DateTime
-  last_name                                                   String?                     @db.NVarChar(100)
-  locked_until                                                DateTime?                   @db.DateTime
-  login_attempts                                              Int?                        @default(0, map: "DF__user__login_atte__04AFB25B")
-  password_hash                                               String?                     @db.NVarChar(500)
-  reset_token                                                 String?                     @db.NVarChar(500)
-  reset_token_expires                                         DateTime?                   @db.DateTime
-  role                                                        String?                     @default("user", map: "DF__user__role__01D345B0") @db.NVarChar(50)
-  updated_at                                                  DateTime?                   @db.DateTime
-  verification_token                                          String?                     @db.NVarChar(500)
-  username                                                    String?                     @unique(map: "IX_user_username") @db.NVarChar(50)
-  bio                                                         String?                     @db.NVarChar(500)
-  avatar_url                                                  String?                     @db.NVarChar(500)
-  is_public_profile                                           Boolean                     @default(true, map: "DF__user__is_public___7FB5F314")
-  website                                                     String?                     @db.NVarChar(255)
-  user_location                                               String?                     @db.NVarChar(100)
-  profile_completed                                           Boolean                     @default(false, map: "DF__user__profile_co__00AA174D")
-  is_muted                                                    Boolean                     @default(false, map: "DF__user__is_muted__0A338187")
-  muted_at                                                    DateTime?                   @db.DateTime
-  muted_by                                                    BigInt?
-  seller_expires                                              DateTime?                   @db.DateTime
-  seller_role                                                 String?                     @db.NVarChar(50)
-  achievement_history                                         achievement_history[]
-  achievement_notifications                                   achievement_notifications[]
-  admin_set_view                                              admin_set_view[]
-  collection_view_collection_view_userTouser                  collection_view[]           @relation("collection_view_userTouser")
-  feedback_responses                                          feedback_response[]         @relation("feedback_response_responderTouser")
-  feedback_submissions_resolved                               feedback_submission[]       @relation("feedback_submission_resolverTouser")
-  feedback_submissions_submitted                              feedback_submission[]       @relation("feedback_submission_userTouser")
-  product_purchases                                           product_purchase[]          @relation("product_purchase_userTouser")
-  product_types                                               product_type[]              @relation("product_type_userTouser")
-  sales                                                       sale[]                      @relation("sale_userTouser")
-  sale_orders                                                 sale_order[]                @relation("sale_order_userTouser")
-  selling_platforms                                           selling_platform[]          @relation("selling_platform_userTouser")
-  shipping_configs                                            shipping_config[]           @relation("shipping_config_userTouser")
-  staging_data_staging_data_userTouser                        staging_data[]              @relation("staging_data_userTouser")
-  supply_batches                                              supply_batch[]              @relation("supply_batch_userTouser")
-  supply_types                                                supply_type[]               @relation("supply_type_userTouser")
-  universal_comments_universal_comments_user_idTouser         universal_comments[]        @relation("universal_comments_user_idTouser")
-  universal_comments_universal_comments_deleted_byTouser      universal_comments[]        @relation("universal_comments_deleted_byTouser")
-  user                                                        user?                       @relation("userTouser", fields: [muted_by], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_user_muted_by")
-  other_user                                                  user[]                      @relation("userTouser")
-  user_achievement_stats                                      user_achievement_stats?
-  user_achievements                                           user_achievements[]
-  user_card_user_card_userTouser                              user_card[]                 @relation("user_card_userTouser")
-  user_favorite_cards_user_favorite_cards_userTouser          user_favorite_cards[]       @relation("user_favorite_cards_userTouser")
-  user_follow_user_follow_follower_user_idTouser              user_follow[]               @relation("user_follow_follower_user_idTouser")
-  user_follow_user_follow_following_user_idTouser             user_follow[]               @relation("user_follow_following_user_idTouser")
-  user_item_subscriptions                                     user_item_subscriptions[]
-  user_list_user_list_userTouser                              user_list[]                 @relation("user_list_userTouser")
-  user_notifications_user_notifications_related_user_idTouser user_notifications[]        @relation("user_notifications_related_user_idTouser")
-  user_notifications_user_notifications_user_idTouser         user_notifications[]        @relation("user_notifications_user_idTouser")
-  user_player_user_player_userTouser                          user_player[]               @relation("user_player_userTouser")
-  user_series_completion                                      user_series_completion[]
-  user_streaks                                                user_streaks[]
-  user_table_preferences_user_table_preferences_userTouser    user_table_preferences[]    @relation("user_table_preferences_userTouser")
-  user_team_user_team_userTouser                              user_team[]                 @relation("user_team_userTouser")
-  user_wrapped                                                user_wrapped[]
-  campaign_visits                                             campaign_visit[]
+  user_id                                                       BigInt                      @id(map: "PK_user") @default(autoincrement())
+  name                                                          String?                     @db.NVarChar(Max)
+  email                                                         String?                     @unique @db.NVarChar(255)
+  created                                                       DateTime?                   @default(now(), map: "DEFAULT_user_created") @db.DateTime
+  created_at                                                    DateTime?                   @db.DateTime
+  first_name                                                    String?                     @db.NVarChar(100)
+  is_active                                                     Boolean?                    @default(true, map: "DF__user__is_active__03BB8E22")
+  is_verified                                                   Boolean?                    @default(false, map: "DF__user__is_verifie__02C769E9")
+  last_login                                                    DateTime?                   @db.DateTime
+  last_name                                                     String?                     @db.NVarChar(100)
+  locked_until                                                  DateTime?                   @db.DateTime
+  login_attempts                                                Int?                        @default(0, map: "DF__user__login_atte__04AFB25B")
+  password_hash                                                 String?                     @db.NVarChar(500)
+  reset_token                                                   String?                     @db.NVarChar(500)
+  reset_token_expires                                           DateTime?                   @db.DateTime
+  role                                                          String?                     @default("user", map: "DF__user__role__01D345B0") @db.NVarChar(50)
+  updated_at                                                    DateTime?                   @db.DateTime
+  verification_token                                            String?                     @db.NVarChar(500)
+  username                                                      String?                     @unique(map: "IX_user_username") @db.NVarChar(50)
+  bio                                                           String?                     @db.NVarChar(500)
+  avatar_url                                                    String?                     @db.NVarChar(500)
+  is_public_profile                                             Boolean                     @default(true, map: "DF__user__is_public___7FB5F314")
+  website                                                       String?                     @db.NVarChar(255)
+  user_location                                                 String?                     @db.NVarChar(100)
+  profile_completed                                             Boolean                     @default(false, map: "DF__user__profile_co__00AA174D")
+  is_muted                                                      Boolean                     @default(false, map: "DF__user__is_muted__0A338187")
+  muted_at                                                      DateTime?                   @db.DateTime
+  muted_by                                                      BigInt?
+  seller_expires                                                DateTime?                   @db.DateTime
+  seller_role                                                   String?                     @db.NVarChar(50)
+  achievement_history                                           achievement_history[]
+  achievement_notifications                                     achievement_notifications[]
+  admin_set_view                                                admin_set_view[]
+  campaign_visits                                               campaign_visit[]
+  card_edit_submissions_card_edit_submissions_reviewed_byTouser card_edit_submissions[]     @relation("card_edit_submissions_reviewed_byTouser")
+  card_edit_submissions_card_edit_submissions_user_idTouser     card_edit_submissions[]     @relation("card_edit_submissions_user_idTouser")
+  collection_view_collection_view_userTouser                    collection_view[]           @relation("collection_view_userTouser")
+  contributor_stats                                             contributor_stats?
+  feedback_responses                                            feedback_response[]         @relation("feedback_response_responderTouser")
+  feedback_submissions_resolved                                 feedback_submission[]       @relation("feedback_submission_resolverTouser")
+  feedback_submissions_submitted                                feedback_submission[]       @relation("feedback_submission_userTouser")
+  product_purchases                                             product_purchase[]          @relation("product_purchase_userTouser")
+  product_types                                                 product_type[]              @relation("product_type_userTouser")
+  sales                                                         sale[]                      @relation("sale_userTouser")
+  sale_orders                                                   sale_order[]                @relation("sale_order_userTouser")
+  selling_platforms                                             selling_platform[]          @relation("selling_platform_userTouser")
+  shipping_configs                                              shipping_config[]           @relation("shipping_config_userTouser")
+  staging_data_staging_data_userTouser                          staging_data[]              @relation("staging_data_userTouser")
+  supply_batches                                                supply_batch[]              @relation("supply_batch_userTouser")
+  supply_types                                                  supply_type[]               @relation("supply_type_userTouser")
+  universal_comments_universal_comments_user_idTouser           universal_comments[]        @relation("universal_comments_user_idTouser")
+  universal_comments_universal_comments_deleted_byTouser        universal_comments[]        @relation("universal_comments_deleted_byTouser")
+  user                                                          user?                       @relation("userTouser", fields: [muted_by], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_user_muted_by")
+  other_user                                                    user[]                      @relation("userTouser")
+  user_achievement_stats                                        user_achievement_stats?
+  user_achievements                                             user_achievements[]
+  user_card_user_card_userTouser                                user_card[]                 @relation("user_card_userTouser")
+  user_favorite_cards_user_favorite_cards_userTouser            user_favorite_cards[]       @relation("user_favorite_cards_userTouser")
+  user_follow_user_follow_follower_user_idTouser                user_follow[]               @relation("user_follow_follower_user_idTouser")
+  user_follow_user_follow_following_user_idTouser               user_follow[]               @relation("user_follow_following_user_idTouser")
+  user_item_subscriptions                                       user_item_subscriptions[]
+  user_list_user_list_userTouser                                user_list[]                 @relation("user_list_userTouser")
+  user_notifications_user_notifications_related_user_idTouser   user_notifications[]        @relation("user_notifications_related_user_idTouser")
+  user_notifications_user_notifications_user_idTouser           user_notifications[]        @relation("user_notifications_user_idTouser")
+  user_player_user_player_userTouser                            user_player[]               @relation("user_player_userTouser")
+  user_series_completion                                        user_series_completion[]
+  user_streaks                                                  user_streaks[]
+  user_table_preferences_user_table_preferences_userTouser      user_table_preferences[]    @relation("user_table_preferences_userTouser")
+  user_team_user_team_userTouser                                user_team[]                 @relation("user_team_userTouser")
+  user_wrapped                                                  user_wrapped[]
 
   @@index([is_muted], map: "IX_user_is_muted")
   @@map("user")
@@ -1365,22 +1369,67 @@ model user_wrapped {
   @@index([year], map: "IX_user_wrapped_year")
 }
 
-// Campaign tracking for QR code marketing campaigns
 model campaign_visit {
-  visit_id       BigInt   @id(map: "PK_campaign_visit") @default(autoincrement())
-  campaign_code  String   @db.VarChar(50)
-  session_id     String   @db.VarChar(64)
-  user_id        BigInt?
-  ip_address     String?  @db.VarChar(45)
-  user_agent     String?  @db.VarChar(500)
-  referrer       String?  @db.NVarChar(500)
-  visited_at     DateTime @default(now(), map: "DF__campaign__visit__01") @db.DateTime
-  signed_up_at   DateTime? @db.DateTime
-  first_card_at  DateTime? @db.DateTime
-  user           user?    @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_campaign_visit_user")
+  visit_id      BigInt    @id(map: "PK_campaign_visit") @default(autoincrement())
+  campaign_code String    @db.VarChar(50)
+  session_id    String    @db.VarChar(64)
+  user_id       BigInt?
+  ip_address    String?   @db.VarChar(45)
+  user_agent    String?   @db.VarChar(500)
+  referrer      String?   @db.NVarChar(500)
+  visited_at    DateTime  @default(now(), map: "DF__campaign__visit__01") @db.DateTime
+  signed_up_at  DateTime? @db.DateTime
+  first_card_at DateTime? @db.DateTime
+  user          user?     @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_campaign_visit_user")
 
   @@index([campaign_code], map: "IX_campaign_visit_campaign")
   @@index([session_id], map: "IX_campaign_visit_session")
   @@index([user_id], map: "IX_campaign_visit_user")
   @@index([visited_at], map: "IX_campaign_visit_date")
+}
+
+model card_edit_submissions {
+  submission_id                                BigInt    @id(map: "PK__card_edi__9B53559505339B2F") @default(autoincrement())
+  card_id                                      BigInt
+  user_id                                      BigInt
+  proposed_card_number                         String?   @db.NVarChar(Max)
+  proposed_is_rookie                           Boolean?
+  proposed_is_autograph                        Boolean?
+  proposed_is_relic                            Boolean?
+  proposed_is_short_print                      Boolean?
+  proposed_print_run                           Int?
+  proposed_notes                               String?   @db.NVarChar(Max)
+  submission_notes                             String?   @db.NVarChar(Max)
+  status                                       String    @default("pending", map: "DF__card_edit__statu__34B3CB38") @db.NVarChar(20)
+  reviewed_by                                  BigInt?
+  reviewed_at                                  DateTime? @db.DateTime
+  review_notes                                 String?   @db.NVarChar(Max)
+  created_at                                   DateTime  @default(now(), map: "DF__card_edit__creat__35A7EF71") @db.DateTime
+  updated_at                                   DateTime? @db.DateTime
+  card                                         card      @relation(fields: [card_id], references: [card_id], onUpdate: NoAction, map: "FK_card_edit_submissions_card")
+  user_card_edit_submissions_reviewed_byTouser user?     @relation("card_edit_submissions_reviewed_byTouser", fields: [reviewed_by], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_card_edit_submissions_reviewer")
+  user_card_edit_submissions_user_idTouser     user      @relation("card_edit_submissions_user_idTouser", fields: [user_id], references: [user_id], onUpdate: NoAction, map: "FK_card_edit_submissions_user")
+
+  @@index([card_id], map: "IX_card_edit_submissions_card")
+  @@index([created_at(sort: Desc)], map: "IX_card_edit_submissions_created")
+  @@index([status], map: "IX_card_edit_submissions_status")
+  @@index([user_id], map: "IX_card_edit_submissions_user")
+}
+
+model contributor_stats {
+  user_id              BigInt    @id(map: "PK__contribu__B9BE370FC4709FAE")
+  total_submissions    Int       @default(0, map: "DF__contribut__total__3C54ED00")
+  pending_submissions  Int       @default(0, map: "DF__contribut__pendi__3D491139")
+  approved_submissions Int       @default(0, map: "DF__contribut__appro__3E3D3572")
+  rejected_submissions Int       @default(0, map: "DF__contribut__rejec__3F3159AB")
+  approval_rate        Decimal?  @db.Decimal(5, 2)
+  trust_level          String    @default("novice", map: "DF__contribut__trust__40257DE4") @db.NVarChar(20)
+  trust_points         Int       @default(0, map: "DF__contribut__trust__4119A21D")
+  first_submission_at  DateTime? @db.DateTime
+  last_submission_at   DateTime? @db.DateTime
+  current_streak_days  Int       @default(0, map: "DF__contribut__curre__420DC656")
+  longest_streak_days  Int       @default(0, map: "DF__contribut__longe__4301EA8F")
+  created_at           DateTime  @default(now(), map: "DF__contribut__creat__43F60EC8") @db.DateTime
+  updated_at           DateTime? @db.DateTime
+  user                 user      @relation(fields: [user_id], references: [user_id], onUpdate: NoAction, map: "FK_contributor_stats_user")
 }

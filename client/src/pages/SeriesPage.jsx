@@ -8,6 +8,7 @@ import Icon from '../components/Icon'
 import { SeriesCard } from '../components/cards'
 import CommentsSection from '../components/CommentsSection'
 import ActivityFeed from '../components/ActivityFeed'
+import SuggestSeriesModal from '../components/modals/SuggestSeriesModal'
 import { createLogger } from '../utils/logger'
 import './SeriesPageScoped.css'
 
@@ -35,6 +36,9 @@ function SeriesPage() {
   const dropdownRef = useRef(null)
   const activeParallelsBoxRef = useRef(null)
   const currentDropdownIdRef = useRef(null)
+
+  // Modal state
+  const [showSuggestSeriesModal, setShowSuggestSeriesModal] = useState(false)
 
   // Check if user is admin
   const isAdmin = user && ['admin', 'superadmin', 'data_admin'].includes(user.role)
@@ -340,6 +344,16 @@ function SeriesPage() {
                       Download Complete Checklist
                     </button>
                   )}
+                  {user && (
+                    <button
+                      className="action-button suggest-series-btn"
+                      onClick={() => setShowSuggestSeriesModal(true)}
+                      title="Suggest a missing series or parallel for this set"
+                    >
+                      <Icon name="plus" size={16} />
+                      Suggest Series
+                    </button>
+                  )}
                 </div>
               </div>
               </div>
@@ -471,7 +485,7 @@ function SeriesPage() {
 
       {/* Admin Edit Button */}
       {isAdmin && selectedSet && (
-        <button 
+        <button
           className="admin-edit-button"
           onClick={() => navigate(`/admin/sets?search=${encodeURIComponent(selectedSet.name)}`)}
           title="Edit set (Admin)"
@@ -479,6 +493,14 @@ function SeriesPage() {
           <Icon name="edit" size={20} />
         </button>
       )}
+
+      {/* Suggest Series Modal */}
+      <SuggestSeriesModal
+        isOpen={showSuggestSeriesModal}
+        onClose={() => setShowSuggestSeriesModal(false)}
+        onSuccess={() => addToast('Series suggestion submitted!', 'success')}
+        preselectedSet={selectedSet}
+      />
     </div>
   )
 }

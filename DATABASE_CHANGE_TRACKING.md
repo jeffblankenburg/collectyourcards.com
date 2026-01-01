@@ -689,3 +689,53 @@ Each entry should include:
   SELECT COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'campaign_visit';
   ```
 - **Expected Result**: Table exists with all columns listed above
+
+### 2025-12-31: Crowdsourcing Card Edit Submissions System
+- **Date**: 2025-12-31
+- **Change Type**: Schema (CREATE TABLE)
+- **Description**:
+  - Created `card_edit_submissions` table for user-submitted card edits
+  - Users can propose changes to card metadata (card_number, is_rookie, is_autograph, is_relic, is_short_print, print_run, notes)
+  - Submissions go through pending → approved/rejected workflow
+  - Includes reviewer tracking and submission notes
+  - Created `contributor_stats` table to track user contribution statistics
+  - Tracks total/pending/approved/rejected submissions, approval rate, trust level, and streak data
+- **Tables Created**:
+  - `card_edit_submissions` - Proposed card edits awaiting review
+  - `contributor_stats` - User contribution statistics and trust levels
+- **Indexes Created**:
+  - `IX_card_edit_submissions_user` - Filter by submitting user
+  - `IX_card_edit_submissions_card` - Filter by card being edited
+  - `IX_card_edit_submissions_status` - Filter by submission status
+  - `IX_card_edit_submissions_created` - Sort by creation date
+- **SQL File Reference**: DATABASE_CHANGES_FOR_PRODUCTION.sql (see Crowdsourcing section)
+- **Status**: Pending Production
+- **Verification Query**:
+  ```sql
+  SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
+  WHERE TABLE_NAME IN ('card_edit_submissions', 'contributor_stats');
+  ```
+- **Expected Result**: Both tables exist
+
+### 2025-12-31: Crowdsourcing Achievement Category and 119 Achievements
+- **Date**: 2025-12-31
+- **Change Type**: Data (INSERT)
+- **Description**:
+  - Created new achievement category 'Crowdsourcing' (category_id: 20002)
+  - Moved 76 existing crowdsourcing-related achievements to this category
+  - Added 43 new crowdsourcing achievements covering:
+    - Approval progression (CS: First Success through CS: Five Hundred Approved)
+    - Streak achievements (CS: Weekday Worker through CS: Half Year Hero)
+    - Card type specialties (RC, Auto, Relic, SP, Print Run edits)
+    - Trust level progression
+    - Approval rate achievements (80%, 90%, 95%, 100% clubs)
+    - Daily volume achievements
+  - Total: 119 crowdsourcing achievements
+- **Tables Affected**: `achievement_categories`, `achievements`
+- **Status**: Pending Production
+- **Verification Query**:
+  ```sql
+  SELECT COUNT(*) FROM achievements WHERE category_id = 20002;
+  SELECT * FROM achievement_categories WHERE name = 'Crowdsourcing';
+  ```
+- **Expected Result**: 119 achievements, 1 category

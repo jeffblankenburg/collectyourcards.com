@@ -132,8 +132,37 @@
   display: flex;
   justify-content: flex-end;
   align-items: center;
+  gap: 1rem;
   padding: 0.5rem 0;
   margin-bottom: 0.5rem;
+}
+
+/* Suggest Set Button */
+.sets-page .suggest-set-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  background: rgba(59, 130, 246, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 8px;
+  color: #60a5fa;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.sets-page .suggest-set-btn:hover {
+  background: rgba(59, 130, 246, 0.25);
+  border-color: rgba(59, 130, 246, 0.5);
+  color: #93c5fd;
+  transform: translateY(-1px);
+}
+
+.sets-page .suggest-set-btn:active {
+  transform: translateY(0);
 }
 
 /* Force a row break after header */

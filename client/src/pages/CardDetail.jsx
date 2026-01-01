@@ -6,6 +6,7 @@ import Icon from '../components/Icon'
 import CollectionTable from '../components/tables/CollectionTable'
 import QuickEditModal from '../components/modals/QuickEditModal'
 import AddCardModal from '../components/modals/AddCardModal'
+import SuggestEditModal from '../components/modals/SuggestEditModal'
 import AddToListDropdown from '../components/AddToListDropdown'
 import CommentsSection from '../components/CommentsSection'
 import { useToast } from '../contexts/ToastContext'
@@ -47,6 +48,7 @@ function CardDetail() {
   const [creatingSale, setCreatingSale] = useState(false)
   const [showSellModal, setShowSellModal] = useState(false)
   const [sellingPlatforms, setSellingPlatforms] = useState([])
+  const [showSuggestEditModal, setShowSuggestEditModal] = useState(false)
 
   // Check if user is admin
   const isAdmin = user && ['admin', 'superadmin', 'data_admin'].includes(user.role)
@@ -720,6 +722,15 @@ function CardDetail() {
                     size={16}
                     className="squircle-button share-button"
                   />
+                  {isAuthenticated && (
+                    <button
+                      onClick={() => setShowSuggestEditModal(true)}
+                      className="squircle-button suggest-edit-button"
+                      title="Suggest an edit to this card"
+                    >
+                      <Icon name="edit-3" size={16} />
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -958,6 +969,13 @@ function CardDetail() {
           gradingAgencies={gradingAgencies}
         />
       )}
+
+      {/* Suggest Edit Modal */}
+      <SuggestEditModal
+        isOpen={showSuggestEditModal}
+        onClose={() => setShowSuggestEditModal(false)}
+        card={card}
+      />
 
       {/* Full-Screen Image Viewer */}
       {showImageViewer && (card.front_image_url || card.back_image_url) && (

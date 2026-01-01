@@ -8,6 +8,7 @@ import Icon from '../components/Icon'
 import CardTable from '../components/tables/CardTable'
 import AddCardModal from '../components/modals/AddCardModal'
 import BulkCardModal from '../components/modals/BulkCardModal'
+import SuggestCardsModal from '../components/modals/SuggestCardsModal'
 import CommentsSection from '../components/CommentsSection'
 import ActivityFeed from '../components/ActivityFeed'
 import { createLogger } from '../utils/logger'
@@ -43,6 +44,9 @@ function SeriesDetail() {
   const [bulkSelectionMode, setBulkSelectionMode] = useState(false)
   const [selectedCards, setSelectedCards] = useState(new Set())
   const [showBulkActionsModal, setShowBulkActionsModal] = useState(false)
+
+  // Suggest Cards modal state
+  const [showSuggestCardsModal, setShowSuggestCardsModal] = useState(false)
 
   // Check if user is admin
   const isAdmin = user && ['admin', 'superadmin', 'data_admin'].includes(user.role)
@@ -475,6 +479,18 @@ function SeriesDetail() {
                   </div>
                 </div>
 
+                {/* Suggest Cards Button for Authenticated Users */}
+                {isAuthenticated && (
+                  <button
+                    className="suggest-cards-btn"
+                    onClick={() => setShowSuggestCardsModal(true)}
+                    title="Suggest new cards for this series"
+                  >
+                    <Icon name="plus" size={14} />
+                    <span>Suggest Cards</span>
+                  </button>
+                )}
+
                 {/* Parallels Dropdown */}
                 {parallels.length > 0 && (
                   <div className="parallels-compact">
@@ -595,13 +611,24 @@ function SeriesDetail() {
 
       {/* Admin Edit Button */}
       {isAdmin && series && (
-        <button 
+        <button
           className="admin-edit-button"
           onClick={() => navigate(`/admin/series?search=${encodeURIComponent(series.name)}`)}
           title="Edit series (Admin)"
         >
           <Icon name="edit" size={20} />
         </button>
+      )}
+
+      {/* Suggest Cards Modal */}
+      {showSuggestCardsModal && createPortal(
+        <SuggestCardsModal
+          isOpen={showSuggestCardsModal}
+          onClose={() => setShowSuggestCardsModal(false)}
+          onSuccess={() => loadTableData()}
+          preselectedSeriesId={series?.series_id}
+        />,
+        document.body
       )}
     </div>
   )

@@ -421,6 +421,20 @@
   transform: none;
 }
 
+/* Suggest Edit button */
+.card-detail-page .squircle-button.suggest-edit-button {
+  background: rgba(139, 92, 246, 0.2);
+  border-color: rgba(139, 92, 246, 0.4);
+  color: #c4b5fd;
+}
+
+.card-detail-page .squircle-button.suggest-edit-button:hover {
+  background: rgba(139, 92, 246, 0.3);
+  border-color: rgba(139, 92, 246, 0.6);
+  color: #ddd6fe;
+  transform: translateY(-1px);
+}
+
 /* Card Header Right Section */
 .card-detail-page .card-header-right-section {
   display: flex;

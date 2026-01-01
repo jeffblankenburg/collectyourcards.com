@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
+import { createPortal } from 'react-dom'
 import axios from 'axios'
 import { useToast } from '../contexts/ToastContext'
 import { useAuth } from '../contexts/AuthContext'
 import Icon from '../components/Icon'
 import { SetCard } from '../components/cards'
 import EditSetModal from '../components/modals/EditSetModal'
+import SuggestSetModal from '../components/modals/SuggestSetModal'
 import './SetsPageScoped.css'
 
 function SetsPage() {
@@ -23,6 +25,7 @@ function SetsPage() {
   const [editingSet, setEditingSet] = useState(null)
   const [organizations, setOrganizations] = useState([])
   const [manufacturers, setManufacturers] = useState([])
+  const [showSuggestSetModal, setShowSuggestSetModal] = useState(false)
 
   const isAdmin = user && ['admin', 'superadmin', 'data_admin'].includes(user.role)
 
@@ -252,6 +255,16 @@ function SetsPage() {
                     autoFocus
                   />
                 </div>
+                {user && (
+                  <button
+                    className="suggest-set-btn"
+                    onClick={() => setShowSuggestSetModal(true)}
+                    title="Suggest a new set"
+                  >
+                    <Icon name="plus" size={16} />
+                    <span>Suggest Set</span>
+                  </button>
+                )}
               </div>
               {/* Force new row after header */}
               <div className="grid-row-break"></div>
@@ -293,6 +306,17 @@ function SetsPage() {
         manufacturers={manufacturers}
         onSaveSuccess={handleSaveSuccess}
       />
+
+      {/* Suggest Set Modal */}
+      {showSuggestSetModal && createPortal(
+        <SuggestSetModal
+          isOpen={showSuggestSetModal}
+          onClose={() => setShowSuggestSetModal(false)}
+          onSuccess={() => loadSetsForYear(year)}
+          preselectedYear={parseInt(year)}
+        />,
+        document.body
+      )}
     </div>
   )
 }

@@ -795,6 +795,34 @@
   /* Color handled by inline styles based on completion percentage */
 }
 
+/* Suggest Cards Button */
+.series-detail-page .suggest-cards-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: rgba(59, 130, 246, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 6px;
+  color: #60a5fa;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.series-detail-page .suggest-cards-btn:hover {
+  background: rgba(59, 130, 246, 0.25);
+  border-color: rgba(59, 130, 246, 0.5);
+  color: #93c5fd;
+  transform: translateY(-1px);
+}
+
+.series-detail-page .suggest-cards-btn:active {
+  transform: translateY(0);
+}
+
 /* Parallels Dropdown */
 .series-detail-page .parallels-compact {
   display: flex;

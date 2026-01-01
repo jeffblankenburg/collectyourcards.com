@@ -279,7 +279,8 @@ if (config.environment === 'test') {
     { path: '/api/feedback', file: './routes/feedback', name: 'Feedback' },
     { path: '/api/user/wrapped', file: './routes/wrapped', name: 'User Wrapped' },
     { path: '/api/admin/feedback', file: './routes/admin-feedback', name: 'Admin Feedback' },
-    { path: '/api/campaign', file: './routes/campaign', name: 'Campaign Tracking' }
+    { path: '/api/campaign', file: './routes/campaign', name: 'Campaign Tracking' },
+    { path: '/api/crowdsource', file: './routes/crowdsource', name: 'Crowdsourcing' }
   ];
 
   console.log('📍 Loading API routes in production mode...');

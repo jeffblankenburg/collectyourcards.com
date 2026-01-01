@@ -104,6 +104,8 @@ const AdminFeedbackDetail = lazy(() => import('./pages/AdminFeedbackDetail.jsx')
 const Boxed = lazy(() => import('./pages/Boxed.jsx'))
 const StartLanding = lazy(() => import('./pages/StartLanding.jsx'))
 const AdminCampaigns = lazy(() => import('./pages/AdminCampaigns.jsx'))
+const AdminCrowdsource = lazy(() => import('./pages/AdminCrowdsource.jsx'))
+const MyContributions = lazy(() => import('./pages/MyContributions.jsx'))
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -129,6 +131,7 @@ createRoot(document.getElementById('root')).render(
               <Route path="/profile" element={<ProtectedRoute><ProfileManagement /></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute><ProfileManagement /></ProtectedRoute>} />
               <Route path="/collection" element={<ProtectedRoute><CollectionDashboard /></ProtectedRoute>} />
+              <Route path="/contributions" element={<ProtectedRoute><MyContributions /></ProtectedRoute>} />
               <Route path="/players" element={<PlayersLanding />} />
               <Route path="/players/:playerId" element={<PlayerDetail />} />
               <Route path="/players/:playerId/:teamId" element={<PlayerDetail />} />
@@ -181,6 +184,7 @@ createRoot(document.getElementById('root')).render(
               <Route path="/admin/feedback" element={<ProtectedRoute><AdminFeedback /></ProtectedRoute>} />
               <Route path="/admin/feedback/:id" element={<ProtectedRoute><AdminFeedbackDetail /></ProtectedRoute>} />
               <Route path="/admin/campaigns" element={<ProtectedRoute><AdminCampaigns /></ProtectedRoute>} />
+              <Route path="/admin/crowdsource" element={<ProtectedRoute><AdminCrowdsource /></ProtectedRoute>} />
 
               {/* Lists routes - MUST BE BEFORE username route */}
               <Route path="/lists" element={<ProtectedRoute><Lists /></ProtectedRoute>} />
