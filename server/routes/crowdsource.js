@@ -1419,27 +1419,55 @@ router.get('/admin/review-all',
         const validColors = await prisma.$queryRaw`SELECT name FROM color`
         const validColorNames = new Set(validColors.map(c => c.name.toLowerCase()))
 
-        const cards = await prisma.$queryRaw`
-          SELECT cs.submission_id, cs.user_id, cs.series_id, cs.series_submission_id,
-                 cs.batch_id, cs.batch_sequence, cs.proposed_card_number,
-                 cs.proposed_player_names, cs.proposed_team_names,
-                 cs.proposed_is_rookie, cs.proposed_is_autograph, cs.proposed_is_relic,
-                 cs.proposed_is_short_print, cs.proposed_print_run, cs.proposed_notes,
-                 cs.proposed_color, cs.submission_notes, cs.status, cs.created_at,
-                 s.name as series_name, st.name as set_name, st.year as set_year,
-                 u.username as submitter_username, u.email as submitter_email,
-                 cst.trust_level as submitter_trust_level, cst.approval_rate as submitter_approval_rate
-          FROM card_submissions cs
-          LEFT JOIN series s ON cs.series_id = s.series_id
-          LEFT JOIN [set] st ON s.[set] = st.set_id
-          JOIN [user] u ON cs.user_id = u.user_id
-          LEFT JOIN contributor_stats cst ON cs.user_id = cst.user_id
-          WHERE cs.status = 'pending'
-          ORDER BY cs.created_at ASC
+        // Check if proposed_color column exists (for backwards compatibility)
+        const hasColorColumn = await prisma.$queryRaw`
+          SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+          WHERE TABLE_NAME = 'card_submissions' AND COLUMN_NAME = 'proposed_color'
         `
+        const includeColor = hasColorColumn.length > 0
+
+        const cards = includeColor
+          ? await prisma.$queryRaw`
+              SELECT cs.submission_id, cs.user_id, cs.series_id, cs.series_submission_id,
+                     cs.batch_id, cs.batch_sequence, cs.proposed_card_number,
+                     cs.proposed_player_names, cs.proposed_team_names,
+                     cs.proposed_is_rookie, cs.proposed_is_autograph, cs.proposed_is_relic,
+                     cs.proposed_is_short_print, cs.proposed_print_run, cs.proposed_notes,
+                     cs.proposed_color, cs.submission_notes, cs.status, cs.created_at,
+                     s.name as series_name, st.name as set_name, st.year as set_year,
+                     u.username as submitter_username, u.email as submitter_email,
+                     cst.trust_level as submitter_trust_level, cst.approval_rate as submitter_approval_rate
+              FROM card_submissions cs
+              LEFT JOIN series s ON cs.series_id = s.series_id
+              LEFT JOIN [set] st ON s.[set] = st.set_id
+              JOIN [user] u ON cs.user_id = u.user_id
+              LEFT JOIN contributor_stats cst ON cs.user_id = cst.user_id
+              WHERE cs.status = 'pending'
+              ORDER BY cs.created_at ASC
+            `
+          : await prisma.$queryRaw`
+              SELECT cs.submission_id, cs.user_id, cs.series_id, cs.series_submission_id,
+                     cs.batch_id, cs.batch_sequence, cs.proposed_card_number,
+                     cs.proposed_player_names, cs.proposed_team_names,
+                     cs.proposed_is_rookie, cs.proposed_is_autograph, cs.proposed_is_relic,
+                     cs.proposed_is_short_print, cs.proposed_print_run, cs.proposed_notes,
+                     cs.submission_notes, cs.status, cs.created_at,
+                     s.name as series_name, st.name as set_name, st.year as set_year,
+                     u.username as submitter_username, u.email as submitter_email,
+                     cst.trust_level as submitter_trust_level, cst.approval_rate as submitter_approval_rate
+              FROM card_submissions cs
+              LEFT JOIN series s ON cs.series_id = s.series_id
+              LEFT JOIN [set] st ON s.[set] = st.set_id
+              JOIN [user] u ON cs.user_id = u.user_id
+              LEFT JOIN contributor_stats cst ON cs.user_id = cst.user_id
+              WHERE cs.status = 'pending'
+              ORDER BY cs.created_at ASC
+            `
+
         results.cards = cards.map(c => {
           // Check if proposed_color is valid (exists in our color table)
-          const hasInvalidColor = c.proposed_color && !validColorNames.has(c.proposed_color.toLowerCase())
+          const proposedColor = c.proposed_color || null
+          const hasInvalidColor = proposedColor && !validColorNames.has(proposedColor.toLowerCase())
 
           return {
             submission_type: 'card',
@@ -1461,7 +1489,7 @@ router.get('/admin/review-all',
             proposed_is_relic: c.proposed_is_relic,
             proposed_is_short_print: c.proposed_is_short_print,
             proposed_print_run: c.proposed_print_run ? Number(c.proposed_print_run) : null,
-            proposed_color: c.proposed_color,
+            proposed_color: proposedColor,
             proposed_notes: c.proposed_notes,
             series_name: c.series_name,
             set_name: c.set_name,

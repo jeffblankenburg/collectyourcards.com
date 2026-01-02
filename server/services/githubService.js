@@ -63,7 +63,6 @@ class GitHubService {
 **Reference:** \`${referenceNumber}\`
 **Type:** ${submissionType.charAt(0).toUpperCase() + submissionType.slice(1)}
 **Priority:** ${priority || 'Medium'}
-**Submitted by:** ${email}
 
 ---
 
