@@ -39,6 +39,8 @@ function AdminCards() {
   const [availableColors, setAvailableColors] = useState([])
   const [uploadingDirectImage, setUploadingDirectImage] = useState(false)
   const [directUploadPreviews, setDirectUploadPreviews] = useState({ front: null, back: null })
+  const [deletingImage, setDeletingImage] = useState(null) // 'front' | 'back' | null
+  const [confirmDeleteSide, setConfirmDeleteSide] = useState(null) // 'front' | 'back' | null
   const { addToast } = useToast()
 
   // Function to determine text color based on background brightness
@@ -252,6 +254,7 @@ function AdminCards() {
     setCommunityImages([])
     setCurrentReferenceUserCard(null)
     setDirectUploadPreviews({ front: null, back: null })
+    setConfirmDeleteSide(null)
   }
 
   const loadCommunityImages = async (cardId) => {
@@ -443,6 +446,33 @@ function AdminCards() {
       ...prev,
       [side]: null
     }))
+  }
+
+  const handleDeleteImage = async (side) => {
+    if (!editingCard) return
+
+    try {
+      setDeletingImage(side)
+
+      const response = await axios.delete(`/api/admin/cards/${editingCard.card_id}/image/${side}`)
+
+      // Update currentAssignedImages from API response
+      setCurrentAssignedImages({
+        front: response.data.front_image_url || null,
+        back: response.data.back_image_url || null
+      })
+
+      addToast(`${side === 'front' ? 'Front' : 'Back'} image deleted successfully`, 'success')
+
+      // Reload cards list to update the main table
+      loadCardsForSeries(selectedSeries.series_id)
+    } catch (error) {
+      console.error('Error deleting image:', error)
+      addToast(`Failed to delete image: ${error.response?.data?.message || error.message}`, 'error')
+    } finally {
+      setDeletingImage(null)
+      setConfirmDeleteSide(null)
+    }
   }
 
   const handleFormChange = (field, value) => {
@@ -1074,32 +1104,106 @@ function AdminCards() {
                         <div className="admin-cards-image-row" style={{ background: 'rgba(16, 185, 129, 0.1)', border: '2px solid rgba(16, 185, 129, 0.3)' }}>
                           <div className="admin-cards-images-col-front">
                             {currentAssignedImages.front ? (
-                              <div
-                                style={{ position: 'relative', cursor: 'pointer' }}
-                                onClick={() => handleEditAssignedImage(currentAssignedImages.front, 'front')}
-                                title="Click to edit front image (rotate/crop)"
-                              >
-                                <img src={currentAssignedImages.front} alt="Front" className="admin-cards-thumbnail" />
+                              <div style={{ position: 'relative' }}>
                                 <div
-                                  style={{
-                                    position: 'absolute',
-                                    top: '5px',
-                                    right: '5px',
-                                    background: 'rgba(59, 130, 246, 0.9)',
-                                    border: 'none',
-                                    borderRadius: '4px',
-                                    padding: '6px 10px',
-                                    color: 'white',
-                                    fontSize: '12px',
-                                    fontWeight: '600',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '4px',
-                                    pointerEvents: 'none'
-                                  }}
+                                  style={{ cursor: 'pointer' }}
+                                  onClick={() => handleEditAssignedImage(currentAssignedImages.front, 'front')}
+                                  title="Click to edit front image (rotate/crop)"
                                 >
-                                  <Icon name="edit" size={14} /> Edit
+                                  <img src={currentAssignedImages.front} alt="Front" className="admin-cards-thumbnail" />
+                                  <div
+                                    style={{
+                                      position: 'absolute',
+                                      top: '5px',
+                                      right: '45px',
+                                      background: 'rgba(59, 130, 246, 0.9)',
+                                      border: 'none',
+                                      borderRadius: '4px',
+                                      padding: '6px 10px',
+                                      color: 'white',
+                                      fontSize: '12px',
+                                      fontWeight: '600',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '4px',
+                                      pointerEvents: 'none'
+                                    }}
+                                  >
+                                    <Icon name="edit" size={14} /> Edit
+                                  </div>
                                 </div>
+                                {confirmDeleteSide === 'front' ? (
+                                  <div
+                                    style={{
+                                      position: 'absolute',
+                                      top: '5px',
+                                      right: '5px',
+                                      display: 'flex',
+                                      gap: '4px'
+                                    }}
+                                  >
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); handleDeleteImage('front'); }}
+                                      disabled={deletingImage === 'front'}
+                                      style={{
+                                        background: 'rgba(239, 68, 68, 0.95)',
+                                        border: 'none',
+                                        borderRadius: '4px',
+                                        padding: '6px 10px',
+                                        color: 'white',
+                                        fontSize: '12px',
+                                        fontWeight: '600',
+                                        cursor: deletingImage === 'front' ? 'wait' : 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '4px'
+                                      }}
+                                      title="Confirm delete"
+                                    >
+                                      {deletingImage === 'front' ? 'Deleting...' : 'Yes, Delete'}
+                                    </button>
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); setConfirmDeleteSide(null); }}
+                                      disabled={deletingImage === 'front'}
+                                      style={{
+                                        background: 'rgba(100, 100, 100, 0.95)',
+                                        border: 'none',
+                                        borderRadius: '4px',
+                                        padding: '6px 8px',
+                                        color: 'white',
+                                        fontSize: '12px',
+                                        fontWeight: '600',
+                                        cursor: 'pointer'
+                                      }}
+                                      title="Cancel"
+                                    >
+                                      <Icon name="x" size={14} />
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); setConfirmDeleteSide('front'); }}
+                                    style={{
+                                      position: 'absolute',
+                                      top: '5px',
+                                      right: '5px',
+                                      background: 'rgba(239, 68, 68, 0.9)',
+                                      border: 'none',
+                                      borderRadius: '4px',
+                                      padding: '6px 10px',
+                                      color: 'white',
+                                      fontSize: '12px',
+                                      fontWeight: '600',
+                                      cursor: 'pointer',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '4px'
+                                    }}
+                                    title="Delete front image"
+                                  >
+                                    <Icon name="trash" size={14} />
+                                  </button>
+                                )}
                               </div>
                             ) : (
                               <div className="admin-cards-no-image">No front image</div>
@@ -1107,32 +1211,106 @@ function AdminCards() {
                           </div>
                           <div className="admin-cards-images-col-back">
                             {currentAssignedImages.back ? (
-                              <div
-                                style={{ position: 'relative', cursor: 'pointer' }}
-                                onClick={() => handleEditAssignedImage(currentAssignedImages.back, 'back')}
-                                title="Click to edit back image (rotate/crop)"
-                              >
-                                <img src={currentAssignedImages.back} alt="Back" className="admin-cards-thumbnail" />
+                              <div style={{ position: 'relative' }}>
                                 <div
-                                  style={{
-                                    position: 'absolute',
-                                    top: '5px',
-                                    right: '5px',
-                                    background: 'rgba(59, 130, 246, 0.9)',
-                                    border: 'none',
-                                    borderRadius: '4px',
-                                    padding: '6px 10px',
-                                    color: 'white',
-                                    fontSize: '12px',
-                                    fontWeight: '600',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '4px',
-                                    pointerEvents: 'none'
-                                  }}
+                                  style={{ cursor: 'pointer' }}
+                                  onClick={() => handleEditAssignedImage(currentAssignedImages.back, 'back')}
+                                  title="Click to edit back image (rotate/crop)"
                                 >
-                                  <Icon name="edit" size={14} /> Edit
+                                  <img src={currentAssignedImages.back} alt="Back" className="admin-cards-thumbnail" />
+                                  <div
+                                    style={{
+                                      position: 'absolute',
+                                      top: '5px',
+                                      right: '45px',
+                                      background: 'rgba(59, 130, 246, 0.9)',
+                                      border: 'none',
+                                      borderRadius: '4px',
+                                      padding: '6px 10px',
+                                      color: 'white',
+                                      fontSize: '12px',
+                                      fontWeight: '600',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '4px',
+                                      pointerEvents: 'none'
+                                    }}
+                                  >
+                                    <Icon name="edit" size={14} /> Edit
+                                  </div>
                                 </div>
+                                {confirmDeleteSide === 'back' ? (
+                                  <div
+                                    style={{
+                                      position: 'absolute',
+                                      top: '5px',
+                                      right: '5px',
+                                      display: 'flex',
+                                      gap: '4px'
+                                    }}
+                                  >
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); handleDeleteImage('back'); }}
+                                      disabled={deletingImage === 'back'}
+                                      style={{
+                                        background: 'rgba(239, 68, 68, 0.95)',
+                                        border: 'none',
+                                        borderRadius: '4px',
+                                        padding: '6px 10px',
+                                        color: 'white',
+                                        fontSize: '12px',
+                                        fontWeight: '600',
+                                        cursor: deletingImage === 'back' ? 'wait' : 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '4px'
+                                      }}
+                                      title="Confirm delete"
+                                    >
+                                      {deletingImage === 'back' ? 'Deleting...' : 'Yes, Delete'}
+                                    </button>
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); setConfirmDeleteSide(null); }}
+                                      disabled={deletingImage === 'back'}
+                                      style={{
+                                        background: 'rgba(100, 100, 100, 0.95)',
+                                        border: 'none',
+                                        borderRadius: '4px',
+                                        padding: '6px 8px',
+                                        color: 'white',
+                                        fontSize: '12px',
+                                        fontWeight: '600',
+                                        cursor: 'pointer'
+                                      }}
+                                      title="Cancel"
+                                    >
+                                      <Icon name="x" size={14} />
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); setConfirmDeleteSide('back'); }}
+                                    style={{
+                                      position: 'absolute',
+                                      top: '5px',
+                                      right: '5px',
+                                      background: 'rgba(239, 68, 68, 0.9)',
+                                      border: 'none',
+                                      borderRadius: '4px',
+                                      padding: '6px 10px',
+                                      color: 'white',
+                                      fontSize: '12px',
+                                      fontWeight: '600',
+                                      cursor: 'pointer',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '4px'
+                                    }}
+                                    title="Delete back image"
+                                  >
+                                    <Icon name="trash" size={14} />
+                                  </button>
+                                )}
                               </div>
                             ) : (
                               <div className="admin-cards-no-image">No back image</div>

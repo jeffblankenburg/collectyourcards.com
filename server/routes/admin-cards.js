@@ -551,6 +551,83 @@ router.put('/:id/reference-image', requireDataAdmin, upload.fields([
   }
 })
 
+// DELETE /api/admin/cards/:cardId/image/:side - Delete a single card image (front or back)
+router.delete('/:cardId/image/:side', requireDataAdmin, async (req, res) => {
+  try {
+    const cardId = parseInt(req.params.cardId)
+    const side = req.params.side // 'front' or 'back'
+
+    if (!cardId || isNaN(cardId)) {
+      return res.status(400).json({ error: 'Invalid card ID' })
+    }
+
+    if (side !== 'front' && side !== 'back') {
+      return res.status(400).json({ error: 'Side must be "front" or "back"' })
+    }
+
+    // Find the card
+    const card = await prisma.card.findUnique({
+      where: { card_id: cardId },
+      select: {
+        card_id: true,
+        front_image_path: true,
+        back_image_path: true
+      }
+    })
+
+    if (!card) {
+      return res.status(404).json({ error: 'Card not found' })
+    }
+
+    const imagePath = side === 'front' ? card.front_image_path : card.back_image_path
+
+    if (!imagePath) {
+      return res.status(400).json({ error: `No ${side} image to delete` })
+    }
+
+    // Delete the image from storage
+    try {
+      await deleteOptimizedImage(imagePath)
+      console.log(`Deleted ${side} image for card ${cardId}: ${imagePath}`)
+    } catch (deleteError) {
+      console.error(`Failed to delete ${side} image from storage:`, deleteError)
+      // Continue anyway - still clear the database reference
+    }
+
+    // Update card to clear the image path
+    const updateData = side === 'front'
+      ? { front_image_path: null }
+      : { back_image_path: null }
+
+    await prisma.card.update({
+      where: { card_id: cardId },
+      data: updateData
+    })
+
+    // Get updated card state
+    const updatedCard = await prisma.card.findUnique({
+      where: { card_id: cardId },
+      select: {
+        front_image_path: true,
+        back_image_path: true
+      }
+    })
+
+    res.json({
+      message: `${side.charAt(0).toUpperCase() + side.slice(1)} image deleted successfully`,
+      front_image_url: updatedCard.front_image_path,
+      back_image_url: updatedCard.back_image_path
+    })
+
+  } catch (error) {
+    console.error('Error deleting card image:', error)
+    res.status(500).json({
+      error: 'Failed to delete image',
+      message: error.message
+    })
+  }
+})
+
 // GET /api/admin/cards/needs-reference - Get cards that have user photos but no reference image assigned
 router.get('/needs-reference', requireDataAdmin, async (req, res) => {
   try {
