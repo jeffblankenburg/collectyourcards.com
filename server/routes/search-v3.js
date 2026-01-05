@@ -449,7 +449,7 @@ async function executeCardSearch(tokens, entityResults, limit = 30, includeCards
     WHERE ${whereClause}
     GROUP BY c.card_id, c.card_number, c.is_rookie, c.is_autograph, c.is_relic, c.print_run,
              s.name, s.slug, s.parallel_of_series, st.name, st.slug, st.year, m.name, col.name, col.hex_value
-    ORDER BY st.year DESC, c.card_number
+    ORDER BY st.year DESC, s.name, c.card_number
   `
 
   console.log('Executing card search query...')
