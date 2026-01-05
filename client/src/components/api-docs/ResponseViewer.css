@@ -1,0 +1,141 @@
+/* Response Viewer Styles - Scoped */
+.api-docs-response-viewer {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.api-docs-response-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 3rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.api-docs-loading-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: api-docs-spin 0.8s linear infinite;
+}
+
+@keyframes api-docs-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.api-docs-response-empty {
+  text-align: center;
+  padding: 3rem;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.api-docs-response-empty p {
+  margin: 0;
+}
+
+.api-docs-response-status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.api-docs-response-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+}
+
+.api-docs-response-status.success {
+  color: #22c55e;
+}
+
+.api-docs-response-status.error {
+  color: #ef4444;
+}
+
+.api-docs-response-status.warning {
+  color: #f59e0b;
+}
+
+.api-docs-status-code {
+  font-family: 'SF Mono', Monaco, monospace;
+  font-size: 0.9rem;
+}
+
+.api-docs-status-text {
+  font-size: 0.85rem;
+  font-weight: 500;
+  opacity: 0.8;
+}
+
+.api-docs-response-timing {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.api-docs-response-body h4 {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0 0 0.5rem 0;
+}
+
+.api-docs-response-headers {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.api-docs-response-headers summary {
+  padding: 0.75rem 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.api-docs-response-headers summary:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.api-docs-headers-list {
+  padding: 0.75rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.api-docs-header-item {
+  display: flex;
+  gap: 0.75rem;
+  font-size: 0.8rem;
+  font-family: 'SF Mono', Monaco, monospace;
+}
+
+.api-docs-header-key {
+  color: #3b82f6;
+  min-width: 180px;
+  flex-shrink: 0;
+}
+
+.api-docs-header-value {
+  color: rgba(255, 255, 255, 0.6);
+  word-break: break-all;
+}

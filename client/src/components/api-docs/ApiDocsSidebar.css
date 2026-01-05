@@ -1,0 +1,194 @@
+/* API Docs Sidebar Styles - Scoped */
+.api-docs-sidebar {
+  display: flex;
+  flex-direction: column;
+  width: 300px;
+  min-width: 280px;
+  max-width: 320px;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.03);
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.api-docs-sidebar-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.api-docs-sidebar-header h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: white;
+  margin: 0 0 0.35rem 0;
+}
+
+.api-docs-sidebar-header p {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.5);
+  margin: 0;
+}
+
+.api-docs-search-wrapper {
+  position: relative;
+  padding: 0 1rem 1rem 1rem;
+}
+
+.api-docs-search-icon {
+  position: absolute;
+  left: 1.75rem;
+  top: 50%;
+  transform: translateY(-75%);
+  color: rgba(255, 255, 255, 0.4);
+  pointer-events: none;
+}
+
+.api-docs-search-input {
+  width: 100%;
+  padding: 0.6rem 0.75rem 0.6rem 2.5rem;
+  font-size: 0.9rem;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: white;
+  transition: all 0.15s ease;
+}
+
+.api-docs-search-input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.api-docs-search-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.api-docs-nav {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.5rem 0;
+}
+
+.api-docs-category {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.api-docs-category-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0.85rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.api-docs-category-header:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.api-docs-category-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.api-docs-category-count {
+  font-size: 0.7rem;
+  padding: 0.15rem 0.4rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 500;
+}
+
+.api-docs-endpoint-list {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0.5rem 0;
+}
+
+.api-docs-endpoint-list li {
+  padding: 0 0.5rem;
+}
+
+.api-docs-endpoint-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.7);
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+}
+
+.api-docs-endpoint-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: white;
+}
+
+.api-docs-endpoint-btn.active {
+  background: rgba(59, 130, 246, 0.15);
+  color: white;
+}
+
+.api-docs-endpoint-btn.active .api-docs-endpoint-path-short {
+  color: #3b82f6;
+}
+
+.api-docs-endpoint-path-short {
+  font-family: 'SF Mono', Monaco, monospace;
+  font-size: 0.8rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.api-docs-no-results {
+  padding: 2rem 1rem;
+  text-align: center;
+}
+
+.api-docs-no-results p {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.4);
+  margin: 0;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 1024px) {
+  .api-docs-sidebar {
+    width: 100%;
+    max-width: none;
+    height: auto;
+    max-height: 50vh;
+    border-right: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+}
+
+@media (max-width: 640px) {
+  .api-docs-sidebar {
+    max-height: 40vh;
+  }
+
+  .api-docs-sidebar-header {
+    padding: 1rem;
+  }
+
+  .api-docs-sidebar-header h2 {
+    font-size: 1.1rem;
+  }
+}

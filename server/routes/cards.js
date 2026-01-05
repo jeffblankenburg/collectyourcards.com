@@ -73,13 +73,15 @@ function parseSearchQuery(searchQuery) {
   if (!searchQuery || !searchQuery.trim()) {
     return {
       keywords: [],
+      cardNumber: null,
       isRookie: false,
       isAutograph: false,
       isRelic: false,
       isShortPrint: false,
       printRun: null,
       colors: [],
-      year: null
+      year: null,
+      shortYear: null
     }
   }
 
@@ -88,13 +90,15 @@ function parseSearchQuery(searchQuery) {
 
   const parsed = {
     keywords: [],
+    cardNumber: null,
     isRookie: false,
     isAutograph: false,
     isRelic: false,
     isShortPrint: false,
     printRun: null,
     colors: [],
-    year: null
+    year: null,
+    shortYear: null  // For 2-digit year abbreviations like "77" = 1977
   }
 
   const cardTypeKeywords = new Set(['rc', 'rookie', 'auto', 'autograph', 'relic', 'sp', 'shortprint', 'short-print'])
@@ -126,10 +130,34 @@ function parseSearchQuery(searchQuery) {
       continue
     }
 
-    // Check for print run (e.g., "/99", "99", "/25")
-    const printRunMatch = term.match(/^\/(\d+)$/) || term.match(/^(\d+)$/)
+    // Check for print run with slash prefix (e.g., "/99", "/25")
+    const printRunMatch = term.match(/^\/(\d+)$/)
     if (printRunMatch && parseInt(printRunMatch[1]) < 1000) {
       parsed.printRun = parseInt(printRunMatch[1])
+      continue
+    }
+
+    // Check for simple numbers (1-4 digits)
+    // These could be card numbers, print runs, OR 2-digit years
+    const numMatch = term.match(/^(\d{1,4})$/)
+    if (numMatch) {
+      const num = parseInt(numMatch[1])
+      // Full 4-digit year (1900-2099) - only set as year
+      if (num >= 1900 && num <= 2099) {
+        parsed.year = num
+        continue
+      }
+      // For other numbers, they could mean multiple things:
+      parsed.cardNumber = numMatch[1] // Keep as string to preserve leading zeros
+      // Also set as print run if it's a reasonable value (under 1000)
+      if (num < 1000) {
+        parsed.printRun = num
+      }
+      // 2-digit numbers could be abbreviated years (e.g., "77" = 1977, "23" = 2023)
+      if (num >= 0 && num <= 99) {
+        // Assume 00-30 is 2000s, 31-99 is 1900s (covers most baseball card eras)
+        parsed.shortYear = num <= 30 ? 2000 + num : 1900 + num
+      }
       continue
     }
 
@@ -257,6 +285,29 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
 
     // Add intelligent search conditions
     if (searchParsed) {
+      // Card number, print run, and/or year filter
+      // When user searches "77", match card_number=77 OR print_run=77 OR year=1977
+      const numericOrConditions = []
+
+      if (searchParsed.cardNumber) {
+        const safeCardNumber = searchParsed.cardNumber.replace(/'/g, "''")
+        numericOrConditions.push(`c.card_number LIKE '${safeCardNumber}%'`)
+      }
+      if (searchParsed.printRun) {
+        numericOrConditions.push(`c.print_run = ${searchParsed.printRun}`)
+      }
+      if (searchParsed.shortYear) {
+        numericOrConditions.push(`EXISTS (
+          SELECT 1 FROM [set] st_year
+          WHERE st_year.set_id = s.[set]
+          AND st_year.year = ${searchParsed.shortYear}
+        )`)
+      }
+
+      if (numericOrConditions.length > 0) {
+        whereConditions.push(`(${numericOrConditions.join(' OR ')})`)
+      }
+
       // Card type filters
       if (searchParsed.isRookie) {
         whereConditions.push(`c.is_rookie = 1`)
@@ -269,11 +320,6 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
       }
       if (searchParsed.isShortPrint) {
         whereConditions.push(`c.is_short_print = 1`)
-      }
-
-      // Print run filter
-      if (searchParsed.printRun) {
-        whereConditions.push(`c.print_run = ${searchParsed.printRun}`)
       }
 
       // Year filter

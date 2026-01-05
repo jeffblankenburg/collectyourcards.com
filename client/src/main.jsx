@@ -106,6 +106,7 @@ const StartLanding = lazy(() => import('./pages/StartLanding.jsx'))
 const AdminCampaigns = lazy(() => import('./pages/AdminCampaigns.jsx'))
 const AdminCrowdsource = lazy(() => import('./pages/AdminCrowdsource.jsx'))
 const MyContributions = lazy(() => import('./pages/MyContributions.jsx'))
+const ApiDocs = lazy(() => import('./pages/ApiDocs.jsx'))
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -205,6 +206,11 @@ createRoot(document.getElementById('root')).render(
               {/* Start - QR code landing page for marketing campaign */}
               <Route path="/start" element={<StartLanding />} />
               <Route path="/start/:cardId" element={<StartLanding />} />
+
+              {/* API Documentation - Admin-only interactive API explorer */}
+              <Route path="/admin/api-docs" element={<ProtectedRoute requiredRole="admin"><ApiDocs /></ProtectedRoute>} />
+              <Route path="/admin/api-docs/:category" element={<ProtectedRoute requiredRole="admin"><ApiDocs /></ProtectedRoute>} />
+              <Route path="/admin/api-docs/:category/:endpointId" element={<ProtectedRoute requiredRole="admin"><ApiDocs /></ProtectedRoute>} />
 
               {/* Public profile route - MUST BE LAST to avoid conflicts with other routes */}
               <Route path="/:username" element={<PublicProfile />} />

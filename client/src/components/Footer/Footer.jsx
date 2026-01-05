@@ -90,6 +90,7 @@ function Footer() {
             <Link to="/blog" className="footer-link">
               <Icon name="message-square" size={16} /> Blog
             </Link>
+{/* API Docs hidden until complete - admin only at /developers */}
             <Link to="/status" className="footer-link">
               <Icon name="activity" size={16} /> System Status
             </Link>

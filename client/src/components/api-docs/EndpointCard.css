@@ -1,0 +1,82 @@
+/* Endpoint Card Styles - Scoped */
+.api-docs-endpoint-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.api-docs-endpoint-card:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.15);
+  transform: translateX(2px);
+}
+
+.api-docs-endpoint-card.api-docs-endpoint-selected {
+  background: rgba(59, 130, 246, 0.1);
+  border-color: rgba(59, 130, 246, 0.4);
+}
+
+.api-docs-endpoint-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.api-docs-endpoint-path {
+  font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.9);
+  background: none;
+  padding: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.api-docs-endpoint-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.api-docs-endpoint-summary {
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.6);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.api-docs-endpoint-card-footer {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.api-docs-endpoint-tags {
+  display: flex;
+  gap: 0.35rem;
+  flex: 1;
+  margin-left: 0.5rem;
+}
+
+.api-docs-endpoint-tag {
+  font-size: 0.65rem;
+  padding: 0.15rem 0.4rem;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.api-docs-endpoint-arrow {
+  color: rgba(255, 255, 255, 0.3);
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.api-docs-endpoint-card:hover .api-docs-endpoint-arrow {
+  color: rgba(255, 255, 255, 0.6);
+}

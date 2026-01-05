@@ -65,6 +65,11 @@ function AdminNavigation() {
       path: '/admin/feedback',
       name: 'Feedback',
       icon: 'message-square'
+    },
+    {
+      path: '/admin/api-docs',
+      name: 'API Docs',
+      icon: 'code'
     }
   ]
 

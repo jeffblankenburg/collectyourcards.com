@@ -220,6 +220,9 @@ if (config.environment === 'test') {
 } else {
   // In non-test environments, require actual route files
   const routes = [
+    // v1 API - Versioned RESTful API for third-party developers
+    { path: '/api/v1', file: './routes/v1/index', name: 'API v1' },
+
     { path: '/api/auth', file: './routes/auth', name: 'Auth' },
     { path: '/api/admin', file: './routes/admin-users', name: 'Admin Users' },
     { path: '/api/admin', file: './routes/admin-teams', name: 'Admin Teams' },
@@ -280,7 +283,8 @@ if (config.environment === 'test') {
     { path: '/api/user/wrapped', file: './routes/wrapped', name: 'User Wrapped' },
     { path: '/api/admin/feedback', file: './routes/admin-feedback', name: 'Admin Feedback' },
     { path: '/api/campaign', file: './routes/campaign', name: 'Campaign Tracking' },
-    { path: '/api/crowdsource', file: './routes/crowdsource', name: 'Crowdsourcing' }
+    { path: '/api/crowdsource', file: './routes/crowdsource', name: 'Crowdsourcing' },
+    { path: '/api/docs', file: './routes/api-docs', name: 'API Documentation' }
   ];
 
   console.log('📍 Loading API routes in production mode...');

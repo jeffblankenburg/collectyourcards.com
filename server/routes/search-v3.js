@@ -63,7 +63,7 @@ function parseQueryTokens(query) {
     tokens.year = parseInt(yearMatch[1])
   }
 
-  // Extract card number patterns
+  // Extract card number patterns (complex patterns first)
   const cardNumberPatterns = [
     /\b([A-Z]{1,4}-[A-Z0-9]{1,4})\b/i,  // BD-9, CPA-JDL
     /\b([A-Z]-\d{1,3})\b/i,              // A-1, B-9
@@ -75,6 +75,25 @@ function parseQueryTokens(query) {
     if (match) {
       tokens.cardNumber = match[1]
       break
+    }
+  }
+
+  // If no complex card number found, check for simple numeric card number
+  // Only treat as card number if there are other terms (like a player name)
+  // This handles queries like "77 jose ramirez" or "jose ramirez 77"
+  if (!tokens.cardNumber) {
+    const words = query.trim().split(/\s+/)
+    // Look for a standalone number (1-4 digits) that's NOT a year
+    for (const word of words) {
+      const simpleNumMatch = word.match(/^(\d{1,4})$/)
+      if (simpleNumMatch) {
+        const num = parseInt(simpleNumMatch[1])
+        // Ensure it's not a year (1900-2099) and there are other terms
+        if (!(num >= 1900 && num <= 2099) && words.length > 1) {
+          tokens.cardNumber = simpleNumMatch[1]
+          break
+        }
+      }
     }
   }
 
@@ -93,7 +112,7 @@ function parseQueryTokens(query) {
   // Build remaining search terms (remove extracted tokens)
   let remaining = query
   if (tokens.year) remaining = remaining.replace(tokens.year.toString(), '')
-  if (tokens.cardNumber) remaining = remaining.replace(new RegExp(tokens.cardNumber, 'i'), '')
+  if (tokens.cardNumber) remaining = remaining.replace(new RegExp(`\\b${tokens.cardNumber}\\b`, 'i'), '')
   if (tokens.serialNumber) remaining = remaining.replace(`/${tokens.serialNumber}`, '')
 
   // Remove card type keywords
@@ -347,14 +366,18 @@ async function executeCardSearch(tokens, entityResults, limit = 30, includeCards
     return { results: [], queryTime: 0 }
   }
 
-  // Get player IDs for filtering if we have player results
-  const playerResults = entityResults.filter(r => r.entity_type === 'player')
-  const hasSpecificPlayer = playerResults.length > 0 && playerResults.length <= 3
+  // Get player IDs for filtering - use top 5 player results sorted by relevance
+  // This ensures we filter by the best matching players even with many results
+  const playerResults = entityResults
+    .filter(r => r.entity_type === 'player')
+    .sort((a, b) => (b.relevance || 0) - (a.relevance || 0))
+    .slice(0, 5) // Take top 5 matching players
+  const hasPlayerResults = playerResults.length > 0
 
   const conditions = []
 
-  // Player filter
-  if (hasSpecificPlayer) {
+  // Player filter - now uses top matching players instead of requiring exactly 1-3 matches
+  if (hasPlayerResults && hasCardFilters) {
     const playerIds = playerResults.map(p => p.id)
     conditions.push(`p.player_id IN (${playerIds.join(',')})`)
   }
@@ -414,7 +437,7 @@ async function executeCardSearch(tokens, entityResults, limit = 30, includeCards
       c.is_autograph,
       c.is_relic,
       CASE WHEN s.parallel_of_series IS NOT NULL THEN 1 ELSE 0 END as is_parallel,
-      85 as relevance
+      ${tokens.cardNumber ? '105' : '85'} as relevance
     FROM card c
     JOIN series s ON c.series = s.series_id
     JOIN [set] st ON s.[set] = st.set_id

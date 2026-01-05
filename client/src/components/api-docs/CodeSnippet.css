@@ -1,0 +1,78 @@
+/* Code Snippet Styles - Scoped */
+.api-docs-code-snippet {
+  border-radius: 8px;
+  overflow: hidden;
+  background: #1e1e1e;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.api-docs-code-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.api-docs-code-language {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.api-docs-code-copy-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.api-docs-code-copy-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+}
+
+.api-docs-code-content {
+  padding: 1rem;
+  overflow-x: auto;
+}
+
+.api-docs-code-content pre {
+  margin: 0;
+  font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Consolas', monospace;
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+
+.api-docs-code-content code {
+  color: #d4d4d4;
+}
+
+.api-docs-code-line {
+  display: flex;
+}
+
+.api-docs-line-number {
+  width: 3rem;
+  text-align: right;
+  padding-right: 1rem;
+  color: rgba(255, 255, 255, 0.3);
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.api-docs-line-content {
+  flex: 1;
+  white-space: pre;
+}

@@ -269,8 +269,11 @@ function UniversalSearch({ className = '' }) {
     switch (result.type) {
       case 'player':
         return result.name || `${result.first_name || ''} ${result.last_name || ''}`.trim()
-      case 'card':
-        return result.name || result.player_names || result.card_number || 'Unknown Card'
+      case 'card': {
+        const cardName = result.name || result.player_names || result.card_number || 'Unknown Card'
+        const seriesInfo = result.series_name || result.set_name
+        return seriesInfo ? `${cardName} - ${seriesInfo}` : cardName
+      }
       case 'team':
         return result.name || 'Unknown Team'
       case 'set':
