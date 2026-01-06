@@ -4,6 +4,7 @@ import axios from 'axios'
 import { useToast } from '../contexts/ToastContext'
 import Icon from '../components/Icon'
 import ImageEditor from '../components/ImageEditor'
+import MultiImageUploader from '../components/MultiImageUploader'
 import './AdminSets.css'
 import './AdminCardsScoped.css'
 import '../components/UniversalCardTable.css'
@@ -37,10 +38,6 @@ function AdminCards() {
   const [editingImage, setEditingImage] = useState(null) // { imageUrl, side: 'front'|'back' }
   const [currentAssignedImages, setCurrentAssignedImages] = useState({ front: null, back: null })
   const [availableColors, setAvailableColors] = useState([])
-  const [uploadingDirectImage, setUploadingDirectImage] = useState(false)
-  const [directUploadPreviews, setDirectUploadPreviews] = useState({ front: null, back: null })
-  const [deletingImage, setDeletingImage] = useState(null) // 'front' | 'back' | null
-  const [confirmDeleteSide, setConfirmDeleteSide] = useState(null) // 'front' | 'back' | null
   const { addToast } = useToast()
 
   // Function to determine text color based on background brightness
@@ -253,8 +250,6 @@ function AdminCards() {
     setSaving(false)
     setCommunityImages([])
     setCurrentReferenceUserCard(null)
-    setDirectUploadPreviews({ front: null, back: null })
-    setConfirmDeleteSide(null)
   }
 
   const loadCommunityImages = async (cardId) => {
@@ -367,40 +362,19 @@ function AdminCards() {
     }
   }
 
-  // Handle direct image upload (front or back)
-  const handleDirectImageSelect = (e, side) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    // Validate file type
-    if (!['image/jpeg', 'image/jpg', 'image/png', 'image/webp'].includes(file.type)) {
-      addToast('Only JPEG, PNG, and WebP images are allowed', 'error')
-      return
-    }
-
-    // Validate file size (10MB max)
-    if (file.size > 10 * 1024 * 1024) {
-      addToast('File size must be less than 10MB', 'error')
-      return
-    }
-
-    // Create preview URL
-    const previewUrl = URL.createObjectURL(file)
-    setDirectUploadPreviews(prev => ({
-      ...prev,
-      [side]: { file, previewUrl }
-    }))
-  }
-
-  const handleDirectImageUpload = async (side) => {
-    if (!editingCard || !directUploadPreviews[side]?.file) return
+  // Handle multi-image upload (both front and back at once)
+  const handleMultiImageSave = async (images) => {
+    if (!editingCard) return
 
     try {
-      setUploadingDirectImage(true)
-
       const formData = new FormData()
-      const fieldName = `${side}_image` // 'front_image' or 'back_image'
-      formData.append(fieldName, directUploadPreviews[side].file)
+
+      if (images.front) {
+        formData.append('front_image', images.front)
+      }
+      if (images.back) {
+        formData.append('back_image', images.back)
+      }
 
       const response = await axios.put(`/api/admin/cards/${editingCard.card_id}/reference-image`, formData, {
         headers: {
@@ -417,43 +391,22 @@ function AdminCards() {
       // Clear reference_user_card since we're using a direct upload
       setCurrentReferenceUserCard(null)
 
-      // Clear the preview for this side
-      if (directUploadPreviews[side]?.previewUrl) {
-        URL.revokeObjectURL(directUploadPreviews[side].previewUrl)
-      }
-      setDirectUploadPreviews(prev => ({
-        ...prev,
-        [side]: null
-      }))
-
-      addToast(`${side === 'front' ? 'Front' : 'Back'} image uploaded successfully!`, 'success')
+      const uploadedCount = (images.front ? 1 : 0) + (images.back ? 1 : 0)
+      addToast(`${uploadedCount} image${uploadedCount > 1 ? 's' : ''} uploaded successfully!`, 'success')
 
       // Reload cards list to update the main table
       loadCardsForSeries(selectedSeries.series_id)
     } catch (error) {
-      console.error('Error uploading image:', error)
-      addToast(`Failed to upload image: ${error.response?.data?.message || error.message}`, 'error')
-    } finally {
-      setUploadingDirectImage(false)
+      console.error('Error uploading images:', error)
+      addToast(`Failed to upload images: ${error.response?.data?.message || error.message}`, 'error')
+      throw error // Re-throw so the uploader knows it failed
     }
-  }
-
-  const handleClearDirectUpload = (side) => {
-    if (directUploadPreviews[side]?.previewUrl) {
-      URL.revokeObjectURL(directUploadPreviews[side].previewUrl)
-    }
-    setDirectUploadPreviews(prev => ({
-      ...prev,
-      [side]: null
-    }))
   }
 
   const handleDeleteImage = async (side) => {
     if (!editingCard) return
 
     try {
-      setDeletingImage(side)
-
       const response = await axios.delete(`/api/admin/cards/${editingCard.card_id}/image/${side}`)
 
       // Update currentAssignedImages from API response
@@ -469,9 +422,7 @@ function AdminCards() {
     } catch (error) {
       console.error('Error deleting image:', error)
       addToast(`Failed to delete image: ${error.response?.data?.message || error.message}`, 'error')
-    } finally {
-      setDeletingImage(null)
-      setConfirmDeleteSide(null)
+      throw error // Re-throw so the uploader knows it failed
     }
   }
 
@@ -1087,337 +1038,17 @@ function AdminCards() {
                   </div>
                 </div>
 
-                {/* Currently Assigned Images Section */}
-                {editingCard && (currentAssignedImages.front || currentAssignedImages.back) && (
-                  <div className="admin-cards-community-images-section">
-                    <div className="admin-cards-community-images-header">
-                      <span className="admin-cards-community-images-title">
-                        Currently Assigned Reference Images
-                      </span>
-                    </div>
-                    <div className="admin-cards-community-images-table">
-                      <div className="admin-cards-images-table-header">
-                        <div className="admin-cards-images-col-front">Front Image</div>
-                        <div className="admin-cards-images-col-back">Back Image</div>
-                      </div>
-                      <div className="admin-cards-images-table-body">
-                        <div className="admin-cards-image-row" style={{ background: 'rgba(16, 185, 129, 0.1)', border: '2px solid rgba(16, 185, 129, 0.3)' }}>
-                          <div className="admin-cards-images-col-front">
-                            {currentAssignedImages.front ? (
-                              <div style={{ position: 'relative' }}>
-                                <div
-                                  style={{ cursor: 'pointer' }}
-                                  onClick={() => handleEditAssignedImage(currentAssignedImages.front, 'front')}
-                                  title="Click to edit front image (rotate/crop)"
-                                >
-                                  <img src={currentAssignedImages.front} alt="Front" className="admin-cards-thumbnail" />
-                                  <div
-                                    style={{
-                                      position: 'absolute',
-                                      top: '5px',
-                                      right: '45px',
-                                      background: 'rgba(59, 130, 246, 0.9)',
-                                      border: 'none',
-                                      borderRadius: '4px',
-                                      padding: '6px 10px',
-                                      color: 'white',
-                                      fontSize: '12px',
-                                      fontWeight: '600',
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      gap: '4px',
-                                      pointerEvents: 'none'
-                                    }}
-                                  >
-                                    <Icon name="edit" size={14} /> Edit
-                                  </div>
-                                </div>
-                                {confirmDeleteSide === 'front' ? (
-                                  <div
-                                    style={{
-                                      position: 'absolute',
-                                      top: '5px',
-                                      right: '5px',
-                                      display: 'flex',
-                                      gap: '4px'
-                                    }}
-                                  >
-                                    <button
-                                      onClick={(e) => { e.stopPropagation(); handleDeleteImage('front'); }}
-                                      disabled={deletingImage === 'front'}
-                                      style={{
-                                        background: 'rgba(239, 68, 68, 0.95)',
-                                        border: 'none',
-                                        borderRadius: '4px',
-                                        padding: '6px 10px',
-                                        color: 'white',
-                                        fontSize: '12px',
-                                        fontWeight: '600',
-                                        cursor: deletingImage === 'front' ? 'wait' : 'pointer',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '4px'
-                                      }}
-                                      title="Confirm delete"
-                                    >
-                                      {deletingImage === 'front' ? 'Deleting...' : 'Yes, Delete'}
-                                    </button>
-                                    <button
-                                      onClick={(e) => { e.stopPropagation(); setConfirmDeleteSide(null); }}
-                                      disabled={deletingImage === 'front'}
-                                      style={{
-                                        background: 'rgba(100, 100, 100, 0.95)',
-                                        border: 'none',
-                                        borderRadius: '4px',
-                                        padding: '6px 8px',
-                                        color: 'white',
-                                        fontSize: '12px',
-                                        fontWeight: '600',
-                                        cursor: 'pointer'
-                                      }}
-                                      title="Cancel"
-                                    >
-                                      <Icon name="x" size={14} />
-                                    </button>
-                                  </div>
-                                ) : (
-                                  <button
-                                    onClick={(e) => { e.stopPropagation(); setConfirmDeleteSide('front'); }}
-                                    style={{
-                                      position: 'absolute',
-                                      top: '5px',
-                                      right: '5px',
-                                      background: 'rgba(239, 68, 68, 0.9)',
-                                      border: 'none',
-                                      borderRadius: '4px',
-                                      padding: '6px 10px',
-                                      color: 'white',
-                                      fontSize: '12px',
-                                      fontWeight: '600',
-                                      cursor: 'pointer',
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      gap: '4px'
-                                    }}
-                                    title="Delete front image"
-                                  >
-                                    <Icon name="trash" size={14} />
-                                  </button>
-                                )}
-                              </div>
-                            ) : (
-                              <div className="admin-cards-no-image">No front image</div>
-                            )}
-                          </div>
-                          <div className="admin-cards-images-col-back">
-                            {currentAssignedImages.back ? (
-                              <div style={{ position: 'relative' }}>
-                                <div
-                                  style={{ cursor: 'pointer' }}
-                                  onClick={() => handleEditAssignedImage(currentAssignedImages.back, 'back')}
-                                  title="Click to edit back image (rotate/crop)"
-                                >
-                                  <img src={currentAssignedImages.back} alt="Back" className="admin-cards-thumbnail" />
-                                  <div
-                                    style={{
-                                      position: 'absolute',
-                                      top: '5px',
-                                      right: '45px',
-                                      background: 'rgba(59, 130, 246, 0.9)',
-                                      border: 'none',
-                                      borderRadius: '4px',
-                                      padding: '6px 10px',
-                                      color: 'white',
-                                      fontSize: '12px',
-                                      fontWeight: '600',
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      gap: '4px',
-                                      pointerEvents: 'none'
-                                    }}
-                                  >
-                                    <Icon name="edit" size={14} /> Edit
-                                  </div>
-                                </div>
-                                {confirmDeleteSide === 'back' ? (
-                                  <div
-                                    style={{
-                                      position: 'absolute',
-                                      top: '5px',
-                                      right: '5px',
-                                      display: 'flex',
-                                      gap: '4px'
-                                    }}
-                                  >
-                                    <button
-                                      onClick={(e) => { e.stopPropagation(); handleDeleteImage('back'); }}
-                                      disabled={deletingImage === 'back'}
-                                      style={{
-                                        background: 'rgba(239, 68, 68, 0.95)',
-                                        border: 'none',
-                                        borderRadius: '4px',
-                                        padding: '6px 10px',
-                                        color: 'white',
-                                        fontSize: '12px',
-                                        fontWeight: '600',
-                                        cursor: deletingImage === 'back' ? 'wait' : 'pointer',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '4px'
-                                      }}
-                                      title="Confirm delete"
-                                    >
-                                      {deletingImage === 'back' ? 'Deleting...' : 'Yes, Delete'}
-                                    </button>
-                                    <button
-                                      onClick={(e) => { e.stopPropagation(); setConfirmDeleteSide(null); }}
-                                      disabled={deletingImage === 'back'}
-                                      style={{
-                                        background: 'rgba(100, 100, 100, 0.95)',
-                                        border: 'none',
-                                        borderRadius: '4px',
-                                        padding: '6px 8px',
-                                        color: 'white',
-                                        fontSize: '12px',
-                                        fontWeight: '600',
-                                        cursor: 'pointer'
-                                      }}
-                                      title="Cancel"
-                                    >
-                                      <Icon name="x" size={14} />
-                                    </button>
-                                  </div>
-                                ) : (
-                                  <button
-                                    onClick={(e) => { e.stopPropagation(); setConfirmDeleteSide('back'); }}
-                                    style={{
-                                      position: 'absolute',
-                                      top: '5px',
-                                      right: '5px',
-                                      background: 'rgba(239, 68, 68, 0.9)',
-                                      border: 'none',
-                                      borderRadius: '4px',
-                                      padding: '6px 10px',
-                                      color: 'white',
-                                      fontSize: '12px',
-                                      fontWeight: '600',
-                                      cursor: 'pointer',
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      gap: '4px'
-                                    }}
-                                    title="Delete back image"
-                                  >
-                                    <Icon name="trash" size={14} />
-                                  </button>
-                                )}
-                              </div>
-                            ) : (
-                              <div className="admin-cards-no-image">No back image</div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Direct Image Upload Section */}
+                {/* Multi-Image Uploader - Upload both front and back at once */}
                 {editingCard && (
                   <div className="admin-cards-community-images-section">
-                    <div className="admin-cards-community-images-header">
-                      <span className="admin-cards-community-images-title">
-                        <Icon name="upload" size={16} style={{ marginRight: '8px' }} />
-                        Upload Images Directly
-                      </span>
-                    </div>
-                    <div className="admin-cards-direct-upload-grid">
-                      {/* Front Image Upload */}
-                      <div className="admin-cards-direct-upload-slot">
-                        <div className="admin-cards-direct-upload-label">Front Image</div>
-                        {directUploadPreviews.front ? (
-                          <div className="admin-cards-direct-upload-preview">
-                            <img src={directUploadPreviews.front.previewUrl} alt="Front preview" />
-                            <div className="admin-cards-direct-upload-actions">
-                              <button
-                                type="button"
-                                className="admin-cards-upload-btn"
-                                onClick={() => handleDirectImageUpload('front')}
-                                disabled={uploadingDirectImage}
-                              >
-                                {uploadingDirectImage ? (
-                                  <><div className="card-icon-spinner tiny"></div> Uploading...</>
-                                ) : (
-                                  <><Icon name="check" size={14} /> Save</>
-                                )}
-                              </button>
-                              <button
-                                type="button"
-                                className="admin-cards-cancel-upload-btn"
-                                onClick={() => handleClearDirectUpload('front')}
-                                disabled={uploadingDirectImage}
-                              >
-                                <Icon name="x" size={14} />
-                              </button>
-                            </div>
-                          </div>
-                        ) : (
-                          <label className="admin-cards-direct-upload-dropzone">
-                            <input
-                              type="file"
-                              accept="image/jpeg,image/jpg,image/png,image/webp"
-                              onChange={(e) => handleDirectImageSelect(e, 'front')}
-                              style={{ display: 'none' }}
-                            />
-                            <Icon name="image" size={32} />
-                            <span>Click to select front image</span>
-                          </label>
-                        )}
-                      </div>
-
-                      {/* Back Image Upload */}
-                      <div className="admin-cards-direct-upload-slot">
-                        <div className="admin-cards-direct-upload-label">Back Image</div>
-                        {directUploadPreviews.back ? (
-                          <div className="admin-cards-direct-upload-preview">
-                            <img src={directUploadPreviews.back.previewUrl} alt="Back preview" />
-                            <div className="admin-cards-direct-upload-actions">
-                              <button
-                                type="button"
-                                className="admin-cards-upload-btn"
-                                onClick={() => handleDirectImageUpload('back')}
-                                disabled={uploadingDirectImage}
-                              >
-                                {uploadingDirectImage ? (
-                                  <><div className="card-icon-spinner tiny"></div> Uploading...</>
-                                ) : (
-                                  <><Icon name="check" size={14} /> Save</>
-                                )}
-                              </button>
-                              <button
-                                type="button"
-                                className="admin-cards-cancel-upload-btn"
-                                onClick={() => handleClearDirectUpload('back')}
-                                disabled={uploadingDirectImage}
-                              >
-                                <Icon name="x" size={14} />
-                              </button>
-                            </div>
-                          </div>
-                        ) : (
-                          <label className="admin-cards-direct-upload-dropzone">
-                            <input
-                              type="file"
-                              accept="image/jpeg,image/jpg,image/png,image/webp"
-                              onChange={(e) => handleDirectImageSelect(e, 'back')}
-                              style={{ display: 'none' }}
-                            />
-                            <Icon name="image" size={32} />
-                            <span>Click to select back image</span>
-                          </label>
-                        )}
-                      </div>
-                    </div>
+                    <MultiImageUploader
+                      existingImages={currentAssignedImages}
+                      onSave={handleMultiImageSave}
+                      onEditImage={handleEditAssignedImage}
+                      onDeleteImage={handleDeleteImage}
+                      onMessage={(msg, type) => addToast(msg, type)}
+                      disabled={saving}
+                    />
                   </div>
                 )}
 
