@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom'
 import axios from 'axios'
 import { useToast } from '../contexts/ToastContext'
@@ -39,6 +39,7 @@ function AdminCards() {
   const [currentAssignedImages, setCurrentAssignedImages] = useState({ front: null, back: null })
   const [availableColors, setAvailableColors] = useState([])
   const { addToast } = useToast()
+  const imageUploaderRef = useRef(null)
 
   // Function to determine text color based on background brightness
   const getTextColor = (hexColor) => {
@@ -473,6 +474,12 @@ function AdminCards() {
       if (editingCard) {
         // Update existing card
         await axios.put(`/api/admin/cards/${editingCard.card_id}`, cardData)
+
+        // Also save any staged images in the uploader
+        if (imageUploaderRef.current?.hasStagedImages()) {
+          await imageUploaderRef.current.saveStagedImages()
+        }
+
         addToast('Card updated successfully', 'success')
       } else {
         // Create new card
@@ -1042,6 +1049,7 @@ function AdminCards() {
                 {editingCard && (
                   <div className="admin-cards-community-images-section">
                     <MultiImageUploader
+                      ref={imageUploaderRef}
                       existingImages={currentAssignedImages}
                       onSave={handleMultiImageSave}
                       onEditImage={handleEditAssignedImage}

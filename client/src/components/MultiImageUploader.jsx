@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react'
+import React, { useState, useRef, useImperativeHandle, forwardRef } from 'react'
 import Icon from './Icon'
 import './MultiImageUploader.css'
 
@@ -20,8 +20,12 @@ import './MultiImageUploader.css'
  * - onMessage: (message: string, type: 'info'|'warning'|'error') => void - optional callback for user feedback
  * - disabled: boolean
  * - maxImages: number (default 2 for front/back)
+ *
+ * Ref Methods:
+ * - hasStagedImages(): boolean - returns true if there are unsaved staged images
+ * - saveStagedImages(): Promise<void> - triggers upload of staged images
  */
-const MultiImageUploader = ({
+const MultiImageUploader = forwardRef(({
   existingImages = { front: null, back: null },
   onSave,
   onEditImage,
@@ -29,7 +33,7 @@ const MultiImageUploader = ({
   onMessage,
   disabled = false,
   maxImages = 2
-}) => {
+}, ref) => {
   // Track staged images (files to upload)
   const [stagedImages, setStagedImages] = useState([])
   const [draggedIndex, setDraggedIndex] = useState(null)
@@ -178,6 +182,12 @@ const MultiImageUploader = ({
       setSaving(false)
     }
   }
+
+  // Expose methods to parent via ref
+  useImperativeHandle(ref, () => ({
+    hasStagedImages: () => stagedImages.length > 0,
+    saveStagedImages: handleSaveAll
+  }), [stagedImages, handleSaveAll])
 
   // Handle delete with confirmation
   const handleDeleteClick = (side) => {
@@ -440,6 +450,6 @@ const MultiImageUploader = ({
       </div>
     </div>
   )
-}
+})
 
 export default MultiImageUploader
