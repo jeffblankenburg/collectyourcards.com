@@ -9,7 +9,7 @@ const {
   validateNumericArray,
   escapeString
 } = require('../utils/sql-security')
-const { getAllCuratedCardIds } = require('../config/carousel-cards')
+const { getShuffledCards, getCuratedCardCount } = require('../config/carousel-cards')
 
 // ============================================================================
 // LRU CACHE for search results
@@ -681,95 +681,20 @@ router.get('/rainbow', optionalAuthMiddleware, async (req, res) => {
 })
 
 // GET /api/cards/carousel - Get curated card images for home page carousel
-// Uses hand-picked notable cards from server/config/carousel-cards.js
-router.get('/carousel', async (req, res) => {
-  try {
-    // Cache for 5 minutes - curated cards don't change often
-    res.setHeader('Cache-Control', 'public, max-age=300')
+// Uses static data from server/config/carousel-cards.js - NO DATABASE CALLS
+router.get('/carousel', (req, res) => {
+  // Cache for 1 hour - static data, only changes with deployments
+  res.setHeader('Cache-Control', 'public, max-age=3600')
 
-    const limit = parseInt(req.query.limit) || 20
-    const curatedCardIds = getAllCuratedCardIds()
+  const limit = parseInt(req.query.limit) || 20
+  const cards = getShuffledCards(limit)
 
-    if (curatedCardIds.length === 0) {
-      return res.json({
-        success: true,
-        cards: [],
-        total: 0
-      })
-    }
-
-    // Shuffle the curated card IDs for variety
-    const shuffledIds = [...curatedCardIds].sort(() => Math.random() - 0.5)
-    const selectedIds = shuffledIds.slice(0, limit)
-    const idList = selectedIds.join(',')
-
-    // Fetch the curated cards by ID
-    const query = `
-      SELECT
-        c.front_image_path as photo_url,
-        c.card_id,
-        c.card_number,
-        s.slug as series_slug,
-        s.name as series_name,
-        st.year as set_year,
-        st.slug as set_slug,
-        p.first_name,
-        p.last_name,
-        p.player_id
-      FROM card c
-      JOIN series s ON c.series = s.series_id
-      JOIN [set] st ON s.[set] = st.set_id
-      LEFT JOIN card_player_team cpt ON c.card_id = cpt.card
-      LEFT JOIN player_team pt ON cpt.player_team = pt.player_team_id
-      LEFT JOIN player p ON pt.player = p.player_id
-      WHERE c.card_id IN (${idList})
-        AND c.front_image_path IS NOT NULL
-    `
-
-    const results = await prisma.$queryRawUnsafe(query)
-
-    // Transform results and generate player slugs
-    const carouselCards = results.map(row => {
-      const playerSlug = `${row.first_name || ''}-${row.last_name || ''}`
-        .toLowerCase()
-        .replace(/[^a-z0-9\s-]/g, '')
-        .replace(/\s+/g, '-')
-        .replace(/-+/g, '-')
-        .trim()
-
-      return {
-        photo_url: row.photo_url,
-        card_id: Number(row.card_id),
-        card_number: row.card_number,
-        series_slug: row.series_slug,
-        series_name: row.series_name,
-        set_year: Number(row.set_year),
-        set_slug: row.set_slug,
-        player_name: `${row.first_name || ''} ${row.last_name || ''}`.trim(),
-        player_slug: playerSlug,
-        // URL for CardDetail page (simplified URL structure)
-        url: `/cards/${Number(row.card_id)}`
-      }
-    })
-
-    // Shuffle the results to randomize display order
-    const shuffledCards = carouselCards.sort(() => Math.random() - 0.5)
-
-    res.json({
-      success: true,
-      cards: shuffledCards,
-      total: shuffledCards.length,
-      curatedTotal: curatedCardIds.length
-    })
-
-  } catch (error) {
-    console.error('Error fetching carousel cards:', error)
-    res.status(500).json({
-      error: 'Database error',
-      message: 'Failed to fetch carousel cards',
-      details: error.message
-    })
-  }
+  res.json({
+    success: true,
+    cards,
+    total: cards.length,
+    curatedTotal: getCuratedCardCount()
+  })
 })
 
 // GET /api/parallel-series - Get parallel series for a specific card number in a set
