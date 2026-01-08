@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
 import Icon from '../components/Icon'
 import CardTable from '../components/tables/CardTable'
+import GalleryCard from '../components/cards/GalleryCard'
 import AddCardModal from '../components/modals/AddCardModal'
 import BulkCardModal from '../components/modals/BulkCardModal'
 import SuggestCardsModal from '../components/modals/SuggestCardsModal'
@@ -47,6 +48,17 @@ function SeriesDetail() {
 
   // Suggest Cards modal state
   const [showSuggestCardsModal, setShowSuggestCardsModal] = useState(false)
+
+  // View mode state (table or gallery)
+  const [viewMode, setViewMode] = useState(() => {
+    return localStorage.getItem('seriesDetail_viewMode') || 'table'
+  })
+
+  // Persist view mode preference
+  const handleViewModeChange = (mode) => {
+    setViewMode(mode)
+    localStorage.setItem('seriesDetail_viewMode', mode)
+  }
 
   // Check if user is admin
   const isAdmin = user && ['admin', 'superadmin', 'data_admin'].includes(user.role)
@@ -538,30 +550,57 @@ function SeriesDetail() {
           </div>
         </header>
 
-        {/* Cards Table */}
+        {/* Cards Section - Table or Gallery */}
         {series && (
-          <CardTable
-            cards={cards}
-            loading={tableLoading}
-            onAddCard={handleAddCard}
-            onSellCard={isAdmin ? handleSellCard : null}
-            onCardClick={handleCardClick}
-            onPlayerClick={(player) => {
-              navigate(`/players/${player.player_id}`)
-            }}
-            bulkSelectionMode={bulkSelectionMode}
-            selectedCards={selectedCards}
-            onBulkSelectionToggle={() => {
-              setBulkSelectionMode(!bulkSelectionMode)
-              setSelectedCards(new Set()) // Clear selections when switching modes
-            }}
-            onCardSelection={(cardIds) => setSelectedCards(cardIds)}
-            onBulkAction={() => setShowBulkActionsModal(true)}
-            defaultSort="sort_order"
-            downloadFilename={`${series.name?.replace(/[^a-zA-Z0-9]/g, '_') || 'series'}_cards`}
-            maxHeight="800px"
-            autoFocusSearch={true}
-          />
+          <div className="series-cards-section">
+            <CardTable
+              cards={cards}
+              loading={tableLoading}
+              onAddCard={handleAddCard}
+              onSellCard={isAdmin ? handleSellCard : null}
+              onCardClick={handleCardClick}
+              onPlayerClick={(player) => {
+                navigate(`/players/${player.player_id}`)
+              }}
+              bulkSelectionMode={bulkSelectionMode}
+              selectedCards={selectedCards}
+              onBulkSelectionToggle={() => {
+                setBulkSelectionMode(!bulkSelectionMode)
+                setSelectedCards(new Set()) // Clear selections when switching modes
+              }}
+              onCardSelection={(cardIds) => setSelectedCards(cardIds)}
+              onBulkAction={() => setShowBulkActionsModal(true)}
+              defaultSort="sort_order"
+              downloadFilename={`${series.name?.replace(/[^a-zA-Z0-9]/g, '_') || 'series'}_cards`}
+              maxHeight="800px"
+              autoFocusSearch={true}
+              showThumbnails={true}
+              viewMode={viewMode}
+              onViewModeChange={handleViewModeChange}
+              renderGallery={(filteredCards) => (
+                <div className="series-gallery-grid">
+                  {filteredCards.map(card => (
+                    <GalleryCard
+                      key={card.card_id}
+                      card={{
+                        ...card,
+                        series_name: series?.name,
+                        card_player_teams: card.card_player_teams
+                      }}
+                      onClick={() => handleCardClick(card)}
+                      imageUrl={card.front_image_path || null}
+                    />
+                  ))}
+                  {filteredCards.length === 0 && (
+                    <div className="series-gallery-empty">
+                      <Icon name="layers" size={48} />
+                      <p>No cards found</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            />
+          </div>
         )}
 
       </div>

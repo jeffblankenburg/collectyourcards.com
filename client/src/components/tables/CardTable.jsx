@@ -48,7 +48,11 @@ const CardTable = ({
   autoFocusSearch = false,
   showRemoveFromList = false,
   onRemoveFromList = null,
-  removingCardId = null
+  removingCardId = null,
+  showThumbnails = false, // Show image thumbnail column
+  viewMode = null, // 'table' or 'gallery' - if provided, shows view toggle
+  onViewModeChange = null, // Handler for view mode changes
+  renderGallery = null // Function to render gallery view: (cards) => JSX
 }) => {
   const { isAuthenticated } = useAuth()
   const [sortField, setSortField] = useState(defaultSort)
@@ -68,6 +72,7 @@ const CardTable = ({
   const [columnWidths, setColumnWidths] = useState({
     checkbox: 56,      // 32px button + 24px padding (12px each side)
     owned: 60,         // Compact width for "OWN" text with centering
+    thumbnail: 60,     // Width for thumbnail column
     card_number: 120,  // 2x the owned column width
     player: 'auto',    // Gets extra space from card_number
     series: 'auto',    // Series column between player and color
@@ -571,9 +576,31 @@ const CardTable = ({
                 />
               </div>
             )}
+
+            {/* View Mode Toggle (Table/Gallery) */}
+            {viewMode && onViewModeChange && (
+              <div className="card-table-view-toggle">
+                <button
+                  className={`card-table-toggle-button ${viewMode === 'table' ? 'card-table-active' : ''}`}
+                  onClick={() => onViewModeChange('table')}
+                  title="Table view"
+                >
+                  <Icon name="list" size={16} />
+                  Table
+                </button>
+                <button
+                  className={`card-table-toggle-button ${viewMode === 'gallery' ? 'card-table-active' : ''}`}
+                  onClick={() => onViewModeChange('gallery')}
+                  title="Gallery view"
+                >
+                  <Icon name="grid" size={16} />
+                  Gallery
+                </button>
+              </div>
+            )}
           </div>
 
-          {isAuthenticated && showBulkActions && (
+          {isAuthenticated && showBulkActions && viewMode !== 'gallery' && (
             <>
               <div className="card-table-view-toggle">
                 <button
@@ -609,16 +636,23 @@ const CardTable = ({
         </div>
       )}
 
-      {/* Table */}
-      <div
-        ref={tableWrapperRef}
-        className="card-table-wrapper"
-        style={{
-          maxHeight: maxHeight,
-          overflowY: maxHeight === 'none' ? 'hidden' : 'auto'
-        }}
-      >
-        <table className="card-table">
+      {/* Table or Gallery View */}
+      {viewMode === 'gallery' && renderGallery ? (
+        /* Gallery View */
+        <div className="card-table-gallery-wrapper">
+          {renderGallery(sortedCards)}
+        </div>
+      ) : (
+        /* Table View */
+        <div
+          ref={tableWrapperRef}
+          className="card-table-wrapper"
+          style={{
+            maxHeight: maxHeight,
+            overflowY: maxHeight === 'none' ? 'hidden' : 'auto'
+          }}
+        >
+          <table className="card-table">
           <thead>
             <tr>
               {isAuthenticated && (
@@ -673,6 +707,11 @@ const CardTable = ({
                       SERIES <SortIcon field="series_name" />
                     </div>
                   </div>
+                </th>
+              )}
+              {showThumbnails && (
+                <th className="thumbnail-header" style={{ width: columnWidths.thumbnail, textAlign: 'center' }}>
+                  <Icon name="camera" size={14} />
                 </th>
               )}
               {isColumnVisible('color') && (
@@ -832,7 +871,7 @@ const CardTable = ({
                       )}
                     </>
                   )}
-                  <td 
+                  <td
                     className="card-number-cell card-table-clickable-cell"
                     onClick={() => onCardClick?.(card)}
                     style={{ cursor: onCardClick ? 'pointer' : 'default' }}
@@ -893,6 +932,22 @@ const CardTable = ({
                         <span className="card-table-series-name">
                           {card.series_rel?.name}
                         </span>
+                      )}
+                    </td>
+                  )}
+                  {showThumbnails && (
+                    <td className="thumbnail-cell">
+                      {card.front_image_path ? (
+                        <img
+                          src={card.front_image_path}
+                          alt={`Card #${card.card_number}`}
+                          className="card-table-thumbnail"
+                          onClick={() => onCardClick?.(card)}
+                        />
+                      ) : (
+                        <div className="card-table-thumbnail-placeholder">
+                          <Icon name="camera" size={16} />
+                        </div>
                       )}
                     </td>
                   )}
@@ -1039,13 +1094,14 @@ const CardTable = ({
         </table>
 
         {/* Loading indicator for infinite scroll */}
-        {loadingMore && hasMore && (
-          <div className="card-table-loading-more">
-            <div className="card-icon-spinner"></div>
-            <p>Loading more cards...</p>
-          </div>
-        )}
-      </div>
+          {loadingMore && hasMore && (
+            <div className="card-table-loading-more">
+              <div className="card-icon-spinner"></div>
+              <p>Loading more cards...</p>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Footer */}
       <div className="card-table-footer">

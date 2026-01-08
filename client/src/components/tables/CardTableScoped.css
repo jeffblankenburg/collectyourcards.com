@@ -1,5 +1,45 @@
 /* CardTable - Fully scoped reusable component for database card tables */
 
+/* Thumbnail column styles */
+.card-table-container .thumbnail-header {
+  text-align: center;
+  padding: 0.5rem;
+}
+
+.card-table-container .thumbnail-cell {
+  text-align: center;
+  padding: 0.25rem;
+  vertical-align: middle;
+}
+
+.card-table-container .card-table-thumbnail {
+  width: 40px;
+  height: 56px;
+  object-fit: contain;
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card-table-container .card-table-thumbnail:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.card-table-container .card-table-thumbnail-placeholder {
+  width: 40px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px dashed rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  color: rgba(255, 255, 255, 0.15);
+  margin: 0 auto;
+}
+
 .card-table-container {
   width: calc(100vw - 2rem);
   margin-left: calc(-50vw + 50% + 1rem);
