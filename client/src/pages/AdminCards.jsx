@@ -6,6 +6,7 @@ import Icon from '../components/Icon'
 import ImageEditor from '../components/ImageEditor'
 import MultiImageUploader from '../components/MultiImageUploader'
 import BulkImageUpload from '../components/BulkImageUpload'
+import GalleryCard from '../components/cards/GalleryCard'
 import './AdminSets.css'
 import './AdminCardsScoped.css'
 import '../components/UniversalCardTable.css'
@@ -40,8 +41,17 @@ function AdminCards() {
   const [currentAssignedImages, setCurrentAssignedImages] = useState({ front: null, back: null })
   const [availableColors, setAvailableColors] = useState([])
   const [showBulkUpload, setShowBulkUpload] = useState(false)
+  const [viewMode, setViewMode] = useState(() => {
+    return localStorage.getItem('adminCardsViewMode') || 'table'
+  })
   const { addToast } = useToast()
   const imageUploaderRef = useRef(null)
+
+  // Persist view mode preference
+  const handleViewModeChange = (mode) => {
+    setViewMode(mode)
+    localStorage.setItem('adminCardsViewMode', mode)
+  }
 
   // Function to determine text color based on background brightness
   const getTextColor = (hexColor) => {
@@ -722,6 +732,22 @@ function AdminCards() {
               Bulk Upload
             </button>
           )}
+          <div className="admin-cards-view-toggle">
+            <button
+              className={`admin-cards-view-btn ${viewMode === 'table' ? 'active' : ''}`}
+              onClick={() => handleViewModeChange('table')}
+              title="Table view"
+            >
+              <Icon name="list" size={18} />
+            </button>
+            <button
+              className={`admin-cards-view-btn ${viewMode === 'gallery' ? 'active' : ''}`}
+              onClick={() => handleViewModeChange('gallery')}
+              title="Gallery view"
+            >
+              <Icon name="grid" size={18} />
+            </button>
+          </div>
           <button
             className="add-card-btn"
             onClick={handleAddCard}
@@ -743,120 +769,149 @@ function AdminCards() {
       </div>
 
       <div className="content-area">
-        {/* Cards Table */}
+        {/* Cards View - Table or Gallery */}
         {selectedSeries && (
           <div className="cards-list">
-            <div className="cards-table-container">
-              <table className="cards-table">
-                <thead>
-                  <tr>
-                    <th style={{width: '80px'}}>Sort</th>
-                    <th style={{width: '130px'}}>Card #</th>
-                    <th style={{width: '30%'}}>Player(s)</th>
-                    <th style={{width: '110px'}}>Print Run</th>
-                    <th style={{width: '120px'}}>Color</th>
-                    <th style={{width: '130px'}}>Attributes</th>
-                    <th style={{width: '50px'}} title="Has assigned image">Img</th>
-                    <th style={{width: 'auto'}}>Notes</th>
-                    <th style={{width: '60px'}}></th>
-                  </tr>
-                </thead>
-                <tbody>
+            {viewMode === 'gallery' ? (
+              /* Gallery View */
+              <div className="admin-cards-gallery-container">
+                <div className="admin-cards-gallery-grid">
                   {filteredCards.map(card => (
-                    <tr 
+                    <GalleryCard
                       key={card.card_id}
-                      onDoubleClick={() => handleEditCard(card)}
-                      title="Double-click to edit card"
-                    >
-                      <td className="sort-order-cell center">
-                        {card.sort_order || ''}
-                      </td>
-                      <td className="card-number-cell">
-                        {card.card_number}
-                      </td>
-                      <td className="player-cell">
-                        {card.card_player_teams && card.card_player_teams.map((playerTeam, index) => (
-                          <div key={index} className="player-row">
-                            <div 
-                              className="mini-team-circle"
-                              style={{ 
-                                '--primary-color': playerTeam.team.primary_color,
-                                '--secondary-color': playerTeam.team.secondary_color 
-                              }}
-                              title={playerTeam.team.name}
-                            >
-                              {playerTeam.team.abbreviation}
-                            </div>
-                            <span className="player-name">{playerTeam.player.name}</span>
-                            {card.is_rookie && <span className="rc-tag">RC</span>}
-                          </div>
-                        ))}
-                      </td>
-                      <td className="print-run-cell center">
-                        {card.print_run ? `/${card.print_run}` : ''}
-                      </td>
-                      <td className="color-cell">
-                        {card.color_rel?.color && (
-                          <span 
-                            className="color-tag" 
-                            style={{ 
-                              backgroundColor: card.color_rel.hex_color,
-                              color: getTextColor(card.color_rel.hex_color)
-                            }}
-                          >
-                            {card.color_rel.color}
-                          </span>
-                        )}
-                      </td>
-                      <td className="attributes-cell center">
-                        <div className="attribute-tags">
-                          {card.is_autograph && <span className="auto-tag">AUTO</span>}
-                          {card.is_relic && <span className="relic-tag">RELIC</span>}
-                          {card.is_short_print && <span className="sp-tag">SP</span>}
-                        </div>
-                      </td>
-                      <td className="image-indicator-cell center">
-                        {(card.reference_user_card || card.front_image_path || card.back_image_path) && (
-                          <Icon
-                            name="image"
-                            size={18}
-                            style={{ color: '#10b981' }}
-                            title={card.reference_user_card ? 'Card has community reference image' : 'Card has uploaded image'}
-                          />
-                        )}
-                      </td>
-                      <td className="notes-cell">
-                        {card.notes}
-                      </td>
-                      <td className="action-cell center">
-                        <button
-                          className="edit-btn"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleEditCard(card)
-                          }}
-                          title="Edit card"
-                        >
-                          <Icon name="edit" size={16} />
-                        </button>
-                      </td>
-                    </tr>
+                      card={card}
+                      onClick={() => handleEditCard(card)}
+                      imageUrl={card.front_image_path || null}
+                    />
                   ))}
-                </tbody>
-              </table>
-              {filteredCards.length === 0 && cards.length > 0 && (
-                <div className="empty-state">
-                  <Icon name="search" size={48} />
-                  <p>No cards found matching "{searchTerm}"</p>
                 </div>
-              )}
-              {cards.length === 0 && !loading && (
-                <div className="empty-state">
-                  <Icon name="layers" size={48} />
-                  <p>No cards found in this series</p>
-                </div>
-              )}
-            </div>
+                {filteredCards.length === 0 && cards.length > 0 && (
+                  <div className="empty-state">
+                    <Icon name="search" size={48} />
+                    <p>No cards found matching "{searchTerm}"</p>
+                  </div>
+                )}
+                {cards.length === 0 && !loading && (
+                  <div className="empty-state">
+                    <Icon name="layers" size={48} />
+                    <p>No cards found in this series</p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              /* Table View */
+              <div className="cards-table-container">
+                <table className="cards-table">
+                  <thead>
+                    <tr>
+                      <th style={{width: '80px'}}>Sort</th>
+                      <th style={{width: '130px'}}>Card #</th>
+                      <th style={{width: '30%'}}>Player(s)</th>
+                      <th style={{width: '110px'}}>Print Run</th>
+                      <th style={{width: '120px'}}>Color</th>
+                      <th style={{width: '130px'}}>Attributes</th>
+                      <th style={{width: '50px'}} title="Has assigned image">Img</th>
+                      <th style={{width: 'auto'}}>Notes</th>
+                      <th style={{width: '60px'}}></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredCards.map(card => (
+                      <tr
+                        key={card.card_id}
+                        onDoubleClick={() => handleEditCard(card)}
+                        title="Double-click to edit card"
+                      >
+                        <td className="sort-order-cell center">
+                          {card.sort_order || ''}
+                        </td>
+                        <td className="card-number-cell">
+                          {card.card_number}
+                        </td>
+                        <td className="player-cell">
+                          {card.card_player_teams && card.card_player_teams.map((playerTeam, index) => (
+                            <div key={index} className="player-row">
+                              <div
+                                className="mini-team-circle"
+                                style={{
+                                  '--primary-color': playerTeam.team.primary_color,
+                                  '--secondary-color': playerTeam.team.secondary_color
+                                }}
+                                title={playerTeam.team.name}
+                              >
+                                {playerTeam.team.abbreviation}
+                              </div>
+                              <span className="player-name">{playerTeam.player.name}</span>
+                              {card.is_rookie && <span className="rc-tag">RC</span>}
+                            </div>
+                          ))}
+                        </td>
+                        <td className="print-run-cell center">
+                          {card.print_run ? `/${card.print_run}` : ''}
+                        </td>
+                        <td className="color-cell">
+                          {card.color_rel?.color && (
+                            <span
+                              className="color-tag"
+                              style={{
+                                backgroundColor: card.color_rel.hex_color,
+                                color: getTextColor(card.color_rel.hex_color)
+                              }}
+                            >
+                              {card.color_rel.color}
+                            </span>
+                          )}
+                        </td>
+                        <td className="attributes-cell center">
+                          <div className="attribute-tags">
+                            {card.is_autograph && <span className="auto-tag">AUTO</span>}
+                            {card.is_relic && <span className="relic-tag">RELIC</span>}
+                            {card.is_short_print && <span className="sp-tag">SP</span>}
+                          </div>
+                        </td>
+                        <td className="image-indicator-cell center">
+                          {(card.reference_user_card || card.front_image_path || card.back_image_path) && (
+                            <Icon
+                              name="image"
+                              size={18}
+                              style={{ color: '#10b981' }}
+                              title={card.reference_user_card ? 'Card has community reference image' : 'Card has uploaded image'}
+                            />
+                          )}
+                        </td>
+                        <td className="notes-cell">
+                          {card.notes}
+                        </td>
+                        <td className="action-cell center">
+                          <button
+                            className="edit-btn"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleEditCard(card)
+                            }}
+                            title="Edit card"
+                          >
+                            <Icon name="edit" size={16} />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {filteredCards.length === 0 && cards.length > 0 && (
+                  <div className="empty-state">
+                    <Icon name="search" size={48} />
+                    <p>No cards found matching "{searchTerm}"</p>
+                  </div>
+                )}
+                {cards.length === 0 && !loading && (
+                  <div className="empty-state">
+                    <Icon name="layers" size={48} />
+                    <p>No cards found in this series</p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>

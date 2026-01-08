@@ -1,6 +1,77 @@
 /* Admin Cards Scoped Styles */
 /* Modal styling specifically for AdminCards component */
 
+/* View Toggle Buttons */
+.admin-cards-view-toggle {
+  display: flex;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.admin-cards-view-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 0.75rem;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.admin-cards-view-btn:hover {
+  color: white;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.admin-cards-view-btn.active {
+  background: #3b82f6;
+  color: white;
+}
+
+.admin-cards-view-btn:first-child {
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Gallery View Container */
+.admin-cards-gallery-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+}
+
+.admin-cards-gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+/* Responsive Gallery Grid */
+@media (max-width: 768px) {
+  .admin-cards-gallery-grid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 0.75rem;
+  }
+
+  .admin-cards-gallery-container {
+    padding: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-cards-gallery-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+  }
+
+  .admin-cards-gallery-container {
+    padding: 0.5rem;
+  }
+}
+
 /* Modal Overlay */
 .admin-cards-modal-overlay {
   position: fixed;
