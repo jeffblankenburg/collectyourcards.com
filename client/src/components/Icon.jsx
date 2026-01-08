@@ -121,7 +121,9 @@ import {
   Wifi,
   WifiOff,
   Images,
-  Undo2
+  Undo2,
+  RotateCw,
+  RotateCcw
 } from 'lucide-react'
 
 // Icon mapping for consistent usage across the app
@@ -301,7 +303,9 @@ const iconMap = {
   'maximize-2': Maximize2,
   'images': Images,
   'undo': Undo2,
-  'fullscreen': Maximize2
+  'fullscreen': Maximize2,
+  'rotate-cw': RotateCw,
+  'rotate-ccw': RotateCcw
 }
 
 // Custom RC tag icon for rookies - matches the RC tags used throughout the site

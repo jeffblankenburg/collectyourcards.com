@@ -141,6 +141,52 @@ const BulkImageUpload = ({
     setSelectedImageIds([])
   }
 
+  // Quick rotate an image in the grid (90 degrees)
+  const handleQuickRotate = async (imageId, direction) => {
+    const image = images.find(img => img.id === imageId)
+    if (!image) return
+
+    // Create a canvas to rotate the image
+    const img = new Image()
+    img.src = image.previewUrl
+
+    await new Promise((resolve) => {
+      img.onload = resolve
+    })
+
+    const canvas = document.createElement('canvas')
+    const ctx = canvas.getContext('2d')
+
+    // Swap dimensions for 90-degree rotation
+    canvas.width = img.height
+    canvas.height = img.width
+
+    // Rotate
+    ctx.translate(canvas.width / 2, canvas.height / 2)
+    ctx.rotate((direction === 'cw' ? 90 : -90) * Math.PI / 180)
+    ctx.drawImage(img, -img.width / 2, -img.height / 2)
+
+    // Convert to blob
+    canvas.toBlob((blob) => {
+      if (!blob) return
+
+      const newPreviewUrl = URL.createObjectURL(blob)
+      const rotatedFile = new File([blob], image.name, { type: 'image/jpeg' })
+
+      setImages(prev => prev.map(img => {
+        if (img.id === imageId) {
+          URL.revokeObjectURL(img.previewUrl)
+          return {
+            ...img,
+            file: rotatedFile,
+            previewUrl: newPreviewUrl
+          }
+        }
+        return img
+      }))
+    }, 'image/jpeg', 0.92)
+  }
+
   // Open image editor for a queued image
   const handleEditQueuedImage = (imageId) => {
     setEditingImageId(imageId)
@@ -365,37 +411,67 @@ const BulkImageUpload = ({
               </label>
             </div>
 
-            {/* Selection Preview */}
-            {selectedImages.length > 0 && (
-              <div className="bulk-upload-selection-preview">
-                <div className="bulk-upload-selection-images">
-                  {selectedImages.map((img, idx) => (
-                    <div key={img.id} className="bulk-upload-selection-item">
-                      <span className="bulk-upload-selection-label">
-                        {idx === 0 ? 'Front' : 'Back'}
-                      </span>
-                      <div className="bulk-upload-selection-image-wrapper">
-                        <img src={img.previewUrl} alt={img.name} />
-                        <button
-                          className="bulk-upload-edit-btn"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleEditQueuedImage(img.id)
-                          }}
-                          title="Edit image (rotate, crop)"
-                        >
-                          <Icon name="edit" size={14} />
-                        </button>
-                      </div>
+            {/* Selection Preview - Always visible */}
+            <div className="bulk-upload-selection-preview">
+              <div className="bulk-upload-selection-images">
+                {/* Front Image Slot */}
+                <div className="bulk-upload-selection-item">
+                  <span className="bulk-upload-selection-label">Front</span>
+                  {selectedImages[0] ? (
+                    <div className="bulk-upload-selection-image-wrapper">
+                      <img src={selectedImages[0].previewUrl} alt={selectedImages[0].name} />
+                      <button
+                        className="bulk-upload-edit-btn"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleEditQueuedImage(selectedImages[0].id)
+                        }}
+                        title="Edit image (rotate, crop)"
+                      >
+                        <Icon name="edit" size={14} />
+                      </button>
                     </div>
-                  ))}
+                  ) : (
+                    <div className="bulk-upload-selection-placeholder">
+                      <Icon name="image" size={24} />
+                      <span>Select image</span>
+                    </div>
+                  )}
                 </div>
-                <button className="bulk-upload-clear-selection" onClick={clearSelection}>
-                  <Icon name="x" size={14} />
-                  Clear
-                </button>
+                {/* Back Image Slot */}
+                <div className="bulk-upload-selection-item">
+                  <span className="bulk-upload-selection-label">Back</span>
+                  {selectedImages[1] ? (
+                    <div className="bulk-upload-selection-image-wrapper">
+                      <img src={selectedImages[1].previewUrl} alt={selectedImages[1].name} />
+                      <button
+                        className="bulk-upload-edit-btn"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleEditQueuedImage(selectedImages[1].id)
+                        }}
+                        title="Edit image (rotate, crop)"
+                      >
+                        <Icon name="edit" size={14} />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="bulk-upload-selection-placeholder">
+                      <Icon name="image" size={24} />
+                      <span>Select image</span>
+                    </div>
+                  )}
+                </div>
               </div>
-            )}
+              <button
+                className="bulk-upload-clear-selection"
+                onClick={clearSelection}
+                disabled={selectedImages.length === 0}
+              >
+                <Icon name="x" size={14} />
+                Clear
+              </button>
+            </div>
 
             {/* Image Grid */}
             {images.length === 0 ? (
@@ -413,12 +489,32 @@ const BulkImageUpload = ({
                     onClick={() => handleImageClick(img.id)}
                   >
                     <img src={img.previewUrl} alt={img.name} />
-                    <span className="bulk-upload-image-index">{index + 1}</span>
                     {selectedImageIds.includes(img.id) && (
                       <span className="bulk-upload-image-selection-badge">
                         {selectedImageIds.indexOf(img.id) === 0 ? 'F' : 'B'}
                       </span>
                     )}
+                    {/* Rotate buttons - appear on hover in corners */}
+                    <button
+                      className="bulk-upload-rotate-btn-left"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleQuickRotate(img.id, 'ccw')
+                      }}
+                      title="Rotate counter-clockwise"
+                    >
+                      <Icon name="rotate-ccw" size={14} />
+                    </button>
+                    <button
+                      className="bulk-upload-rotate-btn-right"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleQuickRotate(img.id, 'cw')
+                      }}
+                      title="Rotate clockwise"
+                    >
+                      <Icon name="rotate-cw" size={14} />
+                    </button>
                   </div>
                 ))}
               </div>
