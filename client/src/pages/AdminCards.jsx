@@ -497,25 +497,38 @@ function AdminCards() {
         // Update existing card
         const response = await axios.put(`/api/admin/cards/${editingCard.card_id}`, cardData)
 
-        // Also save any staged images in the uploader
+        // Save any staged images FIRST (this updates state with new image paths)
         if (imageUploaderRef.current?.hasStagedImages()) {
           await imageUploaderRef.current.saveStagedImages()
         }
 
         // Update the card in state instead of reloading entire table
-        // Preserve current image paths (may have been updated while modal was open)
-        const currentCardInState = cards.find(c => c.card_id === editingCard.card_id)
-        const updatedCard = response.data.card || {
-          ...editingCard,
-          ...cardData,
-          card_player_teams: cardPlayers,
-          // Preserve image paths from current state (not original editingCard which may be stale)
-          front_image_path: currentCardInState?.front_image_path || editingCard.front_image_path,
-          back_image_path: currentCardInState?.back_image_path || editingCard.back_image_path,
-          reference_user_card: currentCardInState?.reference_user_card || editingCard.reference_user_card
-        }
-        setCards(prev => prev.map(c => c.card_id === editingCard.card_id ? updatedCard : c))
-        setFilteredCards(prev => prev.map(c => c.card_id === editingCard.card_id ? updatedCard : c))
+        // Use a function to get the LATEST state (after image upload may have updated it)
+        setCards(prev => {
+          const currentCardInState = prev.find(c => c.card_id === editingCard.card_id)
+          const updatedCard = response.data.card || {
+            ...editingCard,
+            ...cardData,
+            card_player_teams: cardPlayers,
+            // Preserve image paths from current state (not original editingCard which may be stale)
+            front_image_path: currentCardInState?.front_image_path || editingCard.front_image_path,
+            back_image_path: currentCardInState?.back_image_path || editingCard.back_image_path,
+            reference_user_card: currentCardInState?.reference_user_card || editingCard.reference_user_card
+          }
+          return prev.map(c => c.card_id === editingCard.card_id ? updatedCard : c)
+        })
+        setFilteredCards(prev => {
+          const currentCardInState = prev.find(c => c.card_id === editingCard.card_id)
+          const updatedCard = response.data.card || {
+            ...editingCard,
+            ...cardData,
+            card_player_teams: cardPlayers,
+            front_image_path: currentCardInState?.front_image_path || editingCard.front_image_path,
+            back_image_path: currentCardInState?.back_image_path || editingCard.back_image_path,
+            reference_user_card: currentCardInState?.reference_user_card || editingCard.reference_user_card
+          }
+          return prev.map(c => c.card_id === editingCard.card_id ? updatedCard : c)
+        })
 
         addToast('Card updated successfully', 'success')
       } else {
