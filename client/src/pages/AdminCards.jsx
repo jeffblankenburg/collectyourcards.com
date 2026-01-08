@@ -5,6 +5,7 @@ import { useToast } from '../contexts/ToastContext'
 import Icon from '../components/Icon'
 import ImageEditor from '../components/ImageEditor'
 import MultiImageUploader from '../components/MultiImageUploader'
+import BulkImageUpload from '../components/BulkImageUpload'
 import './AdminSets.css'
 import './AdminCardsScoped.css'
 import '../components/UniversalCardTable.css'
@@ -38,6 +39,7 @@ function AdminCards() {
   const [editingImage, setEditingImage] = useState(null) // { imageUrl, side: 'front'|'back' }
   const [currentAssignedImages, setCurrentAssignedImages] = useState({ front: null, back: null })
   const [availableColors, setAvailableColors] = useState([])
+  const [showBulkUpload, setShowBulkUpload] = useState(false)
   const { addToast } = useToast()
   const imageUploaderRef = useRef(null)
 
@@ -710,6 +712,16 @@ function AdminCards() {
         </div>
         
         <div className="admin-controls">
+          {selectedSeries && (
+            <button
+              className="bulk-upload-btn"
+              onClick={() => setShowBulkUpload(true)}
+              title="Bulk image upload"
+            >
+              <Icon name="images" size={18} />
+              Bulk Upload
+            </button>
+          )}
           <button
             className="add-card-btn"
             onClick={handleAddCard}
@@ -1220,6 +1232,16 @@ function AdminCards() {
         onSave={handleImageEditorSave}
         title={`Edit ${editingImage?.side === 'front' ? 'Front' : 'Back'} Image`}
       />
+
+      {/* Bulk Image Upload Mode */}
+      {showBulkUpload && selectedSeries && (
+        <BulkImageUpload
+          cards={filteredCards}
+          seriesName={selectedSeries.name}
+          onClose={() => setShowBulkUpload(false)}
+          onCardUpdate={updateCardInState}
+        />
+      )}
 
     </div>
   )

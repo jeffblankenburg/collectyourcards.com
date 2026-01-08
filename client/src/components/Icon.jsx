@@ -119,7 +119,9 @@ import {
   Calculator,
   Maximize2,
   Wifi,
-  WifiOff
+  WifiOff,
+  Images,
+  Undo2
 } from 'lucide-react'
 
 // Icon mapping for consistent usage across the app
@@ -297,6 +299,8 @@ const iconMap = {
   'calculator': Calculator,
   'maximize': Maximize2,
   'maximize-2': Maximize2,
+  'images': Images,
+  'undo': Undo2,
   'fullscreen': Maximize2
 }
 
