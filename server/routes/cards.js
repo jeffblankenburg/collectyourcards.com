@@ -9,6 +9,7 @@ const {
   validateNumericArray,
   escapeString
 } = require('../utils/sql-security')
+const { getAllCuratedCardIds } = require('../config/carousel-cards')
 
 // ============================================================================
 // LRU CACHE for search results
@@ -679,20 +680,32 @@ router.get('/rainbow', optionalAuthMiddleware, async (req, res) => {
   }
 })
 
-// GET /api/cards/carousel - Get random card images for home page carousel
+// GET /api/cards/carousel - Get curated card images for home page carousel
+// Uses hand-picked notable cards from server/config/carousel-cards.js
 router.get('/carousel', async (req, res) => {
   try {
-    // Prevent caching - we want fresh random images every time
-    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private')
-    res.setHeader('Pragma', 'no-cache')
-    res.setHeader('Expires', '0')
+    // Cache for 5 minutes - curated cards don't change often
+    res.setHeader('Cache-Control', 'public, max-age=300')
 
     const limit = parseInt(req.query.limit) || 20
+    const curatedCardIds = getAllCuratedCardIds()
 
-    // Get random cards with optimized front images
-    // Uses card.front_image_path which contains web-optimized versions
+    if (curatedCardIds.length === 0) {
+      return res.json({
+        success: true,
+        cards: [],
+        total: 0
+      })
+    }
+
+    // Shuffle the curated card IDs for variety
+    const shuffledIds = [...curatedCardIds].sort(() => Math.random() - 0.5)
+    const selectedIds = shuffledIds.slice(0, limit)
+    const idList = selectedIds.join(',')
+
+    // Fetch the curated cards by ID
     const query = `
-      SELECT TOP ${limit}
+      SELECT
         c.front_image_path as photo_url,
         c.card_id,
         c.card_number,
@@ -709,9 +722,8 @@ router.get('/carousel', async (req, res) => {
       LEFT JOIN card_player_team cpt ON c.card_id = cpt.card
       LEFT JOIN player_team pt ON cpt.player_team = pt.player_team_id
       LEFT JOIN player p ON pt.player = p.player_id
-      WHERE c.front_image_path IS NOT NULL
-        AND p.player_id IS NOT NULL
-      ORDER BY NEWID()
+      WHERE c.card_id IN (${idList})
+        AND c.front_image_path IS NOT NULL
     `
 
     const results = await prisma.$queryRawUnsafe(query)
@@ -740,10 +752,14 @@ router.get('/carousel', async (req, res) => {
       }
     })
 
+    // Shuffle the results to randomize display order
+    const shuffledCards = carouselCards.sort(() => Math.random() - 0.5)
+
     res.json({
       success: true,
-      cards: carouselCards,
-      total: carouselCards.length
+      cards: shuffledCards,
+      total: shuffledCards.length,
+      curatedTotal: curatedCardIds.length
     })
 
   } catch (error) {
