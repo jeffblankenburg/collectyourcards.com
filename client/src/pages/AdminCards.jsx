@@ -40,6 +40,7 @@ function AdminCards() {
   const [availableColors, setAvailableColors] = useState([])
   const { addToast } = useToast()
   const imageUploaderRef = useRef(null)
+  const scrollPositionRef = useRef(0)
 
   // Function to determine text color based on background brightness
   const getTextColor = (hexColor) => {
@@ -173,14 +174,26 @@ function AdminCards() {
     }
   }
 
-  const loadCardsForSeries = async (seriesId) => {
+  const loadCardsForSeries = async (seriesId, preserveScroll = false) => {
     try {
+      // Save scroll position if preserving
+      if (preserveScroll) {
+        scrollPositionRef.current = window.scrollY
+      }
+
       setLoading(true)
       // Use the working cards API with a high limit to get all cards
       const response = await axios.get(`/api/cards?series_id=${seriesId}&limit=10000`)
       const cardsData = response.data.cards || []
       setCards(cardsData)
       setFilteredCards(cardsData)
+
+      // Restore scroll position after state update
+      if (preserveScroll) {
+        requestAnimationFrame(() => {
+          window.scrollTo(0, scrollPositionRef.current)
+        })
+      }
     } catch (error) {
       console.error('Error loading cards:', error)
       addToast(`Failed to load cards: ${error.response?.data?.message || error.message}`, 'error')
@@ -308,8 +321,8 @@ function AdminCards() {
       const message = userCardId ? 'Reference image updated successfully' : 'Reference image cleared successfully'
       addToast(message, 'success')
 
-      // Reload cards list in background to update the main table
-      loadCardsForSeries(selectedSeries.series_id)
+      // Reload cards list in background to update the main table (preserve scroll)
+      loadCardsForSeries(selectedSeries.series_id, true)
     } catch (error) {
       console.error('Error updating reference image:', error)
       addToast(`Failed to update reference image: ${error.response?.data?.message || error.message}`, 'error')
@@ -353,8 +366,8 @@ function AdminCards() {
 
       addToast(`${editingImage.side === 'front' ? 'Front' : 'Back'} image updated successfully!`, 'success')
 
-      // Reload cards list in background to update the main table
-      loadCardsForSeries(selectedSeries.series_id)
+      // Reload cards list in background to update the main table (preserve scroll)
+      loadCardsForSeries(selectedSeries.series_id, true)
 
       handleImageEditorClose()
     } catch (error) {
@@ -395,8 +408,8 @@ function AdminCards() {
       const uploadedCount = (images.front ? 1 : 0) + (images.back ? 1 : 0)
       addToast(`${uploadedCount} image${uploadedCount > 1 ? 's' : ''} uploaded successfully!`, 'success')
 
-      // Reload cards list to update the main table
-      loadCardsForSeries(selectedSeries.series_id)
+      // Reload cards list to update the main table (preserve scroll)
+      loadCardsForSeries(selectedSeries.series_id, true)
     } catch (error) {
       console.error('Error uploading images:', error)
       addToast(`Failed to upload images: ${error.response?.data?.message || error.message}`, 'error')
@@ -418,8 +431,8 @@ function AdminCards() {
 
       addToast(`${side === 'front' ? 'Front' : 'Back'} image deleted successfully`, 'success')
 
-      // Reload cards list to update the main table
-      loadCardsForSeries(selectedSeries.series_id)
+      // Reload cards list to update the main table (preserve scroll)
+      loadCardsForSeries(selectedSeries.series_id, true)
     } catch (error) {
       console.error('Error deleting image:', error)
       addToast(`Failed to delete image: ${error.response?.data?.message || error.message}`, 'error')
@@ -490,8 +503,8 @@ function AdminCards() {
         addToast('Card created successfully', 'success')
       }
 
-      // Reload cards
-      await loadCardsForSeries(selectedSeries.series_id)
+      // Reload cards (preserve scroll position)
+      await loadCardsForSeries(selectedSeries.series_id, true)
       handleCloseModal()
 
     } catch (error) {
