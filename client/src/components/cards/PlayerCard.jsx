@@ -3,16 +3,36 @@ import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import Icon from '../Icon'
-import EditPlayerModal from '../modals/EditPlayerModal'
+import SuggestPlayerEditModal from '../modals/SuggestPlayerEditModal'
 import './PlayerCard.css'
 
-function PlayerCard({ player, showBadge = false, onTeamClick = null, customOnClick = null }) {
+function PlayerCard({ player: initialPlayer, showBadge = false, onTeamClick = null, customOnClick = null, onDeleteSuccess = null }) {
   const navigate = useNavigate()
   const { user } = useAuth()
   const [showEditModal, setShowEditModal] = useState(false)
-  
-  // Check if user is admin
+  const [player, setPlayer] = useState(initialPlayer)
+  const [isDeleted, setIsDeleted] = useState(false)
+
+  // Check if user is authenticated and if admin
+  const isAuthenticated = !!user
   const isAdmin = user && ['admin', 'superadmin', 'data_admin'].includes(user.role)
+
+  const handlePlayerUpdated = (updatedPlayer) => {
+    setPlayer(updatedPlayer)
+  }
+
+  const handleDeleteSuccess = (playerId) => {
+    setIsDeleted(true)
+    setShowEditModal(false)
+    if (onDeleteSuccess) {
+      onDeleteSuccess(playerId)
+    }
+  }
+
+  // Don't render if player was deleted
+  if (isDeleted) {
+    return null
+  }
 
   const handlePlayerClick = () => {
     if (customOnClick) {
@@ -111,16 +131,15 @@ function PlayerCard({ player, showBadge = false, onTeamClick = null, customOnCli
         )}
       </div>
       
-      {isAdmin && (
-        <button 
-          className="playercard-admin-edit-btn"
+      {isAuthenticated && (
+        <button
+          className="playercard-edit-btn"
           onClick={(e) => {
             e.preventDefault()
             e.stopPropagation()
-            console.log('Edit button clicked for player:', player)
             setShowEditModal(true)
           }}
-          title="Edit player (Admin)"
+          title={isAdmin ? "Edit player" : "Suggest changes to this player"}
         >
           <Icon name="edit" size={14} />
         </button>
@@ -129,22 +148,14 @@ function PlayerCard({ player, showBadge = false, onTeamClick = null, customOnCli
     
     {/* Edit Modal - Rendered as Portal */}
     {showEditModal && createPortal(
-      <>
-        {console.log('Rendering EditPlayerModal for:', player)}
-        <EditPlayerModal
-          player={player}
-          isOpen={showEditModal}
-          onClose={() => {
-            console.log('Modal close called')
-            setShowEditModal(false)
-          }}
-          onSave={() => {
-            console.log('Modal save called')
-            setShowEditModal(false)
-            // Optionally reload data here if needed
-          }}
-        />
-      </>,
+      <SuggestPlayerEditModal
+        player={player}
+        teams={player.teams || []}
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        onSuccess={handlePlayerUpdated}
+        onDeleteSuccess={handleDeleteSuccess}
+      />,
       document.body
     )}
   </>

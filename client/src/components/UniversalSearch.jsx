@@ -397,6 +397,9 @@ function UniversalSearch({ className = '' }) {
               <div className="result-content">
                 <div className="result-title">
                   {highlightQuery(getResultTitle(result), query)}
+                  {result.type === 'player' && result.nick_name && (
+                    <span className="result-nickname">"{result.nick_name}"</span>
+                  )}
                   {result.type === 'player' && result.teams && result.teams.length > 0 && (
                     <div className="result-teams-inline">
                       {result.teams.map(team => (

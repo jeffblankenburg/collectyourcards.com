@@ -42,6 +42,19 @@ function UserNavigation() {
           ))}
         </div>
 
+        {/* Center: Add a Card button (authenticated only) */}
+        {isAuthenticated && (
+          <div className="user-nav-items center">
+            <Link
+              to="/add-card"
+              className={`user-nav-item add-card-btn ${location.pathname === '/add-card' ? 'active' : ''}`}
+            >
+              <Icon name="plus" size={16} />
+              <span>Add a Card</span>
+            </Link>
+          </div>
+        )}
+
         {/* Right side: Authenticated user links */}
         {isAuthenticated && (
           <div className="user-nav-items right">

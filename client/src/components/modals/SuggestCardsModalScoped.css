@@ -152,6 +152,143 @@
   min-height: 60px;
 }
 
+.suggest-cards-form-row select {
+  width: 100%;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: #ffffff;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.suggest-cards-form-row select:focus {
+  outline: none;
+  border-color: #22c55e;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.suggest-cards-form-row select option {
+  background: #1e293b;
+  color: #ffffff;
+}
+
+/* Custom Color Dropdown */
+.suggest-cards-color-dropdown {
+  position: relative;
+}
+
+.suggest-cards-color-trigger {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: #ffffff;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+}
+
+.suggest-cards-color-trigger:hover:not(:disabled) {
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.suggest-cards-color-trigger.open {
+  border-color: #22c55e;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.suggest-cards-color-trigger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.suggest-cards-color-trigger svg {
+  margin-left: auto;
+  color: #6b7280;
+}
+
+.suggest-cards-color-placeholder {
+  color: #6b7280;
+}
+
+.suggest-cards-color-swatch {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  flex-shrink: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.suggest-cards-color-swatch.none {
+  background: rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
+}
+
+.suggest-cards-color-name {
+  flex: 1;
+}
+
+.suggest-cards-color-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: #334155;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  max-height: 280px;
+  overflow-y: auto;
+  z-index: 100;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+
+.suggest-cards-color-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  color: #d1d5db;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background 0.15s;
+  text-align: left;
+}
+
+.suggest-cards-color-option:last-child {
+  border-bottom: none;
+}
+
+.suggest-cards-color-option:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.suggest-cards-color-option.selected {
+  background: rgba(34, 197, 94, 0.15);
+  color: #4ade80;
+}
+
+.suggest-cards-color-option.selected .suggest-cards-color-swatch {
+  border-color: #4ade80;
+  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.3);
+}
+
 .suggest-cards-bulk-textarea {
   font-family: 'Monaco', 'Menlo', monospace;
   font-size: 0.85rem !important;
@@ -231,6 +368,15 @@
   background: rgba(34, 197, 94, 0.15);
   border: 1px solid rgba(34, 197, 94, 0.3);
   border-radius: 8px;
+}
+
+.suggest-cards-selected-series.locked {
+  background: rgba(59, 130, 246, 0.1);
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.suggest-cards-selected-series.locked .suggest-cards-selected-name {
+  color: #60a5fa;
 }
 
 .suggest-cards-selected-info {

@@ -6,16 +6,6 @@ import { useAuth } from '../../contexts/AuthContext'
 import Icon from '../Icon'
 import './BulkCardModal.css'
 
-// Function to generate 4-character random code (matches AddCardModal)
-const generateRandomCode = () => {
-  const chars = '0123456789abcdefghijkmnopqrstuvwxyzABCDEFGHJKMNOPQRSTUVWXYZ'
-  let result = ''
-  for (let i = 0; i < 4; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length))
-  }
-  return result
-}
-
 function BulkCardModal({
   isOpen,
   onClose,
@@ -142,19 +132,15 @@ function BulkCardModal({
     try {
       setIsSubmitting(true)
 
-      // Add each selected card to collection with a unique random_code
-      const promises = selectedCardIds.map(cardId => {
-        return axios.post('/api/user/cards', {
-          card_id: cardId,
-          random_code: generateRandomCode(),
-          user_location: selectedLocation ? parseInt(selectedLocation) : null,
-          notes: `Added via bulk selection from ${series.name}`
-        })
+      // Batch add all selected cards in a single request
+      const response = await axios.post('/api/user/cards/bulk', {
+        card_ids: selectedCardIds,
+        user_location: selectedLocation ? parseInt(selectedLocation) : null,
+        notes: `Added via bulk selection from ${series.name}`
       })
 
-      await Promise.all(promises)
-
-      addToast(`Successfully added ${selectedCardIds.length} cards to your collection`, 'success')
+      const { added } = response.data
+      addToast(`Successfully added ${added} cards to your collection`, 'success')
       onComplete?.()
       onClose()
     } catch (error) {

@@ -6,8 +6,8 @@ import './SetCard.css'
 
 function SetCard({ set, showBadge = false, customOnClick = null, onEditClick = null }) {
   const navigate = useNavigate()
-  const { user } = useAuth()
-  
+  const { user, isAuthenticated } = useAuth()
+
   // Check if user is admin
   const isAdmin = user && ['admin', 'superadmin', 'data_admin'].includes(user.role)
 
@@ -88,19 +88,17 @@ function SetCard({ set, showBadge = false, customOnClick = null, onEditClick = n
         </div>
       </div>
       
-      {/* Admin Edit Button */}
-      {isAdmin && (
-        <button 
-          className="setcard-admin-edit-btn" 
+      {/* Edit Button - shown for all authenticated users */}
+      {isAuthenticated && (
+        <button
+          className="setcard-edit-btn"
           onClick={(e) => {
             e.stopPropagation()
             if (onEditClick) {
               onEditClick(set)
-            } else {
-              navigate(`/admin/sets?search=${encodeURIComponent(set.name)}`)
             }
           }}
-          title="Edit set (Admin)"
+          title={isAdmin ? 'Edit set' : 'Suggest set update'}
         >
           <Icon name="edit" size={14} />
         </button>

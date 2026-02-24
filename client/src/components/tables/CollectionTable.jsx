@@ -229,6 +229,7 @@ const CollectionTable = ({
       if (card.purchase_price && String(card.purchase_price).includes(query)) return true
       if (card.estimated_value && String(card.estimated_value).includes(query)) return true
       if (card.current_value && String(card.current_value).includes(query)) return true
+      if (card.market_price && String(card.market_price).includes(query)) return true
       
       // Search in location
       if (card.location_name?.toLowerCase().includes(query)) return true
@@ -282,10 +283,15 @@ const CollectionTable = ({
         aVal = a[sortField] ? 1 : 0
         bVal = b[sortField] ? 1 : 0
         return sortDirection === 'asc' ? bVal - aVal : aVal - bVal
-      } else if (['purchase_price', 'estimated_value', 'current_value', 'grade', 'serial_number', 'photo_count'].includes(sortField)) {
-        // Numeric sorting
-        aVal = parseFloat(aVal) || 0
-        bVal = parseFloat(bVal) || 0
+      } else if (['purchase_price', 'estimated_value', 'current_value', 'market_price', 'grade', 'serial_number', 'photo_count'].includes(sortField)) {
+        // Numeric sorting - for current_value, prefer market_price when available
+        if (sortField === 'current_value') {
+          aVal = parseFloat(a.market_price || a.current_value) || 0
+          bVal = parseFloat(b.market_price || b.current_value) || 0
+        } else {
+          aVal = parseFloat(aVal) || 0
+          bVal = parseFloat(bVal) || 0
+        }
         return sortDirection === 'asc' ? aVal - bVal : bVal - aVal
       } else if (sortField === 'card_number') {
         // Smart card number sorting
@@ -483,10 +489,10 @@ const CollectionTable = ({
               <span className="collection-mobile-stat-value">{formatCurrency(card.estimated_value)}</span>
             </div>
           )}
-          {card.current_value != null && card.current_value !== 0 && (
+          {(card.market_price != null || (card.current_value != null && card.current_value !== 0)) && (
             <div className="collection-mobile-stat">
               <span className="collection-mobile-stat-label">Current</span>
-              <span className="collection-mobile-stat-value">{formatCurrency(card.current_value)}</span>
+              <span className="collection-mobile-stat-value">{formatCurrency(card.market_price || card.current_value)}</span>
             </div>
           )}
           {card.grade && (
@@ -592,7 +598,7 @@ const CollectionTable = ({
             `"${sp}"`,
             `"${card.purchase_price ? formatCurrency(card.purchase_price) : ''}"`,
             `"${card.estimated_value ? formatCurrency(card.estimated_value) : ''}"`,
-            `"${card.current_value ? formatCurrency(card.current_value) : ''}"`,
+            `"${card.market_price ? formatCurrency(card.market_price) : (card.current_value ? formatCurrency(card.current_value) : '')}"`,
             `"${card.location_name || ''}"`,
             `"${formatDateAdded(card.date_added)}"`,
             `"${grade}"`,
@@ -1151,7 +1157,13 @@ const CollectionTable = ({
                   )}
                 </td>
                 <td className="current-value-cell">
-                  {formatCurrency(card.current_value)}
+                  {card.market_price ? (
+                    <span className="collection-market-price" title={card.market_price_updated ? `Updated: ${new Date(card.market_price_updated).toLocaleDateString()}` : 'Market price from SportsCardsPro'}>
+                      {formatCurrency(card.market_price)}
+                    </span>
+                  ) : (
+                    formatCurrency(card.current_value)
+                  )}
                 </td>
                 <td className="location-cell">
                   {card.location_name && (

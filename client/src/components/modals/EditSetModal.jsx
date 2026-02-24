@@ -1,18 +1,22 @@
 import React, { useState, useEffect } from 'react'
 import axios from 'axios'
+import { useAuth } from '../../contexts/AuthContext'
 import { useToast } from '../../contexts/ToastContext'
 import Icon from '../Icon'
 import './EditSetModal.css'
 
-function EditSetModal({ 
-  isOpen, 
-  onClose, 
-  set, 
-  organizations = [], 
-  manufacturers = [], 
-  onSaveSuccess 
+function EditSetModal({
+  isOpen,
+  onClose,
+  set,
+  organizations = [],
+  manufacturers = [],
+  onSaveSuccess,
+  onDeleteSuccess
 }) {
+  const { user } = useAuth()
   const { addToast } = useToast()
+  const isSuperAdmin = user?.role === 'superadmin'
   const [editForm, setEditForm] = useState({
     name: '',
     year: '',
@@ -24,6 +28,9 @@ function EditSetModal({
   const [saving, setSaving] = useState(false)
   const [selectedFile, setSelectedFile] = useState(null)
   const [uploadingThumbnail, setUploadingThumbnail] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [deleteConfirmText, setDeleteConfirmText] = useState('')
+  const [deleting, setDeleting] = useState(false)
 
   // Initialize form when modal opens
   useEffect(() => {
@@ -193,7 +200,33 @@ function EditSetModal({
     setSelectedFile(null)
     setUploadingThumbnail(false)
     setSaving(false)
+    setShowDeleteConfirm(false)
+    setDeleteConfirmText('')
     onClose()
+  }
+
+  const handleDeleteClick = () => {
+    setShowDeleteConfirm(true)
+    setDeleteConfirmText('')
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!set || deleteConfirmText !== 'DELETE') return
+
+    try {
+      setDeleting(true)
+      await axios.delete(`/api/admin/sets/${set.set_id}`)
+      addToast(`Set "${set.name}" has been permanently deleted`, 'success')
+      handleClose()
+      if (onDeleteSuccess) {
+        onDeleteSuccess(set.set_id)
+      }
+    } catch (error) {
+      console.error('Error deleting set:', error)
+      addToast(`Failed to delete set: ${error.response?.data?.message || error.message}`, 'error')
+    } finally {
+      setDeleting(false)
+    }
   }
 
   if (!isOpen) return null
@@ -329,27 +362,103 @@ function EditSetModal({
           </div>
         </div>
 
+        {/* Delete Confirmation Section - Superadmin Only */}
+        {set && isSuperAdmin && showDeleteConfirm && (
+          <div className="edit-set-delete-section">
+            <div className="edit-set-delete-warning">
+              <Icon name="alert-triangle" size={24} />
+              <div className="edit-set-delete-warning-content">
+                <h4>DANGER: Permanent Deletion</h4>
+                <p>
+                  You are about to <strong>permanently delete</strong> the set "{set.name}" and ALL of its data:
+                </p>
+                <ul>
+                  <li>All series within this set</li>
+                  <li>All cards within those series</li>
+                  <li>All user collection data for these cards</li>
+                  <li>All images and related data</li>
+                </ul>
+                <p className="edit-set-delete-irreversible">
+                  This action is <strong>IRREVERSIBLE</strong>. There is no undo.
+                </p>
+              </div>
+            </div>
+            <div className="edit-set-delete-confirm-input">
+              <label>Type DELETE to confirm:</label>
+              <input
+                type="text"
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value.toUpperCase())}
+                placeholder="Type DELETE"
+                autoComplete="off"
+              />
+            </div>
+            <div className="edit-set-delete-actions">
+              <button
+                className="edit-set-delete-cancel"
+                onClick={() => {
+                  setShowDeleteConfirm(false)
+                  setDeleteConfirmText('')
+                }}
+                disabled={deleting}
+              >
+                Cancel
+              </button>
+              <button
+                className="edit-set-delete-confirm"
+                onClick={handleDeleteConfirm}
+                disabled={deleteConfirmText !== 'DELETE' || deleting}
+              >
+                {deleting ? (
+                  <>
+                    <div className="edit-set-spinner"></div>
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <Icon name="trash-2" size={16} />
+                    Permanently Delete Set
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="edit-set-actions">
-          <button className="edit-set-cancel" onClick={handleClose} disabled={saving}>
-            Cancel
-          </button>
-          <button
-            className="edit-set-save"
-            onClick={handleSave}
-            disabled={saving}
-          >
-            {saving ? (
-              <>
-                <div className="edit-set-spinner"></div>
-                Saving...
-              </>
-            ) : (
-              <>
-                <Icon name="check" size={16} />
-                {set ? 'Save Changes' : 'Create Set'}
-              </>
-            )}
-          </button>
+          {set && isSuperAdmin && !showDeleteConfirm && (
+            <button
+              className="edit-set-delete-btn"
+              onClick={handleDeleteClick}
+              disabled={saving}
+              type="button"
+            >
+              <Icon name="trash-2" size={16} />
+              Delete Set
+            </button>
+          )}
+          <div className="edit-set-actions-right">
+            <button className="edit-set-cancel" onClick={handleClose} disabled={saving || deleting}>
+              Cancel
+            </button>
+            <button
+              className="edit-set-save"
+              onClick={handleSave}
+              disabled={saving || showDeleteConfirm}
+            >
+              {saving ? (
+                <>
+                  <div className="edit-set-spinner"></div>
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Icon name="check" size={16} />
+                  {set ? 'Save Changes' : 'Create Set'}
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </div>
     </div>

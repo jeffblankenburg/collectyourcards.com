@@ -545,3 +545,182 @@
     padding: 1rem;
   }
 }
+
+/* Delete Section - Extreme Warnings */
+.edit-player-delete-section {
+  margin: 0 1.5rem 1rem;
+  padding: 1.25rem;
+  background: rgba(239, 68, 68, 0.1);
+  border: 2px solid rgba(239, 68, 68, 0.4);
+  border-radius: 8px;
+}
+
+.edit-player-delete-warning {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.edit-player-delete-warning > svg {
+  color: #ef4444;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.edit-player-delete-warning-content h4 {
+  margin: 0 0 0.75rem 0;
+  color: #ef4444;
+  font-size: 1.1rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.edit-player-delete-warning-content p {
+  margin: 0 0 0.75rem 0;
+  color: #fca5a5;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.edit-player-delete-warning-content ul {
+  margin: 0 0 0.75rem 0;
+  padding-left: 1.25rem;
+  color: #fca5a5;
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+
+.edit-player-delete-warning-content li {
+  margin-bottom: 0.25rem;
+}
+
+.edit-player-delete-irreversible {
+  color: #fef2f2 !important;
+  background: rgba(239, 68, 68, 0.3);
+  padding: 0.75rem;
+  border-radius: 4px;
+  margin-bottom: 0 !important;
+  text-align: center;
+  font-weight: 600;
+}
+
+.edit-player-delete-confirm-input {
+  margin-bottom: 1rem;
+}
+
+.edit-player-delete-confirm-input label {
+  display: block;
+  color: #fca5a5;
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.edit-player-delete-confirm-input input {
+  width: 100%;
+  padding: 0.75rem;
+  background: rgba(0, 0, 0, 0.3);
+  border: 2px solid rgba(239, 68, 68, 0.4);
+  border-radius: 6px;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-align: center;
+}
+
+.edit-player-delete-confirm-input input:focus {
+  outline: none;
+  border-color: #ef4444;
+}
+
+.edit-player-delete-confirm-input input::placeholder {
+  color: #94a3b8;
+  font-weight: 400;
+  letter-spacing: normal;
+}
+
+.edit-player-delete-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
+.edit-player-delete-cancel {
+  padding: 0.625rem 1.25rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  color: #cbd5e1;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.edit-player-delete-cancel:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.15);
+  color: #f1f5f9;
+}
+
+.edit-player-delete-confirm {
+  padding: 0.625rem 1.25rem;
+  background: #dc2626;
+  border: none;
+  border-radius: 6px;
+  color: white;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.edit-player-delete-confirm:hover:not(:disabled) {
+  background: #b91c1c;
+}
+
+.edit-player-delete-confirm:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Updated Modal Actions for delete button */
+.edit-player-modal .modal-actions {
+  justify-content: space-between;
+  align-items: center;
+}
+
+.edit-player-modal .modal-actions-right {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.edit-player-modal .delete-btn {
+  padding: 0.625rem 1rem;
+  background: transparent;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  border-radius: 6px;
+  color: #f87171;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.edit-player-modal .delete-btn:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.6);
+  color: #ef4444;
+}
+
+.edit-player-modal .delete-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

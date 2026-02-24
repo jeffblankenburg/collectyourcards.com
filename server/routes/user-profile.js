@@ -409,6 +409,181 @@ router.get('/user/:username', optionalAuthMiddleware, async (req, res) => {
       }
     }
 
+    // Get user's contribution stats
+    let contributorStats = null
+    if (user.is_public_profile || isOwnProfile) {
+      try {
+        const contribResult = await prisma.$queryRaw`
+          SELECT
+            cs.total_submissions,
+            cs.approved_submissions,
+            cs.rejected_submissions,
+            cs.trust_level,
+            cs.trust_points,
+            cs.first_submission_at,
+            cs.last_submission_at,
+            cs.set_submissions,
+            cs.series_submissions,
+            cs.card_submissions,
+            cs.player_edit_submissions,
+            cs.team_edit_submissions,
+            cs.player_alias_submissions,
+            cs.player_team_submissions
+          FROM contributor_stats cs
+          WHERE cs.user_id = ${Number(user.user_id)}
+        `
+
+        if (contribResult.length > 0) {
+          const cs = contribResult[0]
+          // Only include contributor stats if they have any submissions
+          if (cs.total_submissions > 0) {
+            contributorStats = {
+              total_submissions: Number(cs.total_submissions) || 0,
+              approved_submissions: Number(cs.approved_submissions) || 0,
+              rejected_submissions: Number(cs.rejected_submissions) || 0,
+              trust_level: cs.trust_level || 'novice',
+              trust_points: Number(cs.trust_points) || 0,
+              first_submission_at: cs.first_submission_at,
+              last_submission_at: cs.last_submission_at,
+              breakdown: {
+                sets: Number(cs.set_submissions) || 0,
+                series: Number(cs.series_submissions) || 0,
+                cards: Number(cs.card_submissions) || 0,
+                player_edits: Number(cs.player_edit_submissions) || 0,
+                team_edits: Number(cs.team_edit_submissions) || 0,
+                player_aliases: Number(cs.player_alias_submissions) || 0,
+                player_teams: Number(cs.player_team_submissions) || 0
+              },
+              recent_edits: []
+            }
+
+            // Fetch 10 most recent approved edits across all submission types with change details
+            const recentEdits = await prisma.$queryRawUnsafe(`
+              SELECT TOP 10 * FROM (
+                -- Set submissions (new sets created)
+                SELECT
+                  'set' as edit_type,
+                  ss.submission_id,
+                  ss.reviewed_at as edit_date,
+                  ss.proposed_name as item_name,
+                  NULL as item_id,
+                  NULL as secondary_info,
+                  'Created new set' as change_summary
+                FROM set_submissions ss
+                WHERE ss.user_id = ${Number(user.user_id)} AND ss.status = 'approved'
+
+                UNION ALL
+
+                -- Series submissions (new series created)
+                SELECT
+                  'series' as edit_type,
+                  srs.submission_id,
+                  srs.reviewed_at as edit_date,
+                  srs.proposed_name as item_name,
+                  srs.created_series_id as item_id,
+                  st.name as secondary_info,
+                  'Created new series' as change_summary
+                FROM series_submissions srs
+                LEFT JOIN [set] st ON srs.set_id = st.set_id
+                WHERE srs.user_id = ${Number(user.user_id)} AND srs.status = 'approved'
+
+                UNION ALL
+
+                -- Card submissions (new cards created)
+                SELECT
+                  'card' as edit_type,
+                  cs.submission_id,
+                  cs.reviewed_at as edit_date,
+                  CONCAT('#', cs.proposed_card_number, ' ', COALESCE(cs.proposed_player_names, '')) as item_name,
+                  cs.created_card_id as item_id,
+                  s.name as secondary_info,
+                  'Created new card' as change_summary
+                FROM card_submissions cs
+                LEFT JOIN series s ON cs.series_id = s.series_id
+                WHERE cs.user_id = ${Number(user.user_id)} AND cs.status = 'approved'
+
+                UNION ALL
+
+                -- Player edit submissions with change details
+                SELECT
+                  'player_edit' as edit_type,
+                  pes.submission_id,
+                  pes.reviewed_at as edit_date,
+                  CONCAT(p.first_name, ' ', p.last_name) as item_name,
+                  pes.player_id as item_id,
+                  NULL as secondary_info,
+                  CONCAT(
+                    CASE WHEN pes.proposed_first_name IS NOT NULL AND pes.proposed_first_name != pes.previous_first_name THEN CONCAT('First Name: ', COALESCE(pes.previous_first_name, '(none)'), ' -> ', pes.proposed_first_name, '; ') ELSE '' END,
+                    CASE WHEN pes.proposed_last_name IS NOT NULL AND pes.proposed_last_name != pes.previous_last_name THEN CONCAT('Last Name: ', COALESCE(pes.previous_last_name, '(none)'), ' -> ', pes.proposed_last_name, '; ') ELSE '' END,
+                    CASE WHEN pes.proposed_birthdate IS NOT NULL THEN CONCAT('Birthdate: ', COALESCE(FORMAT(pes.previous_birthdate, 'MMMM d, yyyy'), '(none)'), ' -> ', FORMAT(pes.proposed_birthdate, 'MMMM d, yyyy'), '; ') ELSE '' END,
+                    CASE WHEN pes.proposed_display_card IS NOT NULL THEN CONCAT('Display Image updated to #', dc.card_number, ' - ', ds.name, '|', CAST(pes.proposed_display_card AS VARCHAR), '; ') ELSE '' END
+                  ) as change_summary
+                FROM player_edit_submissions pes
+                INNER JOIN player p ON pes.player_id = p.player_id
+                LEFT JOIN card dc ON pes.proposed_display_card = dc.card_id
+                LEFT JOIN series ds ON dc.series = ds.series_id
+                WHERE pes.user_id = ${Number(user.user_id)} AND pes.status = 'approved'
+
+                UNION ALL
+
+                -- Team edit submissions with change details
+                SELECT
+                  'team_edit' as edit_type,
+                  tes.submission_id,
+                  tes.reviewed_at as edit_date,
+                  t.name as item_name,
+                  tes.team_id as item_id,
+                  NULL as secondary_info,
+                  CONCAT(
+                    CASE WHEN tes.proposed_name IS NOT NULL AND tes.proposed_name != tes.previous_name THEN CONCAT('Name: ', COALESCE(tes.previous_name, '(none)'), ' -> ', tes.proposed_name, '; ') ELSE '' END,
+                    CASE WHEN tes.proposed_city IS NOT NULL AND tes.proposed_city != tes.previous_city THEN CONCAT('City: ', COALESCE(tes.previous_city, '(none)'), ' -> ', tes.proposed_city, '; ') ELSE '' END,
+                    CASE WHEN tes.proposed_abbreviation IS NOT NULL AND tes.proposed_abbreviation != tes.previous_abbreviation THEN CONCAT('Abbr: ', COALESCE(tes.previous_abbreviation, '(none)'), ' -> ', tes.proposed_abbreviation, '; ') ELSE '' END
+                  ) as change_summary
+                FROM team_edit_submissions tes
+                INNER JOIN team t ON tes.team_id = t.team_Id
+                WHERE tes.user_id = ${Number(user.user_id)} AND tes.status = 'approved'
+
+                UNION ALL
+
+                -- Card edit submissions with change details
+                SELECT
+                  'card_edit' as edit_type,
+                  ces.submission_id,
+                  ces.reviewed_at as edit_date,
+                  CONCAT('#', c.card_number, ' ', s.name) as item_name,
+                  ces.card_id as item_id,
+                  NULL as secondary_info,
+                  CONCAT(
+                    CASE WHEN ces.proposed_card_number IS NOT NULL AND ces.proposed_card_number != ces.previous_card_number THEN CONCAT('Card #: ', COALESCE(ces.previous_card_number, '(none)'), ' -> ', ces.proposed_card_number, '; ') ELSE '' END,
+                    CASE WHEN ces.proposed_is_rookie IS NOT NULL THEN CONCAT('Rookie: ', CASE WHEN ces.previous_is_rookie = 1 THEN 'Yes' ELSE 'No' END, ' -> ', CASE WHEN ces.proposed_is_rookie = 1 THEN 'Yes' ELSE 'No' END, '; ') ELSE '' END,
+                    CASE WHEN ces.proposed_is_autograph IS NOT NULL THEN CONCAT('Auto: ', CASE WHEN ces.previous_is_autograph = 1 THEN 'Yes' ELSE 'No' END, ' -> ', CASE WHEN ces.proposed_is_autograph = 1 THEN 'Yes' ELSE 'No' END, '; ') ELSE '' END,
+                    CASE WHEN ces.proposed_is_relic IS NOT NULL THEN CONCAT('Relic: ', CASE WHEN ces.previous_is_relic = 1 THEN 'Yes' ELSE 'No' END, ' -> ', CASE WHEN ces.proposed_is_relic = 1 THEN 'Yes' ELSE 'No' END, '; ') ELSE '' END
+                  ) as change_summary
+                FROM card_edit_submissions ces
+                INNER JOIN card c ON ces.card_id = c.card_id
+                LEFT JOIN series s ON c.series = s.series_id
+                WHERE ces.user_id = ${Number(user.user_id)} AND ces.status = 'approved'
+              ) AS all_edits
+              ORDER BY edit_date DESC
+            `)
+
+            contributorStats.recent_edits = recentEdits.map(edit => ({
+              edit_type: edit.edit_type,
+              submission_id: Number(edit.submission_id),
+              edit_date: edit.edit_date,
+              item_name: edit.item_name,
+              item_id: edit.item_id ? Number(edit.item_id) : null,
+              secondary_info: edit.secondary_info,
+              change_summary: edit.change_summary ? edit.change_summary.replace(/; $/, '') : null
+            }))
+          }
+        }
+      } catch (contribError) {
+        console.error('Error fetching contributor stats for profile:', contribError)
+        contributorStats = null
+      }
+    }
+
     // Get user's public lists
     let publicLists = []
     if (user.is_public_profile || isOwnProfile) {
@@ -458,7 +633,8 @@ router.get('/user/:username', optionalAuthMiddleware, async (req, res) => {
       stats: stats,
       recentActivity: recentActivity,  // Use camelCase for consistency
       achievements: achievementData,
-      public_lists: publicLists
+      public_lists: publicLists,
+      contributorStats: contributorStats
     })
 
   } catch (error) {

@@ -1,0 +1,3849 @@
+{
+  "lastRun": "2026-01-19T18:01:00.314Z",
+  "downloaded": [
+    {
+      "articleUrl": "https://www.beckett.com/news/2025-panini-select-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2026/01/2025-Panini-Select-Baseball-Checklist.xlsx",
+      "filename": "2025-Panini-Select-Baseball-Checklist.xlsx",
+      "size": 367001,
+      "downloadedAt": "2026-01-19T17:20:12.295Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2026-topps-series-1-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2026/01/2026-Topps-Series-1-Baseball-Checklist.xlsx",
+      "filename": "2026-Topps-Series-1-Baseball-Checklist.xlsx",
+      "size": 225645,
+      "downloadedAt": "2026-01-19T17:20:16.098Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2025-topps-gilded-collection-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2026/01/2025-Topps-Gilded-Collection-Baseball-Checklist.xlsx",
+      "filename": "2025-Topps-Gilded-Collection-Baseball-Checklist.xlsx",
+      "size": 53695,
+      "downloadedAt": "2026-01-19T17:20:19.536Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2025-topps-pristine-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2026/01/2025-Topps-Pristine-Baseball-Checklist.xlsx",
+      "filename": "2025-Topps-Pristine-Baseball-Checklist.xlsx",
+      "size": 78539,
+      "downloadedAt": "2026-01-19T17:20:23.376Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2025-topps-chrome-sapphire-update-series-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2026/01/2025-Topps-Chrome-Update-Series-Sapphire-Baseball-Checklist.xlsx",
+      "filename": "2025-Topps-Chrome-Update-Series-Sapphire-Baseball-Checklist.xlsx",
+      "size": 38695,
+      "downloadedAt": "2026-01-19T17:20:26.668Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2025-panini-flawless-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2026/01/2025-Panini-Flawless-Baseball-Checklist.xlsx",
+      "filename": "2025-Panini-Flawless-Baseball-Checklist.xlsx",
+      "size": 158839,
+      "downloadedAt": "2026-01-19T17:20:30.091Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2025-leaf-lumber-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2025/12/2025-Leaf-Lumber-Baseball-Checklist.xlsx",
+      "filename": "2025-Leaf-Lumber-Baseball-Checklist.xlsx",
+      "size": 136679,
+      "downloadedAt": "2026-01-19T17:20:33.362Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2025-topps-five-star-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2025/12/2025-Topps-Five-Star-Baseball-Checklist.xlsx",
+      "filename": "2025-Topps-Five-Star-Baseball-Checklist.xlsx",
+      "size": 79557,
+      "downloadedAt": "2026-01-19T17:20:37.006Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2025-bowman-draft-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2025/12/2025-Bowman-Draft-Baseball-Checklist.xlsx",
+      "filename": "2025-Bowman-Draft-Baseball-Checklist.xlsx",
+      "size": 75189,
+      "downloadedAt": "2026-01-19T17:20:40.299Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2025-topps-cosmic-chrome-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2025/12/2025-Topps-Cosmic-Chrome-Baseball-Checklist.xlsx",
+      "filename": "2025-Topps-Cosmic-Chrome-Baseball-Checklist.xlsx",
+      "size": 83139,
+      "downloadedAt": "2026-01-19T17:20:43.854Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2025-topps-heritage-high-number-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2025/12/2025-Topps-Heritage-High-Number-Baseball-Checklist.xlsx",
+      "filename": "2025-Topps-Heritage-High-Number-Baseball-Checklist.xlsx",
+      "size": 89696,
+      "downloadedAt": "2026-01-19T17:20:47.006Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2025-topps-allen-ginter-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2025/11/2025-Topps-Allen-Ginter-Baseball-Checklist.xlsx",
+      "filename": "2025-Topps-Allen-Ginter-Baseball-Checklist.xlsx",
+      "size": 249076,
+      "downloadedAt": "2026-01-19T17:20:50.797Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2025-topps-mlb-mvp-collection-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2025/11/2025-Topps-MLB-MVP-Collection-Checklist.xlsx",
+      "filename": "2025-Topps-MLB-MVP-Collection-Checklist.xlsx",
+      "size": 17932,
+      "downloadedAt": "2026-01-19T17:20:54.168Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2025-topps-archives-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2025/11/2025-Topps-Archives-Baseball-Checklist.xlsx",
+      "filename": "2025-Topps-Archives-Baseball-Checklist.xlsx",
+      "size": 72253,
+      "downloadedAt": "2026-01-19T17:20:58.352Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2025-leaf-spectacular-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2025/11/2025-Leaf-Spectacular-Baseball-Checklist.xlsx",
+      "filename": "2025-Leaf-Spectacular-Baseball-Checklist.xlsx",
+      "size": 76030,
+      "downloadedAt": "2026-01-19T17:21:01.643Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2025-topps-update-series-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2025/09/2025-Topps-Update-Checklist.xlsx",
+      "filename": "2025-Topps-Update-Checklist.xlsx",
+      "size": 223992,
+      "downloadedAt": "2026-01-19T17:21:05.488Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2025-panini-national-treasures-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2025/11/2025-National-Treasures-Baseball-Checklist.xlsx",
+      "filename": "2025-National-Treasures-Baseball-Checklist.xlsx",
+      "size": 198553,
+      "downloadedAt": "2026-01-19T17:21:08.760Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2025-leaf-vivid-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2025/11/2025-Leaf-Vivid-Baseball-Checklist.xlsx",
+      "filename": "2025-Leaf-Vivid-Baseball-Checklist.xlsx",
+      "size": 463929,
+      "downloadedAt": "2026-01-19T17:21:12.211Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2025-topps-black-and-white-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2025/10/2025-Topps-Black-And-White-Baseball-Checklist.xlsx",
+      "filename": "2025-Topps-Black-And-White-Baseball-Checklist.xlsx",
+      "size": 23947,
+      "downloadedAt": "2026-01-19T17:21:18.289Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2025-leaf-a-bronx-legacy-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2025/10/2025-Leaf-A-Bronx-Legacy-Checklist.xlsx",
+      "filename": "2025-Leaf-A-Bronx-Legacy-Checklist.xlsx",
+      "size": 59491,
+      "downloadedAt": "2026-01-19T17:21:21.644Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2025-topps-holiday-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2025/10/2025-Topps-Holiday-Baseball-Checklist.xlsx",
+      "filename": "2025-Topps-Holiday-Baseball-Checklist.xlsx",
+      "size": 94047,
+      "downloadedAt": "2026-01-19T17:21:25.139Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2025-topps-diamond-icons-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2025/10/2025-Topps-Diamond-Icons-Baseball-Checklist.xlsx",
+      "filename": "2025-Topps-Diamond-Icons-Baseball-Checklist.xlsx",
+      "size": 149632,
+      "downloadedAt": "2026-01-19T17:21:28.760Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2025-topps-pro-debut-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2025/10/2025-Topps-Pro-Debut-Baseball-Checklist.xlsx",
+      "filename": "2025-Topps-Pro-Debut-Baseball-Checklist.xlsx",
+      "size": 91124,
+      "downloadedAt": "2026-01-19T17:21:31.862Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2025-bowman-chrome-sapphire-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2025/10/2025-Bowman-Chrome-Sapphire-Baseball-Checklist.xlsx",
+      "filename": "2025-Bowman-Chrome-Sapphire-Baseball-Checklist.xlsx",
+      "size": 57851,
+      "downloadedAt": "2026-01-19T17:21:35.114Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2025-bowman-chrome-mega-box-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2025/10/2025-Bowman-Chrome-Mega-Box-Baseball-Checklist.xlsx",
+      "filename": "2025-Bowman-Chrome-Mega-Box-Baseball-Checklist.xlsx",
+      "size": 41056,
+      "downloadedAt": "2026-01-19T17:21:38.409Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2025-bowman-chrome-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2025/08/2025-Bowman-Chrome-Baseball-Checklist.xlsx",
+      "filename": "2025-Bowman-Chrome-Baseball-Checklist.xlsx",
+      "size": 82804,
+      "downloadedAt": "2026-01-19T17:21:42.050Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2025-panini-three-and-two-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2025/09/2025-Panini-Three-and-Two-Baseball-Checklist.xlsx",
+      "filename": "2025-Panini-Three-and-Two-Baseball-Checklist.xlsx",
+      "size": 205662,
+      "downloadedAt": "2026-01-19T17:21:45.480Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2024-leaf-trinity-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2025/09/2024-Leaf-Trinity-Baseball-Checklist.xlsx",
+      "filename": "2024-Leaf-Trinity-Baseball-Checklist.xlsx",
+      "size": 142642,
+      "downloadedAt": "2026-01-19T17:21:48.778Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2025-panini-prizm-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2025/09/2025-Panini-Prizm-Baseball-Checklist.xlsx",
+      "filename": "2025-Panini-Prizm-Baseball-Checklist.xlsx",
+      "size": 399151,
+      "downloadedAt": "2026-01-19T17:21:53.000Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2025-topps-t205-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2025/09/2025-Topps-205-Baseball-Checklist.xlsx",
+      "filename": "2025-Topps-205-Baseball-Checklist.xlsx",
+      "size": 44516,
+      "downloadedAt": "2026-01-19T17:21:56.843Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2025-leaf-baseball-nation-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2025/09/2025-Leaf-Baseball-Nation-Checklist.xlsx",
+      "filename": "2025-Leaf-Baseball-Nation-Checklist.xlsx",
+      "size": 278506,
+      "downloadedAt": "2026-01-19T17:22:00.377Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2025-topps-chrome-tennis-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2026/01/2025-Topps-Chrome-Tennis-Checklist.xlsx",
+      "filename": "2025-Topps-Chrome-Tennis-Checklist.xlsx",
+      "size": 43729,
+      "downloadedAt": "2026-01-19T17:22:09.546Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2025-26-o-pee-chee-hockey-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2026/01/2025-26-O-Pee-Chee-Hockey-Checklist.xlsx",
+      "filename": "2025-26-O-Pee-Chee-Hockey-Checklist.xlsx",
+      "size": 351577,
+      "downloadedAt": "2026-01-19T17:22:13.126Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2025-26-upper-deck-chicago-blackhawks-centennial-hockey-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2026/01/2025-26-Chicago-Blackhawks-100th-Anniversary-Hockey-Checklist.xlsx",
+      "filename": "2025-26-Chicago-Blackhawks-100th-Anniversary-Hockey-Checklist.xlsx",
+      "size": 71675,
+      "downloadedAt": "2026-01-19T17:22:16.390Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2025-donruss-optic-football-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2026/01/2025-Donruss-Optic-Football-Checklist.xlsx",
+      "filename": "2025-Donruss-Optic-Football-Checklist.xlsx",
+      "size": 509468,
+      "downloadedAt": "2026-01-19T17:22:20.447Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2025-26-topps-chrome-sapphire-basketball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2026/01/2025-26-Topps-Chrome-Sapphire-Basketball-Checklist.xlsx",
+      "filename": "2025-26-Topps-Chrome-Sapphire-Basketball-Checklist.xlsx",
+      "size": 63196,
+      "downloadedAt": "2026-01-19T17:22:23.818Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2025-panini-impeccable-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2025/09/2025-Panini-Impeccable-Baseball-Checklist.xlsx",
+      "filename": "2025-Panini-Impeccable-Baseball-Checklist.xlsx",
+      "size": 149631,
+      "downloadedAt": "2026-01-19T17:22:27.544Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2025-panini-crusade-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2025/09/2025-Panini-Crusade-Baseball-Checklist.xlsx",
+      "filename": "2025-Panini-Crusade-Baseball-Checklist.xlsx",
+      "size": 153773,
+      "downloadedAt": "2026-01-19T17:22:31.728Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2025-topps-shoebox-treasures-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2025/08/2025-Topps-Shoebox-Treasures-Checklist.xlsx",
+      "filename": "2025-Topps-Shoebox-Treasures-Checklist.xlsx",
+      "size": 46827,
+      "downloadedAt": "2026-01-19T17:22:35.084Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2025-topps-chrome-logofractor-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2025/08/2025-Topps-Chrome-Logofractor-Baseball-Checklist.xlsx",
+      "filename": "2025-Topps-Chrome-Logofractor-Baseball-Checklist.xlsx",
+      "size": 45985,
+      "downloadedAt": "2026-01-19T17:22:39.378Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2025-panini-boys-summer-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2025/08/2025-Panini-Boys-of-Summer-Baseball-Checklist.xlsx",
+      "filename": "2025-Panini-Boys-of-Summer-Baseball-Checklist.xlsx",
+      "size": 132707,
+      "downloadedAt": "2026-01-19T17:22:43.015Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2025-topps-chrome-sapphire-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2025/08/2025-Topps-Chrome-Sapphire-Baseball-Checklist.xlsx",
+      "filename": "2025-Topps-Chrome-Sapphire-Baseball-Checklist.xlsx",
+      "size": 69159,
+      "downloadedAt": "2026-01-19T17:22:46.047Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2024-leaf-trinity-mega-box-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2025/08/2024-Leaf-Trinity-Mega-Box-Baseball-Checklist.xlsx",
+      "filename": "2024-Leaf-Trinity-Mega-Box-Baseball-Checklist.xlsx",
+      "size": 65438,
+      "downloadedAt": "2026-01-19T17:22:49.758Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2025-topps-tier-one-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2025/08/2025-Topps-Tier-One-Baseball-Checklist.xlsx",
+      "filename": "2025-Topps-Tier-One-Baseball-Checklist.xlsx",
+      "size": 191841,
+      "downloadedAt": "2026-01-19T17:22:54.426Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2025-topps-finest-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2025/08/2025-Finest-Baseball-Checklist.xlsx",
+      "filename": "2025-Finest-Baseball-Checklist.xlsx",
+      "size": 128763,
+      "downloadedAt": "2026-01-19T17:22:58.011Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2025-leaf-metal-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2025/08/2025-Leaf-Metal-Baseball.xlsx",
+      "filename": "2025-Leaf-Metal-Baseball.xlsx",
+      "size": 257105,
+      "downloadedAt": "2026-01-19T17:23:01.135Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2025-topps-x-bob-ross-the-joy-of-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2025/07/2025-Topps-x-Bob-Ross-The-Joy-of-Baseball-Checklist.xlsx",
+      "filename": "2025-Topps-x-Bob-Ross-The-Joy-of-Baseball-Checklist.xlsx",
+      "size": 38440,
+      "downloadedAt": "2026-01-19T17:23:04.355Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2025-topps-chrome-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2025/07/2025-Topps-Chrome-Baseball-Checklist.xlsx",
+      "filename": "2025-Topps-Chrome-Baseball-Checklist.xlsx",
+      "size": 75196,
+      "downloadedAt": "2026-01-19T17:23:08.066Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2025-topps-sterling-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2025/07/2025-Topps-Sterling-Baseball.xlsx",
+      "filename": "2025-Topps-Sterling-Baseball.xlsx",
+      "size": 143476,
+      "downloadedAt": "2026-01-19T17:23:11.760Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2025-topps-series-2-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2025/10/2025-Topps-Series-2-Baseball-Checklist.xlsx",
+      "filename": "2025-Topps-Series-2-Baseball-Checklist.xlsx",
+      "size": 319329,
+      "downloadedAt": "2026-01-19T17:23:26.601Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2025-bowman-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2025/04/2025-Bowman-Baseball-Checklist.xlsx",
+      "filename": "2025-Bowman-Baseball-Checklist.xlsx",
+      "size": 162275,
+      "downloadedAt": "2026-01-19T17:23:36.892Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2025-topps-chrome-black-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2025/03/2025-Topps-Chrome-Black-Baseball-Checklist.xlsx",
+      "filename": "2025-Topps-Chrome-Black-Baseball-Checklist.xlsx",
+      "size": 90641,
+      "downloadedAt": "2026-01-19T17:23:41.293Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2025-bowman-mega-box-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2025/04/2025-Bowman-Mega-Box-Baseball-Checklist.xlsx",
+      "filename": "2025-Bowman-Mega-Box-Baseball-Checklist.xlsx",
+      "size": 116155,
+      "downloadedAt": "2026-01-19T17:23:44.614Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2025-panini-stars-stripes-usa-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2025/04/2025-Panini-Stars-Stripes-Baseball-Checklist.xlsx",
+      "filename": "2025-Panini-Stars-Stripes-Baseball-Checklist.xlsx",
+      "size": 385500,
+      "downloadedAt": "2026-01-19T17:23:48.352Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2025-topps-heritage-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2025/03/2025-Topps-Heritage-Baseball-Checklist.xlsx",
+      "filename": "2025-Topps-Heritage-Baseball-Checklist.xlsx",
+      "size": 249662,
+      "downloadedAt": "2026-01-19T17:23:52.131Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2025-topps-tribute-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2025/03/2025-Topps-Tribute-Baseball-Checklist.xlsx",
+      "filename": "2025-Topps-Tribute-Baseball-Checklist.xlsx",
+      "size": 177366,
+      "downloadedAt": "2026-01-19T17:23:55.270Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2024-panini-select-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2025/03/2024-Panini-Select-Baseball-Checklist.xlsx",
+      "filename": "2024-Panini-Select-Baseball-Checklist.xlsx",
+      "size": 244923,
+      "downloadedAt": "2026-01-19T17:23:58.924Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2024-topps-heritage-high-number-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2025/03/2024-Topps-Heritage-High-Number-Baseball-Checklist.xlsx",
+      "filename": "2024-Topps-Heritage-High-Number-Baseball-Checklist.xlsx",
+      "size": 209416,
+      "downloadedAt": "2026-01-19T17:24:02.298Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2025-topps-series-1-baseball-tokyo-series-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2025/03/2025-Topps-Series-1-Baseball-Tokyo-Series-Checklist.xlsx",
+      "filename": "2025-Topps-Series-1-Baseball-Tokyo-Series-Checklist.xlsx",
+      "size": 104988,
+      "downloadedAt": "2026-01-19T17:24:06.495Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2024-panini-prospect-edition-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2025/02/2024-Panini-Prospect-Edition-Baseball.xlsx",
+      "filename": "2024-Panini-Prospect-Edition-Baseball.xlsx",
+      "size": 342427,
+      "downloadedAt": "2026-01-19T17:24:10.277Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2025-topps-series-1-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2025/02/2025-Topps-Series-1-Baseball-Checklist.xlsx",
+      "filename": "2025-Topps-Series-1-Baseball-Checklist.xlsx",
+      "size": 214220,
+      "downloadedAt": "2026-01-19T17:24:21.248Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2024-panini-three-and-two-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2025/01/2024-Panini-Three-and-Two-Baseball-Checklist.xlsx",
+      "filename": "2024-Panini-Three-and-Two-Baseball-Checklist.xlsx",
+      "size": 158587,
+      "downloadedAt": "2026-01-19T17:26:47.349Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2024-topps-diamond-icons-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2025/02/2024-Topps-Diamond-Icons-Baseball-ChecklistB.xlsx",
+      "filename": "2024-Topps-Diamond-Icons-Baseball-ChecklistB.xlsx",
+      "size": 157216,
+      "downloadedAt": "2026-01-19T17:26:51.063Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2024-topps-transcendent-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2025/01/2024-Topps-Transcendent-Baseball-Checklist.xlsx",
+      "filename": "2024-Topps-Transcendent-Baseball-Checklist.xlsx",
+      "size": 221036,
+      "downloadedAt": "2026-01-19T17:26:57.983Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2024-topps-definitive-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2025/01/2024-Topps-Definitive-Baseball-Checklist.xlsx",
+      "filename": "2024-Topps-Definitive-Baseball-Checklist.xlsx",
+      "size": 101932,
+      "downloadedAt": "2026-01-19T17:27:02.523Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2024-topps-archives-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2024/12/2024-Topps-Archives-Baseball-Checklist.xlsx",
+      "filename": "2024-Topps-Archives-Baseball-Checklist.xlsx",
+      "size": 173208,
+      "downloadedAt": "2026-01-19T17:27:06.460Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2024-topps-luminaries-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2024/11/2024-Topps-Luminaries-Baseball-Checklist.xlsx",
+      "filename": "2024-Topps-Luminaries-Baseball-Checklist.xlsx",
+      "size": 99347,
+      "downloadedAt": "2026-01-19T17:27:09.701Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2024-panini-prizm-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2024/12/2024-Panini-Prizm-Baseball-Checklist.xlsx",
+      "filename": "2024-Panini-Prizm-Baseball-Checklist.xlsx",
+      "size": 319203,
+      "downloadedAt": "2026-01-19T17:27:13.193Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2024-topps-triple-threads-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2024/11/2024-Topps-Triple-Threads-Baseball-Checklist.xlsx",
+      "filename": "2024-Topps-Triple-Threads-Baseball-Checklist.xlsx",
+      "size": 321860,
+      "downloadedAt": "2026-01-19T17:27:17.901Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2024-bowman-draft-sapphire-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2024/12/2024-Bowman-Chrome-Draft-Sapphire-Baseball-Checklist.xlsx",
+      "filename": "2024-Bowman-Chrome-Draft-Sapphire-Baseball-Checklist.xlsx",
+      "size": 101990,
+      "downloadedAt": "2026-01-19T17:27:21.200Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2024-topps-x-chris-berman-boomers-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2024/12/2024-Topps-x-Chris-Berman-Boomers-Baseball-Checklist.xlsx",
+      "filename": "2024-Topps-x-Chris-Berman-Boomers-Baseball-Checklist.xlsx",
+      "size": 45317,
+      "downloadedAt": "2026-01-19T17:27:24.548Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2024-topps-brooklyn-collection-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2024/12/2024-Topps-Brooklyn-Collection-Baseball.xlsx",
+      "filename": "2024-Topps-Brooklyn-Collection-Baseball.xlsx",
+      "size": 62973,
+      "downloadedAt": "2026-01-19T17:27:27.848Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2024-topps-chrome-sapphire-update-series-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2024/12/2024-Topps-Chrome-Sapphire-Update-Series-Baseball-Checklist-1.xlsx",
+      "filename": "2024-Topps-Chrome-Sapphire-Update-Series-Baseball-Checklist-1.xlsx",
+      "size": 92262,
+      "downloadedAt": "2026-01-19T17:27:31.250Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2024-bowman-draft-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2024/11/2024-Bowman-Draft-Baseball-Checklist.xlsx",
+      "filename": "2024-Bowman-Draft-Baseball-Checklist.xlsx",
+      "size": 139112,
+      "downloadedAt": "2026-01-19T17:27:34.954Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2024-bowmans-best-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2024/12/2024-Bowmans-Best-Baseball-Checklist.xlsx",
+      "filename": "2024-Bowmans-Best-Baseball-Checklist.xlsx",
+      "size": 147433,
+      "downloadedAt": "2026-01-19T17:27:38.474Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2024-topps-gilded-collection-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2024/11/2024-Topps-Gilded-Collection-Baseball-Checklist.xlsx",
+      "filename": "2024-Topps-Gilded-Collection-Baseball-Checklist.xlsx",
+      "size": 119494,
+      "downloadedAt": "2026-01-19T17:27:41.646Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2024-topps-black-and-white-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2024/11/2024-Topps-Black-and-White-Baseball-Checklist.xlsx",
+      "filename": "2024-Topps-Black-and-White-Baseball-Checklist.xlsx",
+      "size": 97678,
+      "downloadedAt": "2026-01-19T17:27:44.960Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2024-bowman-chrome-sapphire-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2024/11/2024-Bowman-Chrome-Sapphire-Baseball-Checklist.xlsx",
+      "filename": "2024-Bowman-Chrome-Sapphire-Baseball-Checklist.xlsx",
+      "size": 134898,
+      "downloadedAt": "2026-01-19T17:27:48.461Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2024-topps-holiday-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2024/10/2024-Topps-Holiday-Baseball-Checklist.xlsx",
+      "filename": "2024-Topps-Holiday-Baseball-Checklist.xlsx",
+      "size": 175120,
+      "downloadedAt": "2026-01-19T17:27:52.784Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2024-topps-chrome-update-series-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2024/10/2024-Topps-Chrome-Update-Series-Baseball-Checklist-1.xlsx",
+      "filename": "2024-Topps-Chrome-Update-Series-Baseball-Checklist-1.xlsx",
+      "size": 168959,
+      "downloadedAt": "2026-01-19T17:27:56.523Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2024-panini-impeccable-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2024/11/2024-Panini-Impeccable-Baseball-Checklist.xlsx",
+      "filename": "2024-Panini-Impeccable-Baseball-Checklist.xlsx",
+      "size": 126704,
+      "downloadedAt": "2026-01-19T17:27:59.870Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2024-topps-stadium-club-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2024/11/2024-Topps-Stadium-Club-Baseball-B.xlsx",
+      "filename": "2024-Topps-Stadium-Club-Baseball-B.xlsx",
+      "size": 210551,
+      "downloadedAt": "2026-01-19T17:28:03.393Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2024-topps-allen-ginter-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2024/09/2024-Topps-Allen-Ginter-Baseball-Checklist.xlsx",
+      "filename": "2024-Topps-Allen-Ginter-Baseball-Checklist.xlsx",
+      "size": 404282,
+      "downloadedAt": "2026-01-19T17:28:11.018Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2024-leaf-metal-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2024/10/2024-Leaf-Metal-Baseball-Checklist.xlsx",
+      "filename": "2024-Leaf-Metal-Baseball-Checklist.xlsx",
+      "size": 213052,
+      "downloadedAt": "2026-01-19T17:28:15.158Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2024-topps-update-series-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2024/09/2024-Topps-Update-Series-Baseball-Checklist.xlsx",
+      "filename": "2024-Topps-Update-Series-Baseball-Checklist.xlsx",
+      "size": 279235,
+      "downloadedAt": "2026-01-19T17:28:20.081Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2024-topps-cosmic-chrome-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2024/09/2024-Topps-Cosmic-Chrome-Baseball-Checklist.xlsx",
+      "filename": "2024-Topps-Cosmic-Chrome-Baseball-Checklist.xlsx",
+      "size": 131140,
+      "downloadedAt": "2026-01-19T17:28:24.167Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2024-bowman-sterling-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2024/09/2024-Bowman-Sterling-Baseball-Checklist.xlsx",
+      "filename": "2024-Bowman-Sterling-Baseball-Checklist.xlsx",
+      "size": 140423,
+      "downloadedAt": "2026-01-19T17:28:27.680Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2024-topps-206-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2024/10/2024-Topps-206-Baseball-Checklist.xlsx",
+      "filename": "2024-Topps-206-Baseball-Checklist.xlsx",
+      "size": 118827,
+      "downloadedAt": "2026-01-19T17:28:31.944Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2024-bowman-chrome-mega-box-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2024/09/2024-Bowman-Chrome-Mega-Box-Baseball-Checklist.xlsx",
+      "filename": "2024-Bowman-Chrome-Mega-Box-Baseball-Checklist.xlsx",
+      "size": 37712,
+      "downloadedAt": "2026-01-19T17:28:35.375Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2024-topps-five-star-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2024/09/2024-Topps-Five-Star-Baseball-Checklist.xlsx",
+      "filename": "2024-Topps-Five-Star-Baseball-Checklist.xlsx",
+      "size": 96246,
+      "downloadedAt": "2026-01-19T17:28:39.671Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2024-topps-chrome-logofractor-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2024/09/2024-Topps-Chrome-Logofractor-Baseball-Checklist.xlsx",
+      "filename": "2024-Topps-Chrome-Logofractor-Baseball-Checklist.xlsx",
+      "size": 123965,
+      "downloadedAt": "2026-01-19T17:28:43.071Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2024-bowman-chrome-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2024/08/2024-Bowman-Chrome-Baseball-Checklist-1.xlsx",
+      "filename": "2024-Bowman-Chrome-Baseball-Checklist-1.xlsx",
+      "size": 180646,
+      "downloadedAt": "2026-01-19T17:28:47.349Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2024-topps-chrome-sapphire-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2024/09/2024-Topps-Chrome-Sapphire-Baseball-Checklist.xlsx",
+      "filename": "2024-Topps-Chrome-Sapphire-Baseball-Checklist.xlsx",
+      "size": 89829,
+      "downloadedAt": "2026-01-19T17:28:50.432Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2024-topps-pro-debut-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2024/08/2024-Topps-Pro-Debut-Baseball-Checklist-1.xlsx",
+      "filename": "2024-Topps-Pro-Debut-Baseball-Checklist-1.xlsx",
+      "size": 70382,
+      "downloadedAt": "2026-01-19T17:28:53.933Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2024-panini-crusade-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2024/08/2024-Panini-Crusade-Baseball-Checklist.xlsx",
+      "filename": "2024-Panini-Crusade-Baseball-Checklist.xlsx",
+      "size": 135395,
+      "downloadedAt": "2026-01-19T17:28:58.109Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2024-topps-pristine-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2024/07/2024-Topps-Pristine-Baseball-Checklist.xlsx",
+      "filename": "2024-Topps-Pristine-Baseball-Checklist.xlsx",
+      "size": 132700,
+      "downloadedAt": "2026-01-19T17:29:01.592Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2024-leaf-electrum-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2024/08/2024-Leaf-Electrum-Baseball-CL.xlsx",
+      "filename": "2024-Leaf-Electrum-Baseball-CL.xlsx",
+      "size": 24274,
+      "downloadedAt": "2026-01-19T17:29:05.163Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2024-panini-boys-of-summer-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2024/08/2024-Panini-Boys-of-Summer-Baseball-Checklist.xlsx",
+      "filename": "2024-Panini-Boys-of-Summer-Baseball-Checklist.xlsx",
+      "size": 220729,
+      "downloadedAt": "2026-01-19T17:29:08.682Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2024-topps-finest-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2024/07/2024-Topps-Finest-Baseball-Checklist.xlsx",
+      "filename": "2024-Topps-Finest-Baseball-Checklist.xlsx",
+      "size": 149408,
+      "downloadedAt": "2026-01-19T17:29:19.246Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2024-topps-museum-collection-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2024/07/2024-Topps-Museum-Collection-Baseball-Checklist.xlsx",
+      "filename": "2024-Topps-Museum-Collection-Baseball-Checklist.xlsx",
+      "size": 233810,
+      "downloadedAt": "2026-01-19T17:29:23.030Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2024-topps-chrome-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2024/06/2024-Topps-Chrome-Baseball-Checklist.xlsx",
+      "filename": "2024-Topps-Chrome-Baseball-Checklist.xlsx",
+      "size": 162159,
+      "downloadedAt": "2026-01-19T17:29:31.228Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2024-donruss-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2024/06/2024-Donruss-Baseball-Checklist.xlsx",
+      "filename": "2024-Donruss-Baseball-Checklist.xlsx",
+      "size": 293220,
+      "downloadedAt": "2026-01-19T17:29:34.982Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/1985-fleer-update-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2024/07/1985-Fleer-Update-Baseball-Checklist.xlsx",
+      "filename": "1985-Fleer-Update-Baseball-Checklist.xlsx",
+      "size": 14066,
+      "downloadedAt": "2026-01-19T17:29:38.808Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2024-topps-tier-one-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2024/06/2024-Topps-Tier-One-Baseball-Checklist.xlsx",
+      "filename": "2024-Topps-Tier-One-Baseball-Checklist.xlsx",
+      "size": 230203,
+      "downloadedAt": "2026-01-19T17:29:42.623Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2024-panini-stars-stripes-usa-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2024/06/2024-Panini-Stars-Stripes-USA-Baseball-Checklist.xlsx",
+      "filename": "2024-Panini-Stars-Stripes-USA-Baseball-Checklist.xlsx",
+      "size": 389095,
+      "downloadedAt": "2026-01-19T17:29:45.971Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2024-leaf-lumber-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2024/06/2024-Leaf-Lumber-Baseball-Checklist.xlsx",
+      "filename": "2024-Leaf-Lumber-Baseball-Checklist.xlsx",
+      "size": 94287,
+      "downloadedAt": "2026-01-19T17:29:50.555Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2024-topps-series-2-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2024/06/2024-Topps-Series-2-Baseball-Checklist-C.xlsx",
+      "filename": "2024-Topps-Series-2-Baseball-Checklist-C.xlsx",
+      "size": 281689,
+      "downloadedAt": "2026-01-19T17:29:58.268Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2024-topps-dynamic-duals-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2024/06/2024-Topps-Dynamic-Duals-Baseball-Checklist.xlsx",
+      "filename": "2024-Topps-Dynamic-Duals-Baseball-Checklist.xlsx",
+      "size": 68748,
+      "downloadedAt": "2026-01-19T17:30:02.963Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2024-bowman-mega-box-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2024/05/2024-Bowman-Mega-Box-Baseball-Checklist.xlsx",
+      "filename": "2024-Bowman-Mega-Box-Baseball-Checklist.xlsx",
+      "size": 131535,
+      "downloadedAt": "2026-01-19T17:30:10.856Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2024-bowman-sapphire-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2024/05/2024-Bowman-Sapphire-Baseball-Checklist.xlsx",
+      "filename": "2024-Bowman-Sapphire-Baseball-Checklist.xlsx",
+      "size": 77330,
+      "downloadedAt": "2026-01-19T17:30:14.978Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2023-topps-chrome-platinum-anniversary-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2024/05/2023-Topps-Chrome-Platinum-Anniversary-Baseball-Checklist.xlsx",
+      "filename": "2023-Topps-Chrome-Platinum-Anniversary-Baseball-Checklist.xlsx",
+      "size": 129976,
+      "downloadedAt": "2026-01-19T17:30:18.710Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2024-bowman-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2024/04/2024-Bowman-Baseball-Checklist.xlsx",
+      "filename": "2024-Bowman-Baseball-Checklist.xlsx",
+      "size": 161188,
+      "downloadedAt": "2026-01-19T17:30:29.734Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/1985-fleer-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2024/05/1985-Fleer-Baseball-Checklist.xlsx",
+      "filename": "1985-Fleer-Baseball-Checklist.xlsx",
+      "size": 59740,
+      "downloadedAt": "2026-01-19T17:30:33.542Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2024-topps-heritage-mini-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2024/05/2024-Heritage-Mini-Baseball-Checklist.xlsx",
+      "filename": "2024-Heritage-Mini-Baseball-Checklist.xlsx",
+      "size": 93113,
+      "downloadedAt": "2026-01-19T17:30:38.327Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2024-topps-chrome-black-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2024/04/2024-Topps-Chrome-Black-Baseball-Checklist.xlsx",
+      "filename": "2024-Topps-Chrome-Black-Baseball-Checklist.xlsx",
+      "size": 88421,
+      "downloadedAt": "2026-01-19T17:30:42.626Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2024-topps-heritage-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2024/03/2024-Topps-Heritage-Baseball-Checklist.xlsx",
+      "filename": "2024-Topps-Heritage-Baseball-Checklist.xlsx",
+      "size": 164021,
+      "downloadedAt": "2026-01-19T17:30:47.221Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2024-topps-sterling-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2024/04/2024-Topps-Sterling-Baseball-Checklist.xlsx",
+      "filename": "2024-Topps-Sterling-Baseball-Checklist.xlsx",
+      "size": 108856,
+      "downloadedAt": "2026-01-19T17:30:51.678Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2024-topps-tribute-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2024/03/2024-Topps-Tribute-Baseball-Checklist.xlsx",
+      "filename": "2024-Topps-Tribute-Baseball-Checklist.xlsx",
+      "size": 302123,
+      "downloadedAt": "2026-01-19T17:31:00.442Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2023-topps-transcendent-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2024/03/2023-Topps-Transcendent-Baseball-Checklist.xlsx",
+      "filename": "2023-Topps-Transcendent-Baseball-Checklist.xlsx",
+      "size": 167632,
+      "downloadedAt": "2026-01-19T17:31:07.707Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2023-topps-dynasty-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2024/03/2023-Topps-Dynasty-Baseball-Checklist.xlsx",
+      "filename": "2023-Topps-Dynasty-Baseball-Checklist.xlsx",
+      "size": 115562,
+      "downloadedAt": "2026-01-19T17:31:11.672Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2023-bowman-inception-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2024/03/2023-Bowman-Inception-Baseball-Checklist.xlsx",
+      "filename": "2023-Bowman-Inception-Baseball-Checklist.xlsx",
+      "size": 102612,
+      "downloadedAt": "2026-01-19T17:31:15.122Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2023-topps-five-star-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2024/02/2023-Topps-Five-Star-Baseball-Checklist.xlsx",
+      "filename": "2023-Topps-Five-Star-Baseball-Checklist.xlsx",
+      "size": 104219,
+      "downloadedAt": "2026-01-19T17:31:18.639Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2024-topps-series-1-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2024/01/2024-Topps-Series-1-Baseball-Checklist.xlsx",
+      "filename": "2024-Topps-Series-1-Baseball-Checklist.xlsx",
+      "size": 347276,
+      "downloadedAt": "2026-01-19T17:31:23.311Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2023-topps-luminaries-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2024/02/2023-Topps-Luminaries-Baseball-Checklist.xlsx",
+      "filename": "2023-Topps-Luminaries-Baseball-Checklist.xlsx",
+      "size": 211625,
+      "downloadedAt": "2026-01-19T17:31:28.126Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2023-panini-flawless-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2024/02/2023-Panini-Flawless-Baseball-Checklist.xlsx",
+      "filename": "2023-Panini-Flawless-Baseball-Checklist.xlsx",
+      "size": 190180,
+      "downloadedAt": "2026-01-19T17:31:33.054Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2023-topps-diamond-icons-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2024/01/2023-Topps-Diamond-Icons-Baseball-Checklist.xlsx",
+      "filename": "2023-Topps-Diamond-Icons-Baseball-Checklist.xlsx",
+      "size": 107311,
+      "downloadedAt": "2026-01-19T17:31:36.769Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2023-topps-stadium-club-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2023/09/2023-Topps-Stadium-Club-Baseball-Checklist.xlsx",
+      "filename": "2023-Topps-Stadium-Club-Baseball-Checklist.xlsx",
+      "size": 197646,
+      "downloadedAt": "2026-01-19T17:31:40.468Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/1985-donruss-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/08/1985-Donruss-Baseball-Checklist.xlsx",
+      "filename": "1985-Donruss-Baseball-Checklist.xlsx",
+      "size": 45839,
+      "downloadedAt": "2026-01-19T17:31:43.953Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2023-bowmans-best-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2023/12/2023-Bowmans-Best-Baseball-Checklist.xlsx",
+      "filename": "2023-Bowmans-Best-Baseball-Checklist.xlsx",
+      "size": 143644,
+      "downloadedAt": "2026-01-19T17:31:51.874Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2023-leaf-metal-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2024/01/2023-Leaf-Metal-Baseball-Checklist.xlsx",
+      "filename": "2023-Leaf-Metal-Baseball-Checklist.xlsx",
+      "size": 88183,
+      "downloadedAt": "2026-01-19T17:31:56.946Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2023-bowman-draft-sapphire-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2024/01/2023-Bowman-Draft-Sapphire-Baseball-Checklist.xlsx",
+      "filename": "2023-Bowman-Draft-Sapphire-Baseball-Checklist.xlsx",
+      "size": 30507,
+      "downloadedAt": "2026-01-19T17:32:00.563Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2023-topps-brooklyn-collection-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2023/12/2023-Topps-Brooklyn-Collection-Baseball-Checklist-1.xlsx",
+      "filename": "2023-Topps-Brooklyn-Collection-Baseball-Checklist-1.xlsx",
+      "size": 46683,
+      "downloadedAt": "2026-01-19T17:32:04.381Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2023-topps-chrome-black-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2023/12/2023-Topps-Chrome-Black-Baseball-Checklist.xlsx",
+      "filename": "2023-Topps-Chrome-Black-Baseball-Checklist.xlsx",
+      "size": 128490,
+      "downloadedAt": "2026-01-19T17:32:07.973Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2023-topps-heritage-high-number-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2023/12/2023-Topps-Heritage-High-Number-Baseball-Checklist-B.xlsx",
+      "filename": "2023-Topps-Heritage-High-Number-Baseball-Checklist-B.xlsx",
+      "size": 207680,
+      "downloadedAt": "2026-01-19T17:32:15.665Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2023-bowman-draft-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2023/12/2023-Bowman-Draft-Baseball-ChecklistB.xlsx",
+      "filename": "2023-Bowman-Draft-Baseball-ChecklistB.xlsx",
+      "size": 162056,
+      "downloadedAt": "2026-01-19T17:32:19.280Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2023-topps-inception-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2023/12/2023-Topps-Inception-Baseball-Checklist.xlsx",
+      "filename": "2023-Topps-Inception-Baseball-Checklist.xlsx",
+      "size": 124667,
+      "downloadedAt": "2026-01-19T17:32:22.892Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2023-topps-chrome-sapphire-update-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2023/12/2023-Topps-Chrome-Sapphire-Update-Baseball-Checklist.xlsx",
+      "filename": "2023-Topps-Chrome-Sapphire-Update-Baseball-Checklist.xlsx",
+      "size": 40583,
+      "downloadedAt": "2026-01-19T17:32:26.440Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2023-topps-rip-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2023/11/2023-Topps-Rip-Baseball-Checklist.xlsx",
+      "filename": "2023-Topps-Rip-Baseball-Checklist.xlsx",
+      "size": 130208,
+      "downloadedAt": "2026-01-19T17:32:30.275Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2023-topps-museum-collection-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2023/10/2023-Topps-Museum-Collection-Baseball-Checklist.xlsx",
+      "filename": "2023-Topps-Museum-Collection-Baseball-Checklist.xlsx",
+      "size": 227157,
+      "downloadedAt": "2026-01-19T17:32:34.319Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2023-bowman-chrome-sapphire-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2023/11/2023-Bowman-Chrome-Sapphire-Baseball-Checklist.xlsx",
+      "filename": "2023-Bowman-Chrome-Sapphire-Baseball-Checklist.xlsx",
+      "size": 31947,
+      "downloadedAt": "2026-01-19T17:32:38.143Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2023-topps-black-and-white-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2023/11/2023-Topps-Black-and-White-Baseball-Checklist.xlsx",
+      "filename": "2023-Topps-Black-and-White-Baseball-Checklist.xlsx",
+      "size": 19423,
+      "downloadedAt": "2026-01-19T17:32:41.761Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2023-topps-chrome-update-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2023/10/2023-Topps-Chrome-Update-Baseball-Checklist.xlsx",
+      "filename": "2023-Topps-Chrome-Update-Baseball-Checklist.xlsx",
+      "size": 176462,
+      "downloadedAt": "2026-01-19T17:32:46.161Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2023-panini-chronicles-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2023/11/2023-Panini-Chronicles-Baseball-Checklist.xlsx",
+      "filename": "2023-Panini-Chronicles-Baseball-Checklist.xlsx",
+      "size": 371978,
+      "downloadedAt": "2026-01-19T17:32:49.843Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2023-topps-archives-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2023/11/2023-Topps-Archives-Baseball-Checklist.xlsx",
+      "filename": "2023-Topps-Archives-Baseball-Checklist.xlsx",
+      "size": 181201,
+      "downloadedAt": "2026-01-19T17:32:53.932Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2023-topps-definitive-collection-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2023/11/2023-Topps-Definitive-Collection-Baseball-Checklist.xlsx",
+      "filename": "2023-Topps-Definitive-Collection-Baseball-Checklist.xlsx",
+      "size": 141111,
+      "downloadedAt": "2026-01-19T17:32:57.666Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2023-bowman-sterling-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2023/11/2023-Bowman-Sterling-Baseball-Checklist.xlsx",
+      "filename": "2023-Bowman-Sterling-Baseball-Checklist.xlsx",
+      "size": 88012,
+      "downloadedAt": "2026-01-19T17:33:02.436Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2023-topps-tier-one-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2023/10/2023-Topps-Tier-One-Baseball-Checklist.xlsx",
+      "filename": "2023-Topps-Tier-One-Baseball-Checklist.xlsx",
+      "size": 198275,
+      "downloadedAt": "2026-01-19T17:33:11.723Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2023-topps-holiday-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2023/10/2023-Topps-Holiday-Baseball-Checklist.xlsx",
+      "filename": "2023-Topps-Holiday-Baseball-Checklist.xlsx",
+      "size": 204256,
+      "downloadedAt": "2026-01-19T17:33:15.564Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2023-topps-allen-ginter-x-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2023/10/2023-Topps-Allen-Ginter-X-Baseball-Checklist.xlsx",
+      "filename": "2023-Topps-Allen-Ginter-X-Baseball-Checklist.xlsx",
+      "size": 53997,
+      "downloadedAt": "2026-01-19T17:33:19.236Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2023-topps-finest-flashbacks-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2023/10/2023-Topps-Finest-Flashbacks-Baseball-Checklist.xlsx",
+      "filename": "2023-Topps-Finest-Flashbacks-Baseball-Checklist.xlsx",
+      "size": 30453,
+      "downloadedAt": "2026-01-19T17:33:22.983Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2023-topps-pro-debut-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2023/10/2023-Topps-Pro-Debut-Baseball-Checklist.xlsx",
+      "filename": "2023-Topps-Pro-Debut-Baseball-Checklist.xlsx",
+      "size": 122427,
+      "downloadedAt": "2026-01-19T17:33:26.855Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2023-topps-gilded-collection-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2023/10/2023-Topps-Gilded-Collection-Baseball-Checklist.xlsx",
+      "filename": "2023-Topps-Gilded-Collection-Baseball-Checklist.xlsx",
+      "size": 60426,
+      "downloadedAt": "2026-01-19T17:33:30.735Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2023-bowman-platinum-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2023/10/2023-Bowman-Platinum-Baseball-Checklist.xlsx",
+      "filename": "2023-Bowman-Platinum-Baseball-Checklist.xlsx",
+      "size": 172111,
+      "downloadedAt": "2026-01-19T17:33:33.909Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2023-topps-update-series-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2023/09/2023-Topps-Update-Series-Baseball-Checklist.xlsx",
+      "filename": "2023-Topps-Update-Series-Baseball-Checklist.xlsx",
+      "size": 276864,
+      "downloadedAt": "2026-01-19T17:33:42.813Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2023-panini-select-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2023/10/2023-Panini-Select-Baseball-Checklist.xlsx",
+      "filename": "2023-Panini-Select-Baseball-Checklist.xlsx",
+      "size": 234237,
+      "downloadedAt": "2026-01-19T17:33:47.133Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2023-topps-x-bob-ross-the-joy-of-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2023/10/2023-Topps-x-Bob-Ross_-The-Joy-of-Baseball-Checklist.xlsx",
+      "filename": "2023-Topps-x-Bob-Ross_-The-Joy-of-Baseball-Checklist.xlsx",
+      "size": 33100,
+      "downloadedAt": "2026-01-19T17:33:55.842Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2023-bowman-chrome-mega-box-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2023/10/2023-Bowman-Chrome-Mega-Box-Baseball-Checklist.xlsx",
+      "filename": "2023-Bowman-Chrome-Mega-Box-Baseball-Checklist.xlsx",
+      "size": 108382,
+      "downloadedAt": "2026-01-19T17:33:59.381Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2023-topps-allen-ginter-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2023/09/2023-Topps-Allen-Ginter-Baseball-Checklist-1.xlsx",
+      "filename": "2023-Topps-Allen-Ginter-Baseball-Checklist-1.xlsx",
+      "size": 291616,
+      "downloadedAt": "2026-01-19T17:34:06.514Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2023-topps-x-julio-rodriguez-show-out-collection-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2023/09/2023-Topps-x-Julio-Rodriguez_-Show-Out-Collection-Baseball-Checklist.xlsx",
+      "filename": "2023-Topps-x-Julio-Rodriguez_-Show-Out-Collection-Baseball-Checklist.xlsx",
+      "size": 14297,
+      "downloadedAt": "2026-01-19T17:34:10.278Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2023-bowman-chrome-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2023/09/2023-Bowman-Chrome-Baseball-Checklist.xlsx",
+      "filename": "2023-Bowman-Chrome-Baseball-Checklist.xlsx",
+      "size": 159119,
+      "downloadedAt": "2026-01-19T17:34:13.886Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2023-topps-chrome-sapphire-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2023/09/2023-Topps-Chrome-Sapphire-Baseball-Checklist.xlsx",
+      "filename": "2023-Topps-Chrome-Sapphire-Baseball-Checklist.xlsx",
+      "size": 44443,
+      "downloadedAt": "2026-01-19T17:34:21.379Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2023-panini-immaculate-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2023/09/2023-Panini-Immaculate-Baseball-Checklist.xlsx",
+      "filename": "2023-Panini-Immaculate-Baseball-Checklist.xlsx",
+      "size": 306040,
+      "downloadedAt": "2026-01-19T17:34:25.822Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2023-topps-cosmic-chrome-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2023/08/2023-Topps-Cosmic-Chrome-Baseball-Checklist.xlsx",
+      "filename": "2023-Topps-Cosmic-Chrome-Baseball-Checklist.xlsx",
+      "size": 115509,
+      "downloadedAt": "2026-01-19T17:34:29.263Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2023-topps-pristine-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2023/08/2023-Topps-Pristine-Baseball-Checklist.xlsx",
+      "filename": "2023-Topps-Pristine-Baseball-Checklist.xlsx",
+      "size": 118850,
+      "downloadedAt": "2026-01-19T17:34:33.713Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-topps-chrome-platinum-anniversary-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2023/06/2022-Topps-Chrome-Platinum-Anniversary-Baseball-Checklist.xlsx",
+      "filename": "2022-Topps-Chrome-Platinum-Anniversary-Baseball-Checklist.xlsx",
+      "size": 61661,
+      "downloadedAt": "2026-01-19T17:34:37.066Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2023-topps-chrome-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2023/07/2023-Topps-Chrome-Baseball-Checklist.xlsx",
+      "filename": "2023-Topps-Chrome-Baseball-Checklist.xlsx",
+      "size": 154618,
+      "downloadedAt": "2026-01-19T17:34:40.617Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2023-panini-prizm-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2023/07/2023-Panini-Prizm-Baseball-Checklist.xlsx",
+      "filename": "2023-Panini-Prizm-Baseball-Checklist.xlsx",
+      "size": 337763,
+      "downloadedAt": "2026-01-19T17:34:44.634Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2023-topps-tribute-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2023/06/2023-Topps-Tribute-Baseball-Checklist.xlsx",
+      "filename": "2023-Topps-Tribute-Baseball-Checklist.xlsx",
+      "size": 111149,
+      "downloadedAt": "2026-01-19T17:34:48.266Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2023-topps-finest-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2023/06/2023-Topps-Finest-Baseball-Checklist.xlsx",
+      "filename": "2023-Topps-Finest-Baseball-Checklist.xlsx",
+      "size": 115229,
+      "downloadedAt": "2026-01-19T17:34:52.289Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2023-topps-206-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2023/06/2023-Topps-206-Baseball-Low-Series-Checklist.xlsx",
+      "filename": "2023-Topps-206-Baseball-Low-Series-Checklist.xlsx",
+      "size": 14505,
+      "downloadedAt": "2026-01-19T17:34:55.870Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2023-panini-three-and-two-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2023/06/2023-Panini-Three-and-Two-Baseball-Checklist.xlsx",
+      "filename": "2023-Panini-Three-and-Two-Baseball-Checklist.xlsx",
+      "size": 162789,
+      "downloadedAt": "2026-01-19T17:35:00.232Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2023-donruss-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2023/06/2023-Donruss-Baseball-Checklist.xlsx",
+      "filename": "2023-Donruss-Baseball-Checklist.xlsx",
+      "size": 175173,
+      "downloadedAt": "2026-01-19T17:35:04.354Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2023-topps-series-2-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2023/05/2023-Topps-Series-2-Baseball-Checklist.xlsx",
+      "filename": "2023-Topps-Series-2-Baseball-Checklist.xlsx",
+      "size": 262531,
+      "downloadedAt": "2026-01-19T17:35:07.700Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2023-bowman-mega-box-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2023/06/2023-Bowman-Mega-Box-Baseball-Checklist.xlsx",
+      "filename": "2023-Bowman-Mega-Box-Baseball-Checklist.xlsx",
+      "size": 109608,
+      "downloadedAt": "2026-01-19T17:35:10.567Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2023-topps-dynamic-duals-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2023/05/2023-Topps-Dynamic-Duals-Baseball-Checklist-1.xlsx",
+      "filename": "2023-Topps-Dynamic-Duals-Baseball-Checklist-1.xlsx",
+      "size": 82695,
+      "downloadedAt": "2026-01-19T17:35:14.346Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2023-topps-heritage-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2023/05/2023-Topps-Heritage-Baseball-Checklist.xlsx",
+      "filename": "2023-Topps-Heritage-Baseball-Checklist.xlsx",
+      "size": 256331,
+      "downloadedAt": "2026-01-19T17:35:17.596Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2023-topps-sterling-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2023/05/2023-Topps-Sterling-Baseball-Checklist-1.xlsx",
+      "filename": "2023-Topps-Sterling-Baseball-Checklist-1.xlsx",
+      "size": 105554,
+      "downloadedAt": "2026-01-19T17:35:21.468Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2023-bowman-sapphire-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2023/05/2023-Bowman-Sapphire-Baseball-Checklist.xlsx",
+      "filename": "2023-Bowman-Sapphire-Baseball-Checklist.xlsx",
+      "size": 34869,
+      "downloadedAt": "2026-01-19T17:35:25.277Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2023-panini-stars-stripes-usa-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2023/04/2023-Panini-Stars-and-Stripes-USA-Baseball-Checklist.xlsx",
+      "filename": "2023-Panini-Stars-and-Stripes-USA-Baseball-Checklist.xlsx",
+      "size": 162490,
+      "downloadedAt": "2026-01-19T17:35:33.547Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2023-bowman-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2023/03/2023-Bowman-Baseball-Checklist.xlsx",
+      "filename": "2023-Bowman-Baseball-Checklist.xlsx",
+      "size": 176821,
+      "downloadedAt": "2026-01-19T17:35:40.258Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2023-bowman-1st-edition-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2023/04/2023-Bowman-1st-Edition-Baseball-Checklist.xlsx",
+      "filename": "2023-Bowman-1st-Edition-Baseball-Checklist.xlsx",
+      "size": 35197,
+      "downloadedAt": "2026-01-19T17:35:43.675Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2023-topps-series-1-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2023/02/2023-Topps-Series-1-Baseball-Checklist.xlsx",
+      "filename": "2023-Topps-Series-1-Baseball-Checklist.xlsx",
+      "size": 249891,
+      "downloadedAt": "2026-01-19T17:35:47.655Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-topps-dynasty-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2023/04/2022-Topps-Dynasty-Baseball-Checklist.xlsx",
+      "filename": "2022-Topps-Dynasty-Baseball-Checklist.xlsx",
+      "size": 100693,
+      "downloadedAt": "2026-01-19T17:35:52.297Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-topps-stadium-club-chrome-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2023/03/2022-Topps-Stadium-Club-Chrome-Baseball-Checklist.xlsx",
+      "filename": "2022-Topps-Stadium-Club-Chrome-Baseball-Checklist.xlsx",
+      "size": 119412,
+      "downloadedAt": "2026-01-19T17:35:55.865Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-topps-transcendent-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2023/04/2022-Topps-Transcendent-Baseball-Checklist.xlsx",
+      "filename": "2022-Topps-Transcendent-Baseball-Checklist.xlsx",
+      "size": 83563,
+      "downloadedAt": "2026-01-19T17:35:59.604Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2023-topps-big-league-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2023/03/2023-Topps-Big-League-Baseball-Checklist.xlsx",
+      "filename": "2023-Topps-Big-League-Baseball-Checklist.xlsx",
+      "size": 149059,
+      "downloadedAt": "2026-01-19T17:36:03.947Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-topps-gold-label-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2023/01/2022-Topps-Gold-Label-Baseball-Checklist.xlsx",
+      "filename": "2022-Topps-Gold-Label-Baseball-Checklist.xlsx",
+      "size": 119240,
+      "downloadedAt": "2026-01-19T17:36:08.583Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-bowmans-best-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2023/03/2022-Bowmans-Best-Baseball-Checklist.xlsx",
+      "filename": "2022-Bowmans-Best-Baseball-Checklist.xlsx",
+      "size": 97193,
+      "downloadedAt": "2026-01-19T17:36:12.121Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-bowman-inception-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2023/02/2022-Bowman-Inception-Baseball-Checklist.xlsx",
+      "filename": "2022-Bowman-Inception-Baseball-Checklist.xlsx",
+      "size": 84213,
+      "downloadedAt": "2026-01-19T17:36:16.563Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-topps-allen-ginter-chrome-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2023/02/2022-Topps-Allen-Ginter-Chrome-Baseball-Checklist.xlsx",
+      "filename": "2022-Topps-Allen-Ginter-Chrome-Baseball-Checklist.xlsx",
+      "size": 117680,
+      "downloadedAt": "2026-01-19T17:36:21.121Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-bowman-heritage-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2023/02/2022-Bowman-Heritage-Baseball-Checklist.xlsx",
+      "filename": "2022-Bowman-Heritage-Baseball-Checklist.xlsx",
+      "size": 124198,
+      "downloadedAt": "2026-01-19T17:36:24.575Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-topps-chrome-sonic-lite-baseball-cards/",
+      "xlsxUrl": "https://img.beckett.com/2023/01/2022-Topps-Chrome-Sonic-Lite-Baseball-Checklist.xlsx",
+      "filename": "2022-Topps-Chrome-Sonic-Lite-Baseball-Checklist.xlsx",
+      "size": 107719,
+      "downloadedAt": "2026-01-19T17:36:28.181Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-elite-extra-edition-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2023/02/2022-Elite-Extra-Edition-Baseball-Checklist.xlsx",
+      "filename": "2022-Elite-Extra-Edition-Baseball-Checklist.xlsx",
+      "size": 401686,
+      "downloadedAt": "2026-01-19T17:36:32.509Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-topps-archives-snapshots-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2023/02/2022-Topps-Archives-Snapshots-Baseball-Checklist.xlsx",
+      "filename": "2022-Topps-Archives-Snapshots-Baseball-Checklist.xlsx",
+      "size": 81754,
+      "downloadedAt": "2026-01-19T17:36:36.854Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2023-topps-series-1-1st-edition-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2023/02/2023-Topps-Series-1-Baseball-1st-Edition-Checklist.xlsx",
+      "filename": "2023-Topps-Series-1-Baseball-1st-Edition-Checklist.xlsx",
+      "size": 37404,
+      "downloadedAt": "2026-01-19T17:36:40.693Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-topps-chrome-ben-baller-edition-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2023/01/2022-Topps-Chrome-Ben-Baller-Edition-Baseball-Checklist.xlsx",
+      "filename": "2022-Topps-Chrome-Ben-Baller-Edition-Baseball-Checklist.xlsx",
+      "size": 97818,
+      "downloadedAt": "2026-01-19T17:36:44.609Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-bowman-draft-sapphire-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/12/2022-Bowman-Draft-Sapphire-Baseball-Checklist.xlsx",
+      "filename": "2022-Bowman-Draft-Sapphire-Baseball-Checklist.xlsx",
+      "size": 17975,
+      "downloadedAt": "2026-01-19T17:36:48.524Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-panini-prizm-draft-picks-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2023/01/2022-Panini-Prizm-Draft-Picks-Baseball-Checklist.xlsx",
+      "filename": "2022-Panini-Prizm-Draft-Picks-Baseball-Checklist.xlsx",
+      "size": 346731,
+      "downloadedAt": "2026-01-19T17:36:51.938Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-topps-gilded-collection-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/11/2022-Topps-Gilded-Collection-Baseball-Checklist.xlsx",
+      "filename": "2022-Topps-Gilded-Collection-Baseball-Checklist.xlsx",
+      "size": 99314,
+      "downloadedAt": "2026-01-19T17:36:55.871Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-topps-finest-baseball-cards/",
+      "xlsxUrl": "https://img.beckett.com/2023/01/2022-Topps-Finest-Baseball-Checklist.xlsx",
+      "filename": "2022-Topps-Finest-Baseball-Checklist.xlsx",
+      "size": 153394,
+      "downloadedAt": "2026-01-19T17:37:03.413Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-bowman-chrome-sapphire-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/12/2022-Bowman-Chrome-Sapphire-Baseball-Checklist.xlsx",
+      "filename": "2022-Bowman-Chrome-Sapphire-Baseball-Checklist.xlsx",
+      "size": 52430,
+      "downloadedAt": "2026-01-19T17:37:07.205Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-panini-flawless-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2023/01/2022-Panini-Flawless-Baseball-Checklist.xlsx",
+      "filename": "2022-Panini-Flawless-Baseball-Checklist.xlsx",
+      "size": 146716,
+      "downloadedAt": "2026-01-19T17:37:11.066Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-bowman-draft-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/12/2022-Bowman-Draft-Baseball-Checklist.xlsx",
+      "filename": "2022-Bowman-Draft-Baseball-Checklist.xlsx",
+      "size": 115012,
+      "downloadedAt": "2026-01-19T17:37:14.668Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-panini-national-treasures-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2023/01/2022-Panini-National-Treasures-Baseball-Checklist-B.xlsx",
+      "filename": "2022-Panini-National-Treasures-Baseball-Checklist-B.xlsx",
+      "size": 334934,
+      "downloadedAt": "2026-01-19T17:37:18.803Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-topps-chrome-update-sapphire-baseball-cards/",
+      "xlsxUrl": "https://img.beckett.com/2023/01/2022-Topps-Chrome-Update-Sapphire-Baseball-Checklist.xlsx",
+      "filename": "2022-Topps-Chrome-Update-Sapphire-Baseball-Checklist.xlsx",
+      "size": 59141,
+      "downloadedAt": "2026-01-19T17:37:22.555Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-bowman-transcendent-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/12/2022-Bowman-Transcendent-Baseball-Checklist.xlsx",
+      "filename": "2022-Bowman-Transcendent-Baseball-Checklist.xlsx",
+      "size": 106048,
+      "downloadedAt": "2026-01-19T17:37:26.513Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-panini-capstone-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/12/2022-Panini-Capstone-Baseball-Checklist.xlsx",
+      "filename": "2022-Panini-Capstone-Baseball-Checklist.xlsx",
+      "size": 146748,
+      "downloadedAt": "2026-01-19T17:37:31.434Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-bowman-chrome-mega-box-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/12/2022-Bowman-Chrome-Mega-Box-Baseball-Checklist.xlsx",
+      "filename": "2022-Bowman-Chrome-Mega-Box-Baseball-Checklist.xlsx",
+      "size": 109075,
+      "downloadedAt": "2026-01-19T17:37:35.280Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-topps-five-star-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/12/2022-Topps-Five-Star-Baseball-Checklist.xlsx",
+      "filename": "2022-Topps-Five-Star-Baseball-Checklist.xlsx",
+      "size": 106157,
+      "downloadedAt": "2026-01-19T17:37:39.857Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-topps-chrome-update-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/12/2022-Topps-Chrome-Update-Baseball-Checklist.xlsx",
+      "filename": "2022-Topps-Chrome-Update-Baseball-Checklist.xlsx",
+      "size": 111368,
+      "downloadedAt": "2026-01-19T17:37:43.065Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-topps-triple-threads-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/12/2022-Topps-Triple-Threads-Baseball-Checklist.xlsx",
+      "filename": "2022-Topps-Triple-Threads-Baseball-Checklist.xlsx",
+      "size": 233008,
+      "downloadedAt": "2026-01-19T17:37:50.328Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-topps-chrome-black-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/12/2022-Topps-Chrome-Black-Baseball-Checklist.xlsx",
+      "filename": "2022-Topps-Chrome-Black-Baseball-Checklist.xlsx",
+      "size": 88054,
+      "downloadedAt": "2026-01-19T17:37:53.690Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-topps-mini-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/11/2022-Topps-Mini-Baseball-Checklist.xlsx",
+      "filename": "2022-Topps-Mini-Baseball-Checklist.xlsx",
+      "size": 163489,
+      "downloadedAt": "2026-01-19T17:37:57.513Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-topps-cosmic-chrome-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/11/2022-Topps-Cosmic-Chrome-Baseball-Checklist.xlsx",
+      "filename": "2022-Topps-Cosmic-Chrome-Baseball-Checklist.xlsx",
+      "size": 113261,
+      "downloadedAt": "2026-01-19T17:38:01.290Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-bowman-draft-1st-edition-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/12/2022-Bowman-Draft-1st-Edition-Baseball-Checklist.xlsx",
+      "filename": "2022-Bowman-Draft-1st-Edition-Baseball-Checklist.xlsx",
+      "size": 59725,
+      "downloadedAt": "2026-01-19T17:38:04.460Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-bowman-platinum-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/12/2022-Bowman-Platinum-Baseball-Checklist.xlsx",
+      "filename": "2022-Bowman-Platinum-Baseball-Checklist.xlsx",
+      "size": 147802,
+      "downloadedAt": "2026-01-19T17:38:13.178Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-topps-heritage-high-number-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/12/2022-Topps-Heritage-High-Number-Baseball.xlsx",
+      "filename": "2022-Topps-Heritage-High-Number-Baseball.xlsx",
+      "size": 179530,
+      "downloadedAt": "2026-01-19T17:38:16.706Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-bowman-chrome-x-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/12/2022-Bowman-Chrome-X-Baseball.xlsx",
+      "filename": "2022-Bowman-Chrome-X-Baseball.xlsx",
+      "size": 59734,
+      "downloadedAt": "2026-01-19T17:38:20.400Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-donruss-optic-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/11/2022-Donruss-Optic-Baseball-Checklist.xlsx",
+      "filename": "2022-Donruss-Optic-Baseball-Checklist.xlsx",
+      "size": 340622,
+      "downloadedAt": "2026-01-19T17:38:24.036Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-topps-holiday-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/11/2022-Topps-Holiday-Baseball-Checklist.xlsx",
+      "filename": "2022-Topps-Holiday-Baseball-Checklist.xlsx",
+      "size": 141647,
+      "downloadedAt": "2026-01-19T17:38:27.890Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-topps-stadium-club-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/12/2022-Topps-Stadium-Club-Baseball.xlsx",
+      "filename": "2022-Topps-Stadium-Club-Baseball.xlsx",
+      "size": 145613,
+      "downloadedAt": "2026-01-19T17:38:31.455Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-topps-chrome-sapphire-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/11/2022-Topps-Chrome-Sapphire-Baseball-Checklist.xlsx",
+      "filename": "2022-Topps-Chrome-Sapphire-Baseball-Checklist.xlsx",
+      "size": 56076,
+      "downloadedAt": "2026-01-19T17:38:34.727Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-topps-brooklyn-collection-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/11/2022-Topps-Brooklyn-Collection-Baseball-Checklist.xlsx",
+      "filename": "2022-Topps-Brooklyn-Collection-Baseball-Checklist.xlsx",
+      "size": 73057,
+      "downloadedAt": "2026-01-19T17:38:39.201Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-topps-rip-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/11/2022-Topps-Rip-Baseball-Checklist-B.xlsx",
+      "filename": "2022-Topps-Rip-Baseball-Checklist-B.xlsx",
+      "size": 95876,
+      "downloadedAt": "2026-01-19T17:38:43.335Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-topps-x-naturel-1952-topps-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/11/1952-Topps-x-Naturel-1952-Topps-Baseball-Checklist.xlsx",
+      "filename": "1952-Topps-x-Naturel-1952-Topps-Baseball-Checklist.xlsx",
+      "size": 38532,
+      "downloadedAt": "2026-01-19T17:38:47.177Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-bowman-chrome-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/11/2022-Bowman-Chrome-Baseball-Checklist.xlsx",
+      "filename": "2022-Bowman-Chrome-Baseball-Checklist.xlsx",
+      "size": 148939,
+      "downloadedAt": "2026-01-19T17:38:50.672Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-topps-heritage-minors-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/12/2022-Topps-Heritage-Minors-Baseball-Checklist.xlsx",
+      "filename": "2022-Topps-Heritage-Minors-Baseball-Checklist.xlsx",
+      "size": 162910,
+      "downloadedAt": "2026-01-19T17:38:54.698Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-topps-allen-ginter-x-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/11/2022-Topps-Allen-Ginter-X-Baseball-Checklist-1.xlsx",
+      "filename": "2022-Topps-Allen-Ginter-X-Baseball-Checklist-1.xlsx",
+      "size": 153180,
+      "downloadedAt": "2026-01-19T17:38:58.505Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-topps-allen-ginter-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/11/2022-Topps-Allen-Ginter-Baseball-Checklist.xlsx",
+      "filename": "2022-Topps-Allen-Ginter-Baseball-Checklist.xlsx",
+      "size": 254467,
+      "downloadedAt": "2026-01-19T17:39:02.348Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-panini-mosaic-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/10/2022-Panini-Mosaic-Baseball-Checklist.xlsx",
+      "filename": "2022-Panini-Mosaic-Baseball-Checklist.xlsx",
+      "size": 302914,
+      "downloadedAt": "2026-01-19T17:39:10.108Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-topps-update-series-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/10/2022-Topps-Update-Series-Baseball-Checklist.xlsx",
+      "filename": "2022-Topps-Update-Series-Baseball-Checklist.xlsx",
+      "size": 271271,
+      "downloadedAt": "2026-01-19T17:39:17.555Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-topps-gallery-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/09/2022-Topps-Gallery-Baseball-Checklist.xlsx",
+      "filename": "2022-Topps-Gallery-Baseball-Checklist.xlsx",
+      "size": 129409,
+      "downloadedAt": "2026-01-19T17:39:21.518Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-panini-chronicles-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/10/2022-Panini-Chronicles-Baseball-Checklist.xlsx",
+      "filename": "2022-Panini-Chronicles-Baseball-Checklist.xlsx",
+      "size": 450319,
+      "downloadedAt": "2026-01-19T17:39:27.275Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/1991-topps-desert-shield-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/10/1991-Topps-Desert-Shield-Baseball-Checklist.xlsx",
+      "filename": "1991-Topps-Desert-Shield-Baseball-Checklist.xlsx",
+      "size": 49293,
+      "downloadedAt": "2026-01-19T17:39:31.114Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-leaf-valiant-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/10/2021-Leaf-Valiant-Baseball-Checklist.xlsx",
+      "filename": "2021-Leaf-Valiant-Baseball-Checklist.xlsx",
+      "size": 22776,
+      "downloadedAt": "2026-01-19T17:39:34.407Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-topps-chrome-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/09/2022-Topps-Chrome-Baseball-Checklist.xlsx",
+      "filename": "2022-Topps-Chrome-Baseball-Checklist.xlsx",
+      "size": 163110,
+      "downloadedAt": "2026-01-19T17:39:38.174Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-topps-luminaries-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/10/2022-Topps-Luminaries-Baseball-Checklist.xlsx",
+      "filename": "2022-Topps-Luminaries-Baseball-Checklist.xlsx",
+      "size": 91305,
+      "downloadedAt": "2026-01-19T17:39:43.021Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-panini-three-and-two-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/10/2022-Panini-Three-and-Two-Baseball-Checklist.xlsx",
+      "filename": "2022-Panini-Three-and-Two-Baseball-Checklist.xlsx",
+      "size": 275365,
+      "downloadedAt": "2026-01-19T17:39:47.249Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-bowman-sterling-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/10/2022-Bowman-Sterling-Baseball-Checklist.xlsx",
+      "filename": "2022-Bowman-Sterling-Baseball-Checklist.xlsx",
+      "size": 121289,
+      "downloadedAt": "2026-01-19T17:39:51.248Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-topps-archives-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/10/2022-Topps-Archives-Baseball-Checklist.xlsx",
+      "filename": "2022-Topps-Archives-Baseball-Checklist.xlsx",
+      "size": 163942,
+      "downloadedAt": "2026-01-19T17:39:55.047Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-topps-pro-debut-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/09/2022-Topps-Pro-Debut-Baseball-Checklist-w-MLB-Teams.xlsx",
+      "filename": "2022-Topps-Pro-Debut-Baseball-Checklist-w-MLB-Teams.xlsx",
+      "size": 145009,
+      "downloadedAt": "2026-01-19T17:39:59.789Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-panini-prizm-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/09/2022-Panini-Prizm-Baseball-Checklist-1.xlsx",
+      "filename": "2022-Panini-Prizm-Baseball-Checklist-1.xlsx",
+      "size": 420332,
+      "downloadedAt": "2026-01-19T17:40:04.282Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-topps-chrome-logofractor-edition-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/09/2022-Topps-Chrome-Logofractor-Edition-Checklist.xlsx",
+      "filename": "2022-Topps-Chrome-Logofractor-Edition-Checklist.xlsx",
+      "size": 104911,
+      "downloadedAt": "2026-01-19T17:40:08.354Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-topps-bobby-witt-jr-crown-collection-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/09/2022-Topps-x-Bobby-Witt-Jr.-Crown-Collection-Baseball-Checklist-1.xlsx",
+      "filename": "2022-Topps-x-Bobby-Witt-Jr.-Crown-Collection-Baseball-Checklist-1.xlsx",
+      "size": 84099,
+      "downloadedAt": "2026-01-19T17:40:12.131Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-panini-immaculate-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/09/2022-Panini-Immaculate-Baseball-Checklist.xlsx",
+      "filename": "2022-Panini-Immaculate-Baseball-Checklist.xlsx",
+      "size": 503801,
+      "downloadedAt": "2026-01-19T17:40:16.635Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-topps-museum-collection-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/09/2022-Topps-Museum-Collection-Baseball-Checklist.xlsx",
+      "filename": "2022-Topps-Museum-Collection-Baseball-Checklist.xlsx",
+      "size": 245097,
+      "downloadedAt": "2026-01-19T17:40:20.594Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-topps-fire-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/08/2022-Topps-Fire-Baseball-Checklist-1.xlsx",
+      "filename": "2022-Topps-Fire-Baseball-Checklist-1.xlsx",
+      "size": 110277,
+      "downloadedAt": "2026-01-19T17:40:24.740Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-topps-3d-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/08/2022-Topps-3D-Baseball-Checklist.xlsx",
+      "filename": "2022-Topps-3D-Baseball-Checklist.xlsx",
+      "size": 28209,
+      "downloadedAt": "2026-01-19T17:40:28.451Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-topps-clearly-authentic-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/08/2022-Topps-Clearly-Authentic-Baseball-Checklist.xlsx",
+      "filename": "2022-Topps-Clearly-Authentic-Baseball-Checklist.xlsx",
+      "size": 65758,
+      "downloadedAt": "2026-01-19T17:40:32.019Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-topps-finest-flashbacks-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/08/2022-Topps-Finest-Flashbacks-Baseball-Checklist-1.xlsx",
+      "filename": "2022-Topps-Finest-Flashbacks-Baseball-Checklist-1.xlsx",
+      "size": 33897,
+      "downloadedAt": "2026-01-19T17:40:35.695Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-leaf-lumber-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/08/2022-Leaf-Lumber-Baseball-Checklist.xlsx",
+      "filename": "2022-Leaf-Lumber-Baseball-Checklist.xlsx",
+      "size": 52867,
+      "downloadedAt": "2026-01-19T17:40:43.507Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-topps-diamond-icons-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/08/2022-Topps-Diamond-Icons-Baseball-Checklist-1.xlsx",
+      "filename": "2022-Topps-Diamond-Icons-Baseball-Checklist-1.xlsx",
+      "size": 120344,
+      "downloadedAt": "2026-01-19T17:40:47.383Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/1984-topps-traded-tiffany-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/08/1984-Topps-Traded-Tiffany-Baseball-Checklist.xlsx",
+      "filename": "1984-Topps-Traded-Tiffany-Baseball-Checklist.xlsx",
+      "size": 13939,
+      "downloadedAt": "2026-01-19T17:40:50.228Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-topps-x-derek-jeter-call-of-the-captain-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/08/2022-Topps-x-Derek-Jeter-Call-of-the-Captain-Checklist.xlsx",
+      "filename": "2022-Topps-x-Derek-Jeter-Call-of-the-Captain-Checklist.xlsx",
+      "size": 71654,
+      "downloadedAt": "2026-01-19T17:40:53.437Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/1984-topps-traded-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/08/1984-Topps-Traded-Baseball-Checklist.xlsx",
+      "filename": "1984-Topps-Traded-Baseball-Checklist.xlsx",
+      "size": 13940,
+      "downloadedAt": "2026-01-19T17:40:56.821Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-topps-tier-one-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/07/2022-Topps-Tier-One-Baseball-Checklist.xlsx",
+      "filename": "2022-Topps-Tier-One-Baseball-Checklist.xlsx",
+      "size": 153819,
+      "downloadedAt": "2026-01-19T17:41:04.773Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-topps-pristine-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/07/2022-Topps-Pristine-Baseball-Checklist.xlsx",
+      "filename": "2022-Topps-Pristine-Baseball-Checklist.xlsx",
+      "size": 113884,
+      "downloadedAt": "2026-01-19T17:41:07.939Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-topps-series-2-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/06/2022-Topps-Series-2-Baseball-Checklist-B.xlsx",
+      "filename": "2022-Topps-Series-2-Baseball-Checklist-B.xlsx",
+      "size": 234959,
+      "downloadedAt": "2026-01-19T17:41:12.715Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-leaf-trinity-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/07/2021-Leaf-Trinity-Baseball-Checklist.xlsx",
+      "filename": "2021-Leaf-Trinity-Baseball-Checklist.xlsx",
+      "size": 14042,
+      "downloadedAt": "2026-01-19T17:41:16.701Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-topps-definitive-collection-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/06/2022-Topps-Definitive-Collection-Baseball-Checklist-1.xlsx",
+      "filename": "2022-Topps-Definitive-Collection-Baseball-Checklist-1.xlsx",
+      "size": 159795,
+      "downloadedAt": "2026-01-19T17:41:20.612Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-topps-chrome-platinum-anniversary-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/07/2021-Topps-Chrome-Platinum-Anniversary-Edition-Baseball-Checklist.xlsx",
+      "filename": "2021-Topps-Chrome-Platinum-Anniversary-Edition-Baseball-Checklist.xlsx",
+      "size": 120864,
+      "downloadedAt": "2026-01-19T17:41:23.978Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-panini-select-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/06/2022-Panini-Select-Baseball-Checklist-1.xlsx",
+      "filename": "2022-Panini-Select-Baseball-Checklist-1.xlsx",
+      "size": 239423,
+      "downloadedAt": "2026-01-19T17:41:31.204Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-panini-absolute-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/06/2022-Panini-Absolute-Baseball-Checklist-1.xlsx",
+      "filename": "2022-Panini-Absolute-Baseball-Checklist-1.xlsx",
+      "size": 200809,
+      "downloadedAt": "2026-01-19T17:41:35.302Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-bowman-mega-box-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/06/2022-Bowman-Mega-Box-Baseball-Checklist.xlsx",
+      "filename": "2022-Bowman-Mega-Box-Baseball-Checklist.xlsx",
+      "size": 112497,
+      "downloadedAt": "2026-01-19T17:41:39.070Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/1984-topps-tiffany-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/05/1984-Topps-Tiffany-Baseball-Checklist.xlsx",
+      "filename": "1984-Topps-Tiffany-Baseball-Checklist.xlsx",
+      "size": 51687,
+      "downloadedAt": "2026-01-19T17:41:42.295Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-bowman-sapphire-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/05/2022-Bowman-Sapphire-Baseball-Checklist-1.xlsx",
+      "filename": "2022-Bowman-Sapphire-Baseball-Checklist-1.xlsx",
+      "size": 41465,
+      "downloadedAt": "2026-01-19T17:41:45.972Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-topps-gypsy-queen-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/05/2022-Topps-Gypsy-Queen-Baseball-Checklist.xlsx",
+      "filename": "2022-Topps-Gypsy-Queen-Baseball-Checklist.xlsx",
+      "size": 160510,
+      "downloadedAt": "2026-01-19T17:41:53.670Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-topps-sterling-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/05/2022-Topps-Sterling-Baseball-Checklist-1.xlsx",
+      "filename": "2022-Topps-Sterling-Baseball-Checklist-1.xlsx",
+      "size": 115964,
+      "downloadedAt": "2026-01-19T17:41:57.518Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-bowman-chrome-sapphire-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/05/2021-Bowman-Chrome-Sapphire-Baseball-Checklist-1.xlsx",
+      "filename": "2021-Bowman-Chrome-Sapphire-Baseball-Checklist-1.xlsx",
+      "size": 51210,
+      "downloadedAt": "2026-01-19T17:42:00.664Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-panini-diamond-kings-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/05/2022-Panini-Diamond-Kings-Baseball-Checklist-1.xlsx",
+      "filename": "2022-Panini-Diamond-Kings-Baseball-Checklist-1.xlsx",
+      "size": 287644,
+      "downloadedAt": "2026-01-19T17:42:04.871Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-topps-tribute-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/05/2022-Topps-Tribute-Baseball-Checklist.xlsx",
+      "filename": "2022-Topps-Tribute-Baseball-Checklist.xlsx",
+      "size": 133601,
+      "downloadedAt": "2026-01-19T17:42:08.800Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-bowman-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/04/2022-Bowman-Baseball-Checklist-2.xlsx",
+      "filename": "2022-Bowman-Baseball-Checklist-2.xlsx",
+      "size": 146789,
+      "downloadedAt": "2026-01-19T17:42:15.530Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-topps-heritage-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/03/2022-Topps-Heritage-Baseball-Checklist.xlsx",
+      "filename": "2022-Topps-Heritage-Baseball-Checklist.xlsx",
+      "size": 208990,
+      "downloadedAt": "2026-01-19T17:42:18.835Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-topps-inception-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/03/2021-Topps-Inception-Baseball-Checklist.xlsx",
+      "filename": "2021-Topps-Inception-Baseball-Checklist.xlsx",
+      "size": 100453,
+      "downloadedAt": "2026-01-19T17:42:22.702Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-donruss-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/04/2022-Donruss-Baseball-Checklist.xlsx",
+      "filename": "2022-Donruss-Baseball-Checklist.xlsx",
+      "size": 293087,
+      "downloadedAt": "2026-01-19T17:42:26.714Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-panini-prizm-draft-picks-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/04/2021-Panini-Prizm-Draft-Picks-Baseball-Checklist-1.xlsx",
+      "filename": "2021-Panini-Prizm-Draft-Picks-Baseball-Checklist-1.xlsx",
+      "size": 337255,
+      "downloadedAt": "2026-01-19T17:42:37.601Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-topps-big-league-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/04/2021-Topps-Big-League-Baseball-Checklist.xlsx",
+      "filename": "2021-Topps-Big-League-Baseball-Checklist.xlsx",
+      "size": 119762,
+      "downloadedAt": "2026-01-19T17:42:47.696Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-panini-stars-stripes-usa-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/03/2022-Panini-Stars-and-Stripes-Baseball-Checklist.xlsx",
+      "filename": "2022-Panini-Stars-and-Stripes-Baseball-Checklist.xlsx",
+      "size": 175874,
+      "downloadedAt": "2026-01-19T17:42:54.665Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-topps-spotlight-70-series-2-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/03/2022-Topps-Spotlight-70-Series-2-Baseball-Checklist.xlsx",
+      "filename": "2022-Topps-Spotlight-70-Series-2-Baseball-Checklist.xlsx",
+      "size": 48982,
+      "downloadedAt": "2026-01-19T17:43:01.583Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-bowman-1st-edition-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/03/2022-Bowman-1st-Edition-Baseball-Checklist-1.xlsx",
+      "filename": "2022-Bowman-1st-Edition-Baseball-Checklist-1.xlsx",
+      "size": 55391,
+      "downloadedAt": "2026-01-19T17:43:08.177Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/1984-topps-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/03/1984-Topps-Baseball-Checklist.xlsx",
+      "filename": "1984-Topps-Baseball-Checklist.xlsx",
+      "size": 68553,
+      "downloadedAt": "2026-01-19T17:43:11.511Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-pro-set-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/03/2021-Pro-Set-Baseball-Checklist.xlsx",
+      "filename": "2021-Pro-Set-Baseball-Checklist.xlsx",
+      "size": 25567,
+      "downloadedAt": "2026-01-19T17:43:14.324Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-topps-opening-day-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/03/2022-Topps-Opening-Day-Baseball-Checklist.xlsx",
+      "filename": "2022-Topps-Opening-Day-Baseball-Checklist.xlsx",
+      "size": 155193,
+      "downloadedAt": "2026-01-19T17:43:18.645Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-topps-series-1-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/02/2022-Topps-Series-1-Baseball-Checklist.xlsx",
+      "filename": "2022-Topps-Series-1-Baseball-Checklist.xlsx",
+      "size": 280135,
+      "downloadedAt": "2026-01-19T17:43:22.427Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/1984-o-pee-chee-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/02/1984-O-Pee-Chee-Baseball-Checklist.xlsx",
+      "filename": "1984-O-Pee-Chee-Baseball-Checklist.xlsx",
+      "size": 28761,
+      "downloadedAt": "2026-01-19T17:43:32.848Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/1984-fleer-update-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/02/1984-Fleer-Update-Baseball-Checklist.xlsx",
+      "filename": "1984-Fleer-Update-Baseball-Checklist.xlsx",
+      "size": 14114,
+      "downloadedAt": "2026-01-19T17:43:43.044Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/1984-fleer-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/02/1984-Fleer-Baseball-Checklist-1.xlsx",
+      "filename": "1984-Fleer-Baseball-Checklist-1.xlsx",
+      "size": 58486,
+      "downloadedAt": "2026-01-19T17:43:46.951Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-topps-chrome-update-series-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/01/2021-Topps-Chrome-Update-Series-Baseball-Checklist.xlsx",
+      "filename": "2021-Topps-Chrome-Update-Series-Baseball-Checklist.xlsx",
+      "size": 110671,
+      "downloadedAt": "2026-01-19T17:43:55.891Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-bowman-draft-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/12/2021-Bowman-Draft-Baseball-Checklist-2.xlsx",
+      "filename": "2021-Bowman-Draft-Baseball-Checklist-2.xlsx",
+      "size": 105927,
+      "downloadedAt": "2026-01-19T17:43:59.330Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-leaf-metal-draft-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/01/2021-Leaf-Metal-Draft-Baseball-Checklist.xlsx",
+      "filename": "2021-Leaf-Metal-Draft-Baseball-Checklist.xlsx",
+      "size": 38117,
+      "downloadedAt": "2026-01-19T17:44:02.968Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-bowman-heritage-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/01/2021-Bowman-Heritage-Baseball-Checklist.xlsx",
+      "filename": "2021-Bowman-Heritage-Baseball-Checklist.xlsx",
+      "size": 44962,
+      "downloadedAt": "2026-01-19T17:44:05.977Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-topps-dynasty-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/12/2021-Topps-Dynasty-Baseball-Checklist.xlsx",
+      "filename": "2021-Topps-Dynasty-Baseball-Checklist.xlsx",
+      "size": 85733,
+      "downloadedAt": "2026-01-19T17:44:15.299Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-bowmans-best-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2022/01/2021-Bowmans-Best-Baseball-Checklist.xlsx",
+      "filename": "2021-Bowmans-Best-Baseball-Checklist.xlsx",
+      "size": 96681,
+      "downloadedAt": "2026-01-19T17:44:19.498Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-panini-elite-extra-edition-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/12/2021-Panini-Elite-Extra-Edition-Baseball-Checklist-1.xlsx",
+      "filename": "2021-Panini-Elite-Extra-Edition-Baseball-Checklist-1.xlsx",
+      "size": 410630,
+      "downloadedAt": "2026-01-19T17:44:22.937Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-panini-flawless-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/12/2021-Panini-Flawless-Baseball-Checklist.xlsx",
+      "filename": "2021-Panini-Flawless-Baseball-Checklist.xlsx",
+      "size": 187728,
+      "downloadedAt": "2026-01-19T17:44:26.528Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-topps-transcendent-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/12/2021-Topps-Transcendent-Baseball-Checklist.xlsx",
+      "filename": "2021-Topps-Transcendent-Baseball-Checklist.xlsx",
+      "size": 102760,
+      "downloadedAt": "2026-01-19T17:44:30.567Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-topps-gallery-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/12/2021-Topps-Gallery-Baseball-Checklist.xlsx",
+      "filename": "2021-Topps-Gallery-Baseball-Checklist.xlsx",
+      "size": 93601,
+      "downloadedAt": "2026-01-19T17:44:34.597Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-bowman-inception-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/10/2021-Bowman-Inception-Baseball-Checklist.xlsx",
+      "filename": "2021-Bowman-Inception-Baseball-Checklist.xlsx",
+      "size": 30372,
+      "downloadedAt": "2026-01-19T17:44:38.294Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-panini-contenders-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/11/2021-Panini-Contenders-Baseball-Checklist.xlsx",
+      "filename": "2021-Panini-Contenders-Baseball-Checklist.xlsx",
+      "size": 215747,
+      "downloadedAt": "2026-01-19T17:44:41.465Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-topps-allen-ginter-chrome-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/12/2021-Topps-Allen-Ginter-Chrome-Baseball-Checklist.xlsx",
+      "filename": "2021-Topps-Allen-Ginter-Chrome-Baseball-Checklist.xlsx",
+      "size": 66520,
+      "downloadedAt": "2026-01-19T17:44:44.427Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-topps-all-star-rookie-cup-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/12/2021-Topps-All-Star-Rookie-Cup-Baseball-Checklist.xlsx",
+      "filename": "2021-Topps-All-Star-Rookie-Cup-Baseball-Checklist.xlsx",
+      "size": 43118,
+      "downloadedAt": "2026-01-19T17:44:47.622Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-panini-national-treasures-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/11/2021-Panini-National-Treasures-Baseball-Checklist-1.xlsx",
+      "filename": "2021-Panini-National-Treasures-Baseball-Checklist-1.xlsx",
+      "size": 322677,
+      "downloadedAt": "2026-01-19T17:44:50.924Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-topps-heritage-high-number-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/12/2021-Topps-Heritage-High-Number-Baseball-Checklist.xlsx",
+      "filename": "2021-Topps-Heritage-High-Number-Baseball-Checklist.xlsx",
+      "size": 168299,
+      "downloadedAt": "2026-01-19T17:44:54.777Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-topps-chrome-black-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/12/2021-Topps-Chrome-Black-Baseball-Checklist.xlsx",
+      "filename": "2021-Topps-Chrome-Black-Baseball-Checklist.xlsx",
+      "size": 52698,
+      "downloadedAt": "2026-01-19T17:44:57.758Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-topps-holiday-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/12/2021-Topps-Holiday-Baseball-Checklist-1.xlsx",
+      "filename": "2021-Topps-Holiday-Baseball-Checklist-1.xlsx",
+      "size": 94387,
+      "downloadedAt": "2026-01-19T17:45:04.327Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-topps-brooklyn-collection-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/10/2021-Topps-Brooklyn-Collection-Baseball-Checklist.xlsx",
+      "filename": "2021-Topps-Brooklyn-Collection-Baseball-Checklist.xlsx",
+      "size": 59196,
+      "downloadedAt": "2026-01-19T17:45:12.810Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-topps-archives-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/11/2021-Topps-Archives-Baseball-Checklist.xlsx",
+      "filename": "2021-Topps-Archives-Baseball-Checklist.xlsx",
+      "size": 155576,
+      "downloadedAt": "2026-01-19T17:45:20.153Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-topps-stadium-club-chrome-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/11/2021-Topps-Stadium-Club-Chrome-Baseball-Checklist.xlsx",
+      "filename": "2021-Topps-Stadium-Club-Chrome-Baseball-Checklist.xlsx",
+      "size": 96933,
+      "downloadedAt": "2026-01-19T17:45:25.070Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-topps-triple-threads-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/10/2021-Topps-Triple-Threads-Baseball-Checklist.xlsx",
+      "filename": "2021-Topps-Triple-Threads-Baseball-Checklist.xlsx",
+      "size": 165028,
+      "downloadedAt": "2026-01-19T17:45:35.176Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-panini-chronicles-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/11/2021-Panini-Chronicles-Baseball-Checklist-1.xlsx",
+      "filename": "2021-Panini-Chronicles-Baseball-Checklist-1.xlsx",
+      "size": 379852,
+      "downloadedAt": "2026-01-19T17:45:38.931Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-topps-update-series-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/10/2021-Topps-Update-Series-Baseball-Checklist.xlsx",
+      "filename": "2021-Topps-Update-Series-Baseball-Checklist.xlsx",
+      "size": 194961,
+      "downloadedAt": "2026-01-19T17:45:43.389Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-topps-chrome-sapphire-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/10/2021-Topps-Chrome-Sapphire-Baseball-Checklist-1.xlsx",
+      "filename": "2021-Topps-Chrome-Sapphire-Baseball-Checklist-1.xlsx",
+      "size": 76870,
+      "downloadedAt": "2026-01-19T17:45:50.746Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-topps-heritage-minors-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/10/2021-Topps-Heritage-Minors-Baseball-Checklist.xlsx",
+      "filename": "2021-Topps-Heritage-Minors-Baseball-Checklist.xlsx",
+      "size": 146533,
+      "downloadedAt": "2026-01-19T17:45:53.799Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-panini-mosaic-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/10/2021-Panini-Mosaic-Baseball-Checklist.xlsx",
+      "filename": "2021-Panini-Mosaic-Baseball-Checklist.xlsx",
+      "size": 361309,
+      "downloadedAt": "2026-01-19T17:45:57.697Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-topps-five-star-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/10/2021-Topps-Five-Star-Baseball-Checklist.xlsx",
+      "filename": "2021-Topps-Five-Star-Baseball-Checklist.xlsx",
+      "size": 93064,
+      "downloadedAt": "2026-01-19T17:46:04.166Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-bowman-transcendent-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/10/2021-Bowman-Transcendent-Baseball-Checklist.xlsx",
+      "filename": "2021-Bowman-Transcendent-Baseball-Checklist.xlsx",
+      "size": 106818,
+      "downloadedAt": "2026-01-19T17:46:07.219Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-bowman-chrome-mega-box-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/10/2021-Bowman-Chrome-Mega-Box-Checklist.xlsx",
+      "filename": "2021-Bowman-Chrome-Mega-Box-Checklist.xlsx",
+      "size": 99597,
+      "downloadedAt": "2026-01-19T17:46:10.083Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-topps-chrome-ben-baller-edition-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/10/2021-Topps-Chrome-Ben-Baller-Edition-Baseball-Checklist.xlsx",
+      "filename": "2021-Topps-Chrome-Ben-Baller-Edition-Baseball-Checklist.xlsx",
+      "size": 32863,
+      "downloadedAt": "2026-01-19T17:46:14.075Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-bowman-platinum-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/10/2021-Bowman-Platinum-Baseball-Checklist.xlsx",
+      "filename": "2021-Bowman-Platinum-Baseball-Checklist.xlsx",
+      "size": 153980,
+      "downloadedAt": "2026-01-19T17:46:20.451Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-topps-fire-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/09/2021-Topps-Fire-Baseball-Checklist-1.xlsx",
+      "filename": "2021-Topps-Fire-Baseball-Checklist-1.xlsx",
+      "size": 102484,
+      "downloadedAt": "2026-01-19T17:46:24.616Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-topps-rip-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/10/2021-Topps-Rip-Baseball-Checklist.xlsx",
+      "filename": "2021-Topps-Rip-Baseball-Checklist.xlsx",
+      "size": 57380,
+      "downloadedAt": "2026-01-19T17:46:27.727Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-donruss-optic-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/10/2021-Donruss-Optic-Baseball-Checklist.xlsx",
+      "filename": "2021-Donruss-Optic-Baseball-Checklist.xlsx",
+      "size": 284452,
+      "downloadedAt": "2026-01-19T17:46:30.844Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-bowman-chrome-x-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/10/2021-Bowman-Chrome-X-Baseball-Checklist.xlsx",
+      "filename": "2021-Bowman-Chrome-X-Baseball-Checklist.xlsx",
+      "size": 40788,
+      "downloadedAt": "2026-01-19T17:46:34.857Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-topps-gold-label-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/09/2021-Topps-Gold-Label-Baseball-Checklist.xlsx",
+      "filename": "2021-Topps-Gold-Label-Baseball-Checklist.xlsx",
+      "size": 118441,
+      "downloadedAt": "2026-01-19T17:46:38.210Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-bowman-sterling-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/09/2021-Bowman-Sterling-Baseball-Checklist-1.xlsx",
+      "filename": "2021-Bowman-Sterling-Baseball-Checklist-1.xlsx",
+      "size": 104451,
+      "downloadedAt": "2026-01-19T17:46:41.490Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-panini-spectra-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/09/2021-Panini-Spectra-Baseball-Checklist.xlsx",
+      "filename": "2021-Panini-Spectra-Baseball-Checklist.xlsx",
+      "size": 237738,
+      "downloadedAt": "2026-01-19T17:46:44.667Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-bowman-chrome-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/09/2021-Bowman-Chrome-Baseball-Checklist.xlsx",
+      "filename": "2021-Bowman-Chrome-Baseball-Checklist.xlsx",
+      "size": 129782,
+      "downloadedAt": "2026-01-19T17:46:48.198Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-topps-archives-snapshots-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/09/2021-Topps-Archives-Snapshots-Baseball-Checklist.xlsx",
+      "filename": "2021-Topps-Archives-Snapshots-Baseball-Checklist.xlsx",
+      "size": 90775,
+      "downloadedAt": "2026-01-19T17:46:51.644Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/1984-donruss-action-all-stars-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/09/1984-Donruss-Action-All-Stars-Baseball-Checklist.xlsx",
+      "filename": "1984-Donruss-Action-All-Stars-Baseball-Checklist.xlsx",
+      "size": 7842,
+      "downloadedAt": "2026-01-19T17:46:55.198Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-topps-allen-ginter-x-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/09/2021-Topps-Allen-Ginter-X-Baseball-Checklist.xlsx",
+      "filename": "2021-Topps-Allen-Ginter-X-Baseball-Checklist.xlsx",
+      "size": 46761,
+      "downloadedAt": "2026-01-19T17:46:58.376Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-topps-finest-flashbacks-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/09/2021-Topps-Finest-Flashbacks-Baseball-Checklist.xlsx",
+      "filename": "2021-Topps-Finest-Flashbacks-Baseball-Checklist.xlsx",
+      "size": 74353,
+      "downloadedAt": "2026-01-19T17:47:02.311Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-topps-chrome-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/08/2021-Topps-Chrome-Baseball-Checklist-1.xlsx",
+      "filename": "2021-Topps-Chrome-Baseball-Checklist-1.xlsx",
+      "size": 156046,
+      "downloadedAt": "2026-01-19T17:47:05.324Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-topps-pro-debut-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/08/2021-Topps-Pro-Debut-Baseball-Checklist.xlsx",
+      "filename": "2021-Topps-Pro-Debut-Baseball-Checklist.xlsx",
+      "size": 98109,
+      "downloadedAt": "2026-01-19T17:47:12.058Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-panini-immaculate-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/08/2021-Panini-Immaculate-Baseball-Checklist.xlsx",
+      "filename": "2021-Panini-Immaculate-Baseball-Checklist.xlsx",
+      "size": 441682,
+      "downloadedAt": "2026-01-19T17:47:15.895Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-topps-allen-and-ginter-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/08/2021-Topps-Allen-Ginter-Baseball-Checklist-2.xlsx",
+      "filename": "2021-Topps-Allen-Ginter-Baseball-Checklist-2.xlsx",
+      "size": 274995,
+      "downloadedAt": "2026-01-19T17:47:19.455Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-panini-prizm-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/08/2021-Panini-Prizm-Baseball-Checklist.xlsx",
+      "filename": "2021-Panini-Prizm-Baseball-Checklist.xlsx",
+      "size": 361279,
+      "downloadedAt": "2026-01-19T17:47:22.869Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-topps-luminaries-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/08/2021-Topps-Luminaries-Baseball-Checklist-1.xlsx",
+      "filename": "2021-Topps-Luminaries-Baseball-Checklist-1.xlsx",
+      "size": 99324,
+      "downloadedAt": "2026-01-19T17:47:25.957Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-leaf-valiant-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/07/2020-Leaf-Valiant-Baseball-Checklist.xlsx",
+      "filename": "2020-Leaf-Valiant-Baseball-Checklist.xlsx",
+      "size": 14633,
+      "downloadedAt": "2026-01-19T17:47:29.107Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/1984-donruss-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/07/1984-Donruss-Baseball-Checklist.xlsx",
+      "filename": "1984-Donruss-Baseball-Checklist.xlsx",
+      "size": 44138,
+      "downloadedAt": "2026-01-19T17:47:32.622Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-topps-spotlight-70-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/07/2021-Topps-Spotlight-70-Baseball-Checklist.xlsx",
+      "filename": "2021-Topps-Spotlight-70-Baseball-Checklist.xlsx",
+      "size": 13962,
+      "downloadedAt": "2026-01-19T17:47:35.467Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-topps-series-2-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/06/2021-Topps-Series-2-Baseball-Checklist.xlsx",
+      "filename": "2021-Topps-Series-2-Baseball-Checklist.xlsx",
+      "size": 236734,
+      "downloadedAt": "2026-01-19T17:47:39.222Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-topps-clearly-authentic-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/07/2021-Topps-Clearly-Authentic-Baseball-Checklist.xlsx",
+      "filename": "2021-Topps-Clearly-Authentic-Baseball-Checklist.xlsx",
+      "size": 70594,
+      "downloadedAt": "2026-01-19T17:47:43.062Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-topps-gypsy-queen-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/07/2021-Topps-Gypsy-Queen-Baseball-Checklist-1.xlsx",
+      "filename": "2021-Topps-Gypsy-Queen-Baseball-Checklist-1.xlsx",
+      "size": 152364,
+      "downloadedAt": "2026-01-19T17:47:46.750Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-topps-stadium-club-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/06/2021-Topps-Stadium-Club-Baseball-Checklist-2.xlsx",
+      "filename": "2021-Topps-Stadium-Club-Baseball-Checklist-2.xlsx",
+      "size": 139049,
+      "downloadedAt": "2026-01-19T17:47:50.244Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-topps-museum-collection-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/06/2021-Topps-Museum-Collection-Baseball-Checklist.xlsx",
+      "filename": "2021-Topps-Museum-Collection-Baseball-Checklist.xlsx",
+      "size": 155755,
+      "downloadedAt": "2026-01-19T17:47:54.613Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-topps-diamond-icons-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/06/2021-Topps-Diamond-Icons-Baseball-Checklist.xlsx",
+      "filename": "2021-Topps-Diamond-Icons-Baseball-Checklist.xlsx",
+      "size": 115585,
+      "downloadedAt": "2026-01-19T17:48:04.041Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-topps-finest-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/06/2021-Topps-Finest-Baseball-Checklist.xlsx",
+      "filename": "2021-Topps-Finest-Baseball-Checklist.xlsx",
+      "size": 95802,
+      "downloadedAt": "2026-01-19T17:48:08.101Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-leaf-trinity-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/06/2020-Leaf-Trinity-Baseball-Checklist.xlsx",
+      "filename": "2020-Leaf-Trinity-Baseball-Checklist.xlsx",
+      "size": 17499,
+      "downloadedAt": "2026-01-19T17:48:11.239Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-panini-select-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/06/2021-Panini-Select-Baseball-Checklist-B.xlsx",
+      "filename": "2021-Panini-Select-Baseball-Checklist-B.xlsx",
+      "size": 232427,
+      "downloadedAt": "2026-01-19T17:48:14.946Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-panini-absolute-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/05/2021-Panini-Absolute-Baseball-Checklist.xlsx",
+      "filename": "2021-Panini-Absolute-Baseball-Checklist.xlsx",
+      "size": 239690,
+      "downloadedAt": "2026-01-19T17:48:27.847Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-topps-sterling-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/05/2021-Topps-Sterling-Baseball-Checklist.xlsx",
+      "filename": "2021-Topps-Sterling-Baseball-Checklist.xlsx",
+      "size": 94116,
+      "downloadedAt": "2026-01-19T17:48:31.232Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-bowman-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/04/2021-Bowman-Baseball-Checklist.xlsx",
+      "filename": "2021-Bowman-Baseball-Checklist.xlsx",
+      "size": 147421,
+      "downloadedAt": "2026-01-19T17:48:34.381Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-bowman-mega-box-chrome-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/05/2021-Bowman-Mega-Box-Checklist.xlsx",
+      "filename": "2021-Bowman-Mega-Box-Checklist.xlsx",
+      "size": 75405,
+      "downloadedAt": "2026-01-19T17:48:37.648Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-topps-transcendent-hall-fame-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/04/2021-Topps-Transcendent-Hall-of-Fame-Baseball-Checklist.xlsx",
+      "filename": "2021-Topps-Transcendent-Hall-of-Fame-Baseball-Checklist.xlsx",
+      "size": 95749,
+      "downloadedAt": "2026-01-19T17:48:41.211Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-topps-tier-one-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/04/2021-Topps-Tier-One-Baseball-Checklist.xlsx",
+      "filename": "2021-Topps-Tier-One-Baseball-Checklist.xlsx",
+      "size": 136596,
+      "downloadedAt": "2026-01-19T17:48:44.827Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-panini-diamond-kings-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/04/2021-Panini-Diamond-Kings-Baseball-Checklist.xlsx",
+      "filename": "2021-Panini-Diamond-Kings-Baseball-Checklist.xlsx",
+      "size": 179204,
+      "downloadedAt": "2026-01-19T17:48:48.565Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-topps-tribute-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/04/2021-Topps-Tribute-Baseball-Checklist-1.xlsx",
+      "filename": "2021-Topps-Tribute-Baseball-Checklist-1.xlsx",
+      "size": 105864,
+      "downloadedAt": "2026-01-19T17:48:56.106Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-topps-definitive-collection-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/03/2021-Topps-Definitive-Collection-Baseball-Checklist.xlsx",
+      "filename": "2021-Topps-Definitive-Collection-Baseball-Checklist.xlsx",
+      "size": 143491,
+      "downloadedAt": "2026-01-19T17:48:59.991Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-topps-heritage-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/03/2021-Topps-Heritage-Baseball-Checklist.xlsx",
+      "filename": "2021-Topps-Heritage-Baseball-Checklist.xlsx",
+      "size": 227068,
+      "downloadedAt": "2026-01-19T17:49:03.300Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-leaf-lumber-kings-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/03/2021-Leaf-Lumber-Baseball-Checklist.xlsx",
+      "filename": "2021-Leaf-Lumber-Baseball-Checklist.xlsx",
+      "size": 91433,
+      "downloadedAt": "2026-01-19T17:49:06.585Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-topps-opening-day-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/03/2021-Topps-Opening-Day-Baseball-Checklist.xlsx",
+      "filename": "2021-Topps-Opening-Day-Baseball-Checklist.xlsx",
+      "size": 132509,
+      "downloadedAt": "2026-01-19T17:49:10.011Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-bowman-1st-edition-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/03/2021-Bowman-1st-Edition-Baseball-Checklist.xlsx",
+      "filename": "2021-Bowman-1st-Edition-Baseball-Checklist.xlsx",
+      "size": 65811,
+      "downloadedAt": "2026-01-19T17:49:13.181Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-topps-inception-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/03/2021-Topps-Inception-Baseball-Checklist-1.xlsx",
+      "filename": "2021-Topps-Inception-Baseball-Checklist-1.xlsx",
+      "size": 109230,
+      "downloadedAt": "2026-01-19T17:49:16.440Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-donruss-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/03/2021-Donruss-Baseball-Checklist.xlsx",
+      "filename": "2021-Donruss-Baseball-Checklist.xlsx",
+      "size": 315046,
+      "downloadedAt": "2026-01-19T17:49:19.572Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-leaf-flash-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/02/2020-Leaf-Flash-Baseball-Checklist.xlsx",
+      "filename": "2020-Leaf-Flash-Baseball-Checklist.xlsx",
+      "size": 33013,
+      "downloadedAt": "2026-01-19T17:49:23.385Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-topps-series-1-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/02/2021-Topps-Series-1-Baseball-Checklist-1.xlsx",
+      "filename": "2021-Topps-Series-1-Baseball-Checklist-1.xlsx",
+      "size": 276213,
+      "downloadedAt": "2026-01-19T17:49:28.295Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-topps-chrome-update-sapphire-edition-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/01/2020-Topps-Chrome-Update-Sapphire-Edition-Baseball-Checklist.xlsx",
+      "filename": "2020-Topps-Chrome-Update-Sapphire-Edition-Baseball-Checklist.xlsx",
+      "size": 34839,
+      "downloadedAt": "2026-01-19T17:49:34.986Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-topps-chrome-update-series-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/01/2020-Topps-Chrome-Update-Series-Baseball-Checklist.xlsx",
+      "filename": "2020-Topps-Chrome-Update-Series-Baseball-Checklist.xlsx",
+      "size": 102114,
+      "downloadedAt": "2026-01-19T17:49:42.879Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-bowman-heritage-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/01/2020-Bowman-Heritage-Baseball-Checklist-1.xlsx",
+      "filename": "2020-Bowman-Heritage-Baseball-Checklist-1.xlsx",
+      "size": 44401,
+      "downloadedAt": "2026-01-19T17:49:46.367Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-topps-walmart-holiday-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/01/2020-Topps-Holiday-Baseball-Checklist.xlsx",
+      "filename": "2020-Topps-Holiday-Baseball-Checklist.xlsx",
+      "size": 135861,
+      "downloadedAt": "2026-01-19T17:49:50.513Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-panini-elite-extra-edition-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2020/12/2020-Panini-Elite-Extra-Edition-Baseball-Checklist.xlsx",
+      "filename": "2020-Panini-Elite-Extra-Edition-Baseball-Checklist.xlsx",
+      "size": 471157,
+      "downloadedAt": "2026-01-19T17:49:55.003Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-topps-heritage-high-number-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2020/12/2020-Topps-Heritage-High-Number-Baseball-Checklist.xlsx",
+      "filename": "2020-Topps-Heritage-High-Number-Baseball-Checklist.xlsx",
+      "size": 110317,
+      "downloadedAt": "2026-01-19T17:50:03.437Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-bowmans-best-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2020/12/2020-Bowmans-Best-Baseball-Checklist.xlsx",
+      "filename": "2020-Bowmans-Best-Baseball-Checklist.xlsx",
+      "size": 107845,
+      "downloadedAt": "2026-01-19T17:50:17.921Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-bowman-draft-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2020/12/2020-Bowman-Draft-Baseball-Checklist.xlsx",
+      "filename": "2020-Bowman-Draft-Baseball-Checklist.xlsx",
+      "size": 136054,
+      "downloadedAt": "2026-01-19T17:50:41.840Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-topps-stadium-club-chrome-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2020/12/2020-Topps-Stadium-Club-Chrome-Baseball-Checklist.xlsx",
+      "filename": "2020-Topps-Stadium-Club-Chrome-Baseball-Checklist.xlsx",
+      "size": 82086,
+      "downloadedAt": "2026-01-19T17:50:45.966Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-panini-flawless-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2020/12/2020-Panini-Flawless-Baseball-Checklist-1.xlsx",
+      "filename": "2020-Panini-Flawless-Baseball-Checklist-1.xlsx",
+      "size": 205828,
+      "downloadedAt": "2026-01-19T17:50:49.462Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-topps-allen-ginter-chrome-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2020/12/2020-Topps-Allen-and-Ginter-Chrome-Baseball-Checklist-1.xlsx",
+      "filename": "2020-Topps-Allen-and-Ginter-Chrome-Baseball-Checklist-1.xlsx",
+      "size": 83814,
+      "downloadedAt": "2026-01-19T17:50:53.640Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-panini-prizm-draft-picks-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2020/11/2020-Panini-Prizm-Draft-Picks-Baseball-Checklist-1.xlsx",
+      "filename": "2020-Panini-Prizm-Draft-Picks-Baseball-Checklist-1.xlsx",
+      "size": 260525,
+      "downloadedAt": "2026-01-19T17:50:57.086Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-topps-chrome-black-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2020/11/2020-Topps-Chrome-Black-Baseball-Checklist.xlsx",
+      "filename": "2020-Topps-Chrome-Black-Baseball-Checklist.xlsx",
+      "size": 99526,
+      "downloadedAt": "2026-01-19T17:51:03.664Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-topps-brooklyn-collection-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2020/11/2020-Topps-Brooklyn-Collection-Baseball-Checklist.xlsx",
+      "filename": "2020-Topps-Brooklyn-Collection-Baseball-Checklist.xlsx",
+      "size": 76333,
+      "downloadedAt": "2026-01-19T17:51:06.917Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-bowman-platinum-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2020/11/2020-Bowman-Platinum-Baseball-Checklist.xlsx",
+      "filename": "2020-Bowman-Platinum-Baseball-Checklist.xlsx",
+      "size": 87331,
+      "downloadedAt": "2026-01-19T17:51:10.342Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-bowman-draft-1st-edition-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2020/11/2020-Bowman-Draft-1st-Edition-Baseball-Checklist.xlsx",
+      "filename": "2020-Bowman-Draft-1st-Edition-Baseball-Checklist.xlsx",
+      "size": 48859,
+      "downloadedAt": "2026-01-19T17:51:17.586Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-topps-update-series-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2020/11/2020-Topps-Update-Series-Baseball-Checklist.xlsx",
+      "filename": "2020-Topps-Update-Series-Baseball-Checklist.xlsx",
+      "size": 204895,
+      "downloadedAt": "2026-01-19T17:51:31.597Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-topps-of-the-class-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2020/11/2020-Topps-of-the-Class-Baseball-Checklist.xlsx",
+      "filename": "2020-Topps-of-the-Class-Baseball-Checklist.xlsx",
+      "size": 47178,
+      "downloadedAt": "2026-01-19T17:51:35.530Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-panini-national-treasures-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2020/10/2020-Panini-National-Treasures-Baseball-Checklist.xlsx",
+      "filename": "2020-Panini-National-Treasures-Baseball-Checklist.xlsx",
+      "size": 292883,
+      "downloadedAt": "2026-01-19T17:51:39.349Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/1983-fleer-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2020/11/1983-Fleer-Baseball-Checklist.xlsx",
+      "filename": "1983-Fleer-Baseball-Checklist.xlsx",
+      "size": 58282,
+      "downloadedAt": "2026-01-19T17:51:42.571Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-topps-dynasty-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2020/10/2020-Topps-Dynasty-Baseball-Checklist.xlsx",
+      "filename": "2020-Topps-Dynasty-Baseball-Checklist.xlsx",
+      "size": 98003,
+      "downloadedAt": "2026-01-19T17:51:46.635Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-panini-contenders-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2020/10/2020-Panini-Contenders-Baseball-Checklist.xlsx",
+      "filename": "2020-Panini-Contenders-Baseball-Checklist.xlsx",
+      "size": 160940,
+      "downloadedAt": "2026-01-19T17:51:50.074Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-topps-rip-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2020/10/2020-Topps-Rip-Baseball-Checklist.xlsx",
+      "filename": "2020-Topps-Rip-Baseball-Checklist.xlsx",
+      "size": 71626,
+      "downloadedAt": "2026-01-19T17:51:53.224Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-topps-gallery-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2020/10/2020-Topps-Gallery-Baseball-Checklist.xlsx",
+      "filename": "2020-Topps-Gallery-Baseball-Checklist.xlsx",
+      "size": 136533,
+      "downloadedAt": "2026-01-19T17:52:06.330Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-topps-x-super-70s-sports-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2020/10/2020-Topps-x-Super-70s-Sports-Baseball-Checklist.xlsx",
+      "filename": "2020-Topps-x-Super-70s-Sports-Baseball-Checklist.xlsx",
+      "size": 66976,
+      "downloadedAt": "2026-01-19T17:52:13.570Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-topps-allen-ginter-x-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2020/10/2020-Topps-Allen-Ginter-X-Baseball-Checklist.xlsx",
+      "filename": "2020-Topps-Allen-Ginter-X-Baseball-Checklist.xlsx",
+      "size": 46303,
+      "downloadedAt": "2026-01-19T17:52:17.994Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-topps-gold-label-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2020/10/2020-Topps-Gold-Label-Baseball-Checklist.xlsx",
+      "filename": "2020-Topps-Gold-Label-Baseball-Checklist.xlsx",
+      "size": 116633,
+      "downloadedAt": "2026-01-19T17:52:21.192Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-topps-triple-threads-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2020/10/2020-Topps-Triple-Threads-Baseball-Checklist.xlsx",
+      "filename": "2020-Topps-Triple-Threads-Baseball-Checklist.xlsx",
+      "size": 163995,
+      "downloadedAt": "2026-01-19T17:52:25.771Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-topps-heritage-minors-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2021/01/2020-Topps-Heritage-Minors-Baseball-Checklist.xlsx",
+      "filename": "2020-Topps-Heritage-Minors-Baseball-Checklist.xlsx",
+      "size": 168274,
+      "downloadedAt": "2026-01-19T17:52:29.235Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-topps-chrome-sapphire-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2020/09/2020-Topps-Chrome-Sapphire-Baseball-Checklist.xlsx",
+      "filename": "2020-Topps-Chrome-Sapphire-Baseball-Checklist.xlsx",
+      "size": 83333,
+      "downloadedAt": "2026-01-19T17:52:32.100Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-panini-chronicles-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2020/09/2020-Panini-Chronicles-Baseball-Checklist.xlsx",
+      "filename": "2020-Panini-Chronicles-Baseball-Checklist.xlsx",
+      "size": 352630,
+      "downloadedAt": "2026-01-19T17:52:36.131Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-bowman-chrome-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2020/09/2020-Bowman-Chrome-Baseball-1.xlsx",
+      "filename": "2020-Bowman-Chrome-Baseball-1.xlsx",
+      "size": 142797,
+      "downloadedAt": "2026-01-19T17:52:39.627Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-topps-archives-snapshots-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2020/09/2020-Topps-Archives-Snapshots-Baseball-Checklist.xlsx",
+      "filename": "2020-Topps-Archives-Snapshots-Baseball-Checklist.xlsx",
+      "size": 47073,
+      "downloadedAt": "2026-01-19T17:52:43.528Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-topps-finest-flashbacks-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2020/07/2020-Topps-Finest-Flashbacks-Baseball-Checklist.xlsx",
+      "filename": "2020-Topps-Finest-Flashbacks-Baseball-Checklist.xlsx",
+      "size": 53915,
+      "downloadedAt": "2026-01-19T17:52:46.427Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-topps-allen-ginter-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2020/09/2020-Topps-Allen-Ginter-Baseball-Checklist.xlsx",
+      "filename": "2020-Topps-Allen-Ginter-Baseball-Checklist.xlsx",
+      "size": 271310,
+      "downloadedAt": "2026-01-19T17:52:50.241Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-topps-chrome-ben-baller-edition-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2020/09/2020-Topps-Chrome-Ben-Baller-Edition-Baseball-Checklist.xlsx",
+      "filename": "2020-Topps-Chrome-Ben-Baller-Edition-Baseball-Checklist.xlsx",
+      "size": 72707,
+      "downloadedAt": "2026-01-19T17:52:53.576Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-topps-stadium-club-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2020/08/2020-Topps-Stadium-Club-Baseball-Checklist.xlsx",
+      "filename": "2020-Topps-Stadium-Club-Baseball-Checklist.xlsx",
+      "size": 132832,
+      "downloadedAt": "2026-01-19T17:52:57.671Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2012-panini-prizm-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2020/08/2012-Panini-Prizm-Baseball-Checklist.xlsx",
+      "filename": "2012-Panini-Prizm-Baseball-Checklist.xlsx",
+      "size": 74501,
+      "downloadedAt": "2026-01-19T17:53:03.935Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-topps-five-star-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2020/08/2020-Topps-Five-Star-Baseball-Checklist.xlsx",
+      "filename": "2020-Topps-Five-Star-Baseball-Checklist.xlsx",
+      "size": 111126,
+      "downloadedAt": "2026-01-19T17:53:14.107Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-bowman-transcendent-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2020/08/2020-Bowman-Transcendent-Baseball-Checklist-1.xlsx",
+      "filename": "2020-Bowman-Transcendent-Baseball-Checklist-1.xlsx",
+      "size": 117191,
+      "downloadedAt": "2026-01-19T17:53:17.430Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-topps-x-pete-alonso-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2020/08/2020-Topps-x-Pete-Alonso-Baseball-Checklist.xlsx",
+      "filename": "2020-Topps-x-Pete-Alonso-Baseball-Checklist.xlsx",
+      "size": 102126,
+      "downloadedAt": "2026-01-19T17:53:20.343Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-panini-immaculate-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2020/08/2020-Panini-Immaculate-Baseball-Checklist-1.xlsx",
+      "filename": "2020-Panini-Immaculate-Baseball-Checklist-1.xlsx",
+      "size": 377257,
+      "downloadedAt": "2026-01-19T17:53:24.234Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-topps-fire-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2020/08/2020-Topps-Fire-Baseball-Checklist.xlsx",
+      "filename": "2020-Topps-Fire-Baseball-Checklist.xlsx",
+      "size": 135659,
+      "downloadedAt": "2026-01-19T17:53:27.518Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-topps-archives-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2020/08/2020-Topps-Archives-Baseball-Checklist.xlsx",
+      "filename": "2020-Topps-Archives-Baseball-Checklist.xlsx",
+      "size": 169245,
+      "downloadedAt": "2026-01-19T17:53:31.122Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-bowman-sterling-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2020/08/2020-Bowman-Sterling-Baseball-Checklist.xlsx",
+      "filename": "2020-Bowman-Sterling-Baseball-Checklist.xlsx",
+      "size": 109295,
+      "downloadedAt": "2026-01-19T17:53:34.635Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-topps-chrome-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2020/08/2020-Topps-Chrome-Baseball-Checklist.xlsx",
+      "filename": "2020-Topps-Chrome-Baseball-Checklist.xlsx",
+      "size": 127678,
+      "downloadedAt": "2026-01-19T17:53:41.620Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-topps-luminaries-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2020/08/2020-Topps-Luminaries-Baseball-Checklist.xlxs_.xlsx",
+      "filename": "2020-Topps-Luminaries-Baseball-Checklist.xlxs_.xlsx",
+      "size": 93834,
+      "downloadedAt": "2026-01-19T17:53:44.937Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-topps-museum-collection-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2020/07/2020-Topps-Museum-Collection-Baseball-Checklist.xlsx",
+      "filename": "2020-Topps-Museum-Collection-Baseball-Checklist.xlsx",
+      "size": 202118,
+      "downloadedAt": "2026-01-19T17:53:51.976Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-donruss-optic-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2020/07/2020-Donruss-Optic-Baseball-Checklist.xlsx",
+      "filename": "2020-Donruss-Optic-Baseball-Checklist.xlsx",
+      "size": 289584,
+      "downloadedAt": "2026-01-19T17:53:56.311Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-topps-sterling-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2020/07/2020-Topps-Sterling-Baseball-Checklist.xlsx",
+      "filename": "2020-Topps-Sterling-Baseball-Checklist.xlsx",
+      "size": 117707,
+      "downloadedAt": "2026-01-19T17:54:02.629Z"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-panini-absolute-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2020/07/2020-Panini-Absolute-Baseball-Checklist.xlsx",
+      "filename": "2020-Panini-Absolute-Baseball-Checklist.xlsx",
+      "size": 203018,
+      "downloadedAt": "2026-01-19T17:54:14.038Z"
+    }
+  ],
+  "failed": [
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-topps-transcendent-baseball-cards/",
+      "xlsxUrl": "https://beckett-www.s3.amazonaws.com/news/news-content/uploads/2020/12/2020-Topps-Transcendent-Baseball-Checklist.xlsx",
+      "error": "Request failed with status code 403"
+    }
+  ],
+  "skipped": [
+    {
+      "articleUrl": "https://www.beckett.com/news/2025-topps-now-baseball-world-series-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2025-26-upper-deck-extended-series-hockey-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/top-selling-2025-26-topps-chrome-basketball-image-variation-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2025-topps-archives-signature-series-baseball-active-player-edition-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2025-topps-all-star-game-baseball-mega-box-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2025-donruss-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2024-topps-dynasty-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2024-topps-inception-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/1934-goudey-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2025-topps-rip-night-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2025-topps-now-baseball-world-series-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2025-26-upper-deck-extended-series-hockey-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/top-selling-2025-26-topps-chrome-basketball-image-variation-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2025-topps-archives-signature-series-baseball-active-player-edition-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2025-topps-all-star-game-baseball-mega-box-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2025-donruss-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2024-topps-dynasty-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2024-topps-inception-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/1934-goudey-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2025-topps-rip-night-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2025-topps-welcome-to-the-club-3x-mvp-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2024-topps-now-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2024-lids-x-topps-player-chase-series-1-baseball-cards-caps/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2024-topps-cosmic-chrome-cactus-jack-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2024-topps-spotlight-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/1985-drakes-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2024-topps-now-lou-gehrig-day-autographs-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/1985-donruss-highlights-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/1985-donruss-action-all-stars-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2023-leaf-vivid-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2024-topps-big-league-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/1992-bowman-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2023-topps-xpectations-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2023-topps-now-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/1989-upper-deck-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2023-topps-chrome-lids-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2023-topps-hobby-rip-night-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2023-leaf-signature-series-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2023-topps-throwback-thursday-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-leaf-vivid-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-topps-x-wander-franco-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-topps-x-juan-soto-basebal-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/1961-golden-press-baseball-hall-fame-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-topps-now-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-topps-now-turn-back-the-clock-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-topps-206-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/here-are-the-exclusive-cards-given-out-at-the-2022-topps-national-qa/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-topps-x-lauren-taylor-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/1983-topps-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-topps-dynamic-duals-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/1984-topps-super-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/1984-topps-ralston-purina-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/1984-topps-nestle-dream-team-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/1984-topps-nestle-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/1984-topps-gallery-of-champions-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-topps-chrome-update-sapphire-edition-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/1984-topps-cereal-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-topps-x-aaron-judge-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2022-topps-series-1-1st-edition-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-pro-set-metal-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/1984-topps-milton-bradley-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-leaf-flash-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-bowman-draft-sapphire-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-topps-throwback-thursday-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-onyx-premium-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-topps-now-turn-back-clock-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-bowman-draft-1st-edition-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-topps-x-sports-illustrated-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-onyx-extended-vintage-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-topps-now-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-topps-mickey-mantle-collection-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/1984-donruss-champions-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-topps-206-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-topps-all-star-fanfest-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-bowman-sapphire-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2021-topps-dynamic-duals-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/1983-topps-traded-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/1981-topps-traded-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/1951-topps-by-blake-jamieson-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-leaf-metal-draft-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-bowman-draft-sapphire-edition-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/1983-o-pee-chee-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-topps-throwback-thursday-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/topps-project-2020-baseball-offering-new-artistic-interpretations-of-iconic-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/1983-kelloggs-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-topps-game-within-the-game-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-topps-advent-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-topps-x-derek-jeter-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-topps-x-steve-aoki-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-bowman-chrome-x-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-topps-mini-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-leaf-ultimate-draft-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-topps-uk-edition-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-topps-now-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-topps-attax-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-topps-mlb-nyc-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-topps-now-turn-back-the-clock-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-topps-206-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/1991-upper-deck-dennys-holograms-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-topps-total-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2019-leaf-trinity-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-topps-3d-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-topps-summer-blockbuster-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-topps-series-2-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/1983-drakes-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/1983-donruss-hall-of-fame-heroes-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2019-leaf-valiant-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-topps-finest-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-topps-clearly-authentic-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-bowman-sapphire-edition-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-panini-prizm-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-topps-pro-debut-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-topps-big-league-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/1983-donruss-action-all-stars-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/1983-donruss-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-negro-leagues-legends-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-panini-diamond-kings-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-topps-diamond-icons-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-bowman-mega-box-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-topps-tier-one-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-topps-mlb-the-show-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/1999-metal-universe-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-topps-dynamic-duals-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/1998-metal-universe-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-bowman-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-panini-select-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/1997-metal-universe-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/1996-metal-universe-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/1982-topps-traded-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/1982-topps-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/1982-o-pee-chee-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/1982-kelloggs-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-bowman-first-edition-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/1982-fleer-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-topps-definitive-collection-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-topps-transcendent-hall-of-fame-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2019-leaf-flash-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/1982-drakes-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/1982-donruss-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/1981-topps-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/1981-o-pee-chee-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-topps-tribute-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/1981-kelloggs-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/1981-fleer-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/1981-donruss-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-topps-rookie-progression-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-topps-gypsy-queen-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-topps-rbi-20-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-topps-inception-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-topps-utz-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-panini-stars-stripes-usa-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-topps-opening-day-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-leaf-lumber-kings-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-donruss-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-topps-heritage-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-topps-black-white-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2020-topps-series-1-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2019-leaf-ultimate-draft-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2019-leaf-metal-draft-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2019-bowmans-best-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2019-bowman-draft-sapphire-edition-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2019-topps-150-years-of-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2019-bowman-draft-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2019-elite-extra-edition-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2019-bowman-heritage-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2019-topps-transcendent-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2019-topps-x-vlad-jr-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2019-topps-brooklyn-collection-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2019-topps-gallery-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2019-panini-flawless-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2019-topps-high-tek-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2019-panini-prizms-draft-picks-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2019-topps-mini-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2019-topps-dynasty-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2019-topps-walmart-holiday-snowflake-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2019-bowman-chrome-x-baseball-cards-stockx-ipo/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2019-topps-chrome-update-series-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2019-topps-triple-threads-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2019-topps-update-series-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2019-topps-gold-label-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2019-leaf-metal-babe-ruth-collection-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2019-topps-chrome-sapphire-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2019-topps-now-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2019-topps-clearly-authentic-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2019-panini-contenders-draft-picks-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2019-panini-national-treasures-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2019-topps-heritage-minors-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2019-bowman-chrome-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2019-topps-archives-snapshots-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2019-topps-total-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2019-topps-luminaries-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2019-topps-five-star-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2019-topps-fire-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2019-panini-chronicles-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2019-topps-archives-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2019-topps-heritage-high-number-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2019-bowman-sterling-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2019-topps-tribute-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2019-topps-allen-ginter-x-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2019-topps-pkwy-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2019-panini-immaculate-collection-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2019-topps-allen-ginter-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2019-donruss-optic-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2018-leaf-trinity-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2019-topps-archives-signature-series-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2019-topps-diamond-icons-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2019-onyx-futera-unique-prospects-legends-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2019-topps-x-lindor-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2019-bowman-platinum-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2019-topps-baseball-all-star-exclusive-cards-wrapper-redemption/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2019-topps-uk-on-demand-london-series-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2019-topps-stadium-club-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2019-topps-museum-collection-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2018-topps-series-2-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2019-topps-finest-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2019-topps-on-demand-rookie-progression-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2019-panini-leather-lumber-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2019-topps-definitive-collection-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2019-topps-of-the-class-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2019-topps-pro-debut-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2019-bowman-chrome-mega-box-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2019-topps-big-league-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2019-panini-prizm-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2019-topps-tier-one-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2018-leaf-metal-perfect-game-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2019-bowman-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2019-topps-utz-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2019-panini-diamond-kings-baseball-cards/",
+      "reason": "no-xlsx"
+    },
+    {
+      "articleUrl": "https://www.beckett.com/news/2019-topps-gypsy-queen-baseball-cards/",
+      "reason": "no-xlsx"
+    }
+  ]
+}

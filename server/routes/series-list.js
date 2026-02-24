@@ -280,4 +280,106 @@ router.get('/:id', optionalAuthMiddleware, async (req, res) => {
   }
 })
 
+// GET /api/series-list/:id/history - Get change history for a series
+router.get('/:id/history', async (req, res) => {
+  try {
+    const seriesId = parseInt(req.params.id)
+    const limit = Math.min(parseInt(req.query.limit) || 50, 100)
+
+    if (isNaN(seriesId)) {
+      return res.status(400).json({ error: 'Invalid series ID' })
+    }
+
+    // Fetch all approved submissions for this series (the audit trail)
+    const submissions = await prisma.series_submissions.findMany({
+      where: {
+        existing_series_id: BigInt(seriesId),
+        status: 'approved'
+      },
+      orderBy: {
+        created_at: 'desc'
+      },
+      take: limit,
+      include: {
+        user_series_submissions_user_idTouser: {
+          select: {
+            user_id: true,
+            email: true,
+            name: true,
+            avatar_url: true
+          }
+        }
+      }
+    })
+
+    // Transform the data for the frontend
+    const history = submissions.map(sub => {
+      const changes = []
+
+      // Compare previous vs proposed for each field
+      if (sub.previous_name !== sub.proposed_name) {
+        changes.push({
+          field: 'Name',
+          from: sub.previous_name || '(empty)',
+          to: sub.proposed_name || '(empty)'
+        })
+      }
+      if (sub.previous_base_card_count !== sub.proposed_base_card_count) {
+        changes.push({
+          field: 'Card Count',
+          from: sub.previous_base_card_count?.toString() || '(none)',
+          to: sub.proposed_base_card_count?.toString() || '(none)'
+        })
+      }
+      if (sub.previous_is_parallel !== sub.proposed_is_parallel) {
+        changes.push({
+          field: 'Is Parallel',
+          from: sub.previous_is_parallel ? 'Yes' : 'No',
+          to: sub.proposed_is_parallel ? 'Yes' : 'No'
+        })
+      }
+      if (sub.previous_print_run !== sub.proposed_print_run) {
+        changes.push({
+          field: 'Print Run',
+          from: sub.previous_print_run?.toString() || '(none)',
+          to: sub.proposed_print_run?.toString() || '(none)'
+        })
+      }
+      if (sub.previous_description !== sub.proposed_description) {
+        changes.push({
+          field: 'Description',
+          from: sub.previous_description || '(empty)',
+          to: sub.proposed_description || '(empty)'
+        })
+      }
+
+      const user = sub.user_series_submissions_user_idTouser
+      return {
+        id: Number(sub.submission_id),
+        timestamp: sub.reviewed_at || sub.created_at,
+        user: {
+          id: Number(user.user_id),
+          name: user.name || user.email?.split('@')[0] || 'Unknown',
+          avatar_url: user.avatar_url
+        },
+        changes,
+        review_notes: sub.review_notes,
+        is_admin_edit: sub.review_notes?.includes('Admin direct edit')
+      }
+    }).filter(h => h.changes.length > 0)
+
+    res.json({
+      history,
+      total: history.length
+    })
+
+  } catch (error) {
+    console.error('Error fetching series history:', error)
+    res.status(500).json({
+      error: 'Failed to fetch series history',
+      message: error.message
+    })
+  }
+})
+
 module.exports = router

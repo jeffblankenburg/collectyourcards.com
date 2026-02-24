@@ -209,3 +209,131 @@ BEGIN
 END
 GO
 
+-- ============================================================================
+-- PRICING SYSTEM - External Price Sources Integration
+-- Date: 2026-01-19
+-- Description: Tables for tracking card prices from external sources like SportsCardsPro
+-- ============================================================================
+
+-- Price Source table - tracks external pricing APIs/sources
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'price_source')
+BEGIN
+    CREATE TABLE price_source (
+        price_source_id INT IDENTITY(1,1) PRIMARY KEY,
+        code NVARCHAR(50) NOT NULL,
+        name NVARCHAR(100) NOT NULL,
+        api_base_url NVARCHAR(500) NULL,
+        is_active BIT NOT NULL DEFAULT 1,
+        created_at DATETIME NOT NULL DEFAULT GETDATE(),
+
+        CONSTRAINT UQ_price_source_code UNIQUE (code)
+    );
+
+    PRINT 'Created price_source table';
+END
+GO
+
+-- Price Type table - types of prices (raw, PSA 10, BGS 9.5, etc.)
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'price_type')
+BEGIN
+    CREATE TABLE price_type (
+        price_type_id INT IDENTITY(1,1) PRIMARY KEY,
+        code NVARCHAR(50) NOT NULL,
+        name NVARCHAR(100) NOT NULL,
+        grading_company NVARCHAR(50) NULL,
+        grade DECIMAL(3,1) NULL,
+        sort_order INT NOT NULL DEFAULT 0,
+        is_active BIT NOT NULL DEFAULT 1,
+
+        CONSTRAINT UQ_price_type_code UNIQUE (code)
+    );
+
+    PRINT 'Created price_type table';
+END
+GO
+
+-- Card External ID table - maps our cards to external source product IDs
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'card_external_id')
+BEGIN
+    CREATE TABLE card_external_id (
+        card_external_id_id BIGINT IDENTITY(1,1) PRIMARY KEY,
+        card_id BIGINT NOT NULL,
+        price_source_id INT NOT NULL,
+        external_id NVARCHAR(100) NOT NULL,
+        external_name NVARCHAR(500) NULL,
+        match_method NVARCHAR(20) NOT NULL DEFAULT 'auto',
+        created_at DATETIME NOT NULL DEFAULT GETDATE(),
+        updated_at DATETIME NULL,
+
+        CONSTRAINT FK_card_external_id_card FOREIGN KEY (card_id) REFERENCES card(card_id),
+        CONSTRAINT FK_card_external_id_source FOREIGN KEY (price_source_id) REFERENCES price_source(price_source_id),
+        CONSTRAINT UQ_card_external_id UNIQUE (card_id, price_source_id)
+    );
+
+    CREATE INDEX IX_card_external_id_lookup ON card_external_id(price_source_id, external_id);
+
+    PRINT 'Created card_external_id table';
+END
+GO
+
+-- Card Price table - actual price data
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'card_price')
+BEGIN
+    CREATE TABLE card_price (
+        card_price_id BIGINT IDENTITY(1,1) PRIMARY KEY,
+        card_id BIGINT NOT NULL,
+        price_type_id INT NOT NULL,
+        price_source_id INT NOT NULL,
+        price DECIMAL(10,2) NULL,
+        last_updated DATETIME NOT NULL DEFAULT GETDATE(),
+
+        CONSTRAINT FK_card_price_card FOREIGN KEY (card_id) REFERENCES card(card_id),
+        CONSTRAINT FK_card_price_type FOREIGN KEY (price_type_id) REFERENCES price_type(price_type_id),
+        CONSTRAINT FK_card_price_source FOREIGN KEY (price_source_id) REFERENCES price_source(price_source_id),
+        CONSTRAINT UQ_card_price UNIQUE (card_id, price_type_id, price_source_id)
+    );
+
+    CREATE INDEX IX_card_price_card ON card_price(card_id);
+    CREATE INDEX IX_card_price_source_type ON card_price(price_source_id, price_type_id);
+
+    PRINT 'Created card_price table';
+END
+GO
+
+-- Seed initial price source
+IF NOT EXISTS (SELECT 1 FROM price_source WHERE code = 'sportscardspro')
+BEGIN
+    INSERT INTO price_source (code, name, api_base_url, is_active)
+    VALUES ('sportscardspro', 'SportsCardsPro', 'https://www.pricecharting.com/api', 1);
+
+    PRINT 'Seeded SportsCardsPro price source';
+END
+GO
+
+-- Seed initial price types
+IF NOT EXISTS (SELECT 1 FROM price_type WHERE code = 'loose')
+BEGIN
+    INSERT INTO price_type (code, name, grading_company, grade, sort_order, is_active) VALUES
+    ('loose', 'Loose/Raw', NULL, NULL, 1, 1),
+    ('graded', 'Generic Graded', NULL, NULL, 2, 1),
+    ('psa10', 'PSA 10', 'PSA', 10.0, 10, 1),
+    ('psa9', 'PSA 9', 'PSA', 9.0, 11, 1),
+    ('psa8', 'PSA 8', 'PSA', 8.0, 12, 1),
+    ('psa7', 'PSA 7', 'PSA', 7.0, 13, 1),
+    ('bgs10', 'BGS 10', 'BGS', 10.0, 20, 1),
+    ('bgs95', 'BGS 9.5', 'BGS', 9.5, 21, 1),
+    ('bgs9', 'BGS 9', 'BGS', 9.0, 22, 1),
+    ('bgs85', 'BGS 8.5', 'BGS', 8.5, 23, 1),
+    ('bgs8', 'BGS 8', 'BGS', 8.0, 24, 1),
+    ('cgc10', 'CGC 10', 'CGC', 10.0, 30, 1),
+    ('cgc95', 'CGC 9.5', 'CGC', 9.5, 31, 1),
+    ('cgc9', 'CGC 9', 'CGC', 9.0, 32, 1),
+    ('cgc85', 'CGC 8.5', 'CGC', 8.5, 33, 1),
+    ('sgc10', 'SGC 10', 'SGC', 10.0, 40, 1),
+    ('sgc95', 'SGC 9.5', 'SGC', 9.5, 41, 1),
+    ('sgc9', 'SGC 9', 'SGC', 9.0, 42, 1);
+
+    PRINT 'Seeded price types';
+END
+GO
+

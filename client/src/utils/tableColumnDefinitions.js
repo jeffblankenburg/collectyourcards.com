@@ -50,60 +50,16 @@ export const CARD_TABLE_COLUMNS = {
     description: 'Series name'
   },
 
-  // Attribute columns (shown by default)
-  color: {
-    id: 'color',
-    label: 'Color',
+  // Attributes column (combines color, print run, auto, relic, sp)
+  attributes: {
+    id: 'attributes',
+    label: 'Attributes',
     defaultVisible: true,
     alwaysVisible: false,
     mobileVisible: false,
     sortable: false,
     width: 'auto',
-    description: 'Card color/parallel'
-  },
-
-  print_run: {
-    id: 'print_run',
-    label: 'Print Run',
-    defaultVisible: true,
-    alwaysVisible: false,
-    mobileVisible: false,
-    sortable: true,
-    width: '120px',
-    description: 'Numbered print run (e.g., /99)'
-  },
-
-  auto: {
-    id: 'auto',
-    label: 'Auto',
-    defaultVisible: true,
-    alwaysVisible: false,
-    mobileVisible: false,
-    sortable: true,
-    width: '80px',
-    description: 'Autograph indicator'
-  },
-
-  relic: {
-    id: 'relic',
-    label: 'Relic',
-    defaultVisible: true,
-    alwaysVisible: false,
-    mobileVisible: false,
-    sortable: true,
-    width: '80px',
-    description: 'Relic/memorabilia indicator'
-  },
-
-  sp: {
-    id: 'sp',
-    label: 'SP',
-    defaultVisible: true,
-    alwaysVisible: false,
-    mobileVisible: false,
-    sortable: true,
-    width: '80px',
-    description: 'Short print indicator'
+    description: 'Card attributes (color, print run, auto, relic, SP)'
   },
 
   // Optional columns (hidden by default)

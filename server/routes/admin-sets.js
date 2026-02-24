@@ -731,7 +731,7 @@ router.put('/sets/:id', async (req, res) => {
       }
     })
 
-    // Log admin action
+    // Log admin action to legacy admin_action_log
     try {
       await prisma.admin_action_log.create({
         data: {
@@ -748,6 +748,50 @@ router.put('/sets/:id', async (req, res) => {
       })
     } catch (logError) {
       console.warn('Failed to log admin action:', logError.message)
+    }
+
+    // Log to set_submissions for unified audit history (admin = auto-approved)
+    // Check if any trackable fields changed
+    const hasChanges =
+      existingSet.name !== updateData.name ||
+      existingSet.year !== updateData.year ||
+      existingSet.organization !== updateData.organization ||
+      existingSet.manufacturer !== updateData.manufacturer
+
+    if (hasChanges && req.user?.userId) {
+      try {
+        // Get organization/manufacturer names for sport field
+        let sportName = null
+        if (existingSet.organization) {
+          const org = await prisma.organization.findUnique({ where: { organization_id: existingSet.organization } })
+          sportName = org?.name || null
+        }
+
+        await prisma.set_submissions.create({
+          data: {
+            user_id: BigInt(req.user.userId),
+            set_id: setId, // Links this as an EDIT to existing set
+            // Previous values
+            previous_name: existingSet.name,
+            previous_year: existingSet.year,
+            previous_sport: sportName,
+            previous_manufacturer: existingSet.manufacturer?.toString() || null,
+            // Proposed/new values
+            proposed_name: updateData.name || existingSet.name,
+            proposed_year: updateData.year || existingSet.year,
+            proposed_sport: sportName, // Sport doesn't change in this endpoint
+            proposed_manufacturer: updateData.manufacturer?.toString() || null,
+            // Auto-approve for admin
+            status: 'approved',
+            reviewed_by: BigInt(req.user.userId),
+            reviewed_at: new Date(),
+            review_notes: 'Admin direct edit - auto-approved',
+            created_at: new Date()
+          }
+        })
+      } catch (auditError) {
+        console.warn('Failed to create set_submissions audit record:', auditError.message)
+      }
     }
 
     // Trigger auto-regeneration for the set
@@ -1056,7 +1100,7 @@ router.put('/series/:id', async (req, res) => {
       }
     })
 
-    // Log admin action
+    // Log admin action to legacy admin_action_log
     try {
       await prisma.admin_action_log.create({
         data: {
@@ -1073,6 +1117,47 @@ router.put('/series/:id', async (req, res) => {
       })
     } catch (logError) {
       console.warn('Failed to log admin action:', logError.message)
+    }
+
+    // Log to series_submissions for unified audit history (admin = auto-approved)
+    // Check if any trackable fields changed
+    const hasSeriesChanges =
+      existingSeries.name !== updateData.name ||
+      existingSeries.card_count !== updateData.card_count ||
+      existingSeries.is_base !== updateData.is_base ||
+      (existingSeries.parallel_of_series?.toString() || null) !== (updateData.parallel_of_series?.toString() || null) ||
+      existingSeries.min_print_run !== updateData.min_print_run ||
+      existingSeries.max_print_run !== updateData.max_print_run
+
+    if (hasSeriesChanges && req.user?.userId) {
+      try {
+        await prisma.series_submissions.create({
+          data: {
+            user_id: BigInt(req.user.userId),
+            set_id: existingSeries.set, // Target set
+            existing_series_id: BigInt(seriesId), // Links this as an EDIT to existing series
+            // Previous values
+            previous_name: existingSeries.name,
+            previous_base_card_count: existingSeries.card_count,
+            previous_is_parallel: !existingSeries.is_base,
+            previous_print_run: existingSeries.max_print_run,
+            previous_parallel_of_series: existingSeries.parallel_of_series,
+            // Proposed/new values
+            proposed_name: updateData.name || existingSeries.name,
+            proposed_base_card_count: updateData.card_count,
+            proposed_is_parallel: !updateData.is_base,
+            proposed_print_run: updateData.max_print_run,
+            // Auto-approve for admin
+            status: 'approved',
+            reviewed_by: BigInt(req.user.userId),
+            reviewed_at: new Date(),
+            review_notes: 'Admin direct edit - auto-approved',
+            created_at: new Date()
+          }
+        })
+      } catch (auditError) {
+        console.warn('Failed to create series_submissions audit record:', auditError.message)
+      }
     }
 
     // Trigger auto-regeneration for the set (use updated set if changed, otherwise use existing)
@@ -1479,6 +1564,138 @@ router.post('/series/upload-images/:seriesId', authMiddleware, requireAdmin, upl
     res.status(500).json({
       success: false,
       message: 'Failed to upload images',
+      details: error.message
+    })
+  }
+})
+
+// DELETE /api/admin/sets/:setId - Permanently delete a set and all related data
+// This is an extremely dangerous operation - SUPERADMIN ONLY
+router.delete('/:setId', authMiddleware, requireSuperAdmin, async (req, res) => {
+  const { setId } = req.params
+
+  try {
+    const setIdNum = parseInt(setId)
+    if (isNaN(setIdNum)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid set ID'
+      })
+    }
+
+    // Get set info for logging
+    const setToDelete = await prisma.set.findUnique({
+      where: { set_id: setIdNum },
+      select: { set_id: true, name: true, year: true }
+    })
+
+    if (!setToDelete) {
+      return res.status(404).json({
+        success: false,
+        message: 'Set not found'
+      })
+    }
+
+    console.log(`[DANGER] Superadmin ${req.user.email} initiating deletion of set: ${setToDelete.name} (ID: ${setIdNum})`)
+
+    // Get all series in this set
+    const series = await prisma.$queryRaw`
+      SELECT series_id FROM series WHERE [set] = ${setIdNum}
+    `
+    const seriesIds = series.map(s => Number(s.series_id))
+
+    // Get all cards in these series
+    let cardIds = []
+    if (seriesIds.length > 0) {
+      const cards = await prisma.$queryRaw`
+        SELECT card_id FROM card WHERE series IN (${seriesIds.join(',')})
+      `
+      cardIds = cards.map(c => Number(c.card_id))
+    }
+
+    let deletedCounts = {
+      userCards: 0,
+      cardPlayerTeams: 0,
+      cards: 0,
+      series: 0
+    }
+
+    // Delete in order of dependencies (child records first)
+    if (cardIds.length > 0) {
+      // Delete user_card_photo records first (child of user_card)
+      await prisma.$executeRawUnsafe(`
+        DELETE FROM user_card_photo
+        WHERE user_card IN (SELECT user_card_id FROM user_card WHERE card IN (${cardIds.join(',')}))
+      `)
+
+      // Delete user_card records
+      const userCardResult = await prisma.$executeRawUnsafe(`
+        DELETE FROM user_card WHERE card IN (${cardIds.join(',')})
+      `)
+      deletedCounts.userCards = userCardResult
+
+      // Delete card_player_team records
+      const cptResult = await prisma.$executeRawUnsafe(`
+        DELETE FROM card_player_team WHERE card IN (${cardIds.join(',')})
+      `)
+      deletedCounts.cardPlayerTeams = cptResult
+
+      // Delete cards
+      const cardResult = await prisma.$executeRawUnsafe(`
+        DELETE FROM card WHERE card_id IN (${cardIds.join(',')})
+      `)
+      deletedCounts.cards = cardResult
+    }
+
+    // Delete series
+    if (seriesIds.length > 0) {
+      const seriesResult = await prisma.$executeRawUnsafe(`
+        DELETE FROM series WHERE series_id IN (${seriesIds.join(',')})
+      `)
+      deletedCounts.series = seriesResult
+    }
+
+    // Finally delete the set
+    await prisma.$executeRaw`DELETE FROM [set] WHERE set_id = ${setIdNum}`
+
+    // Log the admin action
+    try {
+      await prisma.$executeRaw`
+        INSERT INTO admin_action_log (
+          admin_user_id, action_type, target_type, target_id,
+          description, metadata, created_at
+        )
+        VALUES (
+          ${BigInt(req.user.userId)},
+          'DELETE',
+          'set',
+          ${setIdNum.toString()},
+          ${`Permanently deleted set "${setToDelete.name}" (${setToDelete.year || 'no year'})`},
+          ${JSON.stringify({
+            setName: setToDelete.name,
+            setYear: setToDelete.year,
+            deletedCounts
+          })},
+          GETDATE()
+        )
+      `
+    } catch (logError) {
+      console.warn('Failed to log admin action:', logError.message)
+    }
+
+    console.log(`[DANGER] Set deletion complete: ${setToDelete.name}`, deletedCounts)
+
+    res.json({
+      success: true,
+      message: `Set "${setToDelete.name}" and all related data permanently deleted`,
+      deletedCounts
+    })
+
+  } catch (error) {
+    console.error('Error deleting set:', error)
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete set',
       details: error.message
     })
   }

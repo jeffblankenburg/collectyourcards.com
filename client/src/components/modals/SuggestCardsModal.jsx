@@ -1,10 +1,92 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import axios from 'axios'
 import Icon from '../Icon'
 import { useToast } from '../../contexts/ToastContext'
 import './SuggestCardsModalScoped.css'
 
-function SuggestCardsModal({ isOpen, onClose, onSuccess, preselectedSeriesId = null }) {
+// Custom Color Dropdown with swatches
+function ColorDropdown({ colors, selectedColorId, onChange, loading }) {
+  const [isOpen, setIsOpen] = useState(false)
+  const dropdownRef = useRef(null)
+
+  const selectedColor = colors.find(c => c.color_id === parseInt(selectedColorId))
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false)
+      }
+    }
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [isOpen])
+
+  const handleSelect = (colorId) => {
+    onChange(colorId)
+    setIsOpen(false)
+  }
+
+  return (
+    <div className="suggest-cards-color-dropdown" ref={dropdownRef}>
+      <button
+        type="button"
+        className={`suggest-cards-color-trigger ${isOpen ? 'open' : ''}`}
+        onClick={() => !loading && setIsOpen(!isOpen)}
+        disabled={loading}
+      >
+        {selectedColor ? (
+          <>
+            <span
+              className="suggest-cards-color-swatch"
+              style={{ backgroundColor: selectedColor.hex_value || '#888' }}
+            />
+            <span className="suggest-cards-color-name">{selectedColor.name}</span>
+          </>
+        ) : (
+          <span className="suggest-cards-color-placeholder">
+            {loading ? 'Loading colors...' : 'Select color (optional)'}
+          </span>
+        )}
+        <Icon name={isOpen ? 'arrow-up' : 'arrow-down'} size={14} />
+      </button>
+
+      {isOpen && (
+        <div className="suggest-cards-color-menu">
+          <button
+            type="button"
+            className={`suggest-cards-color-option ${!selectedColorId ? 'selected' : ''}`}
+            onClick={() => handleSelect('')}
+          >
+            <span className="suggest-cards-color-swatch none">
+              <Icon name="x" size={10} />
+            </span>
+            <span className="suggest-cards-color-name">No color / Base</span>
+          </button>
+          {colors.map(color => (
+            <button
+              key={color.color_id}
+              type="button"
+              className={`suggest-cards-color-option ${parseInt(selectedColorId) === color.color_id ? 'selected' : ''}`}
+              onClick={() => handleSelect(color.color_id.toString())}
+            >
+              <span
+                className="suggest-cards-color-swatch"
+                style={{ backgroundColor: color.hex_value || '#888' }}
+              />
+              <span className="suggest-cards-color-name">{color.name}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function SuggestCardsModal({ isOpen, onClose, onSuccess, preselectedSeries = null }) {
   const { success, error: showError } = useToast()
   const [submitting, setSubmitting] = useState(false)
   const [mode, setMode] = useState('single') // 'single' or 'bulk'
@@ -20,6 +102,7 @@ function SuggestCardsModal({ isOpen, onClose, onSuccess, preselectedSeriesId = n
     proposed_card_number: '',
     proposed_player_names: '',
     proposed_team_names: '',
+    proposed_color_id: '',
     proposed_is_rookie: false,
     proposed_is_autograph: false,
     proposed_is_relic: false,
@@ -28,12 +111,32 @@ function SuggestCardsModal({ isOpen, onClose, onSuccess, preselectedSeriesId = n
     proposed_notes: ''
   })
 
+  // Colors list for dropdown
+  const [colors, setColors] = useState([])
+  const [loadingColors, setLoadingColors] = useState(false)
+
   // Bulk paste state
   const [bulkData, setBulkData] = useState('')
   const [parsedCards, setParsedCards] = useState([])
   const [parseError, setParseError] = useState(null)
 
   const [submissionNotes, setSubmissionNotes] = useState('')
+
+  // Fetch colors on mount
+  useEffect(() => {
+    const fetchColors = async () => {
+      setLoadingColors(true)
+      try {
+        const response = await axios.get('/api/colors')
+        setColors(response.data.colors || [])
+      } catch (err) {
+        console.error('Error fetching colors:', err)
+      } finally {
+        setLoadingColors(false)
+      }
+    }
+    fetchColors()
+  }, [])
 
   // Reset form when modal opens
   useEffect(() => {
@@ -43,6 +146,7 @@ function SuggestCardsModal({ isOpen, onClose, onSuccess, preselectedSeriesId = n
         proposed_card_number: '',
         proposed_player_names: '',
         proposed_team_names: '',
+        proposed_color_id: '',
         proposed_is_rookie: false,
         proposed_is_autograph: false,
         proposed_is_relic: false,
@@ -56,29 +160,11 @@ function SuggestCardsModal({ isOpen, onClose, onSuccess, preselectedSeriesId = n
       setSubmissionNotes('')
       setSeriesSearchQuery('')
       setSeriesSearchResults([])
-      setSelectedSeries(null)
 
-      if (preselectedSeriesId) {
-        fetchSeries(preselectedSeriesId)
-      }
+      // Use preselected series directly if provided
+      setSelectedSeries(preselectedSeries || null)
     }
-  }, [isOpen, preselectedSeriesId])
-
-  const fetchSeries = async (seriesId) => {
-    try {
-      const response = await axios.get(`/api/series/${seriesId}`)
-      if (response.data) {
-        setSelectedSeries({
-          series_id: response.data.series_id,
-          name: response.data.name,
-          set_name: response.data.set_name,
-          set_year: response.data.set_year
-        })
-      }
-    } catch (err) {
-      console.error('Error fetching series:', err)
-    }
-  }
+  }, [isOpen, preselectedSeries])
 
   const searchSeries = useCallback(async (query) => {
     if (!query || query.length < 2) {
@@ -228,6 +314,7 @@ function SuggestCardsModal({ isOpen, onClose, onSuccess, preselectedSeriesId = n
           card_number: singleCard.proposed_card_number.trim(),
           player_names: singleCard.proposed_player_names.trim() || null,
           team_names: singleCard.proposed_team_names.trim() || null,
+          color_id: singleCard.proposed_color_id ? parseInt(singleCard.proposed_color_id) : null,
           is_rookie: singleCard.proposed_is_rookie,
           is_autograph: singleCard.proposed_is_autograph,
           is_relic: singleCard.proposed_is_relic,
@@ -310,56 +397,65 @@ function SuggestCardsModal({ isOpen, onClose, onSuccess, preselectedSeriesId = n
         </div>
 
         <form onSubmit={handleSubmit} className="suggest-cards-form">
-          {/* Series Selection */}
-          <div className="suggest-cards-form-row">
-            <label>
-              Series <span className="suggest-cards-required">*</span>
-            </label>
-            {selectedSeries ? (
-              <div className="suggest-cards-selected-series">
-                <div className="suggest-cards-selected-info">
-                  <span className="suggest-cards-selected-name">{selectedSeries.name}</span>
-                  <span className="suggest-cards-selected-set">{selectedSeries.set_year} {selectedSeries.set_name}</span>
+          {/* Series Selection - Only show search if no preselected series */}
+          {preselectedSeries ? (
+            <div className="suggest-cards-form-row">
+              <label>Series</label>
+              <div className="suggest-cards-selected-series locked">
+                <span className="suggest-cards-selected-name">{preselectedSeries.name}</span>
+              </div>
+            </div>
+          ) : (
+            <div className="suggest-cards-form-row">
+              <label>
+                Series <span className="suggest-cards-required">*</span>
+              </label>
+              {selectedSeries ? (
+                <div className="suggest-cards-selected-series">
+                  <div className="suggest-cards-selected-info">
+                    <span className="suggest-cards-selected-name">{selectedSeries.name}</span>
+                    <span className="suggest-cards-selected-set">{selectedSeries.set_year} {selectedSeries.set_name}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedSeries(null)}
+                    className="suggest-cards-remove-series"
+                  >
+                    <Icon name="x" size={14} />
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setSelectedSeries(null)}
-                  className="suggest-cards-remove-series"
-                >
-                  <Icon name="x" size={14} />
-                </button>
-              </div>
-            ) : (
-              <div className="suggest-cards-series-search">
-                <input
-                  type="text"
-                  value={seriesSearchQuery}
-                  onChange={e => setSeriesSearchQuery(e.target.value)}
-                  placeholder="Search for a series (e.g. 2024 Topps Chrome Base)..."
-                />
-                {searchingSeries && (
-                  <div className="suggest-cards-search-loading">
-                    <Icon name="loader" size={14} className="suggest-cards-spinner-icon" />
-                  </div>
-                )}
-                {seriesSearchResults.length > 0 && (
-                  <div className="suggest-cards-search-results">
-                    {seriesSearchResults.map(series => (
-                      <button
-                        key={series.series_id}
-                        type="button"
-                        className="suggest-cards-search-result"
-                        onClick={() => handleSelectSeries(series)}
-                      >
-                        <span className="suggest-cards-result-name">{series.name}</span>
-                        <span className="suggest-cards-result-set">{series.set_year} {series.set_name}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
+              ) : (
+                <div className="suggest-cards-series-search">
+                  <input
+                    type="text"
+                    value={seriesSearchQuery}
+                    onChange={e => setSeriesSearchQuery(e.target.value)}
+                    placeholder="Search for a series (e.g. 2024 Topps Chrome Base)..."
+                  />
+                  {searchingSeries && (
+                    <div className="suggest-cards-search-loading">
+                      <Icon name="loader" size={14} className="suggest-cards-spinner-icon" />
+                    </div>
+                  )}
+                  {seriesSearchResults.length > 0 && (
+                    <div className="suggest-cards-search-results">
+                      {seriesSearchResults.map(series => (
+                        <button
+                          key={series.series_id}
+                          type="button"
+                          className="suggest-cards-search-result"
+                          onClick={() => handleSelectSeries(series)}
+                        >
+                          <span className="suggest-cards-result-name">{series.name}</span>
+                          <span className="suggest-cards-result-set">{series.set_year} {series.set_name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           {mode === 'single' ? (
             /* Single Card Form */
@@ -394,6 +490,16 @@ function SuggestCardsModal({ isOpen, onClose, onSuccess, preselectedSeriesId = n
                   value={singleCard.proposed_team_names}
                   onChange={e => handleSingleCardChange('proposed_team_names', e.target.value)}
                   placeholder="e.g. Los Angeles Angels"
+                />
+              </div>
+
+              <div className="suggest-cards-form-row">
+                <label>Color / Parallel</label>
+                <ColorDropdown
+                  colors={colors}
+                  selectedColorId={singleCard.proposed_color_id}
+                  onChange={(colorId) => handleSingleCardChange('proposed_color_id', colorId)}
+                  loading={loadingColors}
                 />
               </div>
 

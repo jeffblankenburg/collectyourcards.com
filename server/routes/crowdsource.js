@@ -1,6 +1,7 @@
 const express = require('express')
 const { body, validationResult } = require('express-validator')
 const { prisma } = require('../config/prisma-singleton')
+const { Prisma } = require('@prisma/client')
 const { authMiddleware } = require('../middleware/auth')
 const rateLimit = require('express-rate-limit')
 const ExcelJS = require('exceljs')
@@ -359,39 +360,133 @@ router.post('/set',
         })
       }
 
+      // Check if user is admin (auto-approve)
+      const isAdmin = ['admin', 'superadmin', 'data_admin'].includes(req.user.role)
+
       // Ensure contributor stats exist
       await ensureContributorStats(userId)
 
-      // Create the submission
-      const result = await prisma.$queryRaw`
-        INSERT INTO set_submissions (
-          user_id, proposed_name, proposed_year, proposed_sport,
-          proposed_manufacturer, proposed_description,
-          submission_notes, status, created_at
-        )
-        OUTPUT INSERTED.submission_id
-        VALUES (
-          ${userId}, ${name}, ${year}, ${sport},
-          ${manufacturer || null}, ${description || null},
-          ${submission_notes || null}, 'pending', GETDATE()
-        )
-      `
+      if (isAdmin) {
+        // Admin: Create the set directly and record as approved submission
 
-      // Update contributor stats
-      await updateContributorStatsOnSubmit(userId)
+        // Look up manufacturer_id if provided
+        let manufacturerId = null
+        if (manufacturer) {
+          const mfr = await prisma.$queryRaw`
+            SELECT manufacturer_id FROM manufacturer WHERE name = ${manufacturer}
+          `
+          if (mfr.length > 0) {
+            manufacturerId = mfr[0].manufacturer_id
+          }
+        }
 
-      // Increment set_submissions count
-      await prisma.$executeRaw`
-        UPDATE contributor_stats
-        SET set_submissions = set_submissions + 1
-        WHERE user_id = ${userId}
-      `
+        // Look up organization_id based on sport
+        let organizationId = null
+        const sportToOrg = {
+          'Baseball': 'MLB',
+          'Football': 'NFL',
+          'Basketball': 'NBA',
+          'Hockey': 'NHL',
+          'Soccer': 'MLS'
+        }
+        const orgAbbrev = sportToOrg[sport]
+        if (orgAbbrev) {
+          const org = await prisma.$queryRaw`
+            SELECT organization_id FROM organization WHERE abbreviation = ${orgAbbrev}
+          `
+          if (org.length > 0) {
+            organizationId = org[0].organization_id
+          }
+        }
 
-      res.status(201).json({
-        success: true,
-        message: 'Set suggestion submitted successfully',
-        submission_id: Number(result[0].submission_id)
-      })
+        // Generate slug
+        const slug = name.toLowerCase()
+          .replace(/[^a-z0-9\s-]/g, '')
+          .replace(/\s+/g, '-')
+          .replace(/-+/g, '-')
+          .trim()
+
+        // Create the actual set
+        const newSet = await prisma.$queryRaw`
+          INSERT INTO [set] (name, year, organization, manufacturer, slug, card_count, series_count, is_complete, created)
+          OUTPUT INSERTED.set_id
+          VALUES (${name}, ${year}, ${organizationId}, ${manufacturerId}, ${slug}, 0, 1, 0, GETDATE())
+        `
+
+        const setId = newSet[0].set_id
+
+        // Create base series with the same name
+        const seriesSlug = slug // Same slug as set for base series
+        await prisma.$queryRaw`
+          INSERT INTO series (name, [set], slug, is_base, card_count, created)
+          VALUES (${name}, ${setId}, ${seriesSlug}, 1, 0, GETDATE())
+        `
+
+        // Create approved submission record for audit trail
+        const result = await prisma.$queryRaw`
+          INSERT INTO set_submissions (
+            user_id, set_id, proposed_name, proposed_year, proposed_sport,
+            proposed_manufacturer, proposed_description,
+            submission_notes, status, reviewed_by, reviewed_at, created_at
+          )
+          OUTPUT INSERTED.submission_id
+          VALUES (
+            ${userId}, ${setId}, ${name}, ${year}, ${sport},
+            ${manufacturer || null}, ${description || null},
+            ${submission_notes || null}, 'approved', ${userId}, GETDATE(), GETDATE()
+          )
+        `
+
+        // Update contributor stats (auto-approved)
+        await prisma.$executeRaw`
+          UPDATE contributor_stats
+          SET total_submissions = total_submissions + 1,
+              approved_submissions = approved_submissions + 1,
+              set_submissions = set_submissions + 1,
+              last_submission_at = GETDATE()
+          WHERE user_id = ${userId}
+        `
+
+        res.status(201).json({
+          success: true,
+          message: 'Set created successfully',
+          submission_id: Number(result[0].submission_id),
+          set_id: Number(setId),
+          auto_approved: true
+        })
+      } else {
+        // Regular user: Create pending submission for review
+        const result = await prisma.$queryRaw`
+          INSERT INTO set_submissions (
+            user_id, proposed_name, proposed_year, proposed_sport,
+            proposed_manufacturer, proposed_description,
+            submission_notes, status, created_at
+          )
+          OUTPUT INSERTED.submission_id
+          VALUES (
+            ${userId}, ${name}, ${year}, ${sport},
+            ${manufacturer || null}, ${description || null},
+            ${submission_notes || null}, 'pending', GETDATE()
+          )
+        `
+
+        // Update contributor stats
+        await updateContributorStatsOnSubmit(userId)
+
+        // Increment set_submissions count
+        await prisma.$executeRaw`
+          UPDATE contributor_stats
+          SET set_submissions = set_submissions + 1
+          WHERE user_id = ${userId}
+        `
+
+        res.status(201).json({
+          success: true,
+          message: 'Set suggestion submitted successfully',
+          submission_id: Number(result[0].submission_id),
+          auto_approved: false
+        })
+      }
 
     } catch (error) {
       console.error('Error submitting set:', error)
@@ -420,7 +515,6 @@ router.post('/series',
   body('parallel_of_series_id').optional().isInt({ min: 1 }),
   body('print_run').optional().isInt({ min: 1 }),
   body('submission_notes').optional().isString().isLength({ max: 2000 }),
-  body('cards').optional().isArray(),
   async (req, res) => {
     try {
       const errors = validationResult(req)
@@ -434,7 +528,7 @@ router.post('/series',
       const userId = BigInt(req.user.userId)
       const {
         set_id, set_submission_id, name, description, base_card_count,
-        is_parallel, parallel_of_series_id, print_run, submission_notes, cards
+        is_parallel, parallel_of_series_id, print_run, submission_notes
       } = req.body
 
       // Must have either set_id or set_submission_id
@@ -485,85 +579,110 @@ router.post('/series',
         }
       }
 
+      // Check if user is admin (auto-approve)
+      const isAdmin = ['admin', 'superadmin', 'data_admin'].includes(req.user.role)
+
       // Ensure contributor stats exist
       await ensureContributorStats(userId)
 
-      // Create the series submission
-      const result = await prisma.$queryRaw`
-        INSERT INTO series_submissions (
-          user_id, set_id, set_submission_id, proposed_name, proposed_description,
-          proposed_base_card_count, proposed_is_parallel, proposed_parallel_of_series,
-          proposed_print_run, submission_notes, status, created_at
-        )
-        OUTPUT INSERTED.submission_id
-        VALUES (
-          ${userId}, ${set_id || null}, ${set_submission_id ? BigInt(set_submission_id) : null},
-          ${name}, ${description || null}, ${base_card_count || null},
-          ${is_parallel || false}, ${parallel_of_series_id ? BigInt(parallel_of_series_id) : null},
-          ${print_run || null}, ${submission_notes || null}, 'pending', GETDATE()
-        )
-      `
+      if (isAdmin && set_id) {
+        // Admin: Create the series directly (only if we have set_id, not set_submission_id)
 
-      const seriesSubmissionId = result[0].submission_id
+        // Generate slug
+        const slug = name.toLowerCase()
+          .replace(/[^a-z0-9\s-]/g, '')
+          .replace(/\s+/g, '-')
+          .replace(/-+/g, '-')
+          .trim()
 
-      // If cards were provided, create card submissions linked to this series submission
-      let cardCount = 0
-      if (cards && Array.isArray(cards) && cards.length > 0) {
-        const batchId = `series_${seriesSubmissionId}_${Date.now()}`
+        // Create the actual series
+        // Note: series table doesn't have description/is_parallel columns - those are stored in series_submissions
+        // Use OUTPUT INTO because series table has triggers
+        const newSeries = await prisma.$queryRaw`
+          DECLARE @InsertedSeries TABLE (series_id BIGINT);
+          INSERT INTO series (name, [set], slug, parallel_of_series, min_print_run, max_print_run, card_count, created)
+          OUTPUT INSERTED.series_id INTO @InsertedSeries
+          VALUES (${name}, ${set_id}, ${slug}, ${parallel_of_series_id || null},
+                  ${print_run || null}, ${print_run || null}, 0, GETDATE());
+          SELECT series_id FROM @InsertedSeries;
+        `
 
-        for (let i = 0; i < cards.length; i++) {
-          const card = cards[i]
-          if (!card.card_number) continue
+        const seriesId = newSeries[0].series_id
 
-          await prisma.$executeRaw`
-            INSERT INTO card_submissions (
-              user_id, series_submission_id, batch_id, batch_sequence,
-              proposed_card_number, proposed_player_names, proposed_team_names,
-              proposed_is_rookie, proposed_is_autograph, proposed_is_relic,
-              proposed_is_short_print, proposed_print_run, proposed_color, proposed_notes,
-              status, created_at
-            )
-            VALUES (
-              ${userId}, ${seriesSubmissionId}, ${batchId}, ${i + 1},
-              ${card.card_number}, ${card.player_names || null}, ${card.team_names || null},
-              ${card.is_rookie || false}, ${card.is_autograph || false}, ${card.is_relic || false},
-              ${card.is_short_print || false}, ${card.print_run || null}, ${card.color || null},
-              ${card.notes || null}, 'pending', GETDATE()
-            )
-          `
-          cardCount++
-        }
-      }
+        // Update the set's series_count
+        await prisma.$executeRaw`
+          UPDATE [set] SET series_count = series_count + 1 WHERE set_id = ${set_id}
+        `
 
-      // Update contributor stats
-      await updateContributorStatsOnSubmit(userId)
+        // Create approved submission record for audit trail
+        const result = await prisma.$queryRaw`
+          INSERT INTO series_submissions (
+            user_id, set_id, created_series_id, proposed_name, proposed_description,
+            proposed_base_card_count, proposed_is_parallel, proposed_parallel_of_series,
+            proposed_print_run, submission_notes, status, reviewed_by, reviewed_at, created_at
+          )
+          OUTPUT INSERTED.submission_id
+          VALUES (
+            ${userId}, ${set_id}, ${seriesId},
+            ${name}, ${description || null}, ${base_card_count || null},
+            ${is_parallel || false}, ${parallel_of_series_id ? BigInt(parallel_of_series_id) : null},
+            ${print_run || null}, ${submission_notes || null}, 'approved', ${userId}, GETDATE(), GETDATE()
+          )
+        `
 
-      // Increment series_submissions count
-      await prisma.$executeRaw`
-        UPDATE contributor_stats
-        SET series_submissions = series_submissions + 1
-        WHERE user_id = ${userId}
-      `
-
-      // If cards were submitted, also increment card_submissions count
-      if (cardCount > 0) {
+        // Update contributor stats (auto-approved)
         await prisma.$executeRaw`
           UPDATE contributor_stats
-          SET card_submissions = card_submissions + ${cardCount}
+          SET total_submissions = total_submissions + 1,
+              approved_submissions = approved_submissions + 1,
+              series_submissions = series_submissions + 1,
+              last_submission_at = GETDATE()
           WHERE user_id = ${userId}
         `
+
+        res.status(201).json({
+          success: true,
+          message: 'Series created successfully!',
+          submission_id: Number(result[0].submission_id),
+          series_id: Number(seriesId),
+          auto_approved: true
+        })
+      } else {
+        // Regular user OR admin with set_submission_id: Create pending submission for review
+        const result = await prisma.$queryRaw`
+          INSERT INTO series_submissions (
+            user_id, set_id, set_submission_id, proposed_name, proposed_description,
+            proposed_base_card_count, proposed_is_parallel, proposed_parallel_of_series,
+            proposed_print_run, submission_notes, status, created_at
+          )
+          OUTPUT INSERTED.submission_id
+          VALUES (
+            ${userId}, ${set_id || null}, ${set_submission_id ? BigInt(set_submission_id) : null},
+            ${name}, ${description || null}, ${base_card_count || null},
+            ${is_parallel || false}, ${parallel_of_series_id ? BigInt(parallel_of_series_id) : null},
+            ${print_run || null}, ${submission_notes || null}, 'pending', GETDATE()
+          )
+        `
+
+        const seriesSubmissionId = result[0].submission_id
+
+        // Update contributor stats
+        await updateContributorStatsOnSubmit(userId)
+
+        // Increment series_submissions count
+        await prisma.$executeRaw`
+          UPDATE contributor_stats
+          SET series_submissions = series_submissions + 1
+          WHERE user_id = ${userId}
+        `
+
+        res.status(201).json({
+          success: true,
+          message: 'Series suggestion submitted successfully',
+          submission_id: Number(seriesSubmissionId),
+          auto_approved: false
+        })
       }
-
-      const message = cardCount > 0
-        ? `Series suggestion with ${cardCount} cards submitted successfully`
-        : 'Series suggestion submitted successfully'
-
-      res.status(201).json({
-        success: true,
-        message,
-        submission_id: Number(seriesSubmissionId),
-        card_count: cardCount
-      })
 
     } catch (error) {
       console.error('Error submitting series:', error)
@@ -1292,24 +1411,39 @@ router.get('/admin/stats',
           (SELECT COUNT(*) FROM series_submissions WHERE status = 'pending') as pending_series,
           (SELECT COUNT(*) FROM card_submissions) as total_cards,
           (SELECT COUNT(*) FROM card_submissions WHERE status = 'pending') as pending_cards,
+          (SELECT COUNT(*) FROM player_edit_submissions) as total_player_edits,
+          (SELECT COUNT(*) FROM player_edit_submissions WHERE status = 'pending') as pending_player_edits,
+          (SELECT COUNT(*) FROM player_alias_submissions) as total_player_aliases,
+          (SELECT COUNT(*) FROM player_alias_submissions WHERE status = 'pending') as pending_player_aliases,
+          (SELECT COUNT(*) FROM player_team_submissions) as total_player_teams,
+          (SELECT COUNT(*) FROM player_team_submissions WHERE status = 'pending') as pending_player_teams,
           (SELECT COUNT(DISTINCT user_id) FROM contributor_stats) as unique_contributors,
           (SELECT COUNT(*) FROM contributor_stats WHERE trust_level != 'novice') as trusted_contributors
       `
 
+      const s = stats[0]
+      const totalPending = Number(s.pending_card_edits) + Number(s.pending_sets) + Number(s.pending_series) + Number(s.pending_cards) + Number(s.pending_player_edits) + Number(s.pending_player_aliases) + Number(s.pending_player_teams)
+
       res.json({
         success: true,
         stats: {
-          total_card_edits: Number(stats[0].total_card_edits),
-          pending_card_edits: Number(stats[0].pending_card_edits),
-          total_sets: Number(stats[0].total_sets),
-          pending_sets: Number(stats[0].pending_sets),
-          total_series: Number(stats[0].total_series),
-          pending_series: Number(stats[0].pending_series),
-          total_cards: Number(stats[0].total_cards),
-          pending_cards: Number(stats[0].pending_cards),
-          total_pending: Number(stats[0].pending_card_edits) + Number(stats[0].pending_sets) + Number(stats[0].pending_series) + Number(stats[0].pending_cards),
-          unique_contributors: Number(stats[0].unique_contributors),
-          trusted_contributors: Number(stats[0].trusted_contributors)
+          total_card_edits: Number(s.total_card_edits),
+          pending_card_edits: Number(s.pending_card_edits),
+          total_sets: Number(s.total_sets),
+          pending_sets: Number(s.pending_sets),
+          total_series: Number(s.total_series),
+          pending_series: Number(s.pending_series),
+          total_cards: Number(s.total_cards),
+          pending_cards: Number(s.pending_cards),
+          total_player_edits: Number(s.total_player_edits),
+          pending_player_edits: Number(s.pending_player_edits),
+          total_player_aliases: Number(s.total_player_aliases),
+          pending_player_aliases: Number(s.pending_player_aliases),
+          total_player_teams: Number(s.total_player_teams),
+          pending_player_teams: Number(s.pending_player_teams),
+          total_pending: totalPending,
+          unique_contributors: Number(s.unique_contributors),
+          trusted_contributors: Number(s.trusted_contributors)
         }
       })
 
@@ -1337,7 +1471,7 @@ router.get('/admin/review-all',
       const limitNum = Math.min(parseInt(limit) || 50, 100)
       const offsetNum = parseInt(offset) || 0
 
-      const results = { sets: [], series: [], cards: [], card_edits: [] }
+      const results = { sets: [], series: [], cards: [], card_edits: [], player_edits: [], player_aliases: [], player_teams: [], team_edits: [] }
 
       // Get set submissions
       if (!type || type === 'set') {
@@ -1562,12 +1696,173 @@ router.get('/admin/review-all',
         }))
       }
 
+      // Get player edit submissions
+      if (!type || type === 'player_edit') {
+        const playerEdits = await prisma.$queryRaw`
+          SELECT pes.submission_id, pes.player_id, pes.user_id,
+                 pes.previous_first_name, pes.previous_last_name, pes.previous_nick_name,
+                 pes.previous_birthdate, pes.previous_is_hof,
+                 pes.proposed_first_name, pes.proposed_last_name, pes.proposed_nick_name,
+                 pes.proposed_birthdate, pes.proposed_is_hof,
+                 pes.submission_notes, pes.status, pes.created_at,
+                 p.first_name as current_first_name, p.last_name as current_last_name,
+                 u.username as submitter_username, u.email as submitter_email,
+                 cs.trust_level as submitter_trust_level, cs.approval_rate as submitter_approval_rate
+          FROM player_edit_submissions pes
+          JOIN player p ON pes.player_id = p.player_id
+          JOIN [user] u ON pes.user_id = u.user_id
+          LEFT JOIN contributor_stats cs ON pes.user_id = cs.user_id
+          WHERE pes.status = 'pending'
+          ORDER BY pes.created_at ASC
+        `
+        results.player_edits = playerEdits.map(pe => ({
+          submission_type: 'player_edit',
+          submission_id: Number(pe.submission_id),
+          player_id: Number(pe.player_id),
+          user_id: Number(pe.user_id),
+          submitter_username: pe.submitter_username,
+          submitter_email: pe.submitter_email,
+          submitter_trust_level: pe.submitter_trust_level || 'novice',
+          submitter_approval_rate: pe.submitter_approval_rate ? Number(pe.submitter_approval_rate) : null,
+          player_name: `${pe.current_first_name} ${pe.current_last_name}`,
+          previous_first_name: pe.previous_first_name,
+          previous_last_name: pe.previous_last_name,
+          previous_nick_name: pe.previous_nick_name,
+          previous_birthdate: pe.previous_birthdate,
+          previous_is_hof: pe.previous_is_hof,
+          proposed_first_name: pe.proposed_first_name,
+          proposed_last_name: pe.proposed_last_name,
+          proposed_nick_name: pe.proposed_nick_name,
+          proposed_birthdate: pe.proposed_birthdate,
+          proposed_is_hof: pe.proposed_is_hof,
+          submission_notes: pe.submission_notes,
+          created_at: pe.created_at
+        }))
+      }
+
+      // Get player alias submissions
+      if (!type || type === 'player_alias') {
+        const playerAliases = await prisma.$queryRaw`
+          SELECT pas.submission_id, pas.player_id, pas.user_id,
+                 pas.proposed_alias_name, pas.proposed_alias_type,
+                 pas.submission_notes, pas.status, pas.created_at,
+                 p.first_name, p.last_name,
+                 u.username as submitter_username, u.email as submitter_email,
+                 cs.trust_level as submitter_trust_level, cs.approval_rate as submitter_approval_rate
+          FROM player_alias_submissions pas
+          JOIN player p ON pas.player_id = p.player_id
+          JOIN [user] u ON pas.user_id = u.user_id
+          LEFT JOIN contributor_stats cs ON pas.user_id = cs.user_id
+          WHERE pas.status = 'pending'
+          ORDER BY pas.created_at ASC
+        `
+        results.player_aliases = playerAliases.map(pa => ({
+          submission_type: 'player_alias',
+          submission_id: Number(pa.submission_id),
+          player_id: Number(pa.player_id),
+          user_id: Number(pa.user_id),
+          submitter_username: pa.submitter_username,
+          submitter_email: pa.submitter_email,
+          submitter_trust_level: pa.submitter_trust_level || 'novice',
+          submitter_approval_rate: pa.submitter_approval_rate ? Number(pa.submitter_approval_rate) : null,
+          player_name: `${pa.first_name} ${pa.last_name}`,
+          proposed_alias_name: pa.proposed_alias_name,
+          proposed_alias_type: pa.proposed_alias_type,
+          submission_notes: pa.submission_notes,
+          created_at: pa.created_at
+        }))
+      }
+
+      // Get player-team submissions
+      if (!type || type === 'player_team') {
+        const playerTeams = await prisma.$queryRaw`
+          SELECT pts.submission_id, pts.player_id, pts.team_id, pts.user_id,
+                 pts.action_type, pts.submission_notes, pts.status, pts.created_at,
+                 p.first_name, p.last_name, t.name as team_name,
+                 u.username as submitter_username, u.email as submitter_email,
+                 cs.trust_level as submitter_trust_level, cs.approval_rate as submitter_approval_rate
+          FROM player_team_submissions pts
+          JOIN player p ON pts.player_id = p.player_id
+          JOIN team t ON pts.team_id = t.team_Id
+          JOIN [user] u ON pts.user_id = u.user_id
+          LEFT JOIN contributor_stats cs ON pts.user_id = cs.user_id
+          WHERE pts.status = 'pending'
+          ORDER BY pts.created_at ASC
+        `
+        results.player_teams = playerTeams.map(pt => ({
+          submission_type: 'player_team',
+          submission_id: Number(pt.submission_id),
+          player_id: Number(pt.player_id),
+          team_id: Number(pt.team_id),
+          user_id: Number(pt.user_id),
+          submitter_username: pt.submitter_username,
+          submitter_email: pt.submitter_email,
+          submitter_trust_level: pt.submitter_trust_level || 'novice',
+          submitter_approval_rate: pt.submitter_approval_rate ? Number(pt.submitter_approval_rate) : null,
+          player_name: `${pt.first_name} ${pt.last_name}`,
+          team_name: pt.team_name,
+          action_type: pt.action_type,
+          submission_notes: pt.submission_notes,
+          created_at: pt.created_at
+        }))
+      }
+
+      // Get team edit submissions
+      if (!type || type === 'team_edit') {
+        const teamEdits = await prisma.$queryRaw`
+          SELECT tes.submission_id, tes.team_id, tes.user_id,
+                 tes.previous_name, tes.previous_city, tes.previous_mascot,
+                 tes.previous_abbreviation, tes.previous_primary_color, tes.previous_secondary_color,
+                 tes.proposed_name, tes.proposed_city, tes.proposed_mascot,
+                 tes.proposed_abbreviation, tes.proposed_primary_color, tes.proposed_secondary_color,
+                 tes.submission_notes, tes.created_at,
+                 t.name as current_team_name,
+                 u.username as submitter_username, u.email as submitter_email,
+                 cs.trust_level as submitter_trust_level, cs.approval_rate as submitter_approval_rate
+          FROM team_edit_submissions tes
+          JOIN team t ON tes.team_id = t.team_Id
+          JOIN [user] u ON tes.user_id = u.user_id
+          LEFT JOIN contributor_stats cs ON tes.user_id = cs.user_id
+          WHERE tes.status = 'pending'
+          ORDER BY tes.created_at ASC
+        `
+        results.team_edits = teamEdits.map(te => ({
+          submission_type: 'team_edit',
+          submission_id: Number(te.submission_id),
+          team_id: Number(te.team_id),
+          user_id: Number(te.user_id),
+          submitter_username: te.submitter_username,
+          submitter_email: te.submitter_email,
+          submitter_trust_level: te.submitter_trust_level || 'novice',
+          submitter_approval_rate: te.submitter_approval_rate ? Number(te.submitter_approval_rate) : null,
+          current_team_name: te.current_team_name,
+          previous_name: te.previous_name,
+          previous_city: te.previous_city,
+          previous_mascot: te.previous_mascot,
+          previous_abbreviation: te.previous_abbreviation,
+          previous_primary_color: te.previous_primary_color,
+          previous_secondary_color: te.previous_secondary_color,
+          proposed_name: te.proposed_name,
+          proposed_city: te.proposed_city,
+          proposed_mascot: te.proposed_mascot,
+          proposed_abbreviation: te.proposed_abbreviation,
+          proposed_primary_color: te.proposed_primary_color,
+          proposed_secondary_color: te.proposed_secondary_color,
+          submission_notes: te.submission_notes,
+          created_at: te.created_at
+        }))
+      }
+
       // Combine and sort by created_at
       const allSubmissions = [
         ...results.sets,
         ...results.series,
         ...results.cards,
-        ...results.card_edits
+        ...results.card_edits,
+        ...results.player_edits,
+        ...results.player_aliases,
+        ...results.player_teams,
+        ...results.team_edits
       ].sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
         .slice(offsetNum, offsetNum + limitNum)
 
@@ -1579,7 +1874,11 @@ router.get('/admin/review-all',
           series: results.series.length,
           cards: results.cards.length,
           card_edits: results.card_edits.length,
-          total: results.sets.length + results.series.length + results.cards.length + results.card_edits.length
+          player_edits: results.player_edits.length,
+          player_aliases: results.player_aliases.length,
+          player_teams: results.player_teams.length,
+          team_edits: results.team_edits.length,
+          total: results.sets.length + results.series.length + results.cards.length + results.card_edits.length + results.player_edits.length + results.player_aliases.length + results.player_teams.length + results.team_edits.length
         }
       })
 
@@ -1653,10 +1952,18 @@ router.post('/admin/review/set/:submissionId/approve',
 
       // Create the set
       const newSet = await prisma.$queryRaw`
-        INSERT INTO [set] (name, year, organization, manufacturer, slug, created, is_complete)
+        INSERT INTO [set] (name, year, organization, manufacturer, slug, card_count, series_count, created, is_complete)
         OUTPUT INSERTED.set_id
         VALUES (${sub.proposed_name}, ${sub.proposed_year}, ${organizationId}, ${manufacturerId},
-                ${slug}, GETDATE(), 0)
+                ${slug}, 0, 1, GETDATE(), 0)
+      `
+
+      const setId = newSet[0].set_id
+
+      // Create base series with the same name
+      await prisma.$queryRaw`
+        INSERT INTO series (name, [set], slug, is_parallel, card_count, created)
+        VALUES (${sub.proposed_name}, ${setId}, ${slug}, 0, 0, GETDATE())
       `
 
       // Update the submission
@@ -2202,6 +2509,1874 @@ router.get('/template/series-checklist',
     } catch (error) {
       console.error('Error generating template:', error)
       res.status(500).json({ error: 'Server error', message: 'Failed to generate template' })
+    }
+  }
+)
+
+// =============================================================================
+// PLAYER EDIT SUBMISSIONS
+// =============================================================================
+
+// Submit player edit suggestion
+router.post('/player-edit',
+  authMiddleware,
+  submissionLimiter,
+  body('player_id').isInt({ min: 1 }).withMessage('Player ID is required'),
+  body('proposed_first_name').optional({ nullable: true }).isString().isLength({ max: 255 }),
+  body('proposed_last_name').optional({ nullable: true }).isString().isLength({ max: 255 }),
+  body('proposed_nick_name').optional({ nullable: true }).isString().isLength({ max: 255 }),
+  body('proposed_birthdate').optional({ nullable: true }).isISO8601(),
+  body('proposed_is_hof').optional({ nullable: true }).isBoolean(),
+  body('proposed_display_card').optional({ nullable: true }).isInt({ min: 1 }),
+  body('submission_notes').optional().isString().isLength({ max: 2000 }),
+  async (req, res) => {
+    try {
+      const errors = validationResult(req)
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          error: 'Validation error',
+          message: errors.array()[0].msg
+        })
+      }
+
+      const userId = BigInt(req.user.userId)
+      const {
+        player_id,
+        proposed_first_name,
+        proposed_last_name,
+        proposed_nick_name,
+        proposed_birthdate,
+        proposed_is_hof,
+        proposed_display_card,
+        submission_notes
+      } = req.body
+
+      // Verify player exists and get current values
+      const player = await prisma.$queryRaw`
+        SELECT player_id, first_name, last_name, nick_name, birthdate, is_hof, display_card
+        FROM player WHERE player_id = ${BigInt(player_id)}
+      `
+
+      if (player.length === 0) {
+        return res.status(404).json({
+          error: 'Not found',
+          message: 'Player not found'
+        })
+      }
+
+      const current = player[0]
+      const currentDisplayCard = current.display_card ? Number(current.display_card) : null
+
+      // If display card is being changed, verify it belongs to this player and has an image
+      if (proposed_display_card !== undefined && proposed_display_card !== null) {
+        const cardCheck = await prisma.$queryRawUnsafe(`
+          SELECT c.card_id, front_photo.photo_url as front_image_url
+          FROM card c
+          INNER JOIN card_player_team cpt ON c.card_id = cpt.card
+          INNER JOIN player_team pt ON cpt.player_team = pt.player_team_id
+          LEFT JOIN user_card uc ON c.reference_user_card = uc.user_card_id
+          LEFT JOIN user_card_photo front_photo ON uc.user_card_id = front_photo.user_card AND front_photo.sort_order = 1
+          WHERE pt.player = ${player_id} AND c.card_id = ${proposed_display_card}
+        `)
+
+        if (cardCheck.length === 0) {
+          return res.status(400).json({
+            error: 'Invalid card',
+            message: 'The specified card does not belong to this player'
+          })
+        }
+
+        if (!cardCheck[0].front_image_url) {
+          return res.status(400).json({
+            error: 'No image',
+            message: 'The specified card does not have an image'
+          })
+        }
+      }
+
+      // Check that at least one field is being changed
+      const hasChanges = (
+        (proposed_first_name !== undefined && proposed_first_name !== current.first_name) ||
+        (proposed_last_name !== undefined && proposed_last_name !== current.last_name) ||
+        (proposed_nick_name !== undefined && proposed_nick_name !== current.nick_name) ||
+        (proposed_birthdate !== undefined) ||
+        (proposed_is_hof !== undefined && proposed_is_hof !== current.is_hof) ||
+        (proposed_display_card !== undefined && proposed_display_card !== currentDisplayCard)
+      )
+
+      if (!hasChanges) {
+        return res.status(400).json({
+          error: 'Validation error',
+          message: 'No changes proposed'
+        })
+      }
+
+      // Check if user is admin (auto-approve)
+      const isAdmin = ['admin', 'superadmin', 'data_admin'].includes(req.user.role)
+
+      // Ensure contributor stats exist
+      await ensureContributorStats(userId)
+
+      if (isAdmin) {
+        // Admin: Apply changes directly and create approved submission record
+        let updateParts = []
+        if (proposed_first_name !== undefined && proposed_first_name !== current.first_name) {
+          updateParts.push(`first_name = '${proposed_first_name.replace(/'/g, "''")}'`)
+        }
+        if (proposed_last_name !== undefined && proposed_last_name !== current.last_name) {
+          updateParts.push(`last_name = '${proposed_last_name.replace(/'/g, "''")}'`)
+        }
+        if (proposed_nick_name !== undefined && proposed_nick_name !== current.nick_name) {
+          updateParts.push(`nick_name = ${proposed_nick_name ? `'${proposed_nick_name.replace(/'/g, "''")}'` : 'NULL'}`)
+        }
+        if (proposed_birthdate !== undefined) {
+          updateParts.push(`birthdate = '${new Date(proposed_birthdate).toISOString().split('T')[0]}'`)
+        }
+        if (proposed_is_hof !== undefined && proposed_is_hof !== current.is_hof) {
+          updateParts.push(`is_hof = ${proposed_is_hof ? 1 : 0}`)
+        }
+        if (proposed_display_card !== undefined && proposed_display_card !== currentDisplayCard) {
+          updateParts.push(`display_card = ${proposed_display_card ? proposed_display_card : 'NULL'}`)
+        }
+
+        // Apply the changes to the player
+        if (updateParts.length > 0) {
+          await prisma.$executeRawUnsafe(`UPDATE player SET ${updateParts.join(', ')} WHERE player_id = ${player_id}`)
+        }
+
+        // Create an approved submission record for audit trail
+        const result = await prisma.$queryRaw`
+          INSERT INTO player_edit_submissions (
+            player_id, user_id,
+            previous_first_name, previous_last_name, previous_nick_name,
+            previous_birthdate, previous_is_hof, previous_display_card,
+            proposed_first_name, proposed_last_name, proposed_nick_name,
+            proposed_birthdate, proposed_is_hof, proposed_display_card,
+            submission_notes, status, reviewed_by, reviewed_at, created_at
+          )
+          OUTPUT INSERTED.submission_id
+          VALUES (
+            ${BigInt(player_id)}, ${userId},
+            ${current.first_name}, ${current.last_name}, ${current.nick_name},
+            ${current.birthdate}, ${current.is_hof}, ${current.display_card},
+            ${proposed_first_name !== undefined ? proposed_first_name : null},
+            ${proposed_last_name !== undefined ? proposed_last_name : null},
+            ${proposed_nick_name !== undefined ? proposed_nick_name : null},
+            ${proposed_birthdate !== undefined ? new Date(proposed_birthdate) : null},
+            ${proposed_is_hof !== undefined ? proposed_is_hof : null},
+            ${proposed_display_card !== undefined ? (proposed_display_card ? BigInt(proposed_display_card) : null) : null},
+            ${submission_notes || null}, 'approved', ${userId}, GETDATE(), GETDATE()
+          )
+        `
+
+        // Update contributor stats (auto-approved)
+        await prisma.$executeRaw`
+          UPDATE contributor_stats
+          SET total_submissions = total_submissions + 1,
+              approved_submissions = approved_submissions + 1,
+              player_edit_submissions = player_edit_submissions + 1,
+              last_submission_at = GETDATE()
+          WHERE user_id = ${userId}
+        `
+
+        res.status(201).json({
+          success: true,
+          message: 'Player updated successfully',
+          submission_id: Number(result[0].submission_id),
+          auto_approved: true
+        })
+      } else {
+        // Regular user: Create pending submission for review
+        const result = await prisma.$queryRaw`
+          INSERT INTO player_edit_submissions (
+            player_id, user_id,
+            previous_first_name, previous_last_name, previous_nick_name,
+            previous_birthdate, previous_is_hof, previous_display_card,
+            proposed_first_name, proposed_last_name, proposed_nick_name,
+            proposed_birthdate, proposed_is_hof, proposed_display_card,
+            submission_notes, status, created_at
+          )
+          OUTPUT INSERTED.submission_id
+          VALUES (
+            ${BigInt(player_id)}, ${userId},
+            ${current.first_name}, ${current.last_name}, ${current.nick_name},
+            ${current.birthdate}, ${current.is_hof}, ${current.display_card},
+            ${proposed_first_name !== undefined ? proposed_first_name : null},
+            ${proposed_last_name !== undefined ? proposed_last_name : null},
+            ${proposed_nick_name !== undefined ? proposed_nick_name : null},
+            ${proposed_birthdate !== undefined ? new Date(proposed_birthdate) : null},
+            ${proposed_is_hof !== undefined ? proposed_is_hof : null},
+            ${proposed_display_card !== undefined ? (proposed_display_card ? BigInt(proposed_display_card) : null) : null},
+            ${submission_notes || null}, 'pending', GETDATE()
+          )
+        `
+
+        // Update contributor stats
+        await updateContributorStatsOnSubmit(userId)
+
+        await prisma.$executeRaw`
+          UPDATE contributor_stats
+          SET player_edit_submissions = player_edit_submissions + 1
+          WHERE user_id = ${userId}
+        `
+
+        res.status(201).json({
+          success: true,
+          message: 'Player edit suggestion submitted successfully',
+          submission_id: Number(result[0].submission_id),
+          auto_approved: false
+        })
+      }
+
+    } catch (error) {
+      console.error('Error submitting player edit:', error)
+      res.status(500).json({
+        error: 'Server error',
+        message: 'Failed to submit player edit suggestion'
+      })
+    }
+  }
+)
+
+// =============================================================================
+// NEW PLAYER SUBMISSIONS
+// =============================================================================
+
+// Submit new player suggestion
+router.post('/player',
+  authMiddleware,
+  submissionLimiter,
+  body('proposed_first_name').isString().isLength({ min: 1, max: 255 }).withMessage('First name is required'),
+  body('proposed_last_name').isString().isLength({ min: 1, max: 255 }).withMessage('Last name is required'),
+  body('proposed_nick_name').optional({ nullable: true }).isString().isLength({ max: 255 }),
+  body('proposed_birthdate').optional({ nullable: true }).isISO8601(),
+  body('proposed_is_hof').optional().isBoolean(),
+  body('proposed_team_ids').optional().isArray(),
+  body('proposed_team_ids.*').optional().isInt({ min: 1 }),
+  body('submission_notes').optional().isString().isLength({ max: 2000 }),
+  async (req, res) => {
+    try {
+      const errors = validationResult(req)
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          error: 'Validation error',
+          message: errors.array()[0].msg
+        })
+      }
+
+      const userId = BigInt(req.user.userId)
+      const isAdmin = ['admin', 'superadmin', 'data_admin'].includes(req.user.role)
+      const {
+        proposed_first_name,
+        proposed_last_name,
+        proposed_nick_name,
+        proposed_birthdate,
+        proposed_is_hof,
+        proposed_team_ids,
+        submission_notes
+      } = req.body
+
+      // Check for duplicate player with same name
+      const existingPlayer = await prisma.$queryRaw`
+        SELECT player_id, first_name, last_name FROM player
+        WHERE LOWER(first_name) = LOWER(${proposed_first_name.trim()})
+          AND LOWER(last_name) = LOWER(${proposed_last_name.trim()})
+      `
+
+      if (existingPlayer.length > 0) {
+        return res.status(400).json({
+          error: 'Duplicate',
+          message: `A player named ${proposed_first_name} ${proposed_last_name} already exists in the database`,
+          existing_player_id: Number(existingPlayer[0].player_id)
+        })
+      }
+
+      // Check for pending submission with same name
+      const pendingSubmission = await prisma.$queryRaw`
+        SELECT submission_id FROM player_submissions
+        WHERE LOWER(proposed_first_name) = LOWER(${proposed_first_name.trim()})
+          AND LOWER(proposed_last_name) = LOWER(${proposed_last_name.trim()})
+          AND status = 'pending'
+      `
+
+      if (pendingSubmission.length > 0) {
+        return res.status(400).json({
+          error: 'Duplicate',
+          message: `A pending submission for ${proposed_first_name} ${proposed_last_name} already exists`
+        })
+      }
+
+      // Verify all team_ids exist if provided
+      if (proposed_team_ids && proposed_team_ids.length > 0) {
+        const teamCheck = await prisma.$queryRaw`
+          SELECT team_Id FROM team WHERE team_Id IN (${Prisma.join(proposed_team_ids)})
+        `
+        if (teamCheck.length !== proposed_team_ids.length) {
+          return res.status(400).json({
+            error: 'Invalid teams',
+            message: 'One or more team IDs are invalid'
+          })
+        }
+      }
+
+      // Ensure contributor stats exist
+      await ensureContributorStats(userId)
+
+      // Generate slug for the player
+      const generateSlug = (firstName, lastName) => {
+        const fullName = `${firstName} ${lastName}`.toLowerCase()
+        return fullName
+          .replace(/[^a-z0-9\s-]/g, '')
+          .replace(/\s+/g, '-')
+          .replace(/-+/g, '-')
+          .trim()
+      }
+
+      // Admin: Create player directly
+      if (isAdmin) {
+        let baseSlug = generateSlug(proposed_first_name.trim(), proposed_last_name.trim())
+        let slug = baseSlug
+        let slugCounter = 1
+
+        // Check for slug uniqueness
+        let slugExists = await prisma.$queryRaw`SELECT player_id FROM player WHERE slug = ${slug}`
+        while (slugExists.length > 0) {
+          slug = `${baseSlug}-${slugCounter}`
+          slugExists = await prisma.$queryRaw`SELECT player_id FROM player WHERE slug = ${slug}`
+          slugCounter++
+        }
+
+        // Create the player
+        // Note: first_name_indexed, last_name_indexed, nick_name_indexed are computed columns
+        const newPlayer = await prisma.$queryRaw`
+          INSERT INTO player (
+            first_name, last_name, nick_name, birthdate, is_hof,
+            slug, created, card_count
+          )
+          OUTPUT INSERTED.player_id
+          VALUES (
+            ${proposed_first_name.trim()},
+            ${proposed_last_name.trim()},
+            ${proposed_nick_name?.trim() || null},
+            ${proposed_birthdate ? new Date(proposed_birthdate) : null},
+            ${proposed_is_hof || false},
+            ${slug},
+            GETDATE(),
+            0
+          )
+        `
+
+        const createdPlayerId = newPlayer[0].player_id
+
+        // Create player-team associations if provided
+        if (proposed_team_ids && proposed_team_ids.length > 0) {
+          for (const teamId of proposed_team_ids) {
+            await prisma.$executeRaw`
+              INSERT INTO player_team (player, team, created, card_count)
+              VALUES (${createdPlayerId}, ${teamId}, GETDATE(), 0)
+            `
+            // Update team player count
+            await prisma.$executeRaw`
+              UPDATE team SET player_count = player_count + 1 WHERE team_Id = ${teamId}
+            `
+          }
+        }
+
+        // Create approved submission record for audit trail
+        await prisma.$queryRaw`
+          INSERT INTO player_submissions (
+            user_id, proposed_first_name, proposed_last_name, proposed_nick_name,
+            proposed_birthdate, proposed_is_hof, proposed_team_ids,
+            submission_notes, status, created_player_id,
+            reviewed_by, reviewed_at, created_at
+          )
+          OUTPUT INSERTED.submission_id
+          VALUES (
+            ${userId},
+            ${proposed_first_name.trim()},
+            ${proposed_last_name.trim()},
+            ${proposed_nick_name?.trim() || null},
+            ${proposed_birthdate ? new Date(proposed_birthdate) : null},
+            ${proposed_is_hof || false},
+            ${proposed_team_ids ? JSON.stringify(proposed_team_ids) : null},
+            ${submission_notes || 'Admin direct creation'},
+            'approved',
+            ${createdPlayerId},
+            ${userId},
+            GETDATE(),
+            GETDATE()
+          )
+        `
+
+        // Update contributor stats
+        await updateContributorStatsOnSubmit(userId)
+        await updateContributorStatsOnReview(userId, true)
+
+        await prisma.$executeRaw`
+          UPDATE contributor_stats
+          SET player_submissions = ISNULL(player_submissions, 0) + 1
+          WHERE user_id = ${userId}
+        `
+
+        res.status(201).json({
+          success: true,
+          message: 'Player created successfully',
+          player_id: Number(createdPlayerId),
+          auto_approved: true
+        })
+
+      } else {
+        // Non-admin: Create pending submission for review
+        const result = await prisma.$queryRaw`
+          INSERT INTO player_submissions (
+            user_id, proposed_first_name, proposed_last_name, proposed_nick_name,
+            proposed_birthdate, proposed_is_hof, proposed_team_ids,
+            submission_notes, status, created_at
+          )
+          OUTPUT INSERTED.submission_id
+          VALUES (
+            ${userId},
+            ${proposed_first_name.trim()},
+            ${proposed_last_name.trim()},
+            ${proposed_nick_name?.trim() || null},
+            ${proposed_birthdate ? new Date(proposed_birthdate) : null},
+            ${proposed_is_hof || false},
+            ${proposed_team_ids ? JSON.stringify(proposed_team_ids) : null},
+            ${submission_notes || null},
+            'pending',
+            GETDATE()
+          )
+        `
+
+        // Update contributor stats
+        await updateContributorStatsOnSubmit(userId)
+
+        await prisma.$executeRaw`
+          UPDATE contributor_stats
+          SET player_submissions = ISNULL(player_submissions, 0) + 1
+          WHERE user_id = ${userId}
+        `
+
+        res.status(201).json({
+          success: true,
+          message: 'New player suggestion submitted for review',
+          submission_id: Number(result[0].submission_id),
+          auto_approved: false
+        })
+      }
+
+    } catch (error) {
+      console.error('Error submitting new player:', error)
+      res.status(500).json({
+        error: 'Server error',
+        message: 'Failed to submit new player suggestion'
+      })
+    }
+  }
+)
+
+// =============================================================================
+// PLAYER ALIAS SUBMISSIONS
+// =============================================================================
+
+// Submit player alias suggestion
+router.post('/player-alias',
+  authMiddleware,
+  submissionLimiter,
+  body('player_id').isInt({ min: 1 }).withMessage('Player ID is required'),
+  body('proposed_alias_name').isString().isLength({ min: 1, max: 255 }).withMessage('Alias name is required'),
+  body('proposed_alias_type').optional().isString().isIn(['misspelling', 'nickname', 'maiden_name', 'alternate_spelling', 'foreign_name']),
+  body('submission_notes').optional().isString().isLength({ max: 2000 }),
+  async (req, res) => {
+    try {
+      const errors = validationResult(req)
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          error: 'Validation error',
+          message: errors.array()[0].msg
+        })
+      }
+
+      const userId = BigInt(req.user.userId)
+      const { player_id, proposed_alias_name, proposed_alias_type, submission_notes } = req.body
+
+      // Verify player exists
+      const player = await prisma.$queryRaw`
+        SELECT player_id FROM player WHERE player_id = ${BigInt(player_id)}
+      `
+
+      if (player.length === 0) {
+        return res.status(404).json({
+          error: 'Not found',
+          message: 'Player not found'
+        })
+      }
+
+      // Check if this alias already exists for this player
+      const existingAlias = await prisma.$queryRaw`
+        SELECT alias_id FROM player_alias
+        WHERE player_id = ${BigInt(player_id)} AND LOWER(alias_name) = LOWER(${proposed_alias_name})
+      `
+
+      if (existingAlias.length > 0) {
+        return res.status(400).json({
+          error: 'Duplicate',
+          message: 'This alias already exists for this player'
+        })
+      }
+
+      // Check if there's already a pending submission for the same alias
+      const pendingSubmission = await prisma.$queryRaw`
+        SELECT submission_id FROM player_alias_submissions
+        WHERE player_id = ${BigInt(player_id)}
+          AND LOWER(proposed_alias_name) = LOWER(${proposed_alias_name})
+          AND status = 'pending'
+      `
+
+      if (pendingSubmission.length > 0) {
+        return res.status(400).json({
+          error: 'Duplicate',
+          message: 'A pending submission for this alias already exists'
+        })
+      }
+
+      // Ensure contributor stats exist
+      await ensureContributorStats(userId)
+
+      // Create the submission
+      const result = await prisma.$queryRaw`
+        INSERT INTO player_alias_submissions (
+          player_id, user_id, proposed_alias_name, proposed_alias_type,
+          submission_notes, status, created_at
+        )
+        OUTPUT INSERTED.submission_id
+        VALUES (
+          ${BigInt(player_id)}, ${userId}, ${proposed_alias_name},
+          ${proposed_alias_type || null}, ${submission_notes || null},
+          'pending', GETDATE()
+        )
+      `
+
+      // Update contributor stats
+      await updateContributorStatsOnSubmit(userId)
+
+      await prisma.$executeRaw`
+        UPDATE contributor_stats
+        SET player_alias_submissions = player_alias_submissions + 1
+        WHERE user_id = ${userId}
+      `
+
+      res.status(201).json({
+        success: true,
+        message: 'Player alias suggestion submitted successfully',
+        submission_id: Number(result[0].submission_id)
+      })
+
+    } catch (error) {
+      console.error('Error submitting player alias:', error)
+      res.status(500).json({
+        error: 'Server error',
+        message: 'Failed to submit player alias suggestion'
+      })
+    }
+  }
+)
+
+// =============================================================================
+// PLAYER TEAM SUBMISSIONS
+// =============================================================================
+
+// Submit player-team association suggestion (add or remove)
+router.post('/player-team',
+  authMiddleware,
+  submissionLimiter,
+  body('player_id').isInt({ min: 1 }).withMessage('Player ID is required'),
+  body('team_id').isInt({ min: 1 }).withMessage('Team ID is required'),
+  body('action_type').isIn(['add', 'remove']).withMessage('Action type must be "add" or "remove"'),
+  body('submission_notes').optional().isString().isLength({ max: 2000 }),
+  async (req, res) => {
+    try {
+      const errors = validationResult(req)
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          error: 'Validation error',
+          message: errors.array()[0].msg
+        })
+      }
+
+      const userId = BigInt(req.user.userId)
+      const { player_id, team_id, action_type, submission_notes } = req.body
+
+      // Verify player exists
+      const player = await prisma.$queryRaw`
+        SELECT player_id, first_name, last_name FROM player WHERE player_id = ${BigInt(player_id)}
+      `
+
+      if (player.length === 0) {
+        return res.status(404).json({
+          error: 'Not found',
+          message: 'Player not found'
+        })
+      }
+
+      // Verify team exists
+      const team = await prisma.$queryRaw`
+        SELECT team_Id, name FROM team WHERE team_Id = ${team_id}
+      `
+
+      if (team.length === 0) {
+        return res.status(404).json({
+          error: 'Not found',
+          message: 'Team not found'
+        })
+      }
+
+      // Check current association status
+      const existingAssociation = await prisma.$queryRaw`
+        SELECT player_team_id FROM player_team
+        WHERE player = ${BigInt(player_id)} AND team = ${team_id}
+      `
+
+      if (action_type === 'add' && existingAssociation.length > 0) {
+        return res.status(400).json({
+          error: 'Invalid action',
+          message: 'This player is already associated with this team'
+        })
+      }
+
+      if (action_type === 'remove' && existingAssociation.length === 0) {
+        return res.status(400).json({
+          error: 'Invalid action',
+          message: 'This player is not currently associated with this team'
+        })
+      }
+
+      // Check for pending submission of same type
+      const pendingSubmission = await prisma.$queryRaw`
+        SELECT submission_id FROM player_team_submissions
+        WHERE player_id = ${BigInt(player_id)}
+          AND team_id = ${team_id}
+          AND action_type = ${action_type}
+          AND status = 'pending'
+      `
+
+      if (pendingSubmission.length > 0) {
+        return res.status(400).json({
+          error: 'Duplicate',
+          message: `A pending ${action_type} submission for this player-team association already exists`
+        })
+      }
+
+      // Ensure contributor stats exist
+      await ensureContributorStats(userId)
+
+      // Create the submission
+      const result = await prisma.$queryRaw`
+        INSERT INTO player_team_submissions (
+          player_id, team_id, user_id, action_type,
+          submission_notes, status, created_at
+        )
+        OUTPUT INSERTED.submission_id
+        VALUES (
+          ${BigInt(player_id)}, ${team_id}, ${userId}, ${action_type},
+          ${submission_notes || null}, 'pending', GETDATE()
+        )
+      `
+
+      // Update contributor stats
+      await updateContributorStatsOnSubmit(userId)
+
+      await prisma.$executeRaw`
+        UPDATE contributor_stats
+        SET player_team_submissions = player_team_submissions + 1
+        WHERE user_id = ${userId}
+      `
+
+      res.status(201).json({
+        success: true,
+        message: `Player-team ${action_type} suggestion submitted successfully`,
+        submission_id: Number(result[0].submission_id)
+      })
+
+    } catch (error) {
+      console.error('Error submitting player-team:', error)
+      res.status(500).json({
+        error: 'Server error',
+        message: 'Failed to submit player-team suggestion'
+      })
+    }
+  }
+)
+
+// =============================================================================
+// ADMIN REVIEW ACTIONS FOR PLAYER EDIT SUBMISSIONS
+// =============================================================================
+
+// Approve a player edit submission (admin only)
+router.post('/admin/review/player-edit/:submissionId/approve',
+  authMiddleware,
+  adminCheck,
+  body('review_notes').optional().isString().isLength({ max: 2000 }),
+  async (req, res) => {
+    try {
+      const { submissionId } = req.params
+      const { review_notes } = req.body
+      const reviewerId = BigInt(req.user.userId)
+
+      const submission = await prisma.$queryRaw`
+        SELECT submission_id, player_id, user_id, status,
+               proposed_first_name, proposed_last_name, proposed_nick_name,
+               proposed_birthdate, proposed_is_hof, proposed_display_card
+        FROM player_edit_submissions
+        WHERE submission_id = ${BigInt(submissionId)}
+      `
+
+      if (submission.length === 0) {
+        return res.status(404).json({ error: 'Not found', message: 'Submission not found' })
+      }
+
+      if (submission[0].status !== 'pending') {
+        return res.status(400).json({ error: 'Invalid state', message: 'Submission has already been reviewed' })
+      }
+
+      const sub = submission[0]
+
+      // Apply changes to player
+      let updateParts = []
+      if (sub.proposed_first_name !== null) updateParts.push(`first_name = '${sub.proposed_first_name.replace(/'/g, "''")}'`)
+      if (sub.proposed_last_name !== null) updateParts.push(`last_name = '${sub.proposed_last_name.replace(/'/g, "''")}'`)
+      if (sub.proposed_nick_name !== null) updateParts.push(`nick_name = '${sub.proposed_nick_name.replace(/'/g, "''")}'`)
+      if (sub.proposed_birthdate !== null) updateParts.push(`birthdate = '${sub.proposed_birthdate.toISOString().split('T')[0]}'`)
+      if (sub.proposed_is_hof !== null) updateParts.push(`is_hof = ${sub.proposed_is_hof ? 1 : 0}`)
+      if (sub.proposed_display_card !== null) updateParts.push(`display_card = ${sub.proposed_display_card}`)
+
+      if (updateParts.length > 0) {
+        await prisma.$executeRawUnsafe(`UPDATE player SET ${updateParts.join(', ')} WHERE player_id = ${sub.player_id}`)
+      }
+
+      // Update submission status
+      await prisma.$executeRaw`
+        UPDATE player_edit_submissions
+        SET status = 'approved', reviewed_by = ${reviewerId}, reviewed_at = GETDATE(),
+            review_notes = ${review_notes || null}, updated_at = GETDATE()
+        WHERE submission_id = ${BigInt(submissionId)}
+      `
+
+      await updateContributorStatsOnReview(sub.user_id, true)
+
+      res.json({ success: true, message: 'Player edit approved and changes applied' })
+
+    } catch (error) {
+      console.error('Error approving player edit:', error)
+      res.status(500).json({ error: 'Server error', message: 'Failed to approve submission' })
+    }
+  }
+)
+
+// Reject a player edit submission (admin only)
+router.post('/admin/review/player-edit/:submissionId/reject',
+  authMiddleware,
+  adminCheck,
+  body('review_notes').isString().isLength({ min: 10, max: 2000 }).withMessage('Review notes required'),
+  async (req, res) => {
+    try {
+      const errors = validationResult(req)
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ error: 'Validation error', message: errors.array()[0].msg })
+      }
+
+      const { submissionId } = req.params
+      const { review_notes } = req.body
+      const reviewerId = BigInt(req.user.userId)
+
+      const submission = await prisma.$queryRaw`
+        SELECT submission_id, user_id, status FROM player_edit_submissions WHERE submission_id = ${BigInt(submissionId)}
+      `
+
+      if (submission.length === 0) {
+        return res.status(404).json({ error: 'Not found', message: 'Submission not found' })
+      }
+
+      if (submission[0].status !== 'pending') {
+        return res.status(400).json({ error: 'Invalid state', message: 'Submission has already been reviewed' })
+      }
+
+      await prisma.$executeRaw`
+        UPDATE player_edit_submissions
+        SET status = 'rejected', reviewed_by = ${reviewerId}, reviewed_at = GETDATE(),
+            review_notes = ${review_notes}, updated_at = GETDATE()
+        WHERE submission_id = ${BigInt(submissionId)}
+      `
+
+      await updateContributorStatsOnReview(submission[0].user_id, false)
+
+      res.json({ success: true, message: 'Submission rejected' })
+
+    } catch (error) {
+      console.error('Error rejecting player edit:', error)
+      res.status(500).json({ error: 'Server error', message: 'Failed to reject submission' })
+    }
+  }
+)
+
+// =============================================================================
+// ADMIN REVIEW ACTIONS FOR PLAYER ALIAS SUBMISSIONS
+// =============================================================================
+
+// Approve a player alias submission (admin only)
+router.post('/admin/review/player-alias/:submissionId/approve',
+  authMiddleware,
+  adminCheck,
+  body('review_notes').optional().isString().isLength({ max: 2000 }),
+  async (req, res) => {
+    try {
+      const { submissionId } = req.params
+      const { review_notes } = req.body
+      const reviewerId = BigInt(req.user.userId)
+
+      const submission = await prisma.$queryRaw`
+        SELECT submission_id, player_id, user_id, status,
+               proposed_alias_name, proposed_alias_type
+        FROM player_alias_submissions
+        WHERE submission_id = ${BigInt(submissionId)}
+      `
+
+      if (submission.length === 0) {
+        return res.status(404).json({ error: 'Not found', message: 'Submission not found' })
+      }
+
+      if (submission[0].status !== 'pending') {
+        return res.status(400).json({ error: 'Invalid state', message: 'Submission has already been reviewed' })
+      }
+
+      const sub = submission[0]
+
+      // Create the alias
+      const newAlias = await prisma.$queryRaw`
+        INSERT INTO player_alias (player_id, alias_name, alias_type, created_by, created)
+        OUTPUT INSERTED.alias_id
+        VALUES (${sub.player_id}, ${sub.proposed_alias_name}, ${sub.proposed_alias_type}, ${reviewerId}, GETDATE())
+      `
+
+      // Update submission status
+      await prisma.$executeRaw`
+        UPDATE player_alias_submissions
+        SET status = 'approved', reviewed_by = ${reviewerId}, reviewed_at = GETDATE(),
+            review_notes = ${review_notes || null}, created_alias_id = ${newAlias[0].alias_id}, updated_at = GETDATE()
+        WHERE submission_id = ${BigInt(submissionId)}
+      `
+
+      await updateContributorStatsOnReview(sub.user_id, true)
+
+      res.json({
+        success: true,
+        message: 'Player alias approved and created',
+        alias_id: Number(newAlias[0].alias_id)
+      })
+
+    } catch (error) {
+      console.error('Error approving player alias:', error)
+      res.status(500).json({ error: 'Server error', message: 'Failed to approve submission' })
+    }
+  }
+)
+
+// Reject a player alias submission (admin only)
+router.post('/admin/review/player-alias/:submissionId/reject',
+  authMiddleware,
+  adminCheck,
+  body('review_notes').isString().isLength({ min: 10, max: 2000 }).withMessage('Review notes required'),
+  async (req, res) => {
+    try {
+      const errors = validationResult(req)
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ error: 'Validation error', message: errors.array()[0].msg })
+      }
+
+      const { submissionId } = req.params
+      const { review_notes } = req.body
+      const reviewerId = BigInt(req.user.userId)
+
+      const submission = await prisma.$queryRaw`
+        SELECT submission_id, user_id, status FROM player_alias_submissions WHERE submission_id = ${BigInt(submissionId)}
+      `
+
+      if (submission.length === 0) {
+        return res.status(404).json({ error: 'Not found', message: 'Submission not found' })
+      }
+
+      if (submission[0].status !== 'pending') {
+        return res.status(400).json({ error: 'Invalid state', message: 'Submission has already been reviewed' })
+      }
+
+      await prisma.$executeRaw`
+        UPDATE player_alias_submissions
+        SET status = 'rejected', reviewed_by = ${reviewerId}, reviewed_at = GETDATE(),
+            review_notes = ${review_notes}, updated_at = GETDATE()
+        WHERE submission_id = ${BigInt(submissionId)}
+      `
+
+      await updateContributorStatsOnReview(submission[0].user_id, false)
+
+      res.json({ success: true, message: 'Submission rejected' })
+
+    } catch (error) {
+      console.error('Error rejecting player alias:', error)
+      res.status(500).json({ error: 'Server error', message: 'Failed to reject submission' })
+    }
+  }
+)
+
+// =============================================================================
+// ADMIN REVIEW ACTIONS FOR PLAYER TEAM SUBMISSIONS
+// =============================================================================
+
+// Approve a player-team submission (admin only)
+router.post('/admin/review/player-team/:submissionId/approve',
+  authMiddleware,
+  adminCheck,
+  body('review_notes').optional().isString().isLength({ max: 2000 }),
+  async (req, res) => {
+    try {
+      const { submissionId } = req.params
+      const { review_notes } = req.body
+      const reviewerId = BigInt(req.user.userId)
+
+      const submission = await prisma.$queryRaw`
+        SELECT submission_id, player_id, team_id, user_id, status, action_type
+        FROM player_team_submissions
+        WHERE submission_id = ${BigInt(submissionId)}
+      `
+
+      if (submission.length === 0) {
+        return res.status(404).json({ error: 'Not found', message: 'Submission not found' })
+      }
+
+      if (submission[0].status !== 'pending') {
+        return res.status(400).json({ error: 'Invalid state', message: 'Submission has already been reviewed' })
+      }
+
+      const sub = submission[0]
+      let createdPlayerTeamId = null
+
+      if (sub.action_type === 'add') {
+        // Check if association already exists (could have been added directly by admin)
+        const existing = await prisma.$queryRaw`
+          SELECT player_team_id FROM player_team WHERE player = ${sub.player_id} AND team = ${sub.team_id}
+        `
+
+        if (existing.length > 0) {
+          // Already exists, just mark as approved
+          createdPlayerTeamId = existing[0].player_team_id
+        } else {
+          // Create the association
+          const newAssoc = await prisma.$queryRaw`
+            INSERT INTO player_team (player, team, created)
+            OUTPUT INSERTED.player_team_id
+            VALUES (${sub.player_id}, ${sub.team_id}, GETDATE())
+          `
+          createdPlayerTeamId = newAssoc[0].player_team_id
+        }
+      } else if (sub.action_type === 'remove') {
+        // Remove the association
+        await prisma.$executeRaw`
+          DELETE FROM player_team WHERE player = ${sub.player_id} AND team = ${sub.team_id}
+        `
+      }
+
+      // Update submission status
+      await prisma.$executeRaw`
+        UPDATE player_team_submissions
+        SET status = 'approved', reviewed_by = ${reviewerId}, reviewed_at = GETDATE(),
+            review_notes = ${review_notes || null},
+            created_player_team_id = ${createdPlayerTeamId},
+            updated_at = GETDATE()
+        WHERE submission_id = ${BigInt(submissionId)}
+      `
+
+      await updateContributorStatsOnReview(sub.user_id, true)
+
+      res.json({
+        success: true,
+        message: `Player-team ${sub.action_type} approved`,
+        player_team_id: createdPlayerTeamId ? Number(createdPlayerTeamId) : null
+      })
+
+    } catch (error) {
+      console.error('Error approving player-team:', error)
+      res.status(500).json({ error: 'Server error', message: 'Failed to approve submission' })
+    }
+  }
+)
+
+// Reject a player-team submission (admin only)
+router.post('/admin/review/player-team/:submissionId/reject',
+  authMiddleware,
+  adminCheck,
+  body('review_notes').isString().isLength({ min: 10, max: 2000 }).withMessage('Review notes required'),
+  async (req, res) => {
+    try {
+      const errors = validationResult(req)
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ error: 'Validation error', message: errors.array()[0].msg })
+      }
+
+      const { submissionId } = req.params
+      const { review_notes } = req.body
+      const reviewerId = BigInt(req.user.userId)
+
+      const submission = await prisma.$queryRaw`
+        SELECT submission_id, user_id, status FROM player_team_submissions WHERE submission_id = ${BigInt(submissionId)}
+      `
+
+      if (submission.length === 0) {
+        return res.status(404).json({ error: 'Not found', message: 'Submission not found' })
+      }
+
+      if (submission[0].status !== 'pending') {
+        return res.status(400).json({ error: 'Invalid state', message: 'Submission has already been reviewed' })
+      }
+
+      await prisma.$executeRaw`
+        UPDATE player_team_submissions
+        SET status = 'rejected', reviewed_by = ${reviewerId}, reviewed_at = GETDATE(),
+            review_notes = ${review_notes}, updated_at = GETDATE()
+        WHERE submission_id = ${BigInt(submissionId)}
+      `
+
+      await updateContributorStatsOnReview(submission[0].user_id, false)
+
+      res.json({ success: true, message: 'Submission rejected' })
+
+    } catch (error) {
+      console.error('Error rejecting player-team:', error)
+      res.status(500).json({ error: 'Server error', message: 'Failed to reject submission' })
+    }
+  }
+)
+
+// =============================================================================
+// NEW TEAM SUBMISSIONS
+// =============================================================================
+
+// Submit new team suggestion
+router.post('/team',
+  authMiddleware,
+  submissionLimiter,
+  body('proposed_name').isString().isLength({ min: 1, max: 255 }).withMessage('Team name is required'),
+  body('proposed_city').optional({ nullable: true }).isString().isLength({ max: 255 }),
+  body('proposed_mascot').optional({ nullable: true }).isString().isLength({ max: 255 }),
+  body('proposed_abbreviation').optional({ nullable: true }).isString().isLength({ min: 2, max: 10 }),
+  body('proposed_organization_id').optional({ nullable: true }).isInt({ min: 1 }),
+  body('proposed_primary_color').optional({ nullable: true }).matches(/^#[0-9A-Fa-f]{6}$/).withMessage('Invalid hex color format'),
+  body('proposed_secondary_color').optional({ nullable: true }).matches(/^#[0-9A-Fa-f]{6}$/).withMessage('Invalid hex color format'),
+  body('submission_notes').optional().isString().isLength({ max: 2000 }),
+  async (req, res) => {
+    try {
+      const errors = validationResult(req)
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          error: 'Validation error',
+          message: errors.array()[0].msg
+        })
+      }
+
+      const userId = BigInt(req.user.userId)
+      const isAdmin = ['admin', 'superadmin', 'data_admin'].includes(req.user.role)
+      const {
+        proposed_name,
+        proposed_city,
+        proposed_mascot,
+        proposed_abbreviation,
+        proposed_organization_id,
+        proposed_primary_color,
+        proposed_secondary_color,
+        submission_notes
+      } = req.body
+
+      // Check for duplicate team with same name
+      const existingTeam = await prisma.$queryRaw`
+        SELECT team_Id, name FROM team
+        WHERE LOWER(name) = LOWER(${proposed_name.trim()})
+      `
+
+      if (existingTeam.length > 0) {
+        return res.status(400).json({
+          error: 'Duplicate',
+          message: `A team named "${proposed_name}" already exists in the database`,
+          existing_team_id: Number(existingTeam[0].team_Id)
+        })
+      }
+
+      // Check for pending submission with same name
+      const pendingSubmission = await prisma.$queryRaw`
+        SELECT submission_id FROM team_submissions
+        WHERE LOWER(proposed_name) = LOWER(${proposed_name.trim()})
+          AND status = 'pending'
+      `
+
+      if (pendingSubmission.length > 0) {
+        return res.status(400).json({
+          error: 'Duplicate',
+          message: `A pending submission for team "${proposed_name}" already exists`
+        })
+      }
+
+      // Verify organization exists if provided
+      if (proposed_organization_id) {
+        const orgCheck = await prisma.$queryRaw`
+          SELECT organization_id FROM organization WHERE organization_id = ${proposed_organization_id}
+        `
+        if (orgCheck.length === 0) {
+          return res.status(400).json({
+            error: 'Invalid organization',
+            message: 'The specified organization does not exist'
+          })
+        }
+      }
+
+      // Ensure contributor stats exist
+      await ensureContributorStats(userId)
+
+      // Generate slug for the team
+      const generateSlug = (name) => {
+        return name.toLowerCase()
+          .replace(/[^a-z0-9\s-]/g, '')
+          .replace(/\s+/g, '-')
+          .replace(/-+/g, '-')
+          .trim()
+      }
+
+      // Admin: Create team directly
+      if (isAdmin) {
+        let baseSlug = generateSlug(proposed_name.trim())
+        let slug = baseSlug
+        let slugCounter = 1
+
+        // Check for slug uniqueness
+        let slugExists = await prisma.$queryRaw`SELECT team_Id FROM team WHERE slug = ${slug}`
+        while (slugExists.length > 0) {
+          slug = `${baseSlug}-${slugCounter}`
+          slugExists = await prisma.$queryRaw`SELECT team_Id FROM team WHERE slug = ${slug}`
+          slugCounter++
+        }
+
+        // Create the team
+        const newTeam = await prisma.$queryRaw`
+          INSERT INTO team (
+            name, city, mascot, abbreviation, organization,
+            primary_color, secondary_color,
+            slug, created, card_count, player_count
+          )
+          OUTPUT INSERTED.team_Id
+          VALUES (
+            ${proposed_name.trim()},
+            ${proposed_city?.trim() || null},
+            ${proposed_mascot?.trim() || null},
+            ${proposed_abbreviation?.trim()?.toUpperCase() || null},
+            ${proposed_organization_id || null},
+            ${proposed_primary_color || null},
+            ${proposed_secondary_color || null},
+            ${slug},
+            GETDATE(),
+            0,
+            0
+          )
+        `
+
+        const createdTeamId = newTeam[0].team_Id
+
+        // Create approved submission record for audit trail
+        await prisma.$queryRaw`
+          INSERT INTO team_submissions (
+            user_id, proposed_name, proposed_city, proposed_mascot,
+            proposed_abbreviation, proposed_organization_id,
+            proposed_primary_color, proposed_secondary_color,
+            submission_notes, status, created_team_id,
+            reviewed_by, reviewed_at, created_at
+          )
+          OUTPUT INSERTED.submission_id
+          VALUES (
+            ${userId},
+            ${proposed_name.trim()},
+            ${proposed_city?.trim() || null},
+            ${proposed_mascot?.trim() || null},
+            ${proposed_abbreviation?.trim()?.toUpperCase() || null},
+            ${proposed_organization_id || null},
+            ${proposed_primary_color || null},
+            ${proposed_secondary_color || null},
+            ${submission_notes || 'Admin direct creation'},
+            'approved',
+            ${createdTeamId},
+            ${userId},
+            GETDATE(),
+            GETDATE()
+          )
+        `
+
+        // Update contributor stats
+        await updateContributorStatsOnSubmit(userId)
+        await updateContributorStatsOnReview(userId, true)
+
+        await prisma.$executeRaw`
+          UPDATE contributor_stats
+          SET team_submissions = ISNULL(team_submissions, 0) + 1
+          WHERE user_id = ${userId}
+        `
+
+        res.status(201).json({
+          success: true,
+          message: 'Team created successfully',
+          team_id: Number(createdTeamId),
+          auto_approved: true
+        })
+
+      } else {
+        // Non-admin: Create pending submission for review
+        const result = await prisma.$queryRaw`
+          INSERT INTO team_submissions (
+            user_id, proposed_name, proposed_city, proposed_mascot,
+            proposed_abbreviation, proposed_organization_id,
+            proposed_primary_color, proposed_secondary_color,
+            submission_notes, status, created_at
+          )
+          OUTPUT INSERTED.submission_id
+          VALUES (
+            ${userId},
+            ${proposed_name.trim()},
+            ${proposed_city?.trim() || null},
+            ${proposed_mascot?.trim() || null},
+            ${proposed_abbreviation?.trim()?.toUpperCase() || null},
+            ${proposed_organization_id || null},
+            ${proposed_primary_color || null},
+            ${proposed_secondary_color || null},
+            ${submission_notes || null},
+            'pending',
+            GETDATE()
+          )
+        `
+
+        // Update contributor stats
+        await updateContributorStatsOnSubmit(userId)
+
+        await prisma.$executeRaw`
+          UPDATE contributor_stats
+          SET team_submissions = ISNULL(team_submissions, 0) + 1
+          WHERE user_id = ${userId}
+        `
+
+        res.status(201).json({
+          success: true,
+          message: 'New team suggestion submitted for review',
+          submission_id: Number(result[0].submission_id),
+          auto_approved: false
+        })
+      }
+
+    } catch (error) {
+      console.error('Error submitting new team:', error)
+      res.status(500).json({
+        error: 'Server error',
+        message: 'Failed to submit new team suggestion'
+      })
+    }
+  }
+)
+
+// =============================================================================
+// SET EDIT SUBMISSIONS
+// =============================================================================
+
+// Submit set edit suggestion
+router.post('/set-edit',
+  authMiddleware,
+  submissionLimiter,
+  body('set_id').isInt({ min: 1 }).withMessage('Set ID is required'),
+  body('proposed_name').optional({ nullable: true }).isString().isLength({ min: 3, max: 255 }),
+  body('proposed_year').optional({ nullable: true }).isInt({ min: 1887, max: 2100 }),
+  body('proposed_sport').optional({ nullable: true }).isString().isLength({ min: 2, max: 50 }),
+  body('proposed_manufacturer').optional({ nullable: true }).isString().isLength({ max: 255 }),
+  body('proposed_description').optional({ nullable: true }).isString().isLength({ max: 2000 }),
+  body('submission_notes').optional().isString().isLength({ max: 2000 }),
+  async (req, res) => {
+    try {
+      const errors = validationResult(req)
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          error: 'Validation error',
+          message: errors.array()[0].msg
+        })
+      }
+
+      const userId = BigInt(req.user.userId)
+      const {
+        set_id,
+        proposed_name,
+        proposed_year,
+        proposed_sport,
+        proposed_manufacturer,
+        proposed_description,
+        submission_notes
+      } = req.body
+
+      // Verify set exists and get current values
+      const setResult = await prisma.$queryRaw`
+        SELECT s.set_id, s.name, s.year, s.manufacturer,
+               m.name as manufacturer_name,
+               o.name as organization_name
+        FROM [set] s
+        LEFT JOIN manufacturer m ON s.manufacturer = m.manufacturer_id
+        LEFT JOIN organization o ON s.organization = o.organization_id
+        WHERE s.set_id = ${set_id}
+      `
+
+      if (setResult.length === 0) {
+        return res.status(404).json({
+          error: 'Not found',
+          message: 'Set not found'
+        })
+      }
+
+      const current = setResult[0]
+
+      // Determine current sport from organization
+      const currentSport = current.organization_name ?
+        (current.organization_name.toLowerCase().includes('baseball') ? 'Baseball' :
+         current.organization_name.toLowerCase().includes('football') ? 'Football' :
+         current.organization_name.toLowerCase().includes('basketball') ? 'Basketball' :
+         current.organization_name.toLowerCase().includes('hockey') ? 'Hockey' :
+         current.organization_name.toLowerCase().includes('soccer') ? 'Soccer' : 'Other') : 'Other'
+
+      // Check that at least one field is being changed
+      const hasChanges = (
+        (proposed_name !== undefined && proposed_name !== current.name) ||
+        (proposed_year !== undefined && proposed_year !== current.year) ||
+        (proposed_sport !== undefined && proposed_sport !== currentSport) ||
+        (proposed_manufacturer !== undefined && proposed_manufacturer !== current.manufacturer_name) ||
+        (proposed_description !== undefined)
+      )
+
+      if (!hasChanges) {
+        return res.status(400).json({
+          error: 'Validation error',
+          message: 'No changes proposed'
+        })
+      }
+
+      // Check if user is admin (auto-approve)
+      const isAdmin = ['admin', 'superadmin', 'data_admin'].includes(req.user.role)
+
+      // Ensure contributor stats exist
+      await ensureContributorStats(userId)
+
+      if (isAdmin) {
+        // Admin: Apply changes directly
+        let updateParts = []
+
+        if (proposed_name !== undefined && proposed_name !== current.name) {
+          updateParts.push(`name = '${proposed_name.replace(/'/g, "''")}'`)
+          // Update slug when name changes
+          const slug = proposed_name.toLowerCase()
+            .replace(/&/g, 'and')
+            .replace(/'/g, '')
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-|-$/g, '')
+          updateParts.push(`slug = '${slug}'`)
+        }
+
+        if (proposed_year !== undefined && proposed_year !== current.year) {
+          updateParts.push(`year = ${proposed_year}`)
+        }
+
+        // Handle manufacturer - look up by name
+        if (proposed_manufacturer !== undefined && proposed_manufacturer !== current.manufacturer_name) {
+          if (proposed_manufacturer) {
+            const mfr = await prisma.$queryRaw`
+              SELECT manufacturer_id FROM manufacturer WHERE name = ${proposed_manufacturer}
+            `
+            if (mfr.length > 0) {
+              updateParts.push(`manufacturer = ${mfr[0].manufacturer_id}`)
+            }
+          } else {
+            updateParts.push(`manufacturer = NULL`)
+          }
+        }
+
+        // Apply changes to set
+        if (updateParts.length > 0) {
+          await prisma.$executeRawUnsafe(`UPDATE [set] SET ${updateParts.join(', ')} WHERE set_id = ${set_id}`)
+        }
+
+        // Create approved submission record for audit trail
+        await prisma.$executeRaw`
+          INSERT INTO set_submissions (
+            user_id, set_id, proposed_name, proposed_year, proposed_sport,
+            proposed_manufacturer, proposed_description, submission_notes,
+            previous_name, previous_year, previous_sport, previous_manufacturer,
+            status, reviewed_by, reviewed_at, created_at, updated_at
+          ) VALUES (
+            ${userId}, ${set_id}, ${proposed_name || null}, ${proposed_year || null}, ${proposed_sport || null},
+            ${proposed_manufacturer || null}, ${proposed_description || null}, ${submission_notes || null},
+            ${current.name}, ${current.year}, ${currentSport}, ${current.manufacturer_name || null},
+            'approved', ${userId}, GETDATE(), GETDATE(), GETDATE()
+          )
+        `
+
+        // Update contributor stats
+        await prisma.$executeRaw`
+          UPDATE contributor_stats
+          SET total_submissions = total_submissions + 1,
+              approved_submissions = approved_submissions + 1,
+              set_submissions = set_submissions + 1,
+              last_submission_at = GETDATE()
+          WHERE user_id = ${userId}
+        `
+
+        res.status(200).json({
+          success: true,
+          message: 'Set updated successfully',
+          auto_approved: true
+        })
+
+      } else {
+        // Regular user: Create pending submission
+        await prisma.$executeRaw`
+          INSERT INTO set_submissions (
+            user_id, set_id, proposed_name, proposed_year, proposed_sport,
+            proposed_manufacturer, proposed_description, submission_notes,
+            previous_name, previous_year, previous_sport, previous_manufacturer,
+            status, created_at, updated_at
+          ) VALUES (
+            ${userId}, ${set_id}, ${proposed_name || null}, ${proposed_year || null}, ${proposed_sport || null},
+            ${proposed_manufacturer || null}, ${proposed_description || null}, ${submission_notes || null},
+            ${current.name}, ${current.year}, ${currentSport}, ${current.manufacturer_name || null},
+            'pending', GETDATE(), GETDATE()
+          )
+        `
+
+        // Update contributor stats
+        await prisma.$executeRaw`
+          UPDATE contributor_stats
+          SET total_submissions = total_submissions + 1,
+              pending_submissions = pending_submissions + 1,
+              set_submissions = set_submissions + 1,
+              last_submission_at = GETDATE()
+          WHERE user_id = ${userId}
+        `
+
+        res.status(201).json({
+          success: true,
+          message: 'Set edit submitted for review',
+          auto_approved: false
+        })
+      }
+
+    } catch (error) {
+      console.error('Error submitting set edit:', error)
+      res.status(500).json({
+        error: 'Server error',
+        message: 'Failed to submit set edit'
+      })
+    }
+  }
+)
+
+// =============================================================================
+// TEAM EDIT SUBMISSIONS
+// =============================================================================
+
+// Submit team edit suggestion
+router.post('/team-edit',
+  authMiddleware,
+  submissionLimiter,
+  body('team_id').isInt({ min: 1 }).withMessage('Team ID is required'),
+  body('proposed_name').optional({ nullable: true }).isString().isLength({ max: 255 }),
+  body('proposed_city').optional({ nullable: true }).isString().isLength({ max: 255 }),
+  body('proposed_mascot').optional({ nullable: true }).isString().isLength({ max: 255 }),
+  body('proposed_abbreviation').optional({ nullable: true }).isString().isLength({ max: 10 }),
+  body('proposed_primary_color').optional({ nullable: true }).matches(/^#[0-9A-Fa-f]{6}$/).withMessage('Invalid hex color format'),
+  body('proposed_secondary_color').optional({ nullable: true }).matches(/^#[0-9A-Fa-f]{6}$/).withMessage('Invalid hex color format'),
+  body('submission_notes').optional().isString().isLength({ max: 2000 }),
+  async (req, res) => {
+    try {
+      const errors = validationResult(req)
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          error: 'Validation error',
+          message: errors.array()[0].msg
+        })
+      }
+
+      const userId = BigInt(req.user.userId)
+      const {
+        team_id,
+        proposed_name,
+        proposed_city,
+        proposed_mascot,
+        proposed_abbreviation,
+        proposed_primary_color,
+        proposed_secondary_color,
+        submission_notes
+      } = req.body
+
+      // Verify team exists and get current values
+      const team = await prisma.$queryRaw`
+        SELECT team_Id, name, city, mascot, abbreviation, primary_color, secondary_color
+        FROM team WHERE team_Id = ${team_id}
+      `
+
+      if (team.length === 0) {
+        return res.status(404).json({
+          error: 'Not found',
+          message: 'Team not found'
+        })
+      }
+
+      const current = team[0]
+
+      // Check that at least one field is being changed
+      const hasChanges = (
+        (proposed_name !== undefined && proposed_name !== current.name) ||
+        (proposed_city !== undefined && proposed_city !== current.city) ||
+        (proposed_mascot !== undefined && proposed_mascot !== current.mascot) ||
+        (proposed_abbreviation !== undefined && proposed_abbreviation !== current.abbreviation) ||
+        (proposed_primary_color !== undefined && proposed_primary_color !== current.primary_color) ||
+        (proposed_secondary_color !== undefined && proposed_secondary_color !== current.secondary_color)
+      )
+
+      if (!hasChanges) {
+        return res.status(400).json({
+          error: 'Validation error',
+          message: 'No changes proposed'
+        })
+      }
+
+      // Check if user is admin (auto-approve)
+      const isAdmin = ['admin', 'superadmin', 'data_admin'].includes(req.user.role)
+
+      // Ensure contributor stats exist
+      await ensureContributorStats(userId)
+
+      if (isAdmin) {
+        // Admin: Apply changes directly and create approved submission record
+        let updateParts = []
+        if (proposed_name !== undefined && proposed_name !== current.name) {
+          updateParts.push(`name = '${proposed_name.replace(/'/g, "''")}'`)
+          // Also update slug when name changes
+          const slug = proposed_name.toLowerCase()
+            .replace(/&/g, 'and')
+            .replace(/'/g, '')
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-|-$/g, '')
+          updateParts.push(`slug = '${slug}'`)
+        }
+        if (proposed_city !== undefined && proposed_city !== current.city) {
+          updateParts.push(`city = ${proposed_city ? `'${proposed_city.replace(/'/g, "''")}'` : 'NULL'}`)
+        }
+        if (proposed_mascot !== undefined && proposed_mascot !== current.mascot) {
+          updateParts.push(`mascot = ${proposed_mascot ? `'${proposed_mascot.replace(/'/g, "''")}'` : 'NULL'}`)
+        }
+        if (proposed_abbreviation !== undefined && proposed_abbreviation !== current.abbreviation) {
+          updateParts.push(`abbreviation = ${proposed_abbreviation ? `'${proposed_abbreviation.replace(/'/g, "''")}'` : 'NULL'}`)
+        }
+        if (proposed_primary_color !== undefined && proposed_primary_color !== current.primary_color) {
+          updateParts.push(`primary_color = ${proposed_primary_color ? `'${proposed_primary_color}'` : 'NULL'}`)
+        }
+        if (proposed_secondary_color !== undefined && proposed_secondary_color !== current.secondary_color) {
+          updateParts.push(`secondary_color = ${proposed_secondary_color ? `'${proposed_secondary_color}'` : 'NULL'}`)
+        }
+
+        // Apply the changes to the team
+        if (updateParts.length > 0) {
+          await prisma.$executeRawUnsafe(`UPDATE team SET ${updateParts.join(', ')} WHERE team_Id = ${team_id}`)
+        }
+
+        // Create an approved submission record for audit trail
+        const result = await prisma.$queryRaw`
+          INSERT INTO team_edit_submissions (
+            team_id, user_id,
+            previous_name, previous_city, previous_mascot,
+            previous_abbreviation, previous_primary_color, previous_secondary_color,
+            proposed_name, proposed_city, proposed_mascot,
+            proposed_abbreviation, proposed_primary_color, proposed_secondary_color,
+            submission_notes, status, reviewed_by, reviewed_at, created_at
+          )
+          OUTPUT INSERTED.submission_id
+          VALUES (
+            ${team_id}, ${userId},
+            ${current.name}, ${current.city}, ${current.mascot},
+            ${current.abbreviation}, ${current.primary_color}, ${current.secondary_color},
+            ${proposed_name !== undefined ? proposed_name : null},
+            ${proposed_city !== undefined ? proposed_city : null},
+            ${proposed_mascot !== undefined ? proposed_mascot : null},
+            ${proposed_abbreviation !== undefined ? proposed_abbreviation : null},
+            ${proposed_primary_color !== undefined ? proposed_primary_color : null},
+            ${proposed_secondary_color !== undefined ? proposed_secondary_color : null},
+            ${submission_notes || null}, 'approved', ${userId}, GETDATE(), GETDATE()
+          )
+        `
+
+        // Update contributor stats (auto-approved)
+        await prisma.$executeRaw`
+          UPDATE contributor_stats
+          SET total_submissions = total_submissions + 1,
+              approved_submissions = approved_submissions + 1,
+              team_edit_submissions = team_edit_submissions + 1,
+              last_submission_at = GETDATE()
+          WHERE user_id = ${userId}
+        `
+
+        res.status(201).json({
+          success: true,
+          message: 'Team updated successfully',
+          submission_id: Number(result[0].submission_id),
+          auto_approved: true
+        })
+      } else {
+        // Regular user: Create pending submission for review
+        const result = await prisma.$queryRaw`
+          INSERT INTO team_edit_submissions (
+            team_id, user_id,
+            previous_name, previous_city, previous_mascot,
+            previous_abbreviation, previous_primary_color, previous_secondary_color,
+            proposed_name, proposed_city, proposed_mascot,
+            proposed_abbreviation, proposed_primary_color, proposed_secondary_color,
+            submission_notes, status, created_at
+          )
+          OUTPUT INSERTED.submission_id
+          VALUES (
+            ${team_id}, ${userId},
+            ${current.name}, ${current.city}, ${current.mascot},
+            ${current.abbreviation}, ${current.primary_color}, ${current.secondary_color},
+            ${proposed_name !== undefined ? proposed_name : null},
+            ${proposed_city !== undefined ? proposed_city : null},
+            ${proposed_mascot !== undefined ? proposed_mascot : null},
+            ${proposed_abbreviation !== undefined ? proposed_abbreviation : null},
+            ${proposed_primary_color !== undefined ? proposed_primary_color : null},
+            ${proposed_secondary_color !== undefined ? proposed_secondary_color : null},
+            ${submission_notes || null}, 'pending', GETDATE()
+          )
+        `
+
+        // Update contributor stats
+        await updateContributorStatsOnSubmit(userId)
+
+        await prisma.$executeRaw`
+          UPDATE contributor_stats
+          SET team_edit_submissions = team_edit_submissions + 1
+          WHERE user_id = ${userId}
+        `
+
+        res.status(201).json({
+          success: true,
+          message: 'Team edit suggestion submitted successfully',
+          submission_id: Number(result[0].submission_id),
+          auto_approved: false
+        })
+      }
+
+    } catch (error) {
+      console.error('Error submitting team edit:', error)
+      res.status(500).json({
+        error: 'Server error',
+        message: 'Failed to submit team edit suggestion'
+      })
+    }
+  }
+)
+
+// =============================================================================
+// ADMIN REVIEW ACTIONS FOR TEAM EDIT SUBMISSIONS
+// =============================================================================
+
+// Approve a team edit submission (admin only)
+router.post('/admin/review/team-edit/:submissionId/approve',
+  authMiddleware,
+  adminCheck,
+  body('review_notes').optional().isString().isLength({ max: 2000 }),
+  async (req, res) => {
+    try {
+      const { submissionId } = req.params
+      const { review_notes } = req.body
+      const reviewerId = BigInt(req.user.userId)
+
+      const submission = await prisma.$queryRaw`
+        SELECT submission_id, team_id, user_id, status,
+               proposed_name, proposed_city, proposed_mascot,
+               proposed_abbreviation, proposed_primary_color, proposed_secondary_color
+        FROM team_edit_submissions
+        WHERE submission_id = ${BigInt(submissionId)}
+      `
+
+      if (submission.length === 0) {
+        return res.status(404).json({ error: 'Not found', message: 'Submission not found' })
+      }
+
+      if (submission[0].status !== 'pending') {
+        return res.status(400).json({ error: 'Invalid state', message: 'Submission has already been reviewed' })
+      }
+
+      const sub = submission[0]
+
+      // Apply changes to team
+      let updateParts = []
+      if (sub.proposed_name !== null) {
+        updateParts.push(`name = '${sub.proposed_name.replace(/'/g, "''")}'`)
+        // Also update slug when name changes
+        const slug = sub.proposed_name.toLowerCase()
+          .replace(/&/g, 'and')
+          .replace(/'/g, '')
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-|-$/g, '')
+        updateParts.push(`slug = '${slug}'`)
+      }
+      if (sub.proposed_city !== null) updateParts.push(`city = '${sub.proposed_city.replace(/'/g, "''")}'`)
+      if (sub.proposed_mascot !== null) updateParts.push(`mascot = '${sub.proposed_mascot.replace(/'/g, "''")}'`)
+      if (sub.proposed_abbreviation !== null) updateParts.push(`abbreviation = '${sub.proposed_abbreviation.replace(/'/g, "''")}'`)
+      if (sub.proposed_primary_color !== null) updateParts.push(`primary_color = '${sub.proposed_primary_color}'`)
+      if (sub.proposed_secondary_color !== null) updateParts.push(`secondary_color = '${sub.proposed_secondary_color}'`)
+
+      if (updateParts.length > 0) {
+        await prisma.$executeRawUnsafe(`UPDATE team SET ${updateParts.join(', ')} WHERE team_Id = ${sub.team_id}`)
+      }
+
+      // Update submission status
+      await prisma.$executeRaw`
+        UPDATE team_edit_submissions
+        SET status = 'approved', reviewed_by = ${reviewerId}, reviewed_at = GETDATE(),
+            review_notes = ${review_notes || null}, updated_at = GETDATE()
+        WHERE submission_id = ${BigInt(submissionId)}
+      `
+
+      await updateContributorStatsOnReview(sub.user_id, true)
+
+      res.json({ success: true, message: 'Team edit approved and changes applied' })
+
+    } catch (error) {
+      console.error('Error approving team edit:', error)
+      res.status(500).json({ error: 'Server error', message: 'Failed to approve submission' })
+    }
+  }
+)
+
+// Reject a team edit submission (admin only)
+router.post('/admin/review/team-edit/:submissionId/reject',
+  authMiddleware,
+  adminCheck,
+  body('review_notes').isString().isLength({ min: 10, max: 2000 }).withMessage('Review notes required'),
+  async (req, res) => {
+    try {
+      const errors = validationResult(req)
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ error: 'Validation error', message: errors.array()[0].msg })
+      }
+
+      const { submissionId } = req.params
+      const { review_notes } = req.body
+      const reviewerId = BigInt(req.user.userId)
+
+      const submission = await prisma.$queryRaw`
+        SELECT submission_id, user_id, status FROM team_edit_submissions WHERE submission_id = ${BigInt(submissionId)}
+      `
+
+      if (submission.length === 0) {
+        return res.status(404).json({ error: 'Not found', message: 'Submission not found' })
+      }
+
+      if (submission[0].status !== 'pending') {
+        return res.status(400).json({ error: 'Invalid state', message: 'Submission has already been reviewed' })
+      }
+
+      await prisma.$executeRaw`
+        UPDATE team_edit_submissions
+        SET status = 'rejected', reviewed_by = ${reviewerId}, reviewed_at = GETDATE(),
+            review_notes = ${review_notes}, updated_at = GETDATE()
+        WHERE submission_id = ${BigInt(submissionId)}
+      `
+
+      await updateContributorStatsOnReview(submission[0].user_id, false)
+
+      res.json({ success: true, message: 'Submission rejected' })
+
+    } catch (error) {
+      console.error('Error rejecting team edit:', error)
+      res.status(500).json({ error: 'Server error', message: 'Failed to reject submission' })
+    }
+  }
+)
+
+// GET /api/crowdsource/player/:playerId/cards-with-images - Get cards for a player that have images
+router.get('/player/:playerId/cards-with-images',
+  authMiddleware,
+  async (req, res) => {
+    try {
+      const playerId = parseInt(req.params.playerId)
+
+      if (isNaN(playerId)) {
+        return res.status(400).json({ error: 'Invalid player ID' })
+      }
+
+      const cards = await prisma.$queryRawUnsafe(`
+        SELECT
+          c.card_id,
+          c.card_number,
+          c.is_rookie,
+          c.is_autograph,
+          c.is_relic,
+          s.name as series_name,
+          st.year as series_year,
+          pt.player_team_id,
+          pt.team as team_id,
+          t.name as team_name,
+          t.abbreviation as team_abbreviation,
+          t.primary_color,
+          t.secondary_color,
+          front_photo.photo_url as front_image_url,
+          back_photo.photo_url as back_image_url
+        FROM card c
+        INNER JOIN card_player_team cpt ON c.card_id = cpt.card
+        INNER JOIN player_team pt ON cpt.player_team = pt.player_team_id
+        INNER JOIN team t ON pt.team = t.team_Id
+        LEFT JOIN series s ON c.series = s.series_id
+        LEFT JOIN [set] st ON s.[set] = st.set_id
+        LEFT JOIN user_card uc ON c.reference_user_card = uc.user_card_id
+        LEFT JOIN user_card_photo front_photo ON uc.user_card_id = front_photo.user_card AND front_photo.sort_order = 1
+        LEFT JOIN user_card_photo back_photo ON uc.user_card_id = back_photo.user_card AND back_photo.sort_order = 2
+        WHERE pt.player = ${playerId}
+          AND (front_photo.photo_url IS NOT NULL OR back_photo.photo_url IS NOT NULL)
+        ORDER BY st.year DESC, s.name, c.card_number
+      `)
+
+      // Serialize BigInt values
+      const serializedCards = cards.map(card => ({
+        card_id: Number(card.card_id),
+        card_number: card.card_number,
+        is_rookie: Boolean(card.is_rookie),
+        is_autograph: Boolean(card.is_autograph),
+        is_relic: Boolean(card.is_relic),
+        series_name: card.series_name,
+        series_year: card.series_year,
+        player_team_id: Number(card.player_team_id),
+        team_id: Number(card.team_id),
+        team_name: card.team_name,
+        team_abbreviation: card.team_abbreviation,
+        primary_color: card.primary_color,
+        secondary_color: card.secondary_color,
+        front_image_url: card.front_image_url,
+        back_image_url: card.back_image_url
+      }))
+
+      res.json({
+        cards: serializedCards,
+        total: serializedCards.length
+      })
+
+    } catch (error) {
+      console.error('Error fetching player cards with images:', error)
+      res.status(500).json({
+        error: 'Server error',
+        message: 'Failed to fetch player cards'
+      })
     }
   }
 )

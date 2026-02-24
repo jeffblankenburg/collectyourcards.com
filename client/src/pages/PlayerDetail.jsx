@@ -8,8 +8,9 @@ import CardTable from '../components/tables/CardTable'
 import TeamFilterCircles from '../components/TeamFilterCircles'
 import PlayerStats from '../components/PlayerStats'
 import Icon from '../components/Icon'
-import EditPlayerModal from '../components/modals/EditPlayerModal'
 import AddCardModal from '../components/modals/AddCardModal'
+import SuggestPlayerEditModal from '../components/modals/SuggestPlayerEditModal'
+import ChangeHistory from '../components/ChangeHistory'
 import { createLogger } from '../utils/logger'
 import './PlayerDetailScoped.css'
 
@@ -30,7 +31,6 @@ function PlayerDetail() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [selectedTeamIds, setSelectedTeamIds] = useState([])
-  const [showEditModal, setShowEditModal] = useState(false)
   const [activeStatFilter, setActiveStatFilter] = useState(null)
   const [cardsLoading, setCardsLoading] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false)
@@ -38,6 +38,7 @@ function PlayerDetail() {
   const [selectedCards, setSelectedCards] = useState(new Set())
   const [showAddCardModal, setShowAddCardModal] = useState(false)
   const [cardToAdd, setCardToAdd] = useState(null)
+  const [showSuggestEditModal, setShowSuggestEditModal] = useState(false)
   // Infinite scroll state
   const [currentPage, setCurrentPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)
@@ -454,30 +455,19 @@ function PlayerDetail() {
 
       </div>
 
-      {/* Admin Edit Button */}
-      {isAdmin && player && (
-        <button 
-          className="admin-edit-button"
-          onClick={() => setShowEditModal(true)}
-          title="Edit player (Admin)"
-        >
-          <Icon name="edit" size={20} />
-        </button>
+      {/* Floating Action Button (for all logged-in users) */}
+      {isAuthenticated && player && (
+        <div className="player-detail-floating-action-container">
+          <button
+            className="player-detail-floating-action-button"
+            onClick={() => setShowSuggestEditModal(true)}
+            title="Suggest changes to this player"
+          >
+            <Icon name="edit" size={20} />
+          </button>
+        </div>
       )}
-      
-      {/* Edit Modal */}
-      {showEditModal && player && (
-        <EditPlayerModal
-          player={player}
-          isOpen={showEditModal}
-          onClose={() => setShowEditModal(false)}
-          onSave={() => {
-            setShowEditModal(false)
-            fetchPlayerData() // Reload player data after save
-          }}
-        />
-      )}
-      
+
       {/* Add Card Modal */}
       {showAddCardModal && cardToAdd && (
         <AddCardModal
@@ -488,6 +478,27 @@ function PlayerDetail() {
           }}
           card={cardToAdd}
           onCardAdded={handleCardAdded}
+        />
+      )}
+
+      {/* Suggest Player Edit Modal */}
+      {showSuggestEditModal && player && (
+        <SuggestPlayerEditModal
+          isOpen={showSuggestEditModal}
+          onClose={() => setShowSuggestEditModal(false)}
+          onSuccess={(updatedPlayer) => setPlayer(prev => ({ ...prev, ...updatedPlayer }))}
+          onDeleteSuccess={(deletedPlayerId) => navigate('/players', { state: { deletedPlayerId } })}
+          player={player}
+          teams={teams}
+        />
+      )}
+
+      {/* Change History Section */}
+      {player && (
+        <ChangeHistory
+          entityType="player"
+          entityId={player.player_id}
+          title="Edit History"
         />
       )}
     </div>

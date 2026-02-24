@@ -169,44 +169,51 @@ async function executeUnifiedSearch(query, tokens, limit = 50) {
     -- UNIFIED SEARCH: Single query, all entity types
     -- =====================================================
 
-    -- PLAYERS (limit to top matches by card_count)
-    SELECT TOP 15
-      'player' as entity_type,
-      CAST(p.player_id AS VARCHAR(20)) as id,
-      CONCAT(p.first_name, ' ', p.last_name) as name,
-      p.first_name,
-      p.last_name,
-      p.nick_name,
-      p.slug,
-      CAST(p.card_count AS INT) as card_count,
-      p.is_hof,
-      NULL as year,
-      NULL as set_name,
-      NULL as set_slug,
-      NULL as series_name,
-      NULL as series_slug,
-      NULL as manufacturer_name,
-      NULL as abbreviation,
-      NULL as city,
-      NULL as primary_color,
-      NULL as secondary_color,
-      NULL as color_name,
-      NULL as color_hex,
-      NULL as print_run,
-      NULL as card_number,
-      0 as is_rookie,
-      0 as is_autograph,
-      0 as is_relic,
-      0 as is_parallel,
-      -- Relevance scoring
-      CASE
-        WHEN CONCAT(p.first_name, ' ', p.last_name) = '${escapeSqlLike(searchTerms.join(' '))}' COLLATE Latin1_General_CI_AI THEN 100
-        WHEN p.last_name = '${escapeSqlLike(searchTerms[searchTerms.length - 1])}' COLLATE Latin1_General_CI_AI THEN 95
-        WHEN p.first_name = '${escapeSqlLike(searchTerms[0])}' COLLATE Latin1_General_CI_AI THEN 90
-        ELSE 70
-      END + CASE WHEN p.is_hof = 1 THEN 5 ELSE 0 END as relevance
-    FROM player p
-    WHERE ${buildMultiTermWhereOr(['first_name', 'last_name', 'nick_name'], 'p.')}
+    -- PLAYERS (limit to top matches by relevance)
+    SELECT * FROM (
+      SELECT TOP 15
+        'player' as entity_type,
+        CAST(p.player_id AS VARCHAR(20)) as id,
+        CONCAT(p.first_name, ' ', p.last_name) as name,
+        p.first_name,
+        p.last_name,
+        p.nick_name,
+        p.slug,
+        CAST(p.card_count AS INT) as card_count,
+        p.is_hof,
+        NULL as year,
+        NULL as set_name,
+        NULL as set_slug,
+        NULL as series_name,
+        NULL as series_slug,
+        NULL as manufacturer_name,
+        NULL as abbreviation,
+        NULL as city,
+        NULL as primary_color,
+        NULL as secondary_color,
+        NULL as color_name,
+        NULL as color_hex,
+        NULL as print_run,
+        NULL as card_number,
+        0 as is_rookie,
+        0 as is_autograph,
+        0 as is_relic,
+        0 as is_parallel,
+        -- Relevance scoring
+        CASE
+          WHEN CONCAT(p.first_name, ' ', p.last_name) = '${escapeSqlLike(searchTerms.join(' '))}' COLLATE Latin1_General_CI_AI THEN 100
+          WHEN CONCAT(p.nick_name, ' ', p.last_name) = '${escapeSqlLike(searchTerms.join(' '))}' COLLATE Latin1_General_CI_AI THEN 100
+          WHEN p.last_name = '${escapeSqlLike(searchTerms[searchTerms.length - 1])}' COLLATE Latin1_General_CI_AI
+               AND p.nick_name = '${escapeSqlLike(searchTerms[0])}' COLLATE Latin1_General_CI_AI THEN 98
+          WHEN p.last_name = '${escapeSqlLike(searchTerms[searchTerms.length - 1])}' COLLATE Latin1_General_CI_AI THEN 95
+          WHEN p.first_name = '${escapeSqlLike(searchTerms[0])}' COLLATE Latin1_General_CI_AI THEN 90
+          WHEN p.nick_name = '${escapeSqlLike(searchTerms[0])}' COLLATE Latin1_General_CI_AI THEN 88
+          ELSE 70
+        END + CASE WHEN p.is_hof = 1 THEN 5 ELSE 0 END as relevance
+      FROM player p
+      WHERE ${buildMultiTermWhereOr(['first_name', 'last_name', 'nick_name'], 'p.')}
+      ORDER BY relevance DESC, card_count DESC
+    ) as player_results
 
     UNION ALL
 

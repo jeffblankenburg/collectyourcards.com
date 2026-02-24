@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo, memo, useCallback } from '
 import { createPortal } from 'react-dom'
 import { useSearchParams } from 'react-router-dom'
 import axios from 'axios'
+import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
 import Icon from '../components/Icon'
 import './AdminPlayersScoped.css'
@@ -125,7 +126,9 @@ function AdminPlayers() {
   const [dismissingPair, setDismissingPair] = useState(null)
   const addButtonRef = useRef(null)
   const playerTeamSearchDebounceRef = useRef(null)
+  const { user } = useAuth()
   const { addToast } = useToast()
+  const isSuperAdmin = user?.role === 'superadmin'
 
   useEffect(() => {
     document.title = 'Admin Players - Collect Your Cards'
@@ -1303,7 +1306,7 @@ function AdminPlayers() {
                     >
                       <Icon name="combine" size={16} />
                     </button>
-                    {(player.card_count === 0) && (
+                    {player.card_count === 0 && (
                       <button
                         className="delete-btn"
                         title="Delete player (only allowed for players with 0 cards)"
@@ -1771,12 +1774,12 @@ function AdminPlayers() {
                     </p>
                     {playerToDelete.card_count > 0 ? (
                       <p className="error-text">
-                        <strong>Cannot delete:</strong> This player has {playerToDelete.card_count} cards. 
+                        <strong>Cannot delete:</strong> This player has {playerToDelete.card_count} cards.
                         Only players with 0 cards can be deleted.
                       </p>
                     ) : (
                       <p className="success-text">
-                        This player has no cards and can be safely deleted. 
+                        This player has no cards and can be safely deleted.
                         This will also remove all player-team relationships.
                       </p>
                     )}
@@ -1793,9 +1796,9 @@ function AdminPlayers() {
                 >
                   Cancel
                 </button>
-                <button 
-                  type="button" 
-                  className="btn-danger" 
+                <button
+                  type="button"
+                  className="btn-danger"
                   onClick={handleDeletePlayer}
                   disabled={deleting || playerToDelete.card_count > 0}
                 >

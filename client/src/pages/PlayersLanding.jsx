@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import axios from 'axios'
 import Icon from '../components/Icon'
 import { PlayerCard } from '../components/cards'
+import SuggestNewPlayerModal from '../components/modals/SuggestNewPlayerModal'
 import { createLogger } from '../utils/logger'
 import './PlayersLandingScoped.css'
 
@@ -12,17 +13,29 @@ const log = createLogger('PlayersLanding')
 function PlayersLanding() {
   const { isAuthenticated } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
 
   log.info('PlayersLanding mounted', { isAuthenticated })
-  
+
   const [players, setPlayers] = useState([])
   const [searchTerm, setSearchTerm] = useState('')
+
+  // Handle deleted player from navigation state
+  useEffect(() => {
+    if (location.state?.deletedPlayerId) {
+      const deletedId = location.state.deletedPlayerId
+      setPlayers(prev => prev.filter(p => p.player_id != deletedId))
+      // Clear the navigation state
+      navigate(location.pathname, { replace: true, state: {} })
+    }
+  }, [location.state?.deletedPlayerId])
   const [loading, setLoading] = useState(true)
   const [searching, setSearching] = useState(false)
   const [error, setError] = useState(null)
   const [hasMore, setHasMore] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const searchTimeoutRef = useRef(null)
+  const [showSuggestPlayerModal, setShowSuggestPlayerModal] = useState(false)
 
   useEffect(() => {
     document.title = 'All Players - Collect Your Cards'
@@ -280,6 +293,27 @@ function PlayersLanding() {
           </div>
         )}
       </div>
+
+      {/* Floating Action Button for adding new players */}
+      {isAuthenticated && (
+        <button
+          className="players-landing-fab"
+          onClick={() => setShowSuggestPlayerModal(true)}
+          title="Suggest New Player"
+        >
+          <Icon name="user-plus" size={24} />
+        </button>
+      )}
+
+      {/* Suggest New Player Modal */}
+      <SuggestNewPlayerModal
+        isOpen={showSuggestPlayerModal}
+        onClose={() => setShowSuggestPlayerModal(false)}
+        preSelectedTeam={null}
+        onSuccess={() => {
+          loadPlayersData(searchTerm) // Reload players list
+        }}
+      />
     </div>
   )
 }

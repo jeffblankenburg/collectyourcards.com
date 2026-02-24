@@ -9,6 +9,7 @@ import { SeriesCard } from '../components/cards'
 import CommentsSection from '../components/CommentsSection'
 import ActivityFeed from '../components/ActivityFeed'
 import SuggestSeriesModal from '../components/modals/SuggestSeriesModal'
+import EditSetModal from '../components/modals/EditSetModal'
 import { createLogger } from '../utils/logger'
 import './SeriesPageScoped.css'
 
@@ -39,9 +40,45 @@ function SeriesPage() {
 
   // Modal state
   const [showSuggestSeriesModal, setShowSuggestSeriesModal] = useState(false)
+  const [showEditSetModal, setShowEditSetModal] = useState(false)
+  const [showFabMenu, setShowFabMenu] = useState(false)
+  const [organizations, setOrganizations] = useState([])
+  const [manufacturers, setManufacturers] = useState([])
+  const fabRef = useRef(null)
 
   // Check if user is admin
   const isAdmin = user && ['admin', 'superadmin', 'data_admin'].includes(user.role)
+
+  // Close FAB menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (fabRef.current && !fabRef.current.contains(event.target)) {
+        setShowFabMenu(false)
+      }
+    }
+
+    if (showFabMenu) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showFabMenu])
+
+  // Load organizations and manufacturers for edit modal
+  const loadEditModalData = async () => {
+    try {
+      const [orgsRes, mfgsRes] = await Promise.all([
+        axios.get('/api/organizations'),
+        axios.get('/api/manufacturers')
+      ])
+      setOrganizations(orgsRes.data.organizations || [])
+      setManufacturers(mfgsRes.data.manufacturers || [])
+    } catch (error) {
+      console.error('Error loading modal data:', error)
+    }
+  }
 
   // Helper function to generate URL slug (matching backend)
   const generateSlug = (name) => {
@@ -483,23 +520,70 @@ function SeriesPage() {
         </div>
       )}
 
-      {/* Admin Edit Button */}
-      {isAdmin && selectedSet && (
-        <button
-          className="admin-edit-button"
-          onClick={() => navigate(`/admin/sets?search=${encodeURIComponent(selectedSet.name)}`)}
-          title="Edit set (Admin)"
-        >
-          <Icon name="edit" size={20} />
-        </button>
+      {/* Floating Action Button with Menu */}
+      {user && selectedSet && (
+        <div className="fab-container" ref={fabRef}>
+          {showFabMenu && (
+            <div className="fab-menu">
+              {isAdmin && (
+                <button
+                  className="fab-menu-item admin"
+                  onClick={() => {
+                    loadEditModalData()
+                    setShowEditSetModal(true)
+                    setShowFabMenu(false)
+                  }}
+                  title="Edit Set"
+                >
+                  <Icon name="edit" size={18} />
+                  <span>Edit Set</span>
+                </button>
+              )}
+              <button
+                className="fab-menu-item"
+                onClick={() => {
+                  setShowSuggestSeriesModal(true)
+                  setShowFabMenu(false)
+                }}
+                title="Suggest Series"
+              >
+                <Icon name="plus" size={18} />
+                <span>Suggest Series</span>
+              </button>
+            </div>
+          )}
+          <button
+            className={`fab-button ${showFabMenu ? 'active' : ''}`}
+            onClick={() => setShowFabMenu(!showFabMenu)}
+            title={showFabMenu ? 'Close menu' : 'Open actions menu'}
+          >
+            <Icon name={showFabMenu ? 'x' : 'edit'} size={24} />
+          </button>
+        </div>
       )}
 
       {/* Suggest Series Modal */}
       <SuggestSeriesModal
         isOpen={showSuggestSeriesModal}
         onClose={() => setShowSuggestSeriesModal(false)}
-        onSuccess={() => addToast('Series suggestion submitted!', 'success')}
+        onSuccess={() => {
+          addToast('Series suggestion submitted!', 'success')
+          loadSeriesForSet(setId)
+        }}
         preselectedSet={selectedSet}
+      />
+
+      {/* Edit Set Modal */}
+      <EditSetModal
+        isOpen={showEditSetModal}
+        onClose={() => setShowEditSetModal(false)}
+        set={selectedSet}
+        organizations={organizations}
+        manufacturers={manufacturers}
+        onSaveSuccess={() => {
+          loadSetById(setId)
+          loadSeriesForSet(setId)
+        }}
       />
     </div>
   )

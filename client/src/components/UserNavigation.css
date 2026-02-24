@@ -32,6 +32,10 @@
   justify-content: flex-end;
 }
 
+.user-nav-items.center {
+  justify-content: center;
+}
+
 .user-nav-item {
   display: flex;
   align-items: center;
@@ -65,6 +69,28 @@
 .user-nav-item:hover svg,
 .user-nav-item.active svg {
   opacity: 1;
+}
+
+/* Add a Card Button - Prominent styling */
+.user-nav-item.add-card-btn {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+  border-radius: 6px;
+  margin: 0 0.5rem;
+  padding: 0.5rem 1rem;
+  border-bottom: none;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+.user-nav-item.add-card-btn:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+}
+
+.user-nav-item.add-card-btn.active {
+  background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+  border-bottom: none;
 }
 
 /* Responsive Design */

@@ -48,11 +48,13 @@ router.get('/', async (req, res) => {
             t.name,
             t.slug,
             t.city,
+            t.mascot,
             t.abbreviation,
             t.primary_color,
             t.secondary_color,
             t.card_count,
             t.player_count,
+            t.organization as organization_id,
             org.name as organization_name,
             org.abbreviation as organization_abbreviation,
             ut.created as last_visited
@@ -78,16 +80,18 @@ router.get('/', async (req, res) => {
         t.name,
         t.slug,
         t.city,
+        t.mascot,
         t.abbreviation,
         t.primary_color,
         t.secondary_color,
         t.card_count,
         t.player_count,
+        t.organization as organization_id,
         org.name as organization_name,
         org.abbreviation as organization_abbreviation
       FROM team t
       LEFT JOIN organization org ON t.organization = org.organization_id
-      WHERE t.card_count > 0
+      WHERE 1=1
       ${searchCondition}
       ORDER BY ${sortColumn} ${sortDirection}
     `
@@ -100,9 +104,11 @@ router.get('/', async (req, res) => {
       name: team.name,
       slug: team.slug,
       city: team.city,
+      mascot: team.mascot,
       abbreviation: team.abbreviation,
       primary_color: team.primary_color,
       secondary_color: team.secondary_color,
+      organization_id: team.organization_id ? Number(team.organization_id) : null,
       organization_name: team.organization_name,
       organization_abbreviation: team.organization_abbreviation,
       card_count: Number(team.card_count),
@@ -119,9 +125,11 @@ router.get('/', async (req, res) => {
         name: team.name,
         slug: team.slug,
         city: team.city,
+        mascot: team.mascot,
         abbreviation: team.abbreviation,
         primary_color: team.primary_color,
         secondary_color: team.secondary_color,
+        organization_id: team.organization_id ? Number(team.organization_id) : null,
         organization_name: team.organization_name,
         organization_abbreviation: team.organization_abbreviation,
         card_count: Number(team.card_count),
@@ -158,6 +166,31 @@ router.get('/', async (req, res) => {
       error: 'Database error',
       message: 'Failed to fetch teams list',
       details: error.message
+    })
+  }
+})
+
+// GET /api/teams-list/organizations - Get all organizations
+router.get('/organizations', async (req, res) => {
+  try {
+    const organizations = await prisma.$queryRaw`
+      SELECT organization_id, name, abbreviation
+      FROM organization
+      ORDER BY name ASC
+    `
+
+    res.json({
+      organizations: organizations.map(org => ({
+        organization_id: Number(org.organization_id),
+        name: org.name,
+        abbreviation: org.abbreviation
+      }))
+    })
+  } catch (error) {
+    console.error('Error fetching organizations:', error)
+    res.status(500).json({
+      error: 'Database error',
+      message: 'Failed to fetch organizations'
     })
   }
 })

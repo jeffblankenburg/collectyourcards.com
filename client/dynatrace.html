@@ -1,0 +1,1315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CollectYourCards.com - Dynatrace App</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    /* Strato Design System Tokens - Dark Theme */
+    :root {
+      /* Background colors */
+      --strato-background-base: #19192c;
+      --strato-background-surface: #1e1e35;
+      --strato-background-container: #24243d;
+      --strato-background-container-hover: #2a2a47;
+      --strato-background-elevated: #2f2f4d;
+
+      /* Border colors */
+      --strato-border-default: #3d3d5c;
+      --strato-border-subtle: #32324f;
+      --strato-border-emphasized: #4a4a6a;
+
+      /* Text colors */
+      --strato-text-primary: #f0f0f5;
+      --strato-text-secondary: #b4b4c7;
+      --strato-text-tertiary: #8787a3;
+      --strato-text-disabled: #5b5c81;
+
+      /* Primary (brand blue-purple) */
+      --strato-primary-default: #999bed;
+      --strato-primary-hover: #aaabed;
+      --strato-primary-active: #7779d8;
+      --strato-primary-subtle: rgba(153, 155, 237, 0.15);
+
+      /* Success (teal) */
+      --strato-success-default: #5eb1a9;
+      --strato-success-hover: #6fc2ba;
+      --strato-success-subtle: rgba(94, 177, 169, 0.15);
+
+      /* Warning (amber) */
+      --strato-warning-default: #eea746;
+      --strato-warning-hover: #f0b55c;
+      --strato-warning-subtle: rgba(238, 167, 70, 0.15);
+
+      /* Critical (red) */
+      --strato-critical-default: #c82d40;
+      --strato-critical-hover: #d94054;
+      --strato-critical-subtle: rgba(200, 45, 64, 0.15);
+
+      /* Chart colors */
+      --strato-chart-blue: #5c6bc0;
+      --strato-chart-purple: #9575cd;
+      --strato-chart-cyan: #4dd0e1;
+      --strato-chart-teal: #5eb1a9;
+      --strato-chart-orange: #ffb74d;
+
+      /* Spacing scale */
+      --strato-spacing-2: 2px;
+      --strato-spacing-4: 4px;
+      --strato-spacing-6: 6px;
+      --strato-spacing-8: 8px;
+      --strato-spacing-12: 12px;
+      --strato-spacing-16: 16px;
+      --strato-spacing-20: 20px;
+      --strato-spacing-24: 24px;
+      --strato-spacing-32: 32px;
+      --strato-spacing-40: 40px;
+      --strato-spacing-48: 48px;
+
+      /* Border radius */
+      --strato-radius-field: 4px;
+      --strato-radius-container: 8px;
+      --strato-radius-surface: 12px;
+      --strato-radius-pill: 9999px;
+
+      /* Typography */
+      --strato-font-family: 'DynatraceFlow', Roboto, Helvetica, sans-serif;
+      --strato-font-mono: 'Roboto Mono', monospace;
+
+      /* Animation */
+      --strato-duration-fast: 150ms;
+      --strato-duration-base: 250ms;
+      --strato-duration-slow: 400ms;
+      --strato-easing-default: cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    body {
+      font-family: var(--strato-font-family);
+      background: var(--strato-background-base);
+      color: var(--strato-text-primary);
+      min-height: 100vh;
+      line-height: 1.5;
+    }
+
+    /* Top Navigation - Strato AppBar pattern */
+    .strato-appbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 var(--strato-spacing-24);
+      height: 56px;
+      background: var(--strato-background-base);
+      border-bottom: 1px solid var(--strato-border-subtle);
+    }
+
+    .strato-appbar-left {
+      display: flex;
+      align-items: center;
+      gap: var(--strato-spacing-24);
+    }
+
+    .strato-logo {
+      display: flex;
+      align-items: center;
+      gap: var(--strato-spacing-8);
+      font-weight: 600;
+      font-size: 16px;
+    }
+
+    .strato-logo-icon {
+      width: 28px;
+      height: 28px;
+      background: linear-gradient(135deg, var(--strato-chart-purple) 0%, var(--strato-chart-blue) 100%);
+      border-radius: var(--strato-radius-field);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 14px;
+    }
+
+    .strato-tabs {
+      display: flex;
+      gap: var(--strato-spacing-4);
+    }
+
+    .strato-tab {
+      padding: var(--strato-spacing-8) var(--strato-spacing-16);
+      border-radius: var(--strato-radius-field);
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--strato-text-secondary);
+      cursor: pointer;
+      transition: all var(--strato-duration-fast) var(--strato-easing-default);
+    }
+
+    .strato-tab:hover {
+      background: var(--strato-background-container);
+      color: var(--strato-text-primary);
+    }
+
+    .strato-tab.active {
+      background: var(--strato-primary-subtle);
+      color: var(--strato-primary-default);
+    }
+
+    .strato-appbar-right {
+      display: flex;
+      align-items: center;
+      gap: var(--strato-spacing-16);
+    }
+
+    .strato-time-picker {
+      display: flex;
+      align-items: center;
+      gap: var(--strato-spacing-8);
+      padding: var(--strato-spacing-6) var(--strato-spacing-12);
+      background: var(--strato-background-container);
+      border: 1px solid var(--strato-border-default);
+      border-radius: var(--strato-radius-field);
+      font-size: 13px;
+      color: var(--strato-text-secondary);
+      cursor: pointer;
+      transition: border-color var(--strato-duration-fast) var(--strato-easing-default);
+    }
+
+    .strato-time-picker:hover {
+      border-color: var(--strato-border-emphasized);
+    }
+
+    .strato-time-picker svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    .strato-avatar {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, var(--strato-chart-purple), var(--strato-chart-blue));
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    /* Main Content - Strato page layout */
+    .strato-main {
+      padding: var(--strato-spacing-24);
+      max-width: 1600px;
+      margin: 0 auto;
+    }
+
+    .strato-page-header {
+      margin-bottom: var(--strato-spacing-24);
+    }
+
+    .strato-page-header h1 {
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: var(--strato-spacing-4);
+      line-height: 1.3;
+    }
+
+    .strato-page-subtitle {
+      color: var(--strato-text-tertiary);
+      font-size: 14px;
+    }
+
+    /* Grid Layout - Strato responsive grid */
+    .strato-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: var(--strato-spacing-16);
+      margin-bottom: var(--strato-spacing-24);
+    }
+
+    .strato-grid-2 {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .strato-grid-3 {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    /* Cards - Strato Surface component */
+    .strato-surface {
+      background: var(--strato-background-surface);
+      border: 1px solid var(--strato-border-subtle);
+      border-radius: var(--strato-radius-container);
+      padding: var(--strato-spacing-20);
+      transition: box-shadow var(--strato-duration-fast) var(--strato-easing-default);
+    }
+
+    .strato-surface:hover {
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    .strato-surface-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--strato-spacing-16);
+    }
+
+    .strato-surface-title {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--strato-text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .strato-badge {
+      padding: var(--strato-spacing-2) var(--strato-spacing-8);
+      border-radius: var(--strato-radius-field);
+      font-size: 11px;
+      font-weight: 500;
+    }
+
+    .strato-badge-success {
+      background: var(--strato-success-subtle);
+      color: var(--strato-success-default);
+    }
+
+    .strato-badge-warning {
+      background: var(--strato-warning-subtle);
+      color: var(--strato-warning-default);
+    }
+
+    .strato-badge-critical {
+      background: var(--strato-critical-subtle);
+      color: var(--strato-critical-default);
+    }
+
+    /* Metric Cards - Strato SingleValue pattern */
+    .strato-metric-value {
+      font-size: 36px;
+      font-weight: 600;
+      line-height: 1.2;
+      margin-bottom: var(--strato-spacing-4);
+      color: var(--strato-text-primary);
+    }
+
+    .strato-metric-unit {
+      font-size: 14px;
+      color: var(--strato-text-tertiary);
+      font-weight: 400;
+    }
+
+    .strato-metric-trend {
+      display: flex;
+      align-items: center;
+      gap: var(--strato-spacing-4);
+      font-size: 13px;
+      margin-top: var(--strato-spacing-8);
+    }
+
+    .strato-metric-trend-positive {
+      color: var(--strato-success-default);
+    }
+
+    .strato-metric-trend-negative {
+      color: var(--strato-critical-default);
+    }
+
+    .strato-metric-trend svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    /* Sparkline - Strato micro chart pattern */
+    .strato-sparkline {
+      margin-top: var(--strato-spacing-16);
+      height: 40px;
+      display: flex;
+      align-items: flex-end;
+      gap: 2px;
+    }
+
+    .strato-sparkline-bar {
+      flex: 1;
+      background: var(--strato-chart-blue);
+      border-radius: 2px 2px 0 0;
+      opacity: 0.7;
+      transition: opacity var(--strato-duration-fast) var(--strato-easing-default);
+    }
+
+    .strato-sparkline-bar:hover {
+      opacity: 1;
+    }
+
+    /* Chart Container - Strato chart pattern */
+    .strato-chart {
+      height: 200px;
+      position: relative;
+      margin-top: var(--strato-spacing-16);
+    }
+
+    .strato-chart-svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    .strato-chart-grid {
+      stroke: var(--strato-border-subtle);
+      stroke-width: 1;
+    }
+
+    .strato-chart-label {
+      fill: var(--strato-text-tertiary);
+      font-size: 11px;
+    }
+
+    /* Legend - Strato chart legend pattern */
+    .strato-legend {
+      display: flex;
+      gap: var(--strato-spacing-24);
+      margin-top: var(--strato-spacing-16);
+    }
+
+    .strato-legend-item {
+      display: flex;
+      align-items: center;
+      gap: var(--strato-spacing-8);
+      font-size: 12px;
+      color: var(--strato-text-secondary);
+    }
+
+    .strato-legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    /* Table - Strato Table component pattern */
+    .strato-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: var(--strato-spacing-16);
+    }
+
+    .strato-table th {
+      text-align: left;
+      padding: var(--strato-spacing-12) var(--strato-spacing-16);
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--strato-text-tertiary);
+      border-bottom: 1px solid var(--strato-border-default);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .strato-table td {
+      padding: var(--strato-spacing-12) var(--strato-spacing-16);
+      font-size: 13px;
+      border-bottom: 1px solid var(--strato-border-subtle);
+    }
+
+    .strato-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .strato-table tr:hover td {
+      background: var(--strato-background-container-hover);
+    }
+
+    .strato-code {
+      font-family: var(--strato-font-mono);
+      color: var(--strato-primary-default);
+      font-size: 12px;
+    }
+
+    .strato-status-indicator {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: var(--strato-spacing-8);
+    }
+
+    .strato-status-indicator-success { background: var(--strato-success-default); }
+    .strato-status-indicator-warning { background: var(--strato-warning-default); }
+    .strato-status-indicator-critical { background: var(--strato-critical-default); }
+
+    /* Progress Bar - Strato ProgressBar pattern */
+    .strato-progress {
+      height: 6px;
+      background: var(--strato-background-elevated);
+      border-radius: var(--strato-radius-pill);
+      overflow: hidden;
+    }
+
+    .strato-progress-bar {
+      height: 100%;
+      border-radius: var(--strato-radius-pill);
+      transition: width var(--strato-duration-base) var(--strato-easing-default);
+    }
+
+    .strato-progress-bar-primary { background: var(--strato-chart-blue); }
+    .strato-progress-bar-success { background: var(--strato-success-default); }
+    .strato-progress-bar-purple { background: var(--strato-chart-purple); }
+
+    /* Donut Chart - Strato PieChart pattern */
+    .strato-donut-container {
+      display: flex;
+      align-items: center;
+      gap: var(--strato-spacing-24);
+      margin-top: var(--strato-spacing-16);
+    }
+
+    .strato-donut {
+      width: 120px;
+      height: 120px;
+      position: relative;
+    }
+
+    .strato-donut-center {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+    }
+
+    .strato-donut-value {
+      font-size: 24px;
+      font-weight: 600;
+      color: var(--strato-text-primary);
+    }
+
+    .strato-donut-label {
+      font-size: 11px;
+      color: var(--strato-text-tertiary);
+    }
+
+    .strato-donut-legend {
+      flex: 1;
+    }
+
+    .strato-donut-legend-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--strato-spacing-8) 0;
+      border-bottom: 1px solid var(--strato-border-subtle);
+    }
+
+    .strato-donut-legend-item:last-child {
+      border-bottom: none;
+    }
+
+    .strato-donut-legend-label {
+      display: flex;
+      align-items: center;
+      gap: var(--strato-spacing-8);
+      font-size: 13px;
+      color: var(--strato-text-secondary);
+    }
+
+    .strato-donut-legend-value {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--strato-text-primary);
+    }
+
+    /* Service Health - Strato status grid pattern */
+    .strato-health-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--strato-spacing-12);
+      margin-top: var(--strato-spacing-16);
+    }
+
+    .strato-health-item {
+      background: var(--strato-background-container);
+      border-radius: var(--strato-radius-field);
+      padding: var(--strato-spacing-16);
+      text-align: center;
+      transition: background var(--strato-duration-fast) var(--strato-easing-default);
+    }
+
+    .strato-health-item:hover {
+      background: var(--strato-background-container-hover);
+    }
+
+    .strato-health-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--strato-radius-container);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto var(--strato-spacing-12);
+      font-size: 18px;
+    }
+
+    .strato-health-icon-success { background: var(--strato-success-subtle); color: var(--strato-success-default); }
+    .strato-health-icon-warning { background: var(--strato-warning-subtle); color: var(--strato-warning-default); }
+
+    .strato-health-name {
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: var(--strato-spacing-4);
+      color: var(--strato-text-primary);
+    }
+
+    .strato-health-status {
+      font-size: 11px;
+      color: var(--strato-text-tertiary);
+    }
+
+    /* Recent Activity - Strato list pattern */
+    .strato-activity-list {
+      margin-top: var(--strato-spacing-16);
+    }
+
+    .strato-activity-item {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--strato-spacing-12);
+      padding: var(--strato-spacing-12) 0;
+      border-bottom: 1px solid var(--strato-border-subtle);
+    }
+
+    .strato-activity-item:last-child {
+      border-bottom: none;
+    }
+
+    .strato-activity-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: var(--strato-radius-field);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
+    .strato-activity-icon-success { background: var(--strato-success-subtle); color: var(--strato-success-default); }
+    .strato-activity-icon-info { background: var(--strato-primary-subtle); color: var(--strato-chart-blue); }
+    .strato-activity-icon-critical { background: var(--strato-critical-subtle); color: var(--strato-critical-default); }
+    .strato-activity-icon-primary { background: var(--strato-primary-subtle); color: var(--strato-primary-default); }
+
+    .strato-activity-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .strato-activity-text {
+      font-size: 13px;
+      margin-bottom: var(--strato-spacing-2);
+      color: var(--strato-text-secondary);
+    }
+
+    .strato-activity-text strong {
+      color: var(--strato-text-primary);
+    }
+
+    .strato-activity-time {
+      font-size: 11px;
+      color: var(--strato-text-tertiary);
+    }
+
+    /* Full width surface */
+    .strato-surface-full {
+      grid-column: span 2;
+    }
+
+    /* Tabs in surface - Strato Tabs pattern */
+    .strato-surface-tabs {
+      display: flex;
+      gap: var(--strato-spacing-4);
+      margin-bottom: var(--strato-spacing-16);
+      border-bottom: 1px solid var(--strato-border-subtle);
+      padding-bottom: var(--strato-spacing-12);
+    }
+
+    .strato-surface-tab {
+      padding: var(--strato-spacing-6) var(--strato-spacing-12);
+      font-size: 13px;
+      color: var(--strato-text-tertiary);
+      cursor: pointer;
+      border-radius: var(--strato-radius-field);
+      transition: all var(--strato-duration-fast) var(--strato-easing-default);
+    }
+
+    .strato-surface-tab:hover {
+      color: var(--strato-text-secondary);
+    }
+
+    .strato-surface-tab.active {
+      background: var(--strato-primary-subtle);
+      color: var(--strato-primary-default);
+    }
+
+    /* Business Metrics - Strato KPI pattern */
+    .strato-kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--strato-spacing-16);
+      margin-top: var(--strato-spacing-16);
+    }
+
+    .strato-kpi {
+      background: var(--strato-background-container);
+      border-radius: var(--strato-radius-field);
+      padding: var(--strato-spacing-16);
+    }
+
+    .strato-kpi-label {
+      font-size: 12px;
+      color: var(--strato-text-tertiary);
+      margin-bottom: var(--strato-spacing-8);
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .strato-kpi-value {
+      font-size: 24px;
+      font-weight: 600;
+    }
+
+    .strato-kpi-sub {
+      font-size: 12px;
+      color: var(--strato-text-tertiary);
+      margin-top: var(--strato-spacing-4);
+    }
+
+    /* Footer info */
+    .strato-footer-info {
+      margin-top: var(--strato-spacing-16);
+      padding-top: var(--strato-spacing-16);
+      border-top: 1px solid var(--strato-border-subtle);
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      color: var(--strato-text-secondary);
+    }
+
+    .strato-footer-info strong {
+      color: var(--strato-text-primary);
+    }
+
+    /* Responsive breakpoints - Strato pattern */
+    @media (max-width: 1200px) {
+      .strato-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .strato-grid-3 {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 768px) {
+      .strato-grid,
+      .strato-grid-2,
+      .strato-grid-3 {
+        grid-template-columns: 1fr;
+      }
+      .strato-surface-full {
+        grid-column: span 1;
+      }
+      .strato-health-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .strato-kpi-grid {
+        grid-template-columns: 1fr;
+      }
+      .strato-appbar {
+        padding: 0 var(--strato-spacing-16);
+      }
+      .strato-tabs {
+        display: none;
+      }
+      .strato-main {
+        padding: var(--strato-spacing-16);
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Top Navigation - Strato AppBar -->
+  <nav class="strato-appbar">
+    <div class="strato-appbar-left">
+      <div class="strato-logo">
+        <div class="strato-logo-icon">D</div>
+        <span>Dynatrace</span>
+      </div>
+      <div class="strato-tabs">
+        <div class="strato-tab active">CollectYourCards</div>
+        <div class="strato-tab">Infrastructure</div>
+        <div class="strato-tab">Logs</div>
+        <div class="strato-tab">Problems</div>
+      </div>
+    </div>
+    <div class="strato-appbar-right">
+      <div class="strato-time-picker">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <polyline points="12 6 12 12 16 14"></polyline>
+        </svg>
+        <span>Last 24 hours</span>
+      </div>
+      <div class="strato-avatar">JB</div>
+    </div>
+  </nav>
+
+  <!-- Main Content - Strato Page Layout -->
+  <main class="strato-main">
+    <header class="strato-page-header">
+      <h1>CollectYourCards.com</h1>
+      <p class="strato-page-subtitle">Application Performance Dashboard</p>
+    </header>
+
+    <!-- Key Metrics Row - Strato SingleValue cards -->
+    <div class="strato-grid">
+      <!-- Active Users -->
+      <div class="strato-surface">
+        <div class="strato-surface-header">
+          <span class="strato-surface-title">Active Users</span>
+          <span class="strato-badge strato-badge-success">Live</span>
+        </div>
+        <div class="strato-metric-value">2,847</div>
+        <div class="strato-metric-trend strato-metric-trend-positive">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+            <polyline points="17 6 23 6 23 12"></polyline>
+          </svg>
+          <span>+18.3% vs last week</span>
+        </div>
+        <div class="strato-sparkline">
+          <div class="strato-sparkline-bar" style="height: 45%"></div>
+          <div class="strato-sparkline-bar" style="height: 52%"></div>
+          <div class="strato-sparkline-bar" style="height: 48%"></div>
+          <div class="strato-sparkline-bar" style="height: 61%"></div>
+          <div class="strato-sparkline-bar" style="height: 55%"></div>
+          <div class="strato-sparkline-bar" style="height: 72%"></div>
+          <div class="strato-sparkline-bar" style="height: 68%"></div>
+          <div class="strato-sparkline-bar" style="height: 75%"></div>
+          <div class="strato-sparkline-bar" style="height: 82%"></div>
+          <div class="strato-sparkline-bar" style="height: 78%"></div>
+          <div class="strato-sparkline-bar" style="height: 85%"></div>
+          <div class="strato-sparkline-bar" style="height: 92%"></div>
+          <div class="strato-sparkline-bar" style="height: 88%"></div>
+          <div class="strato-sparkline-bar" style="height: 95%"></div>
+          <div class="strato-sparkline-bar" style="height: 100%"></div>
+        </div>
+      </div>
+
+      <!-- Response Time -->
+      <div class="strato-surface">
+        <div class="strato-surface-header">
+          <span class="strato-surface-title">Avg Response Time</span>
+          <span class="strato-badge strato-badge-success">Healthy</span>
+        </div>
+        <div class="strato-metric-value">142<span class="strato-metric-unit">ms</span></div>
+        <div class="strato-metric-trend strato-metric-trend-positive">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline>
+            <polyline points="17 18 23 18 23 12"></polyline>
+          </svg>
+          <span>-12ms improvement</span>
+        </div>
+        <div class="strato-sparkline">
+          <div class="strato-sparkline-bar" style="height: 65%; background: var(--strato-success-default)"></div>
+          <div class="strato-sparkline-bar" style="height: 58%; background: var(--strato-success-default)"></div>
+          <div class="strato-sparkline-bar" style="height: 62%; background: var(--strato-success-default)"></div>
+          <div class="strato-sparkline-bar" style="height: 55%; background: var(--strato-success-default)"></div>
+          <div class="strato-sparkline-bar" style="height: 48%; background: var(--strato-success-default)"></div>
+          <div class="strato-sparkline-bar" style="height: 52%; background: var(--strato-success-default)"></div>
+          <div class="strato-sparkline-bar" style="height: 45%; background: var(--strato-success-default)"></div>
+          <div class="strato-sparkline-bar" style="height: 50%; background: var(--strato-success-default)"></div>
+          <div class="strato-sparkline-bar" style="height: 42%; background: var(--strato-success-default)"></div>
+          <div class="strato-sparkline-bar" style="height: 48%; background: var(--strato-success-default)"></div>
+          <div class="strato-sparkline-bar" style="height: 40%; background: var(--strato-success-default)"></div>
+          <div class="strato-sparkline-bar" style="height: 38%; background: var(--strato-success-default)"></div>
+          <div class="strato-sparkline-bar" style="height: 42%; background: var(--strato-success-default)"></div>
+          <div class="strato-sparkline-bar" style="height: 35%; background: var(--strato-success-default)"></div>
+          <div class="strato-sparkline-bar" style="height: 38%; background: var(--strato-success-default)"></div>
+        </div>
+      </div>
+
+      <!-- Error Rate -->
+      <div class="strato-surface">
+        <div class="strato-surface-header">
+          <span class="strato-surface-title">Error Rate</span>
+          <span class="strato-badge strato-badge-success">Normal</span>
+        </div>
+        <div class="strato-metric-value">0.12<span class="strato-metric-unit">%</span></div>
+        <div class="strato-metric-trend strato-metric-trend-positive">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline>
+            <polyline points="17 18 23 18 23 12"></polyline>
+          </svg>
+          <span>-0.08% from yesterday</span>
+        </div>
+        <div class="strato-sparkline">
+          <div class="strato-sparkline-bar" style="height: 25%; background: var(--strato-critical-default)"></div>
+          <div class="strato-sparkline-bar" style="height: 18%; background: var(--strato-critical-default)"></div>
+          <div class="strato-sparkline-bar" style="height: 22%; background: var(--strato-critical-default)"></div>
+          <div class="strato-sparkline-bar" style="height: 15%; background: var(--strato-critical-default)"></div>
+          <div class="strato-sparkline-bar" style="height: 20%; background: var(--strato-critical-default)"></div>
+          <div class="strato-sparkline-bar" style="height: 12%; background: var(--strato-critical-default)"></div>
+          <div class="strato-sparkline-bar" style="height: 18%; background: var(--strato-critical-default)"></div>
+          <div class="strato-sparkline-bar" style="height: 10%; background: var(--strato-critical-default)"></div>
+          <div class="strato-sparkline-bar" style="height: 15%; background: var(--strato-critical-default)"></div>
+          <div class="strato-sparkline-bar" style="height: 8%; background: var(--strato-critical-default)"></div>
+          <div class="strato-sparkline-bar" style="height: 12%; background: var(--strato-critical-default)"></div>
+          <div class="strato-sparkline-bar" style="height: 6%; background: var(--strato-critical-default)"></div>
+          <div class="strato-sparkline-bar" style="height: 10%; background: var(--strato-critical-default)"></div>
+          <div class="strato-sparkline-bar" style="height: 5%; background: var(--strato-critical-default)"></div>
+          <div class="strato-sparkline-bar" style="height: 8%; background: var(--strato-critical-default)"></div>
+        </div>
+      </div>
+
+      <!-- Requests/min -->
+      <div class="strato-surface">
+        <div class="strato-surface-header">
+          <span class="strato-surface-title">Requests / min</span>
+          <span class="strato-badge strato-badge-success">Normal</span>
+        </div>
+        <div class="strato-metric-value">8,432</div>
+        <div class="strato-metric-trend strato-metric-trend-positive">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+            <polyline points="17 6 23 6 23 12"></polyline>
+          </svg>
+          <span>+2,150 vs yesterday</span>
+        </div>
+        <div class="strato-sparkline">
+          <div class="strato-sparkline-bar" style="height: 40%; background: var(--strato-chart-purple)"></div>
+          <div class="strato-sparkline-bar" style="height: 48%; background: var(--strato-chart-purple)"></div>
+          <div class="strato-sparkline-bar" style="height: 55%; background: var(--strato-chart-purple)"></div>
+          <div class="strato-sparkline-bar" style="height: 52%; background: var(--strato-chart-purple)"></div>
+          <div class="strato-sparkline-bar" style="height: 62%; background: var(--strato-chart-purple)"></div>
+          <div class="strato-sparkline-bar" style="height: 58%; background: var(--strato-chart-purple)"></div>
+          <div class="strato-sparkline-bar" style="height: 70%; background: var(--strato-chart-purple)"></div>
+          <div class="strato-sparkline-bar" style="height: 65%; background: var(--strato-chart-purple)"></div>
+          <div class="strato-sparkline-bar" style="height: 75%; background: var(--strato-chart-purple)"></div>
+          <div class="strato-sparkline-bar" style="height: 72%; background: var(--strato-chart-purple)"></div>
+          <div class="strato-sparkline-bar" style="height: 82%; background: var(--strato-chart-purple)"></div>
+          <div class="strato-sparkline-bar" style="height: 78%; background: var(--strato-chart-purple)"></div>
+          <div class="strato-sparkline-bar" style="height: 88%; background: var(--strato-chart-purple)"></div>
+          <div class="strato-sparkline-bar" style="height: 92%; background: var(--strato-chart-purple)"></div>
+          <div class="strato-sparkline-bar" style="height: 100%; background: var(--strato-chart-purple)"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts Row - Strato TimeseriesChart and Table -->
+    <div class="strato-grid strato-grid-2" style="margin-bottom: var(--strato-spacing-24);">
+      <!-- Response Time Chart -->
+      <div class="strato-surface">
+        <div class="strato-surface-header">
+          <span class="strato-surface-title">Response Time Distribution</span>
+        </div>
+        <div class="strato-chart">
+          <svg class="strato-chart-svg" viewBox="0 0 600 200" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="areaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" style="stop-color:#5c6bc0;stop-opacity:0.3" />
+                <stop offset="100%" style="stop-color:#5c6bc0;stop-opacity:0.05" />
+              </linearGradient>
+              <linearGradient id="areaGradient2" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" style="stop-color:#9575cd;stop-opacity:0.3" />
+                <stop offset="100%" style="stop-color:#9575cd;stop-opacity:0.05" />
+              </linearGradient>
+            </defs>
+            <!-- Grid lines -->
+            <line x1="0" y1="50" x2="600" y2="50" class="strato-chart-grid" />
+            <line x1="0" y1="100" x2="600" y2="100" class="strato-chart-grid" />
+            <line x1="0" y1="150" x2="600" y2="150" class="strato-chart-grid" />
+
+            <!-- P95 Area -->
+            <path d="M0,180 L40,175 L80,165 L120,170 L160,160 L200,155 L240,165 L280,150 L320,145 L360,155 L400,140 L440,135 L480,145 L520,130 L560,125 L600,120 L600,200 L0,200 Z" fill="url(#areaGradient2)" />
+
+            <!-- P50 Area -->
+            <path d="M0,160 L40,155 L80,145 L120,150 L160,140 L200,135 L240,145 L280,130 L320,125 L360,135 L400,120 L440,115 L480,125 L520,110 L560,105 L600,100 L600,200 L0,200 Z" fill="url(#areaGradient)" />
+
+            <!-- P95 Line -->
+            <path d="M0,180 L40,175 L80,165 L120,170 L160,160 L200,155 L240,165 L280,150 L320,145 L360,155 L400,140 L440,135 L480,145 L520,130 L560,125 L600,120" fill="none" stroke="var(--strato-chart-purple)" stroke-width="2" />
+
+            <!-- P50 Line -->
+            <path d="M0,160 L40,155 L80,145 L120,150 L160,140 L200,135 L240,145 L280,130 L320,125 L360,135 L400,120 L440,115 L480,125 L520,110 L560,105 L600,100" fill="none" stroke="var(--strato-chart-blue)" stroke-width="2" />
+
+            <!-- Labels -->
+            <text x="10" y="55" class="strato-chart-label">300ms</text>
+            <text x="10" y="105" class="strato-chart-label">200ms</text>
+            <text x="10" y="155" class="strato-chart-label">100ms</text>
+          </svg>
+        </div>
+        <div class="strato-legend">
+          <div class="strato-legend-item">
+            <div class="strato-legend-dot" style="background: var(--strato-chart-blue)"></div>
+            <span>P50: 142ms</span>
+          </div>
+          <div class="strato-legend-item">
+            <div class="strato-legend-dot" style="background: var(--strato-chart-purple)"></div>
+            <span>P95: 287ms</span>
+          </div>
+          <div class="strato-legend-item">
+            <div class="strato-legend-dot" style="background: var(--strato-chart-orange)"></div>
+            <span>P99: 512ms</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Traffic by Endpoint - Strato Table -->
+      <div class="strato-surface">
+        <div class="strato-surface-header">
+          <span class="strato-surface-title">Top API Endpoints</span>
+        </div>
+        <table class="strato-table">
+          <thead>
+            <tr>
+              <th>Endpoint</th>
+              <th>Requests</th>
+              <th>Avg Time</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="strato-code">/api/cards</span></td>
+              <td>125,482</td>
+              <td>98ms</td>
+              <td><span class="strato-status-indicator strato-status-indicator-success"></span>Healthy</td>
+            </tr>
+            <tr>
+              <td><span class="strato-code">/api/search-v3</span></td>
+              <td>89,231</td>
+              <td>215ms</td>
+              <td><span class="strato-status-indicator strato-status-indicator-success"></span>Healthy</td>
+            </tr>
+            <tr>
+              <td><span class="strato-code">/api/collection</span></td>
+              <td>67,845</td>
+              <td>124ms</td>
+              <td><span class="strato-status-indicator strato-status-indicator-success"></span>Healthy</td>
+            </tr>
+            <tr>
+              <td><span class="strato-code">/api/players</span></td>
+              <td>45,123</td>
+              <td>156ms</td>
+              <td><span class="strato-status-indicator strato-status-indicator-success"></span>Healthy</td>
+            </tr>
+            <tr>
+              <td><span class="strato-code">/api/user-profile</span></td>
+              <td>23,891</td>
+              <td>87ms</td>
+              <td><span class="strato-status-indicator strato-status-indicator-success"></span>Healthy</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Business Metrics + Services Row - Strato KPI and Status patterns -->
+    <div class="strato-grid strato-grid-3">
+      <!-- Business Metrics -->
+      <div class="strato-surface">
+        <div class="strato-surface-header">
+          <span class="strato-surface-title">Business Metrics (24h)</span>
+        </div>
+        <div class="strato-kpi-grid">
+          <div class="strato-kpi">
+            <div class="strato-kpi-label">Cards Added to Collections</div>
+            <div class="strato-kpi-value" style="color: var(--strato-success-default)">12,847</div>
+            <div class="strato-kpi-sub">+23% vs yesterday</div>
+          </div>
+          <div class="strato-kpi">
+            <div class="strato-kpi-label">Card Searches</div>
+            <div class="strato-kpi-value" style="color: var(--strato-chart-blue)">89,234</div>
+            <div class="strato-kpi-sub">Avg 31 per user</div>
+          </div>
+          <div class="strato-kpi">
+            <div class="strato-kpi-label">New Registrations</div>
+            <div class="strato-kpi-value" style="color: var(--strato-chart-purple)">342</div>
+            <div class="strato-kpi-sub">87% verified email</div>
+          </div>
+          <div class="strato-kpi">
+            <div class="strato-kpi-label">Crowdsource Submissions</div>
+            <div class="strato-kpi-value" style="color: var(--strato-chart-orange)">1,247</div>
+            <div class="strato-kpi-sub">92% approval rate</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Service Health - Strato Status Grid -->
+      <div class="strato-surface">
+        <div class="strato-surface-header">
+          <span class="strato-surface-title">Service Health</span>
+        </div>
+        <div class="strato-health-grid">
+          <div class="strato-health-item">
+            <div class="strato-health-icon strato-health-icon-success">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                <line x1="8" y1="21" x2="16" y2="21"></line>
+                <line x1="12" y1="17" x2="12" y2="21"></line>
+              </svg>
+            </div>
+            <div class="strato-health-name">React Frontend</div>
+            <div class="strato-health-status">100% uptime</div>
+          </div>
+          <div class="strato-health-item">
+            <div class="strato-health-icon strato-health-icon-success">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect>
+                <rect x="9" y="9" width="6" height="6"></rect>
+                <line x1="9" y1="1" x2="9" y2="4"></line>
+                <line x1="15" y1="1" x2="15" y2="4"></line>
+                <line x1="9" y1="20" x2="9" y2="23"></line>
+                <line x1="15" y1="20" x2="15" y2="23"></line>
+              </svg>
+            </div>
+            <div class="strato-health-name">Express API</div>
+            <div class="strato-health-status">99.98% uptime</div>
+          </div>
+          <div class="strato-health-item">
+            <div class="strato-health-icon strato-health-icon-success">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+                <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
+                <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
+              </svg>
+            </div>
+            <div class="strato-health-name">SQL Server</div>
+            <div class="strato-health-status">99.99% uptime</div>
+          </div>
+          <div class="strato-health-item">
+            <div class="strato-health-icon strato-health-icon-success">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+              </svg>
+            </div>
+            <div class="strato-health-name">Azure Blob</div>
+            <div class="strato-health-status">100% uptime</div>
+          </div>
+          <div class="strato-health-item">
+            <div class="strato-health-icon strato-health-icon-success">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                <polyline points="22,6 12,13 2,6"></polyline>
+              </svg>
+            </div>
+            <div class="strato-health-name">Email Service</div>
+            <div class="strato-health-status">100% uptime</div>
+          </div>
+          <div class="strato-health-item">
+            <div class="strato-health-icon strato-health-icon-warning">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+              </svg>
+            </div>
+            <div class="strato-health-name">Auth Service</div>
+            <div class="strato-health-status">Minor latency</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Request Distribution - Strato PieChart -->
+      <div class="strato-surface">
+        <div class="strato-surface-header">
+          <span class="strato-surface-title">Traffic by Feature</span>
+        </div>
+        <div class="strato-donut-container">
+          <div class="strato-donut">
+            <svg viewBox="0 0 120 120">
+              <circle cx="60" cy="60" r="50" fill="none" stroke="var(--strato-border-default)" stroke-width="12" />
+              <circle cx="60" cy="60" r="50" fill="none" stroke="var(--strato-chart-blue)" stroke-width="12"
+                stroke-dasharray="94.2 220" stroke-dashoffset="0" transform="rotate(-90 60 60)" />
+              <circle cx="60" cy="60" r="50" fill="none" stroke="var(--strato-chart-purple)" stroke-width="12"
+                stroke-dasharray="62.8 220" stroke-dashoffset="-94.2" transform="rotate(-90 60 60)" />
+              <circle cx="60" cy="60" r="50" fill="none" stroke="var(--strato-chart-teal)" stroke-width="12"
+                stroke-dasharray="47.1 220" stroke-dashoffset="-157" transform="rotate(-90 60 60)" />
+              <circle cx="60" cy="60" r="50" fill="none" stroke="var(--strato-chart-orange)" stroke-width="12"
+                stroke-dasharray="31.4 220" stroke-dashoffset="-204.1" transform="rotate(-90 60 60)" />
+            </svg>
+            <div class="strato-donut-center">
+              <div class="strato-donut-value">8.4K</div>
+              <div class="strato-donut-label">req/min</div>
+            </div>
+          </div>
+          <div class="strato-donut-legend">
+            <div class="strato-donut-legend-item">
+              <div class="strato-donut-legend-label">
+                <div class="strato-legend-dot" style="background: var(--strato-chart-blue)"></div>
+                Card Browsing
+              </div>
+              <div class="strato-donut-legend-value">30%</div>
+            </div>
+            <div class="strato-donut-legend-item">
+              <div class="strato-donut-legend-label">
+                <div class="strato-legend-dot" style="background: var(--strato-chart-purple)"></div>
+                Search
+              </div>
+              <div class="strato-donut-legend-value">20%</div>
+            </div>
+            <div class="strato-donut-legend-item">
+              <div class="strato-donut-legend-label">
+                <div class="strato-legend-dot" style="background: var(--strato-chart-teal)"></div>
+                Collection Mgmt
+              </div>
+              <div class="strato-donut-legend-value">15%</div>
+            </div>
+            <div class="strato-donut-legend-item">
+              <div class="strato-donut-legend-label">
+                <div class="strato-legend-dot" style="background: var(--strato-chart-orange)"></div>
+                Other
+              </div>
+              <div class="strato-donut-legend-value">35%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Database & Activity Row - Strato Table and Activity patterns -->
+    <div class="strato-grid strato-grid-2" style="margin-top: var(--strato-spacing-24);">
+      <!-- Database Performance -->
+      <div class="strato-surface">
+        <div class="strato-surface-header">
+          <span class="strato-surface-title">Database Performance</span>
+          <span class="strato-badge strato-badge-success">Optimal</span>
+        </div>
+        <table class="strato-table">
+          <thead>
+            <tr>
+              <th>Query Type</th>
+              <th>Calls/min</th>
+              <th>Avg Time</th>
+              <th>Load</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Card Queries</td>
+              <td>4,231</td>
+              <td>12ms</td>
+              <td>
+                <div class="strato-progress" style="width: 100px">
+                  <div class="strato-progress-bar strato-progress-bar-primary" style="width: 45%"></div>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td>Player Lookups</td>
+              <td>2,847</td>
+              <td>8ms</td>
+              <td>
+                <div class="strato-progress" style="width: 100px">
+                  <div class="strato-progress-bar strato-progress-bar-success" style="width: 28%"></div>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td>Collection Updates</td>
+              <td>1,523</td>
+              <td>24ms</td>
+              <td>
+                <div class="strato-progress" style="width: 100px">
+                  <div class="strato-progress-bar strato-progress-bar-purple" style="width: 35%"></div>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td>Search Queries</td>
+              <td>3,891</td>
+              <td>45ms</td>
+              <td>
+                <div class="strato-progress" style="width: 100px">
+                  <div class="strato-progress-bar strato-progress-bar-primary" style="width: 62%"></div>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td>Auth Operations</td>
+              <td>892</td>
+              <td>15ms</td>
+              <td>
+                <div class="strato-progress" style="width: 100px">
+                  <div class="strato-progress-bar strato-progress-bar-success" style="width: 18%"></div>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="strato-footer-info">
+          <span>Total Records: <strong>793,740 cards</strong></span>
+          <span>DB Size: <strong>2.4 GB</strong></span>
+        </div>
+      </div>
+
+      <!-- Recent Activity - Strato Activity Log pattern -->
+      <div class="strato-surface">
+        <div class="strato-surface-header">
+          <span class="strato-surface-title">Recent Activity</span>
+        </div>
+        <div class="strato-surface-tabs">
+          <div class="strato-surface-tab active">All Events</div>
+          <div class="strato-surface-tab">Errors</div>
+          <div class="strato-surface-tab">Slow Requests</div>
+        </div>
+        <div class="strato-activity-list">
+          <div class="strato-activity-item">
+            <div class="strato-activity-icon strato-activity-icon-success">+</div>
+            <div class="strato-activity-content">
+              <div class="strato-activity-text">User added <strong>2024 Topps Chrome #150</strong> to collection</div>
+              <div class="strato-activity-time">2 seconds ago</div>
+            </div>
+          </div>
+          <div class="strato-activity-item">
+            <div class="strato-activity-icon strato-activity-icon-info">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+            </div>
+            <div class="strato-activity-content">
+              <div class="strato-activity-text">Search query: "Mike Trout rookie auto" - <strong>847 results</strong></div>
+              <div class="strato-activity-time">5 seconds ago</div>
+            </div>
+          </div>
+          <div class="strato-activity-item">
+            <div class="strato-activity-icon strato-activity-icon-primary">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+            </div>
+            <div class="strato-activity-content">
+              <div class="strato-activity-text">New user registration: <strong>collector_mike_42</strong></div>
+              <div class="strato-activity-time">18 seconds ago</div>
+            </div>
+          </div>
+          <div class="strato-activity-item">
+            <div class="strato-activity-icon strato-activity-icon-success">+</div>
+            <div class="strato-activity-content">
+              <div class="strato-activity-text">Crowdsource submission: <strong>2023 Bowman Draft #BD-15</strong></div>
+              <div class="strato-activity-time">32 seconds ago</div>
+            </div>
+          </div>
+          <div class="strato-activity-item">
+            <div class="strato-activity-icon strato-activity-icon-critical">!</div>
+            <div class="strato-activity-content">
+              <div class="strato-activity-text">Rate limit triggered for IP <strong>192.168.x.x</strong></div>
+              <div class="strato-activity-time">1 minute ago</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</body>
+</html>

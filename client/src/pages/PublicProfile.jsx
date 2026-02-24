@@ -15,6 +15,7 @@ function PublicProfile() {
   const [favoriteCards, setFavoriteCards] = useState([])
   const [achievements, setAchievements] = useState(null)
   const [publicLists, setPublicLists] = useState([])
+  const [contributorStats, setContributorStats] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [followStatus, setFollowStatus] = useState({
@@ -64,6 +65,7 @@ function PublicProfile() {
       setFavoriteCards(response.data.favoriteCards || [])
       setAchievements(response.data.achievements || null)
       setPublicLists(response.data.public_lists || [])
+      setContributorStats(response.data.contributorStats || null)
     } catch (err) {
       console.error('Error fetching profile:', err)
       if (err.response?.status === 404) {
@@ -140,9 +142,10 @@ function PublicProfile() {
     }
   }
 
-  const formatJoinDate = (dateString) => {
+  const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       month: 'long',
+      day: 'numeric',
       year: 'numeric'
     })
   }
@@ -151,11 +154,11 @@ function PublicProfile() {
     const date = new Date(dateString)
     const now = new Date()
     const diffInDays = Math.floor((now - date) / (1000 * 60 * 60 * 24))
-    
+
     if (diffInDays === 0) return 'Today'
     if (diffInDays === 1) return 'Yesterday'
     if (diffInDays < 7) return `${diffInDays} days ago`
-    return date.toLocaleDateString()
+    return formatDate(dateString)
   }
 
   if (loading) {
@@ -250,7 +253,7 @@ function PublicProfile() {
                   )}
                   <span className="profile-joined">
                     <Icon name="clock" size={14} />
-                    Joined {formatJoinDate(profile.joined_date)}
+                    Joined {formatDate(profile.joined_date)}
                   </span>
                   {profile.is_own_profile && (
                     <Link to="/settings/profile" className="edit-profile-btn">
@@ -308,6 +311,25 @@ function PublicProfile() {
               </div>
             </div>
             
+            {/* Favorite Cards Thumbnails - Middle (only cards with images) */}
+            {favoriteCards.filter(c => c.primary_photo).length > 0 && (
+              <div className="header-favorite-cards">
+                {favoriteCards.filter(c => c.primary_photo).map((card) => (
+                  <Link
+                    key={`fav-thumb-${card.user_card_id}`}
+                    to={`/cards/${card.card_id}`}
+                    className="favorite-card-thumbnail"
+                    title={`#${card.card_number} ${card.player_name} - ${card.series_name}`}
+                  >
+                    <img
+                      src={card.primary_photo}
+                      alt={`#${card.card_number} ${card.player_name}`}
+                    />
+                  </Link>
+                ))}
+              </div>
+            )}
+
             {/* Stats Grid on the right */}
             {stats && (
               <div className="header-stats">
@@ -446,109 +468,174 @@ function PublicProfile() {
           </div>
           )}
 
-          {/* Favorite Cards */}
-          {favoriteCards.length > 0 && (
-          <div className="favorite-cards">
-            <h3>
-              <Icon name="star" size={20} />
-              Favorite Cards
-            </h3>
-            <div className="gallery-grid">
-              {favoriteCards.map((card) => {
-                const handleCardClick = () => {
-                  if (card.card_number && card.series_slug && card.player_name) {
-                    const playerSlug = card.player_name
-                      .toLowerCase()
-                      .replace(/[^a-z0-9\s-]/g, '')
-                      .replace(/\s+/g, '-')
-                      .replace(/-+/g, '-')
-                      .trim()
-                    
-                    window.location.href = `/card/${card.series_slug}/${card.card_number}/${playerSlug}`
-                  }
-                }
+          {/* Contributions */}
+          {contributorStats && (
+          <div className="contributions-section">
+            <div className="contributions-header">
+              <h3>
+                <Icon name="database" size={20} />
+                Contributions
+              </h3>
+              <span className={`trust-level-badge ${contributorStats.trust_level}`}>
+                {contributorStats.trust_level.charAt(0).toUpperCase() + contributorStats.trust_level.slice(1)}
+              </span>
+            </div>
+            <div className="contributions-stats">
+              <div className="contribution-stat-row">
+                <div className="contribution-stat">
+                  <span className="contribution-stat-value">{contributorStats.approved_submissions}</span>
+                  <span className="contribution-stat-label">Approved</span>
+                </div>
+                <div className="contribution-stat">
+                  <span className="contribution-stat-value">{contributorStats.total_submissions}</span>
+                  <span className="contribution-stat-label">Total</span>
+                </div>
+                <div className="contribution-stat">
+                  <span className="contribution-stat-value">{contributorStats.trust_points}</span>
+                  <span className="contribution-stat-label">Points</span>
+                </div>
+              </div>
 
-                const getColorBackground = (colorName, hexColor) => {
-                  if (!colorName && !hexColor) return {}
-                  
-                  if (colorName?.toLowerCase() === 'rainbow') {
-                    return {
-                      background: 'linear-gradient(45deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3)',
-                      backgroundSize: '200% 200%',
-                      animation: 'rainbow 3s ease infinite'
-                    }
-                  }
-                  
-                  return {
-                    backgroundColor: hexColor || '#64748b'
-                  }
-                }
-
-                const getTextColor = (hexColor) => {
-                  if (!hexColor) return '#ffffff'
-                  
-                  const hex = hexColor.replace('#', '')
-                  const r = parseInt(hex.substr(0, 2), 16)
-                  const g = parseInt(hex.substr(2, 2), 16)
-                  const b = parseInt(hex.substr(4, 2), 16)
-                  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
-                  
-                  return luminance > 0.5 ? '#000000' : '#ffffff'
-                }
-                
-                return (
-                  <div key={`favorite-${card.user_card_id}`} className="gallery-card" onClick={handleCardClick}>
-                    <div className="gallery-card-image">
-                      {card.primary_photo ? (
-                        <img 
-                          src={card.primary_photo} 
-                          alt={`Card ${card.card_number}`}
-                          className="card-image"
-                        />
-                      ) : (
-                        <div className="card-placeholder">
-                          <Icon name="image" size={32} />
-                          <span>No Photo</span>
-                        </div>
-                      )}
+              <div className="contribution-breakdown">
+                <h4>Contribution Breakdown</h4>
+                <div className="breakdown-grid">
+                  {contributorStats.breakdown.sets > 0 && (
+                    <div className="breakdown-item">
+                      <Icon name="collections" size={14} />
+                      <span>{contributorStats.breakdown.sets} Sets</span>
                     </div>
-                    <div className="gallery-card-info">
-                      <div className="card-number">#{card.card_number}</div>
-                      <div className="card-player">{card.player_name}</div>
-                      <div className="card-series">{card.series_name}</div>
-                      
-                      {/* Tags row for grading (without random_code as requested) */}
-                      <div className="gallery-tags">
-                        {card.grade && (
-                          <div className="gallery-grade-tag">
-                            Grade {card.grade}
+                  )}
+                  {contributorStats.breakdown.series > 0 && (
+                    <div className="breakdown-item">
+                      <Icon name="folder" size={14} />
+                      <span>{contributorStats.breakdown.series} Series</span>
+                    </div>
+                  )}
+                  {contributorStats.breakdown.cards > 0 && (
+                    <div className="breakdown-item">
+                      <Icon name="layers" size={14} />
+                      <span>{contributorStats.breakdown.cards} Cards</span>
+                    </div>
+                  )}
+                  {contributorStats.breakdown.player_edits > 0 && (
+                    <div className="breakdown-item">
+                      <Icon name="user" size={14} />
+                      <span>{contributorStats.breakdown.player_edits} Player Edits</span>
+                    </div>
+                  )}
+                  {contributorStats.breakdown.team_edits > 0 && (
+                    <div className="breakdown-item">
+                      <Icon name="users" size={14} />
+                      <span>{contributorStats.breakdown.team_edits} Team Edits</span>
+                    </div>
+                  )}
+                  {contributorStats.breakdown.player_aliases > 0 && (
+                    <div className="breakdown-item">
+                      <Icon name="tag" size={14} />
+                      <span>{contributorStats.breakdown.player_aliases} Aliases</span>
+                    </div>
+                  )}
+                  {contributorStats.breakdown.player_teams > 0 && (
+                    <div className="breakdown-item">
+                      <Icon name="link" size={14} />
+                      <span>{contributorStats.breakdown.player_teams} Team Links</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {contributorStats.recent_edits && contributorStats.recent_edits.length > 0 && (
+                <div className="recent-edits">
+                  <h4>Recent Contributions</h4>
+                  <div className="recent-edits-list">
+                    {contributorStats.recent_edits.map((edit, index) => {
+                      const getEditTypeInfo = (type) => {
+                        switch (type) {
+                          case 'set': return { icon: 'collections', label: 'Added Set', linkPrefix: null }
+                          case 'series': return { icon: 'folder', label: 'Added Series', linkPrefix: '/series/' }
+                          case 'card': return { icon: 'layers', label: 'Added Card', linkPrefix: '/cards/' }
+                          case 'card_edit': return { icon: 'edit', label: 'Edited Card', linkPrefix: '/cards/' }
+                          case 'player_edit': return { icon: 'user', label: 'Edited Player', linkPrefix: '/players/' }
+                          case 'team_edit': return { icon: 'users', label: 'Edited Team', linkPrefix: '/teams/' }
+                          default: return { icon: 'check', label: 'Contribution', linkPrefix: null }
+                        }
+                      }
+                      const typeInfo = getEditTypeInfo(edit.edit_type)
+                      const canLink = typeInfo.linkPrefix && edit.item_id
+
+                      // Parse change_summary to make display image links clickable
+                      const renderChangeSummary = (summary) => {
+                        if (!summary) return null
+                        // Look for "Display Image updated to #XXX - Series Name|cardId" pattern
+                        const displayImageRegex = /Display Image updated to (#\d+ - [^|]+)\|(\d+)/g
+                        const parts = []
+                        let lastIndex = 0
+                        let match
+
+                        while ((match = displayImageRegex.exec(summary)) !== null) {
+                          // Add text before the match
+                          if (match.index > lastIndex) {
+                            parts.push(<span key={`text-${lastIndex}`}>{summary.slice(lastIndex, match.index)}</span>)
+                          }
+                          // Add the linked display image text
+                          parts.push(
+                            <span key={`link-${match.index}`}>
+                              Display Image updated to <Link to={`/cards/${match[2]}`} className="change-summary-link">{match[1]}</Link>
+                            </span>
+                          )
+                          lastIndex = match.index + match[0].length
+                        }
+
+                        // Add remaining text
+                        if (lastIndex < summary.length) {
+                          parts.push(<span key={`text-end`}>{summary.slice(lastIndex)}</span>)
+                        }
+
+                        return parts.length > 0 ? parts : summary
+                      }
+
+                      return (
+                        <div key={`${edit.edit_type}-${edit.submission_id}-${index}`} className="recent-edit-item">
+                          <div className="recent-edit-icon">
+                            <Icon name={typeInfo.icon} size={14} />
                           </div>
-                        )}
-                      </div>
-                    </div>
-                    
-                    {/* Color stripe at bottom if team colors exist or print run */}
-                    {(card.team_primary_color || card.print_run) && (
-                      <div 
-                        className="gallery-color-stripe"
-                        style={getColorBackground(null, card.team_primary_color)}
-                      >
-                        <span className="gallery-color-text" style={{
-                          color: getTextColor(card.team_primary_color || '#64748b')
-                        }}>
-                          {[
-                            card.team_name,
-                            card.print_run ? (card.serial_number ? `${card.serial_number}/${card.print_run}` : `/${card.print_run}`) : null
-                          ].filter(Boolean).join(' ')}
-                        </span>
-                      </div>
-                    )}
+                          <div className="recent-edit-content">
+                            <div className="recent-edit-header">
+                              <span className="recent-edit-type">{typeInfo.label}:</span>
+                              {canLink ? (
+                                <Link to={`${typeInfo.linkPrefix}${edit.item_id}`} className="recent-edit-name">
+                                  {edit.item_name}
+                                </Link>
+                              ) : (
+                                <span className="recent-edit-name">{edit.item_name}</span>
+                              )}
+                            </div>
+                            {edit.secondary_info && (
+                              <span className="recent-edit-secondary">{edit.secondary_info}</span>
+                            )}
+                            {edit.change_summary && (
+                              <span className="recent-edit-changes">{renderChangeSummary(edit.change_summary)}</span>
+                            )}
+                          </div>
+                          <span className="recent-edit-date">
+                            {formatDate(edit.edit_date)}
+                          </span>
+                        </div>
+                      )
+                    })}
                   </div>
-                )
-              })}
+                </div>
+              )}
+
+              {contributorStats.first_submission_at && (
+                <div className="contribution-dates">
+                  <span>Contributing since {formatDate(contributorStats.first_submission_at)}</span>
+                </div>
+              )}
             </div>
           </div>
           )}
+
         </div>
 
         {/* Public Lists - Full Width Below */}
@@ -581,7 +668,7 @@ function PublicProfile() {
                       </span>
                     </div>
                     <span className="list-card-date">
-                      Created {formatJoinDate(list.created)}
+                      Created {formatDate(list.created)}
                     </span>
                   </div>
                 </Link>

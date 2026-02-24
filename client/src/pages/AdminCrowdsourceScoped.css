@@ -417,6 +417,35 @@
   border-color: rgba(239, 68, 68, 0.5);
 }
 
+/* Player-specific styles */
+.admin-crowd-alias-highlight {
+  font-weight: 600;
+  color: #14b8a6;
+  background: rgba(20, 184, 166, 0.15);
+  padding: 0.125rem 0.5rem;
+  border-radius: 4px;
+}
+
+.admin-crowd-alias-type {
+  text-transform: capitalize;
+  font-style: italic;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.admin-crowd-action-add {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  color: #22c55e;
+}
+
+.admin-crowd-action-remove {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  color: #ef4444;
+}
+
 /* Modal */
 .admin-crowd-modal-overlay {
   position: fixed;

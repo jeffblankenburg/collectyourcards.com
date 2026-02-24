@@ -1127,3 +1127,12 @@
     font-size: 0.8rem;
   }
 }
+
+/* =============================================
+   MARKET PRICE STYLING - SportsCardsPro values
+   ============================================= */
+
+.collection-table-container .collection-market-price {
+  color: #10b981;
+  font-weight: 500;
+}

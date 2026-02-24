@@ -10,7 +10,9 @@ import GalleryCard from '../components/cards/GalleryCard'
 import AddCardModal from '../components/modals/AddCardModal'
 import BulkCardModal from '../components/modals/BulkCardModal'
 import SuggestCardsModal from '../components/modals/SuggestCardsModal'
+import EditSeriesModal from '../components/modals/EditSeriesModal'
 import CommentsSection from '../components/CommentsSection'
+import ChangeHistory from '../components/ChangeHistory'
 import ActivityFeed from '../components/ActivityFeed'
 import { createLogger } from '../utils/logger'
 import './SeriesDetail.css'
@@ -48,6 +50,16 @@ function SeriesDetail() {
 
   // Suggest Cards modal state
   const [showSuggestCardsModal, setShowSuggestCardsModal] = useState(false)
+
+  // Edit Series modal state
+  const [showEditModal, setShowEditModal] = useState(false)
+
+  // Image lightbox state
+  const [lightboxImage, setLightboxImage] = useState(null)
+
+  // Floating action menu state
+  const [showActionMenu, setShowActionMenu] = useState(false)
+  const actionMenuRef = useRef(null)
 
   // View mode state (table or gallery)
   const [viewMode, setViewMode] = useState(() => {
@@ -92,6 +104,23 @@ function SeriesDetail() {
       document.removeEventListener('mousedown', handleClickOutside)
     }
   }, [showParallels])
+
+  // Close action menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (actionMenuRef.current && !actionMenuRef.current.contains(event.target)) {
+        setShowActionMenu(false)
+      }
+    }
+
+    if (showActionMenu) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showActionMenu])
 
   const fetchSeriesData = async () => {
     const startTime = performance.now()
@@ -377,22 +406,22 @@ function SeriesDetail() {
     <div className="series-detail-page">
       <div className="series-detail-container">
         
-        {/* Series Header - Redesigned */}
+        {/* Series Header - Three Column Layout */}
         <header className="series-header-combined">
           {/* Color Strip - Right Side */}
-          <div 
+          <div
             className="color-strip-right"
             style={{
               backgroundColor: series.color_hex_value || '#3b82f6'
             }}
           >
-            <span 
+            <span
               className="color-strip-text"
               style={{
                 color: getTextColor(series.color_hex_value || '#3b82f6')
               }}
             >
-              {series.color_name && series.print_run_display ? 
+              {series.color_name && series.print_run_display ?
                 `${series.color_name.toUpperCase()} ${series.print_run_display}` :
                 series.color_name ? series.color_name.toUpperCase() :
                 series.print_run_display ? series.print_run_display :
@@ -400,10 +429,10 @@ function SeriesDetail() {
               }
             </span>
           </div>
-          
+
           <div className="series-header-content">
-            {/* Two Column Layout */}
-            <div className="series-header-top">
+            <div className="series-header-three-col">
+              {/* Column 1: Series Name */}
               <div className="series-title-section">
                 <div className="series-title-line">
                   {series.set_id ? (
@@ -432,46 +461,65 @@ function SeriesDetail() {
                     )}
                   </div>
                 </div>
-                
-                {/* Card Images in same column as title */}
-                {(series.front_image_path || series.back_image_path) && (
-                  <div className="card-images-section">
-                    <div className="card-images-container">
-                      {series.front_image_path && (
-                        <div className="card-image-wrapper">
-                          <img 
-                            src={series.front_image_path}
-                            alt={`${series.name} front`}
-                            className="card-image front-image"
-                          />
-                          <span className="image-label">Front</span>
-                        </div>
-                      )}
-                      {series.back_image_path && (
-                        <div className="card-image-wrapper">
-                          <img 
-                            src={series.back_image_path}
-                            alt={`${series.name} back`}
-                            className="card-image back-image"
-                          />
-                          <span className="image-label">Back</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
               </div>
 
-              {/* Stats and Parallels */}
+              {/* Column 2: Card Images (thumbnails) - always show two */}
+              <div className="series-images-section">
+                <div className="header-images-container">
+                  {/* Front Image */}
+                  {series.front_image_path ? (
+                    <button
+                      className="header-image-thumb"
+                      onClick={() => setLightboxImage({ front: series.front_image_path, back: series.back_image_path })}
+                      title="Click to enlarge"
+                    >
+                      <img
+                        src={series.front_image_path}
+                        alt={`${series.name} front`}
+                      />
+                    </button>
+                  ) : (
+                    <button
+                      className="header-image-placeholder"
+                      onClick={() => setShowEditModal(true)}
+                      title="Add front image"
+                    >
+                      <Icon name="image" size={20} />
+                    </button>
+                  )}
+                  {/* Back Image */}
+                  {series.back_image_path ? (
+                    <button
+                      className="header-image-thumb"
+                      onClick={() => setLightboxImage({ front: series.front_image_path, back: series.back_image_path })}
+                      title="Click to enlarge"
+                    >
+                      <img
+                        src={series.back_image_path}
+                        alt={`${series.name} back`}
+                      />
+                    </button>
+                  ) : (
+                    <button
+                      className="header-image-placeholder"
+                      onClick={() => setShowEditModal(true)}
+                      title="Add back image"
+                    >
+                      <Icon name="image" size={20} />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Column 3: Stats */}
               <div className="series-stats-section">
                 <div className="series-stats-grid">
-                  {/* Collection Completion for Authenticated Users */}
                   {isAuthenticated && collectionCompletion && (
                     <div className="stat-compact completion-stat">
-                      <span 
+                      <span
                         className="stat-value"
                         style={{
-                          color: collectionCompletion.percentage === 100 ? '#10b981' : 
+                          color: collectionCompletion.percentage === 100 ? '#10b981' :
                                 collectionCompletion.percentage >= 90 ? '#f59e0b' : '#ef4444'
                         }}
                       >
@@ -480,7 +528,7 @@ function SeriesDetail() {
                       <span className="stat-label">Complete</span>
                     </div>
                   )}
-                  
+
                   <div className="stat-compact">
                     <span className="stat-value">{stats.total_cards?.toLocaleString() || 0}</span>
                     <span className="stat-label">Cards</span>
@@ -491,30 +539,18 @@ function SeriesDetail() {
                   </div>
                 </div>
 
-                {/* Suggest Cards Button for Authenticated Users */}
-                {isAuthenticated && (
-                  <button
-                    className="suggest-cards-btn"
-                    onClick={() => setShowSuggestCardsModal(true)}
-                    title="Suggest new cards for this series"
-                  >
-                    <Icon name="plus" size={14} />
-                    <span>Suggest Cards</span>
-                  </button>
-                )}
-
                 {/* Parallels Dropdown */}
                 {parallels.length > 0 && (
                   <div className="parallels-compact">
                     <div className="parallels-dropdown" ref={parallelsRef}>
-                      <button 
+                      <button
                         className="parallels-toggle"
                         onClick={() => setShowParallels(!showParallels)}
                       >
                         <span className="parallels-count">{parallels.length} related parallel{parallels.length === 1 ? '' : 's'}</span>
                         <Icon name={showParallels ? "arrow-up" : "arrow-down"} size={14} />
                       </button>
-                      
+
                       {showParallels && (
                         <div className="parallels-dropdown-menu">
                           {parallels.map(parallel => (
@@ -532,7 +568,7 @@ function SeriesDetail() {
                                 )}
                               </div>
                               {parallel.color_hex_value && (
-                                <div 
+                                <div
                                   className="parallel-color-stripe"
                                   style={{ backgroundColor: parallel.color_hex_value }}
                                   title={parallel.color_name}
@@ -549,6 +585,29 @@ function SeriesDetail() {
             </div>
           </div>
         </header>
+
+        {/* Image Lightbox - shows both front and back */}
+        {lightboxImage && (
+          <div className="image-lightbox" onClick={() => setLightboxImage(null)}>
+            <button className="lightbox-close" onClick={() => setLightboxImage(null)}>
+              <Icon name="x" size={24} />
+            </button>
+            <div className="lightbox-images" onClick={(e) => e.stopPropagation()}>
+              {lightboxImage.front && (
+                <div className="lightbox-image-wrapper">
+                  <img src={lightboxImage.front} alt="Card front" />
+                  <span className="lightbox-label">Front</span>
+                </div>
+              )}
+              {lightboxImage.back && (
+                <div className="lightbox-image-wrapper">
+                  <img src={lightboxImage.back} alt="Card back" />
+                  <span className="lightbox-label">Back</span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Cards Section - Table or Gallery */}
         {series && (
@@ -648,15 +707,66 @@ function SeriesDetail() {
         </div>
       )}
 
-      {/* Admin Edit Button */}
-      {isAdmin && series && (
-        <button
-          className="admin-edit-button"
-          onClick={() => navigate(`/admin/series?search=${encodeURIComponent(series.name)}`)}
-          title="Edit series (Admin)"
-        >
-          <Icon name="edit" size={20} />
-        </button>
+      {/* Change History Section */}
+      {series && (
+        <ChangeHistory
+          entityType="series"
+          entityId={series.series_id}
+          title="Edit History"
+        />
+      )}
+
+      {/* Floating Action Button with Menu */}
+      {isAuthenticated && series && (
+        <div className="floating-action-container" ref={actionMenuRef}>
+          {/* Slide-out Action Menu */}
+          {showActionMenu && (
+            <div className="floating-action-menu">
+              <button
+                className="action-menu-item"
+                onClick={() => {
+                  setShowEditModal(true)
+                  setShowActionMenu(false)
+                }}
+              >
+                <Icon name="edit" size={16} />
+                <span>Edit Details for {series.name}</span>
+              </button>
+              <button
+                className="action-menu-item"
+                onClick={() => {
+                  setShowSuggestCardsModal(true)
+                  setShowActionMenu(false)
+                }}
+              >
+                <Icon name="plus" size={16} />
+                <span>Add Card(s) To {series.name}</span>
+              </button>
+            </div>
+          )}
+
+          {/* Main FAB Button */}
+          <button
+            className={`floating-action-button ${showActionMenu ? 'active' : ''}`}
+            onClick={() => setShowActionMenu(!showActionMenu)}
+            title="Series actions"
+          >
+            <Icon name={showActionMenu ? 'x' : 'edit'} size={20} />
+          </button>
+        </div>
+      )}
+
+      {/* Edit Series Modal */}
+      {showEditModal && series && (
+        <EditSeriesModal
+          series={series}
+          isOpen={showEditModal}
+          onClose={() => setShowEditModal(false)}
+          onSave={() => {
+            setShowEditModal(false)
+            fetchSeriesData() // Reload series data after save
+          }}
+        />
       )}
 
       {/* Suggest Cards Modal */}
@@ -665,7 +775,7 @@ function SeriesDetail() {
           isOpen={showSuggestCardsModal}
           onClose={() => setShowSuggestCardsModal(false)}
           onSuccess={() => loadTableData()}
-          preselectedSeriesId={series?.series_id}
+          preselectedSeries={series}
         />,
         document.body
       )}

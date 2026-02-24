@@ -48,6 +48,7 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
           OR p.last_name LIKE '%${safeSearchTerm}%' COLLATE Latin1_General_CI_AI
           OR p.nick_name LIKE '%${safeSearchTerm}%' COLLATE Latin1_General_CI_AI
           OR CONCAT(p.first_name, ' ', p.last_name) LIKE '%${safeSearchTerm}%' COLLATE Latin1_General_CI_AI
+          OR CONCAT(p.nick_name, ' ', p.last_name) LIKE '%${safeSearchTerm}%' COLLATE Latin1_General_CI_AI
         )
       `)
     }
@@ -150,11 +151,10 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
           t.abbreviation,
           t.primary_color,
           t.secondary_color,
-          pt.card_count as team_card_count
+          ISNULL(pt.card_count, 0) as team_card_count
         FROM PlayerData pd
         JOIN player_team pt ON pd.player_id = pt.player
         JOIN team t ON pt.team = t.team_id
-        WHERE pt.card_count > 0
       )
       SELECT
         pd.*,
@@ -342,20 +342,17 @@ router.get('/by-letter/:letter', async (req, res) => {
         FETCH NEXT ${pageSize} ROWS ONLY
       ),
       PlayerTeams AS (
-        SELECT 
+        SELECT
           pd.player_id,
           t.team_id,
           t.name as team_name,
           t.abbreviation,
           t.primary_color,
           t.secondary_color,
-          COUNT(DISTINCT c.card_id) as team_card_count
+          ISNULL(pt.card_count, 0) as team_card_count
         FROM PlayerData pd
         JOIN player_team pt ON pd.player_id = pt.player
-        JOIN card_player_team cpt ON pt.player_team_id = cpt.player_team
-        JOIN card c ON cpt.card = c.card_id
         JOIN team t ON pt.team = t.team_id
-        GROUP BY pd.player_id, t.team_id, t.name, t.abbreviation, t.primary_color, t.secondary_color
       )
       SELECT 
         pd.*,

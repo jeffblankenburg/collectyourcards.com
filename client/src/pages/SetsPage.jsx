@@ -1,18 +1,16 @@
 import React, { useState, useEffect } from 'react'
-import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useParams, Link } from 'react-router-dom'
 import { createPortal } from 'react-dom'
 import axios from 'axios'
 import { useToast } from '../contexts/ToastContext'
 import { useAuth } from '../contexts/AuthContext'
 import Icon from '../components/Icon'
 import { SetCard } from '../components/cards'
-import EditSetModal from '../components/modals/EditSetModal'
 import SuggestSetModal from '../components/modals/SuggestSetModal'
 import './SetsPageScoped.css'
 
 function SetsPage() {
   const { year } = useParams()
-  const navigate = useNavigate()
   const { addToast } = useToast()
   const { user } = useAuth()
   
@@ -21,10 +19,7 @@ function SetsPage() {
   const [loading, setLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedSport, setSelectedSport] = useState('all')
-  const [showEditModal, setShowEditModal] = useState(false)
   const [editingSet, setEditingSet] = useState(null)
-  const [organizations, setOrganizations] = useState([])
-  const [manufacturers, setManufacturers] = useState([])
   const [showSuggestSetModal, setShowSuggestSetModal] = useState(false)
 
   const isAdmin = user && ['admin', 'superadmin', 'data_admin'].includes(user.role)
@@ -75,12 +70,7 @@ function SetsPage() {
       document.title = 'Card Sets - Collect Your Cards'
     }
 
-    // Load dropdown data for modal
-    if (isAdmin) {
-      loadOrganizations()
-      loadManufacturers()
-    }
-  }, [year, isAdmin])
+  }, [year])
 
   // Filter sets based on search term and sport
   useEffect(() => {
@@ -154,36 +144,19 @@ function SetsPage() {
     }
   }
 
-  const loadOrganizations = async () => {
-    try {
-      const response = await axios.get('/api/admin/organizations')
-      setOrganizations(response.data.organizations || [])
-    } catch (error) {
-      console.error('Error loading organizations:', error)
-    }
-  }
-
-  const loadManufacturers = async () => {
-    try {
-      const response = await axios.get('/api/admin/manufacturers')
-      setManufacturers(response.data.manufacturers || [])
-    } catch (error) {
-      console.error('Error loading manufacturers:', error)
-    }
-  }
-
   const handleEditSet = (set) => {
     setEditingSet(set)
-    setShowEditModal(true)
+    setShowSuggestSetModal(true)
   }
 
   const handleCloseModal = () => {
-    setShowEditModal(false)
+    setShowSuggestSetModal(false)
     setEditingSet(null)
   }
 
   const handleSaveSuccess = () => {
     loadSetsForYear(year)
+    handleCloseModal()
   }
 
   return (
@@ -255,16 +228,6 @@ function SetsPage() {
                     autoFocus
                   />
                 </div>
-                {user && (
-                  <button
-                    className="suggest-set-btn"
-                    onClick={() => setShowSuggestSetModal(true)}
-                    title="Suggest a new set"
-                  >
-                    <Icon name="plus" size={16} />
-                    <span>Suggest Set</span>
-                  </button>
-                )}
               </div>
               {/* Force new row after header */}
               <div className="grid-row-break"></div>
@@ -284,7 +247,7 @@ function SetsPage() {
                     slug: set.slug,
                     sport: set.sport
                   }}
-                  onEditClick={isAdmin ? handleEditSet : null}
+                  onEditClick={handleEditSet}
                 />
               ))}
               {filteredSets.length === 0 && sets.length > 0 && (
@@ -297,23 +260,28 @@ function SetsPage() {
           </div>
         )}
       </div>
-      
-      <EditSetModal
-        isOpen={showEditModal}
-        onClose={handleCloseModal}
-        set={editingSet}
-        organizations={organizations}
-        manufacturers={manufacturers}
-        onSaveSuccess={handleSaveSuccess}
-      />
 
-      {/* Suggest Set Modal */}
+      {/* Floating Action Button */}
+      {user && (
+        <div className="sets-page-floating-action-container">
+          <button
+            className="sets-page-floating-action-button"
+            onClick={() => setShowSuggestSetModal(true)}
+            title="Suggest a new set"
+          >
+            <Icon name="plus" size={20} />
+          </button>
+        </div>
+      )}
+
+      {/* Suggest/Edit Set Modal */}
       {showSuggestSetModal && createPortal(
         <SuggestSetModal
           isOpen={showSuggestSetModal}
-          onClose={() => setShowSuggestSetModal(false)}
-          onSuccess={() => loadSetsForYear(year)}
+          onClose={handleCloseModal}
+          onSuccess={handleSaveSuccess}
           preselectedYear={parseInt(year)}
+          editSet={editingSet}
         />,
         document.body
       )}

@@ -19,9 +19,6 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
       team_id
     } = req.query
 
-    // Debug logging
-    console.log('🔍 Players List Query:', { team_id, search, page, limit })
-    
     const currentPage = Math.max(1, parseInt(page))
     const pageSize = Math.min(Math.max(1, parseInt(limit)), 100)
     const offset = (currentPage - 1) * pageSize
@@ -53,7 +50,6 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
     if (team_id && team_id.trim()) {
       try {
         const teamIdNum = validateNumericId(team_id, 'team_id')
-        console.log('✅ Team filter applied:', { team_id, teamIdNum })
         whereConditions.push(`
           p.player_id IN (
             SELECT DISTINCT pt.player
@@ -62,18 +58,13 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
           )
         `)
       } catch (err) {
-        console.error('❌ Team filter validation failed:', err.message, { team_id })
         // Invalid team_id - skip filter
       }
-    } else {
-      console.log('⚠️ No team_id provided or empty')
     }
-    
+
     const searchCondition = whereConditions.length > 0
       ? `WHERE ${whereConditions.join(' AND ')}`
       : ''
-
-    console.log('📊 Final WHERE clause:', searchCondition || '(no filters)')
 
     // First, get recently viewed or most visited players if user is logged in
     let recentlyViewedPlayers = []
@@ -221,20 +212,20 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
         FETCH NEXT ${pageSize} ROWS ONLY
       ),
       PlayerTeams AS (
-        SELECT 
+        SELECT
           pd.player_id,
           t.team_id,
           t.name as team_name,
           t.abbreviation,
           t.primary_color,
           t.secondary_color,
-          COUNT(DISTINCT c.card_id) as team_card_count
+          (SELECT COUNT(DISTINCT c.card_id)
+           FROM card_player_team cpt
+           JOIN card c ON cpt.card = c.card_id
+           WHERE cpt.player_team = pt.player_team_id) as team_card_count
         FROM PlayerData pd
         JOIN player_team pt ON pd.player_id = pt.player
-        JOIN card_player_team cpt ON pt.player_team_id = cpt.player_team
-        JOIN card c ON cpt.card = c.card_id
         JOIN team t ON pt.team = t.team_id
-        GROUP BY pd.player_id, t.team_id, t.name, t.abbreviation, t.primary_color, t.secondary_color
       )
       SELECT
         pd.*,
@@ -307,14 +298,14 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
           t.abbreviation,
           t.primary_color,
           t.secondary_color,
-          COUNT(DISTINCT c.card_id) as team_card_count
+          (SELECT COUNT(DISTINCT c.card_id)
+           FROM card_player_team cpt
+           JOIN card c ON cpt.card = c.card_id
+           WHERE cpt.player_team = pt.player_team_id) as team_card_count
         FROM player_team pt
-        JOIN card_player_team cpt ON pt.player_team_id = cpt.player_team
-        JOIN card c ON cpt.card = c.card_id
         JOIN team t ON pt.team = t.team_id
         WHERE pt.player IN (${priorityPlayerIds})
-        GROUP BY pt.player, t.team_id, t.name, t.abbreviation, t.primary_color, t.secondary_color
-        ORDER BY pt.player, COUNT(DISTINCT c.card_id) DESC
+        ORDER BY pt.player, team_card_count DESC
       `
 
       const priorityTeams = await prisma.$queryRawUnsafe(priorityTeamsQuery)
@@ -453,22 +444,22 @@ router.get('/by-letter/:letter', optionalAuthMiddleware, async (req, res) => {
         FETCH NEXT ${pageSize} ROWS ONLY
       ),
       PlayerTeams AS (
-        SELECT 
+        SELECT
           pd.player_id,
           t.team_id,
           t.name as team_name,
           t.abbreviation,
           t.primary_color,
           t.secondary_color,
-          COUNT(DISTINCT c.card_id) as team_card_count
+          (SELECT COUNT(DISTINCT c.card_id)
+           FROM card_player_team cpt
+           JOIN card c ON cpt.card = c.card_id
+           WHERE cpt.player_team = pt.player_team_id) as team_card_count
         FROM PlayerData pd
         JOIN player_team pt ON pd.player_id = pt.player
-        JOIN card_player_team cpt ON pt.player_team_id = cpt.player_team
-        JOIN card c ON cpt.card = c.card_id
         JOIN team t ON pt.team = t.team_id
-        GROUP BY pd.player_id, t.team_id, t.name, t.abbreviation, t.primary_color, t.secondary_color
       )
-      SELECT 
+      SELECT
         pd.*,
         STRING_AGG(
           CONCAT(

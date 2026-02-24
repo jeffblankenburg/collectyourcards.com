@@ -44,7 +44,7 @@
 }
 
 .suggest-set-modal-header h2 svg {
-  color: #a855f7;
+  color: #3b82f6;
 }
 
 .suggest-set-modal-close {
@@ -137,7 +137,7 @@
 .suggest-set-form-row select:focus,
 .suggest-set-form-row textarea:focus {
   outline: none;
-  border-color: #a855f7;
+  border-color: #3b82f6;
   background: rgba(255, 255, 255, 0.08);
 }
 
@@ -193,7 +193,7 @@
   justify-content: center;
   gap: 8px;
   padding: 12px 20px;
-  background: #a855f7;
+  background: #3b82f6;
   border: none;
   border-radius: 8px;
   color: #ffffff;
@@ -204,7 +204,7 @@
 }
 
 .suggest-set-submit-btn:hover:not(:disabled) {
-  background: #9333ea;
+  background: #2563eb;
 }
 
 .suggest-set-submit-btn:disabled {
@@ -223,4 +223,15 @@
 
 @keyframes suggest-set-spin {
   to { transform: rotate(360deg); }
+}
+
+/* Static value display (for year) */
+.suggest-set-static-value {
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  color: #9ca3af;
+  font-size: 0.9rem;
+  font-weight: 600;
 }

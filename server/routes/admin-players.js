@@ -713,17 +713,70 @@ router.put('/:id', async (req, res) => {
     const baseSlug = generateSlug(fullName)
     const slug = await generateUniqueSlug(baseSlug, playerId)
 
+    // Store previous values for audit trail
+    const previousValues = {
+      first_name: existingPlayer.first_name,
+      last_name: existingPlayer.last_name,
+      nick_name: existingPlayer.nick_name,
+      birthdate: existingPlayer.birthdate,
+      is_hof: existingPlayer.is_hof
+    }
+
+    const newValues = {
+      first_name: trimmedFirstName || null,
+      last_name: trimmedLastName || null,
+      nick_name: trimmedNickName || null,
+      birthdate: birthdate ? new Date(birthdate) : null,
+      is_hof: Boolean(is_hof)
+    }
+
     const updatedPlayer = await prisma.player.update({
       where: { player_id: playerId },
       data: {
-        first_name: trimmedFirstName || null,
-        last_name: trimmedLastName || null,
-        nick_name: trimmedNickName || null,
-        slug: slug,
-        birthdate: birthdate ? new Date(birthdate) : null,
-        is_hof: Boolean(is_hof)
+        ...newValues,
+        slug: slug
       }
     })
+
+    // Check if any auditable fields changed
+    const hasChanges =
+      previousValues.first_name !== newValues.first_name ||
+      previousValues.last_name !== newValues.last_name ||
+      previousValues.nick_name !== newValues.nick_name ||
+      previousValues.birthdate?.toISOString() !== newValues.birthdate?.toISOString() ||
+      previousValues.is_hof !== newValues.is_hof
+
+    // Log to player_edit_submissions for unified audit history (admin = auto-approved)
+    if (hasChanges && req.user?.userId) {
+      try {
+        await prisma.player_edit_submissions.create({
+          data: {
+            player_id: BigInt(playerId),
+            user_id: BigInt(req.user.userId),
+            // Previous values
+            previous_first_name: previousValues.first_name,
+            previous_last_name: previousValues.last_name,
+            previous_nick_name: previousValues.nick_name,
+            previous_birthdate: previousValues.birthdate,
+            previous_is_hof: previousValues.is_hof,
+            // Proposed/new values
+            proposed_first_name: newValues.first_name,
+            proposed_last_name: newValues.last_name,
+            proposed_nick_name: newValues.nick_name,
+            proposed_birthdate: newValues.birthdate,
+            proposed_is_hof: newValues.is_hof,
+            // Auto-approve for admin
+            status: 'approved',
+            reviewed_by: BigInt(req.user.userId),
+            reviewed_at: new Date(),
+            review_notes: 'Admin direct edit - auto-approved',
+            created_at: new Date()
+          }
+        })
+      } catch (auditError) {
+        console.warn('Failed to create player_edit_submissions audit record:', auditError.message)
+      }
+    }
 
     console.log('Admin: Updated player:', updatedPlayer.first_name, updatedPlayer.last_name)
 
@@ -961,12 +1014,15 @@ router.post('/:id/reassign-cards', async (req, res) => {
   }
 })
 
-// DELETE /api/admin/players/:id - Delete player (only if no cards)
+// DELETE /api/admin/players/:id - Delete player
+// For superadmins: can delete players with cards (cascades all data)
+// For regular admins: only players with no cards can be deleted
 router.delete('/:id', async (req, res) => {
   try {
     const playerId = BigInt(req.params.id)
+    const isSuperAdmin = req.user?.role === 'superadmin'
 
-    // Check if player has cards
+    // Check if player exists and get their card count
     const player = await prisma.player.findUnique({
       where: { player_id: playerId }
     })
@@ -975,39 +1031,207 @@ router.delete('/:id', async (req, res) => {
       return res.status(404).json({ error: 'Player not found' })
     }
 
-    if (player.card_count > 0) {
+    // Non-superadmins cannot delete players with cards
+    if (player.card_count > 0 && !isSuperAdmin) {
       return res.status(400).json({
         error: 'Cannot delete player',
-        message: `Player has ${player.card_count} cards. Cannot delete players with cards.`,
+        message: `Player has ${player.card_count} cards. Only superadmins can delete players with cards.`,
         cardCount: Number(player.card_count)
       })
     }
 
+    // Track what we're about to delete for logging
+    let deletedCounts = {
+      userCardPhotos: 0,
+      userCards: 0,
+      cardPlayerTeam: 0,
+      cards: 0,
+      playerTeam: 0,
+      playerAlias: 0,
+      duplicateExclusions: 0,
+      duplicatePlayerMembers: 0,
+      playerEditSubmissions: 0
+    }
+
+    // If player has cards, we need to cascade delete all related data (superadmin only)
+    if (player.card_count > 0) {
+      console.log(`Superadmin: Beginning cascade delete of player ${playerId} with ${player.card_count} cards`)
+
+      // Get all player_team IDs for this player
+      const playerTeams = await prisma.$queryRaw`
+        SELECT player_team_id FROM player_team WHERE player = ${playerId}
+      `
+      const playerTeamIds = playerTeams.map(pt => pt.player_team_id)
+
+      if (playerTeamIds.length > 0) {
+        // Get all card IDs associated with this player
+        const cardIdsResult = await prisma.$queryRaw`
+          SELECT DISTINCT card FROM card_player_team
+          WHERE player_team IN (${playerTeamIds.join(',')})
+        `
+        const cardIds = cardIdsResult.map(c => c.card)
+
+        if (cardIds.length > 0) {
+          // Delete user_card_photo records for all cards
+          const photoDeleteResult = await prisma.$executeRawUnsafe(`
+            DELETE ucp FROM user_card_photo ucp
+            INNER JOIN user_card uc ON ucp.user_card = uc.user_card_id
+            WHERE uc.card IN (${cardIds.join(',')})
+          `)
+          deletedCounts.userCardPhotos = photoDeleteResult
+
+          // Delete user_card records
+          const userCardDeleteResult = await prisma.$executeRawUnsafe(`
+            DELETE FROM user_card WHERE card IN (${cardIds.join(',')})
+          `)
+          deletedCounts.userCards = userCardDeleteResult
+
+          // Delete card_player_team records for this player's player_teams
+          const cptDeleteResult = await prisma.$executeRawUnsafe(`
+            DELETE FROM card_player_team WHERE player_team IN (${playerTeamIds.join(',')})
+          `)
+          deletedCounts.cardPlayerTeam = cptDeleteResult
+
+          // Delete cards that are now orphaned (no more card_player_team records)
+          const orphanedCardsResult = await prisma.$executeRawUnsafe(`
+            DELETE c FROM card c
+            WHERE c.card_id IN (${cardIds.join(',')})
+            AND NOT EXISTS (SELECT 1 FROM card_player_team cpt WHERE cpt.card = c.card_id)
+          `)
+          deletedCounts.cards = orphanedCardsResult
+        }
+      }
+    }
+
+    // Delete player_edit_submissions records
+    try {
+      const editSubmissionsResult = await prisma.player_edit_submissions.deleteMany({
+        where: { player_id: playerId }
+      })
+      deletedCounts.playerEditSubmissions = editSubmissionsResult.count
+    } catch (e) {
+      console.warn('Could not delete player_edit_submissions:', e.message)
+    }
+
+    // Delete player_alias records
+    try {
+      const aliasResult = await prisma.player_alias.deleteMany({
+        where: { player_id: playerId }
+      })
+      deletedCounts.playerAlias = aliasResult.count
+    } catch (e) {
+      console.warn('Could not delete player_alias records:', e.message)
+    }
+
     // Delete duplicate exclusion records (raw SQL - table not in Prisma schema)
-    await prisma.$executeRaw`
-      DELETE FROM duplicate_exclusion
-      WHERE player1_id = ${playerId} OR player2_id = ${playerId}
-    `
+    try {
+      const dupExResult = await prisma.$executeRaw`
+        DELETE FROM duplicate_exclusion
+        WHERE player1_id = ${playerId} OR player2_id = ${playerId}
+      `
+      deletedCounts.duplicateExclusions = dupExResult
+    } catch (e) {
+      console.warn('Could not delete duplicate_exclusion records:', e.message)
+    }
 
     // Delete duplicate player member records
-    await prisma.duplicate_player_member.deleteMany({
-      where: { player_id: playerId }
-    })
+    try {
+      const dupMemberResult = await prisma.duplicate_player_member.deleteMany({
+        where: { player_id: playerId }
+      })
+      deletedCounts.duplicatePlayerMembers = dupMemberResult.count
+    } catch (e) {
+      console.warn('Could not delete duplicate_player_member records:', e.message)
+    }
 
     // Delete player-team relationships
-    await prisma.player_team.deleteMany({
+    const ptResult = await prisma.player_team.deleteMany({
       where: { player: playerId }
     })
+    deletedCounts.playerTeam = ptResult.count
+
+    // Delete player alias submissions
+    try {
+      const aliasSubResult = await prisma.player_alias_submissions.deleteMany({
+        where: { player_id: playerId }
+      })
+      deletedCounts.playerAliasSubmissions = aliasSubResult.count
+    } catch (e) {
+      console.warn('Could not delete player_alias_submissions records:', e.message)
+    }
+
+    // Delete player team submissions
+    try {
+      const teamSubResult = await prisma.player_team_submissions.deleteMany({
+        where: { player_id: playerId }
+      })
+      deletedCounts.playerTeamSubmissions = teamSubResult.count
+    } catch (e) {
+      console.warn('Could not delete player_team_submissions records:', e.message)
+    }
+
+    // Delete player edit submissions
+    try {
+      const editSubResult = await prisma.player_edit_submissions.deleteMany({
+        where: { player_id: playerId }
+      })
+      deletedCounts.playerEditSubmissions = editSubResult.count
+    } catch (e) {
+      console.warn('Could not delete player_edit_submissions records:', e.message)
+    }
+
+    // Null out created_player_id in player_submissions (for new player submissions that created this player)
+    try {
+      const newPlayerSubResult = await prisma.player_submissions.updateMany({
+        where: { created_player_id: playerId },
+        data: { created_player_id: null }
+      })
+      deletedCounts.playerSubmissionsUnlinked = newPlayerSubResult.count
+    } catch (e) {
+      console.warn('Could not unlink player_submissions records:', e.message)
+    }
+
+    // Delete player aliases
+    try {
+      const aliasResult = await prisma.player_alias.deleteMany({
+        where: { player_id: playerId }
+      })
+      deletedCounts.playerAliases = aliasResult.count
+    } catch (e) {
+      console.warn('Could not delete player_alias records:', e.message)
+    }
 
     // Delete the player
     await prisma.player.delete({
       where: { player_id: playerId }
     })
 
-    console.log('Admin: Deleted player:', player.first_name, player.last_name)
+    // Log admin action
+    try {
+      await prisma.admin_action_log.create({
+        data: {
+          user_id: BigInt(req.user.userId),
+          action_type: 'DELETE_PLAYER',
+          entity_type: 'player',
+          target_type: 'player',
+          target_id: playerId.toString(),
+          details: JSON.stringify({
+            player_name: `${player.first_name || ''} ${player.last_name || ''}`.trim(),
+            card_count: Number(player.card_count || 0),
+            deletedCounts
+          }),
+          created_at: new Date()
+        }
+      })
+    } catch (logError) {
+      console.warn('Failed to log admin action:', logError.message)
+    }
+
+    console.log('Admin: Deleted player:', player.first_name, player.last_name, 'Deleted counts:', deletedCounts)
 
     res.json({
-      message: 'Player deleted successfully'
+      message: 'Player deleted successfully',
+      deletedCounts
     })
 
   } catch (error) {

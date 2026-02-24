@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import axios from 'axios'
 import Icon from '../components/Icon'
 import { TeamCard } from '../components/cards'
+import SuggestNewTeamModal from '../components/modals/SuggestNewTeamModal'
 import { createLogger } from '../utils/logger'
 import './TeamsLandingScoped.css'
 
@@ -12,10 +13,22 @@ const log = createLogger('TeamsLanding')
 function TeamsLanding() {
   const { isAuthenticated } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
 
   log.info('TeamsLanding mounted', { isAuthenticated })
 
   const [teams, setTeams] = useState([])
+  const [showSuggestTeamModal, setShowSuggestTeamModal] = useState(false)
+
+  // Handle deleted team from navigation state
+  useEffect(() => {
+    if (location.state?.deletedTeamId) {
+      const deletedId = location.state.deletedTeamId
+      setTeams(prev => prev.filter(t => t.team_id != deletedId))
+      // Clear the navigation state
+      navigate(location.pathname, { replace: true, state: {} })
+    }
+  }, [location.state?.deletedTeamId])
   const [searchTerm, setSearchTerm] = useState('')
   const [loading, setLoading] = useState(true)
   const [teamsLoading, setTeamsLoading] = useState(false)
@@ -262,6 +275,27 @@ function TeamsLanding() {
           </div>
         )}
       </div>
+
+      {/* Floating Action Button for adding new teams */}
+      {isAuthenticated && (
+        <button
+          className="teams-landing-fab"
+          onClick={() => setShowSuggestTeamModal(true)}
+          title="Suggest New Team"
+        >
+          <Icon name="shield" size={24} />
+        </button>
+      )}
+
+      {/* Suggest New Team Modal */}
+      <SuggestNewTeamModal
+        isOpen={showSuggestTeamModal}
+        onClose={() => setShowSuggestTeamModal(false)}
+        preSelectedOrganization={null}
+        onSuccess={() => {
+          loadTeamsData(1, searchTerm) // Reload teams list with current search
+        }}
+      />
     </div>
   )
 }

@@ -1,8 +1,26 @@
 const express = require('express')
+const multer = require('multer')
 const { prisma } = require('../config/prisma-singleton')
-const { authMiddleware, requireAdmin } = require('../middleware/auth')
+const { authMiddleware, requireAdmin, requireSuperAdmin } = require('../middleware/auth')
 const { triggerAutoRegeneration } = require('./spreadsheet-generation')
+const { optimizeImage, uploadOptimizedImage } = require('../utils/image-optimizer')
 const router = express.Router()
+
+// Configure multer for memory storage
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB limit per file
+  },
+  fileFilter: (req, file, cb) => {
+    const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg']
+    if (allowedMimeTypes.includes(file.mimetype)) {
+      cb(null, true)
+    } else {
+      cb(new Error('Only JPEG, PNG, and WebP image files are allowed'))
+    }
+  }
+})
 
 // All routes require admin authentication
 router.use(authMiddleware)
@@ -190,7 +208,9 @@ router.put('/series/:id', async (req, res) => {
       max_print_run,
       print_run_display,
       production_code,
-      rookie_count
+      rookie_count,
+      front_image_path,
+      back_image_path
     } = req.body
 
     // Validate series ID
@@ -218,7 +238,9 @@ router.put('/series/:id', async (req, res) => {
         max_print_run: true,
         print_run_display: true,
         production_code: true,
-        rookie_count: true
+        rookie_count: true,
+        front_image_path: true,
+        back_image_path: true
       }
     })
 
@@ -240,7 +262,9 @@ router.put('/series/:id', async (req, res) => {
       max_print_run: max_print_run !== undefined ? (max_print_run ? parseInt(max_print_run) : null) : existingSeries.max_print_run,
       print_run_display: print_run_display?.trim() || null,
       production_code: production_code !== undefined ? (production_code?.trim() || null) : existingSeries.production_code,
-      rookie_count: rookie_count !== undefined ? parseInt(rookie_count) : existingSeries.rookie_count
+      rookie_count: rookie_count !== undefined ? parseInt(rookie_count) : existingSeries.rookie_count,
+      front_image_path: front_image_path !== undefined ? (front_image_path || null) : existingSeries.front_image_path,
+      back_image_path: back_image_path !== undefined ? (back_image_path || null) : existingSeries.back_image_path
     }
     
     // Handle set field (direct foreign key) - accept either 'set' or 'set_id' from frontend
@@ -266,7 +290,9 @@ router.put('/series/:id', async (req, res) => {
       max_print_run: existingSeries.max_print_run,
       print_run_display: existingSeries.print_run_display,
       production_code: existingSeries.production_code,
-      rookie_count: existingSeries.rookie_count
+      rookie_count: existingSeries.rookie_count,
+      front_image_path: existingSeries.front_image_path,
+      back_image_path: existingSeries.back_image_path
     })
 
     // Update series
@@ -293,7 +319,9 @@ router.put('/series/:id', async (req, res) => {
         max_print_run: true,
         print_run_display: true,
         production_code: true,
-        rookie_count: true
+        rookie_count: true,
+        front_image_path: true,
+        back_image_path: true
       }
     })
 
@@ -342,6 +370,83 @@ router.put('/series/:id', async (req, res) => {
       error: 'Database error',
       message: 'Failed to update series',
       details: error.message
+    })
+  }
+})
+
+// POST /api/admin/series/upload-images/:id - Upload series representative images
+router.post('/series/upload-images/:id', upload.single('image'), async (req, res) => {
+  try {
+    const { id } = req.params
+    const { type } = req.body // 'front' or 'back'
+    const seriesId = parseInt(id)
+
+    if (!seriesId || isNaN(seriesId)) {
+      return res.status(400).json({
+        error: 'Invalid series ID',
+        message: 'Series ID must be a valid number'
+      })
+    }
+
+    if (!type || !['front', 'back'].includes(type)) {
+      return res.status(400).json({
+        error: 'Invalid image type',
+        message: 'Type must be "front" or "back"'
+      })
+    }
+
+    if (!req.file) {
+      return res.status(400).json({
+        error: 'No image provided',
+        message: 'Please upload an image file'
+      })
+    }
+
+    // Check if series exists
+    const series = await prisma.series.findUnique({
+      where: { series_id: BigInt(seriesId) },
+      select: {
+        series_id: true,
+        front_image_path: true,
+        back_image_path: true
+      }
+    })
+
+    if (!series) {
+      return res.status(404).json({
+        error: 'Series not found',
+        message: `Series with ID ${seriesId} does not exist`
+      })
+    }
+
+    // Optimize and upload the image
+    const imageBuffer = req.file.buffer
+    const optimizedBuffer = await optimizeImage(imageBuffer)
+    const blobName = `series/${seriesId}_${type}.jpg`
+    const imageUrl = await uploadOptimizedImage(optimizedBuffer, blobName)
+
+    // Update series with new image path
+    const updateData = type === 'front'
+      ? { front_image_path: imageUrl }
+      : { back_image_path: imageUrl }
+
+    await prisma.series.update({
+      where: { series_id: BigInt(seriesId) },
+      data: updateData
+    })
+
+    console.log(`✓ Series ${seriesId} ${type} image uploaded: ${imageUrl}`)
+
+    res.json({
+      message: `${type === 'front' ? 'Front' : 'Back'} image uploaded successfully`,
+      [`${type}_image_path`]: imageUrl
+    })
+
+  } catch (error) {
+    console.error('Error uploading series image:', error)
+    res.status(500).json({
+      error: 'Upload failed',
+      message: error.message
     })
   }
 })
@@ -581,7 +686,8 @@ router.post('/series/:id/duplicate', async (req, res) => {
 })
 
 // DELETE /api/admin/series/:id - Delete a series and all its cards
-router.delete('/series/:id', async (req, res) => {
+// DANGEROUS OPERATION - Requires superadmin
+router.delete('/series/:id', requireSuperAdmin, async (req, res) => {
   try {
     const seriesId = BigInt(req.params.id)
     
@@ -626,6 +732,32 @@ router.delete('/series/:id', async (req, res) => {
       // Delete all cards in the series
       await tx.card.deleteMany({
         where: { series: seriesId }
+      })
+
+      // Clear series references in series_submissions (don't delete the submissions, just unlink)
+      await tx.series_submissions.updateMany({
+        where: { created_series_id: seriesId },
+        data: { created_series_id: null }
+      })
+      await tx.series_submissions.updateMany({
+        where: { existing_series_id: seriesId },
+        data: { existing_series_id: null }
+      })
+
+      // Delete card_submissions that reference this series
+      await tx.card_submissions.deleteMany({
+        where: { series_id: seriesId }
+      })
+
+      // Delete user_series_completion records
+      await tx.user_series_completion.deleteMany({
+        where: { series_id: seriesId }
+      })
+
+      // Clear series references in sales (don't delete sales, just unlink)
+      await tx.sale.updateMany({
+        where: { series_id: seriesId },
+        data: { series_id: null }
       })
 
       // Finally delete the series itself

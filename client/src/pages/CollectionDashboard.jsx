@@ -89,8 +89,10 @@ function CollectionDashboard() {
         uniqueSeries.add(card.series_rel.series_id)
       }
 
-      // Calculate total value - only use current_value
-      if (card.current_value) {
+      // Calculate total value - prefer market_price (from SportsCardsPro), fallback to current_value
+      if (card.market_price) {
+        totalValue += parseFloat(card.market_price)
+      } else if (card.current_value) {
         totalValue += parseFloat(card.current_value)
       }
 

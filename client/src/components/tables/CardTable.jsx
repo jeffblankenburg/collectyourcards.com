@@ -72,16 +72,12 @@ const CardTable = ({
   const [columnWidths, setColumnWidths] = useState({
     checkbox: 56,      // 32px button + 24px padding (12px each side)
     owned: 60,         // Compact width for "OWN" text with centering
-    thumbnail: 60,     // Width for thumbnail column
+    thumbnail: 70,     // Width for two small thumbnail images
     card_number: 120,  // 2x the owned column width
-    player: 'auto',    // Gets extra space from card_number
-    series: 'auto',    // Series column between player and color
+    player: 'max-content', // Only as wide as content needs
+    series: 'auto',    // Series gets remaining space
     production_code: 150, // Width for production code (10-12 characters)
-    color: 'auto',
-    print_run: 120,    // Width for "PRINT RUN" header text
-    auto: 80,          // Width for "AUTO" column (split from attributes)
-    relic: 80,         // Width for "RELIC" column (split from attributes)
-    sp: 80,            // Width for "SP" column (short print)
+    attributes: 140,   // Compact width for attribute tags
     find: 80,          // Width for "FIND" marketplace dropdown column
     notes: 'auto',
     remove: 56         // Width for remove button column
@@ -714,62 +710,12 @@ const CardTable = ({
                   <Icon name="camera" size={14} />
                 </th>
               )}
-              {isColumnVisible('color') && (
-                <th className="color-header" style={{ width: columnWidths.color }}>
-                <div className="card-table-header-with-resize">
-                  COLOR
-                </div>
-              </th>
-              )}
-              {isColumnVisible('print_run') && (
-                <th
-                  className="sortable print-run-header"
-                  style={{ width: columnWidths.print_run }}
-                >
+              {isColumnVisible('attributes') && (
+                <th className="attributes-header" style={{ width: columnWidths.attributes }}>
                   <div className="card-table-header-with-resize">
-                    <div className="card-table-header-content" onClick={() => handleSort('print_run')}>
-                      PRINT RUN <SortIcon field="print_run" />
+                    <div className="card-table-header-content">
+                      ATTRIBUTES
                     </div>
-                    <ResizeHandle columnKey="print_run" />
-                  </div>
-                </th>
-              )}
-              {isColumnVisible('auto') && (
-                <th
-                  className="sortable auto-header"
-                  style={{ width: columnWidths.auto }}
-                >
-                  <div className="card-table-header-with-resize">
-                    <div className="card-table-header-content" onClick={() => handleSort('is_autograph')}>
-                      AUTO <SortIcon field="is_autograph" />
-                    </div>
-                    <ResizeHandle columnKey="auto" />
-                  </div>
-                </th>
-              )}
-              {isColumnVisible('relic') && (
-                <th
-                  className="sortable relic-header"
-                  style={{ width: columnWidths.relic }}
-                >
-                  <div className="card-table-header-with-resize">
-                    <div className="card-table-header-content" onClick={() => handleSort('is_relic')}>
-                      RELIC <SortIcon field="is_relic" />
-                    </div>
-                    <ResizeHandle columnKey="relic" />
-                  </div>
-                </th>
-              )}
-              {isColumnVisible('sp') && (
-                <th
-                  className="sortable sp-header"
-                  style={{ width: columnWidths.sp || 80 }}
-                >
-                  <div className="card-table-header-with-resize">
-                    <div className="card-table-header-content" onClick={() => handleSort('is_short_print')}>
-                      SP <SortIcon field="is_short_print" />
-                    </div>
-                    <ResizeHandle columnKey="sp" />
                   </div>
                 </th>
               )}
@@ -937,62 +883,60 @@ const CardTable = ({
                   )}
                   {showThumbnails && (
                     <td className="thumbnail-cell">
-                      {card.front_image_path ? (
-                        <img
-                          src={card.front_image_path}
-                          alt={`Card #${card.card_number}`}
-                          className="card-table-thumbnail"
-                          onClick={() => onCardClick?.(card)}
-                        />
-                      ) : (
-                        <div className="card-table-thumbnail-placeholder">
-                          <Icon name="camera" size={16} />
-                        </div>
-                      )}
+                      <div className="thumbnail-pair">
+                        {card.front_image_path ? (
+                          <img
+                            src={card.front_image_path}
+                            alt={`Card #${card.card_number} front`}
+                            className="card-table-thumbnail"
+                            onClick={() => onCardClick?.(card)}
+                          />
+                        ) : (
+                          <div className="card-table-thumbnail-placeholder">
+                            <Icon name="camera" size={12} />
+                          </div>
+                        )}
+                        {card.back_image_path ? (
+                          <img
+                            src={card.back_image_path}
+                            alt={`Card #${card.card_number} back`}
+                            className="card-table-thumbnail"
+                            onClick={() => onCardClick?.(card)}
+                          />
+                        ) : (
+                          <div className="card-table-thumbnail-placeholder">
+                            <Icon name="camera" size={12} />
+                          </div>
+                        )}
+                      </div>
                     </td>
                   )}
-                  {isColumnVisible('color') && (
-                    <td className="color-cell">
-                    {card.color_rel?.color && (
-                      <span 
-                        className="color-tag"
-                        style={{
-                          backgroundColor: card.color_rel?.hex_color || '#ec4899',
-                          color: card.color_rel?.hex_color ? (
-                            parseInt(card.color_rel.hex_color.slice(1, 3), 16) * 0.299 +
-                            parseInt(card.color_rel.hex_color.slice(3, 5), 16) * 0.587 +
-                            parseInt(card.color_rel.hex_color.slice(5, 7), 16) * 0.114 > 128
-                            ? '#000000' : '#ffffff'
-                          ) : '#ffffff'
-                        }}
-                      >
-                        {card.color_rel.color}
-                      </span>
-                    )}
-                  </td>
-                  )}
-                  {isColumnVisible('print_run') && (
-                    <td className="print-run-cell">
-                      {card.print_run && (
-                        <span className="print-run-tag">
-                          /{card.print_run}
-                        </span>
-                      )}
-                    </td>
-                  )}
-                  {isColumnVisible('auto') && (
-                    <td className="auto-cell">
-                      {card.is_autograph && <span className="cardcard-tag cardcard-insert">AUTO</span>}
-                    </td>
-                  )}
-                  {isColumnVisible('relic') && (
-                    <td className="relic-cell">
-                      {card.is_relic && <span className="cardcard-tag cardcard-relic">RELIC</span>}
-                    </td>
-                  )}
-                  {isColumnVisible('sp') && (
-                    <td className="sp-cell">
-                      {card.is_short_print && <span className="cardcard-tag cardcard-sp">SP</span>}
+                  {isColumnVisible('attributes') && (
+                    <td className="attributes-cell">
+                      <div className="attributes-tags">
+                        {card.color_rel?.color && (
+                          <span
+                            className="color-tag"
+                            style={{
+                              backgroundColor: card.color_rel?.hex_color || '#ec4899',
+                              color: card.color_rel?.hex_color ? (
+                                parseInt(card.color_rel.hex_color.slice(1, 3), 16) * 0.299 +
+                                parseInt(card.color_rel.hex_color.slice(3, 5), 16) * 0.587 +
+                                parseInt(card.color_rel.hex_color.slice(5, 7), 16) * 0.114 > 128
+                                ? '#000000' : '#ffffff'
+                              ) : '#ffffff'
+                            }}
+                          >
+                            {card.color_rel.color}
+                          </span>
+                        )}
+                        {card.print_run && (
+                          <span className="print-run-tag">/{card.print_run}</span>
+                        )}
+                        {card.is_autograph && <span className="cardcard-tag cardcard-insert">AUTO</span>}
+                        {card.is_relic && <span className="cardcard-tag cardcard-relic">RELIC</span>}
+                        {card.is_short_print && <span className="cardcard-tag cardcard-sp">SP</span>}
+                      </div>
                     </td>
                   )}
                   {isColumnVisible('notes') && (

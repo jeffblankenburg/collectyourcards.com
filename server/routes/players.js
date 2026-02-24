@@ -358,4 +358,197 @@ router.post('/track-visit', async (req, res) => {
   }
 })
 
+// GET /api/players/:id/history - Get change history for a player
+router.get('/:id/history', async (req, res) => {
+  try {
+    const playerId = parseInt(req.params.id)
+    const limit = Math.min(parseInt(req.query.limit) || 50, 100)
+
+    if (isNaN(playerId)) {
+      return res.status(400).json({ error: 'Invalid player ID' })
+    }
+
+    // Fetch all approved submissions using raw query to ensure new columns are included
+    const submissions = await prisma.$queryRawUnsafe(`
+      SELECT
+        pes.submission_id,
+        pes.player_id,
+        pes.user_id,
+        pes.previous_first_name,
+        pes.previous_last_name,
+        pes.previous_nick_name,
+        pes.previous_birthdate,
+        pes.previous_is_hof,
+        pes.previous_display_card,
+        pes.proposed_first_name,
+        pes.proposed_last_name,
+        pes.proposed_nick_name,
+        pes.proposed_birthdate,
+        pes.proposed_is_hof,
+        pes.proposed_display_card,
+        pes.submission_notes,
+        pes.status,
+        pes.reviewed_by,
+        pes.reviewed_at,
+        pes.review_notes,
+        pes.created_at,
+        u.user_id as submitter_user_id,
+        u.email as submitter_email,
+        u.name as submitter_name,
+        u.avatar_url as submitter_avatar,
+        u.username as submitter_username
+      FROM player_edit_submissions pes
+      INNER JOIN [user] u ON pes.user_id = u.user_id
+      WHERE pes.player_id = ${playerId}
+        AND pes.status = 'approved'
+      ORDER BY pes.created_at DESC
+      OFFSET 0 ROWS FETCH NEXT ${limit} ROWS ONLY
+    `)
+
+    // Collect all card IDs that need details
+    const cardIds = new Set()
+    submissions.forEach(sub => {
+      if (sub.previous_display_card) cardIds.add(Number(sub.previous_display_card))
+      if (sub.proposed_display_card) cardIds.add(Number(sub.proposed_display_card))
+    })
+
+    // Fetch card details (card number, series name) for display card references
+    let cardDetailsMap = {}
+    if (cardIds.size > 0) {
+      const cardDetails = await prisma.$queryRawUnsafe(`
+        SELECT
+          c.card_id,
+          c.card_number,
+          s.name as series_name,
+          s.series_id
+        FROM card c
+        INNER JOIN series s ON c.series = s.series_id
+        WHERE c.card_id IN (${Array.from(cardIds).join(',')})
+      `)
+      cardDetails.forEach(card => {
+        cardDetailsMap[Number(card.card_id)] = {
+          card_id: Number(card.card_id),
+          card_number: card.card_number,
+          series_name: card.series_name,
+          series_id: Number(card.series_id)
+        }
+      })
+    }
+
+    // Helper to format dates without timezone shift
+    const formatDate = (d) => {
+      if (!d) return '(none)'
+      // Handle both Date objects and strings
+      const dateStr = d instanceof Date ? d.toISOString() : String(d)
+      // Extract just the date part (YYYY-MM-DD) to avoid timezone issues
+      const datePart = dateStr.split('T')[0]
+      const [year, month, day] = datePart.split('-').map(Number)
+      const months = ['January', 'February', 'March', 'April', 'May', 'June',
+                      'July', 'August', 'September', 'October', 'November', 'December']
+      return `${months[month - 1]} ${day}, ${year}`
+    }
+
+    // Helper to format card display with link info
+    const formatCardDisplay = (cardId) => {
+      if (!cardId) return { text: '(none)', card_id: null }
+      const card = cardDetailsMap[cardId]
+      if (!card) return { text: `Card #${cardId}`, card_id: cardId }
+      return {
+        text: `#${card.card_number} - ${card.series_name}`,
+        card_id: cardId
+      }
+    }
+
+    // Transform the data for the frontend
+    const history = submissions.map(sub => {
+      const changes = []
+
+      // Compare previous vs proposed for each field
+      // Only show change if proposed value is not null (meaning it was intentionally changed)
+      if (sub.proposed_first_name !== null && sub.previous_first_name !== sub.proposed_first_name) {
+        changes.push({
+          field: 'First Name',
+          from: sub.previous_first_name || '(empty)',
+          to: sub.proposed_first_name || '(empty)'
+        })
+      }
+      if (sub.proposed_last_name !== null && sub.previous_last_name !== sub.proposed_last_name) {
+        changes.push({
+          field: 'Last Name',
+          from: sub.previous_last_name || '(empty)',
+          to: sub.proposed_last_name || '(empty)'
+        })
+      }
+      if (sub.proposed_nick_name !== null && sub.previous_nick_name !== sub.proposed_nick_name) {
+        changes.push({
+          field: 'Nickname',
+          from: sub.previous_nick_name || '(empty)',
+          to: sub.proposed_nick_name || '(empty)'
+        })
+      }
+      if (sub.proposed_birthdate !== null) {
+        const prevDateStr = sub.previous_birthdate ? sub.previous_birthdate.toISOString().split('T')[0] : null
+        const propDateStr = sub.proposed_birthdate ? sub.proposed_birthdate.toISOString().split('T')[0] : null
+        if (prevDateStr !== propDateStr) {
+          changes.push({
+            field: 'Birthdate',
+            from: formatDate(sub.previous_birthdate),
+            to: formatDate(sub.proposed_birthdate)
+          })
+        }
+      }
+      if (sub.proposed_is_hof !== null && sub.previous_is_hof !== sub.proposed_is_hof) {
+        changes.push({
+          field: 'Hall of Fame',
+          from: sub.previous_is_hof ? 'Yes' : 'No',
+          to: sub.proposed_is_hof ? 'Yes' : 'No'
+        })
+      }
+      // Handle display card changes - only if proposed_display_card was explicitly set
+      // (proposed_display_card = NULL means the field wasn't changed, not that it was cleared)
+      if (sub.proposed_display_card !== null) {
+        const prevDisplayCard = sub.previous_display_card ? Number(sub.previous_display_card) : null
+        const propDisplayCard = Number(sub.proposed_display_card)
+        if (prevDisplayCard !== propDisplayCard) {
+          const fromCard = formatCardDisplay(prevDisplayCard)
+          const toCard = formatCardDisplay(propDisplayCard)
+          changes.push({
+            field: 'Display Image',
+            from: fromCard.text,
+            to: toCard.text,
+            from_card_id: fromCard.card_id,
+            to_card_id: toCard.card_id
+          })
+        }
+      }
+
+      return {
+        id: Number(sub.submission_id),
+        timestamp: sub.reviewed_at || sub.created_at,
+        user: {
+          id: Number(sub.submitter_user_id),
+          name: sub.submitter_name || sub.submitter_email?.split('@')[0] || 'Unknown',
+          username: sub.submitter_username,
+          avatar_url: sub.submitter_avatar
+        },
+        changes,
+        review_notes: sub.review_notes,
+        is_admin_edit: sub.review_notes?.includes('Admin direct edit')
+      }
+    }).filter(h => h.changes.length > 0)
+
+    res.json({
+      history,
+      total: history.length
+    })
+
+  } catch (error) {
+    console.error('Error fetching player history:', error)
+    res.status(500).json({
+      error: 'Failed to fetch player history',
+      message: error.message
+    })
+  }
+})
+
 module.exports = router

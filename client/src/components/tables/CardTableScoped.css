@@ -12,11 +12,18 @@
   vertical-align: middle;
 }
 
+.card-table-container .thumbnail-pair {
+  display: flex;
+  gap: 2px;
+  justify-content: center;
+  align-items: center;
+}
+
 .card-table-container .card-table-thumbnail {
-  width: 40px;
-  height: 56px;
+  width: 28px;
+  height: 40px;
   object-fit: contain;
-  border-radius: 3px;
+  border-radius: 2px;
   background: rgba(0, 0, 0, 0.2);
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -25,19 +32,19 @@
 .card-table-container .card-table-thumbnail:hover {
   transform: scale(1.1);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  z-index: 1;
 }
 
 .card-table-container .card-table-thumbnail-placeholder {
-  width: 40px;
-  height: 56px;
+  width: 28px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: rgba(255, 255, 255, 0.03);
   border: 1px dashed rgba(255, 255, 255, 0.1);
-  border-radius: 3px;
+  border-radius: 2px;
   color: rgba(255, 255, 255, 0.15);
-  margin: 0 auto;
 }
 
 .card-table-container {
@@ -298,33 +305,18 @@
 .card-table-container .player-header,
 .card-table-container .player-cell {
   text-align: left;
-  min-width: 250px; /* Ensure adequate space for player names on small screens */
+  white-space: nowrap;
+  max-width: 280px;
 }
 
 .card-table-container .card-table-series-header,
 .card-table-container .card-table-series-cell {
   text-align: left;
-  min-width: 250px; /* Ensure adequate space for series names on small screens */
 }
 
-.card-table-container .color-header,
-.card-table-container .color-cell {
+.card-table-container .attributes-header,
+.card-table-container .attributes-cell {
   text-align: left;
-}
-
-.card-table-container .print-run-header {
-  text-align: left;
-}
-
-.card-table-container .print-run-cell {
-  text-align: center;
-}
-
-.card-table-container .auto-header,
-.card-table-container .auto-cell,
-.card-table-container .relic-header,
-.card-table-container .relic-cell {
-  text-align: center;
 }
 
 .card-table-container .notes-header,
@@ -597,6 +589,18 @@
   white-space: nowrap;
 }
 
+/* Attributes Column */
+.card-table-container .attributes-cell {
+  vertical-align: middle;
+}
+
+.card-table-container .attributes-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: center;
+}
+
 .card-table-container .attribute-tags {
   display: inline-flex;
   gap: 0.25rem;
@@ -616,6 +620,12 @@
   white-space: nowrap;
 }
 
+.card-table-container .cardcard-rc {
+  background: rgba(34, 197, 94, 0.2);
+  color: #22c55e;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
 .card-table-container .cardcard-insert {
   background: rgba(59, 130, 246, 0.2);
   color: #3b82f6;
@@ -626,6 +636,12 @@
   background: rgba(168, 85, 247, 0.2);
   color: #a855f7;
   border: 1px solid rgba(168, 85, 247, 0.3);
+}
+
+.card-table-container .cardcard-sp {
+  background: rgba(251, 191, 36, 0.2);
+  color: #fbbf24;
+  border: 1px solid rgba(251, 191, 36, 0.3);
 }
 
 .card-table-container .cardcard-rc-inline {

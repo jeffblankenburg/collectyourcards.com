@@ -237,6 +237,7 @@ if (config.environment === 'test') {
     { path: '/api/admin/colors', file: './routes/admin-colors', name: 'Admin Colors' },
     { path: '/api/admin/moderation', file: './routes/admin-moderation', name: 'Admin Moderation' },
     { path: '/api/admin/series-metadata', file: './routes/admin-series-metadata', name: 'Admin Series Metadata' },
+    { path: '/api/admin/beckett', file: './routes/admin-beckett', name: 'Admin Beckett Checklists' },
     { path: '/api/database-stats', file: './routes/database-stats', name: 'Database Stats' },
     { path: '/api/cards', file: './routes/cards', name: 'Cards' },
     { path: '/api/collection', file: './routes/collection', name: 'Collection' },
@@ -251,6 +252,8 @@ if (config.environment === 'test') {
     { path: '/api/teams-list', file: './routes/teams-list', name: 'Teams List' },
     { path: '/api/series-list', file: './routes/series-list', name: 'Series List' },
     { path: '/api/sets-list', file: './routes/sets-list', name: 'Sets List' },
+    { path: '/api/manufacturers-list', file: './routes/manufacturers-list', name: 'Manufacturers List' },
+    { path: '/api/colors', file: './routes/colors', name: 'Colors' },
     { path: '/api/series-by-set', file: './routes/series-by-set', name: 'Series By Set' },
     { path: '/api/user/cards', file: './routes/user-cards', name: 'User Cards' },
     { path: '/api/user/cards', file: './routes/user-card-photos', name: 'User Card Photos' },
@@ -283,7 +286,7 @@ if (config.environment === 'test') {
     { path: '/api/user/wrapped', file: './routes/wrapped', name: 'User Wrapped' },
     { path: '/api/admin/feedback', file: './routes/admin-feedback', name: 'Admin Feedback' },
     { path: '/api/campaign', file: './routes/campaign', name: 'Campaign Tracking' },
-    { path: '/api/crowdsource', file: './routes/crowdsource', name: 'Crowdsourcing' },
+    { path: '/api/crowdsource', file: './routes/v1/crowdsource/index', name: 'Crowdsourcing' },
     { path: '/api/docs', file: './routes/api-docs', name: 'API Documentation' }
   ];
 

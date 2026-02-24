@@ -105,6 +105,7 @@ router.get('/minimal', async (req, res) => {
     }
 
     // Minimal query - includes primary photo URL for gallery view, but not full photo arrays
+    // Also includes market price from card_price table (price_source_id=1 is sportscardspro, price_type_id=1 is loose)
     const cardsQuery = `
       SELECT
         uc.user_card_id,
@@ -147,7 +148,9 @@ router.get('/minimal', async (req, res) => {
         t.primary_color,
         t.secondary_color,
         ucp.photo_url as primary_photo_url,
-        ISNULL(photo_count.count, 0) as photo_count
+        ISNULL(photo_count.count, 0) as photo_count,
+        cp.price as market_price,
+        cp.last_updated as market_price_updated
       FROM user_card uc
       JOIN card c ON uc.card = c.card_id
       JOIN series s ON c.series = s.series_id
@@ -161,6 +164,9 @@ router.get('/minimal', async (req, res) => {
         FROM user_card_photo
         GROUP BY user_card
       ) photo_count ON uc.user_card_id = photo_count.user_card
+      LEFT JOIN card_price cp ON c.card_id = cp.card_id
+        AND cp.price_source_id = 1
+        AND cp.price_type_id = 1
       LEFT JOIN card_player_team cpt ON cpt.card = c.card_id
       LEFT JOIN player_team pt ON cpt.player_team = pt.player_team_id
       LEFT JOIN player p ON pt.player = p.player_id
@@ -188,6 +194,8 @@ router.get('/minimal', async (req, res) => {
           purchase_price: row.purchase_price,
           estimated_value: row.estimated_value,
           current_value: row.current_value,
+          market_price: row.market_price ? parseFloat(row.market_price) : null,
+          market_price_updated: row.market_price_updated,
           grade: row.grade,
           grade_id: typeof row.grade_id === 'bigint' ? Number(row.grade_id) : row.grade_id,
           grading_agency: typeof row.grading_agency === 'bigint' ? Number(row.grading_agency) : row.grading_agency,

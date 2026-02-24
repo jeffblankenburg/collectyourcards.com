@@ -50,6 +50,8 @@ model card {
   player_player_display_cardTocard              player[]                @relation("player_display_cardTocard")
   sales                                         sale[]                  @relation("sale_cardTocard")
   user_card_user_card_cardTocard                user_card[]             @relation("user_card_cardTocard")
+  card_external_ids                             card_external_id[]
+  card_prices                                   card_price[]
 
   @@index([created_month], map: "idx_card_created_month")
   @@index([series], map: "IX_card_series_optimized")
@@ -1432,4 +1434,62 @@ model contributor_stats {
   created_at           DateTime  @default(now(), map: "DF__contribut__creat__43F60EC8") @db.DateTime
   updated_at           DateTime? @db.DateTime
   user                 user      @relation(fields: [user_id], references: [user_id], onUpdate: NoAction, map: "FK_contributor_stats_user")
+}
+
+// ============================================================================
+// PRICING SYSTEM - External Price Sources Integration
+// ============================================================================
+
+model price_source {
+  price_source_id   Int                @id @default(autoincrement())
+  code              String             @unique(map: "UQ_price_source_code") @db.NVarChar(50)
+  name              String             @db.NVarChar(100)
+  api_base_url      String?            @db.NVarChar(500)
+  is_active         Boolean            @default(true)
+  created_at        DateTime           @default(now()) @db.DateTime
+  card_external_ids card_external_id[]
+  card_prices       card_price[]
+}
+
+model price_type {
+  price_type_id   Int          @id @default(autoincrement())
+  code            String       @unique(map: "UQ_price_type_code") @db.NVarChar(50)
+  name            String       @db.NVarChar(100)
+  grading_company String?      @db.NVarChar(50)
+  grade           Decimal?     @db.Decimal(3, 1)
+  sort_order      Int          @default(0)
+  is_active       Boolean      @default(true)
+  card_prices     card_price[]
+}
+
+model card_external_id {
+  card_external_id_id BigInt       @id @default(autoincrement())
+  card_id             BigInt
+  price_source_id     Int
+  external_id         String       @db.NVarChar(100)
+  external_name       String?      @db.NVarChar(500)
+  match_method        String       @default("auto") @db.NVarChar(20)
+  created_at          DateTime     @default(now()) @db.DateTime
+  updated_at          DateTime?    @db.DateTime
+  card                card         @relation(fields: [card_id], references: [card_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_card_external_id_card")
+  price_source        price_source @relation(fields: [price_source_id], references: [price_source_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_card_external_id_source")
+
+  @@unique([card_id, price_source_id], map: "UQ_card_external_id")
+  @@index([price_source_id, external_id], map: "IX_card_external_id_lookup")
+}
+
+model card_price {
+  card_price_id   BigInt       @id @default(autoincrement())
+  card_id         BigInt
+  price_type_id   Int
+  price_source_id Int
+  price           Decimal?     @db.Decimal(10, 2)
+  last_updated    DateTime     @default(now()) @db.DateTime
+  card            card         @relation(fields: [card_id], references: [card_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_card_price_card")
+  price_type      price_type   @relation(fields: [price_type_id], references: [price_type_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_card_price_type")
+  price_source    price_source @relation(fields: [price_source_id], references: [price_source_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_card_price_source")
+
+  @@unique([card_id, price_type_id, price_source_id], map: "UQ_card_price")
+  @@index([card_id], map: "IX_card_price_card")
+  @@index([price_source_id, price_type_id], map: "IX_card_price_source_type")
 }

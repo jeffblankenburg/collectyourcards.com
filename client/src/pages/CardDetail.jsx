@@ -7,8 +7,10 @@ import CollectionTable from '../components/tables/CollectionTable'
 import QuickEditModal from '../components/modals/QuickEditModal'
 import AddCardModal from '../components/modals/AddCardModal'
 import SuggestEditModal from '../components/modals/SuggestEditModal'
+import SuggestCardsModal from '../components/modals/SuggestCardsModal'
 import AddToListDropdown from '../components/AddToListDropdown'
 import CommentsSection from '../components/CommentsSection'
+import ChangeHistory from '../components/ChangeHistory'
 import { useToast } from '../contexts/ToastContext'
 import SocialShareButton from '../components/SocialShareButton'
 import { createLogger } from '../utils/logger'
@@ -49,10 +51,13 @@ function CardDetail() {
   const [showSellModal, setShowSellModal] = useState(false)
   const [sellingPlatforms, setSellingPlatforms] = useState([])
   const [showSuggestEditModal, setShowSuggestEditModal] = useState(false)
+  const [showSuggestCardsModal, setShowSuggestCardsModal] = useState(false)
+  const [showFabMenu, setShowFabMenu] = useState(false)
+  const fabRef = useRef(null)
 
   // Check if user is admin
   const isAdmin = user && ['admin', 'superadmin', 'data_admin'].includes(user.role)
-  
+
   // Close parallels dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -66,6 +71,23 @@ function CardDetail() {
       document.removeEventListener('mousedown', handleClickOutside)
     }
   }, [])
+
+  // Close FAB menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (fabRef.current && !fabRef.current.contains(event.target)) {
+        setShowFabMenu(false)
+      }
+    }
+
+    if (showFabMenu) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showFabMenu])
 
   // Keyboard navigation for image viewer
   useEffect(() => {
@@ -925,15 +947,56 @@ function CardDetail() {
         />
       )}
 
-      {/* Admin Edit Button */}
-      {isAdmin && card && (
-        <button 
-          className="admin-edit-button"
-          onClick={() => navigate(`/admin/cards?series=${card.series_id}`)}
-          title="Edit card (Admin)"
-        >
-          <Icon name="edit" size={20} />
-        </button>
+      {/* Floating Action Button with Menu */}
+      {user && card && (
+        <div className="fab-container" ref={fabRef}>
+          {showFabMenu && (
+            <div className="fab-menu">
+              {isAdmin && (
+                <button
+                  className="fab-menu-item admin"
+                  onClick={() => {
+                    navigate(`/admin/cards?series=${card.series_id}`)
+                    setShowFabMenu(false)
+                  }}
+                  title="Edit Card (Admin)"
+                >
+                  <Icon name="edit" size={18} />
+                  <span>Edit Card</span>
+                </button>
+              )}
+              <button
+                className="fab-menu-item"
+                onClick={() => {
+                  setShowSuggestEditModal(true)
+                  setShowFabMenu(false)
+                }}
+                title="Suggest Edit"
+              >
+                <Icon name="edit-3" size={18} />
+                <span>Suggest Edit</span>
+              </button>
+              <button
+                className="fab-menu-item"
+                onClick={() => {
+                  setShowSuggestCardsModal(true)
+                  setShowFabMenu(false)
+                }}
+                title="Suggest Card"
+              >
+                <Icon name="plus" size={18} />
+                <span>Suggest Card</span>
+              </button>
+            </div>
+          )}
+          <button
+            className={`fab-button ${showFabMenu ? 'active' : ''}`}
+            onClick={() => setShowFabMenu(!showFabMenu)}
+            title={showFabMenu ? 'Close menu' : 'Open actions menu'}
+          >
+            <Icon name={showFabMenu ? 'x' : 'edit'} size={24} />
+          </button>
+        </div>
       )}
 
       {/* Comments Section */}
@@ -944,7 +1007,16 @@ function CardDetail() {
           title={`Discussion about ${card.player_names} #${card.card_number}`}
         />
       )}
-      
+
+      {/* Change History Section */}
+      {card && (
+        <ChangeHistory
+          entityType="card"
+          entityId={card.card_id}
+          title="Edit History"
+        />
+      )}
+
       {/* Add Card Modal */}
       {showAddCardModal && (
         <AddCardModal
@@ -976,6 +1048,19 @@ function CardDetail() {
         onClose={() => setShowSuggestEditModal(false)}
         card={card}
       />
+
+      {/* Suggest Cards Modal */}
+      {card && (
+        <SuggestCardsModal
+          isOpen={showSuggestCardsModal}
+          onClose={() => setShowSuggestCardsModal(false)}
+          onSuccess={() => fetchCardDetails()}
+          preselectedSeries={{
+            series_id: card.series_id,
+            name: card.series_name
+          }}
+        />
+      )}
 
       {/* Full-Screen Image Viewer */}
       {showImageViewer && (card.front_image_url || card.back_image_url) && (

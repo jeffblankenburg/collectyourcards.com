@@ -2,8 +2,12 @@ import React, { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { useAuth } from '../contexts/AuthContext'
+import { useToast } from '../contexts/ToastContext'
 import Icon from '../components/Icon'
 import PlayerCard from '../components/cards/PlayerCard'
+import ChangeHistory from '../components/ChangeHistory'
+import EditTeamModal from '../components/modals/EditTeamModal'
+import SuggestNewPlayerModal from '../components/modals/SuggestNewPlayerModal'
 import { createLogger } from '../utils/logger'
 import './TeamDetailScoped.css'
 
@@ -26,9 +30,31 @@ function TeamDetail() {
   const [hasMore, setHasMore] = useState(false)
   const [totalPlayers, setTotalPlayers] = useState(0)
   const searchDebounceRef = useRef(null)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [showSuggestPlayerModal, setShowSuggestPlayerModal] = useState(false)
+  const [showFabMenu, setShowFabMenu] = useState(false)
+  const fabRef = useRef(null)
+  const { addToast } = useToast()
 
   // Check if user is admin
   const isAdmin = user && ['admin', 'superadmin', 'data_admin'].includes(user.role)
+
+  // Close FAB menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (fabRef.current && !fabRef.current.contains(event.target)) {
+        setShowFabMenu(false)
+      }
+    }
+
+    if (showFabMenu) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showFabMenu])
 
   useEffect(() => {
     fetchTeamData()
@@ -333,15 +359,81 @@ function TeamDetail() {
         </>
       )}
 
-      {/* Admin Edit Button */}
-      {isAdmin && team && (
-        <button
-          className="admin-edit-button"
-          onClick={() => navigate(`/admin/teams?search=${encodeURIComponent(team.name)}`)}
-          title="Edit team (Admin)"
-        >
-          <Icon name="edit" size={20} />
-        </button>
+      {/* Floating Action Button with Menu */}
+      {isAuthenticated && team && (
+        <div className="fab-container" ref={fabRef}>
+          {showFabMenu && (
+            <div className="fab-menu">
+              <button
+                className={`fab-menu-item ${isAdmin ? 'admin' : ''}`}
+                onClick={() => {
+                  setShowEditModal(true)
+                  setShowFabMenu(false)
+                }}
+                title={isAdmin ? 'Edit Team' : 'Suggest Team Update'}
+              >
+                <Icon name="edit" size={18} />
+                <span>{isAdmin ? 'Edit Team' : 'Suggest Update'}</span>
+              </button>
+              <button
+                className="fab-menu-item"
+                onClick={() => {
+                  setShowSuggestPlayerModal(true)
+                  setShowFabMenu(false)
+                }}
+                title="Suggest Player"
+              >
+                <Icon name="user-plus" size={18} />
+                <span>Suggest Player</span>
+              </button>
+            </div>
+          )}
+          <button
+            className={`fab-button ${showFabMenu ? 'active' : ''}`}
+            onClick={() => setShowFabMenu(!showFabMenu)}
+            title={showFabMenu ? 'Close menu' : 'Open actions menu'}
+          >
+            <Icon name={showFabMenu ? 'x' : 'edit'} size={24} />
+          </button>
+        </div>
+      )}
+
+      {/* Edit Team Modal */}
+      {showEditModal && team && (
+        <EditTeamModal
+          team={team}
+          isOpen={showEditModal}
+          onClose={() => setShowEditModal(false)}
+          onSave={() => {
+            setShowEditModal(false)
+            fetchTeamData() // Reload team data after save
+          }}
+        />
+      )}
+
+      {/* Suggest New Player Modal */}
+      <SuggestNewPlayerModal
+        isOpen={showSuggestPlayerModal}
+        onClose={() => setShowSuggestPlayerModal(false)}
+        preSelectedTeam={team ? {
+          team_id: team.team_id,
+          name: team.name,
+          abbreviation: team.abbreviation,
+          primary_color: team.primary_color,
+          secondary_color: team.secondary_color
+        } : null}
+        onSuccess={() => {
+          fetchTeamData() // Reload team data after player added
+        }}
+      />
+
+      {/* Change History Section */}
+      {team && (
+        <ChangeHistory
+          entityType="team"
+          entityId={team.team_id}
+          title="Edit History"
+        />
       )}
     </div>
   )

@@ -11,6 +11,7 @@ import App from './App.jsx'
 import { setupAxiosInterceptors } from './utils/axios-interceptor.js'
 import { initConsoleCapture } from './components/Feedback/consoleCapture.js'
 import './index.css'
+import './styles/components.css' // Global shared component styles (team circles, badges, etc.)
 // import './styles/global-design-system.css' // Temporarily removed to prevent conflicts
 
 // Initialize axios interceptors for automatic API logging
@@ -73,6 +74,8 @@ const AdminSeries = lazy(() => import('./pages/AdminSeries.jsx'))
 const AdminCards = lazy(() => import('./pages/AdminCards.jsx'))
 const AdminCardsNeedingReference = lazy(() => import('./pages/AdminCardsNeedingReference.jsx'))
 const AdminImport = lazy(() => import('./pages/AdminImport.jsx'))
+const AdminBeckettBrowser = lazy(() => import('./pages/AdminBeckettBrowser.jsx'))
+const AdminBeckettFileDetail = lazy(() => import('./pages/AdminBeckettFileDetail.jsx'))
 const CollectionDashboard = lazy(() => import('./pages/CollectionDashboard.jsx'))
 const CardDetail = lazy(() => import('./pages/CardDetail.jsx'))
 const RainbowView = lazy(() => import('./pages/RainbowView.jsx'))
@@ -106,6 +109,7 @@ const StartLanding = lazy(() => import('./pages/StartLanding.jsx'))
 const AdminCampaigns = lazy(() => import('./pages/AdminCampaigns.jsx'))
 const AdminCrowdsource = lazy(() => import('./pages/AdminCrowdsource.jsx'))
 const MyContributions = lazy(() => import('./pages/MyContributions.jsx'))
+const AddCard = lazy(() => import('./pages/AddCard.jsx'))
 const ApiDocs = lazy(() => import('./pages/ApiDocs.jsx'))
 
 createRoot(document.getElementById('root')).render(
@@ -132,6 +136,7 @@ createRoot(document.getElementById('root')).render(
               <Route path="/profile" element={<ProtectedRoute><ProfileManagement /></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute><ProfileManagement /></ProtectedRoute>} />
               <Route path="/collection" element={<ProtectedRoute><CollectionDashboard /></ProtectedRoute>} />
+              <Route path="/add-card" element={<ProtectedRoute><AddCard /></ProtectedRoute>} />
               <Route path="/contributions" element={<ProtectedRoute><MyContributions /></ProtectedRoute>} />
               <Route path="/players" element={<PlayersLanding />} />
               <Route path="/players/:playerId" element={<PlayerDetail />} />
@@ -162,7 +167,9 @@ createRoot(document.getElementById('root')).render(
               <Route path="/admin/cards-needing-reference" element={<ProtectedRoute><AdminCardsNeedingReference /></ProtectedRoute>} />
               <Route path="/admin/cards/:seriesId" element={<ProtectedRoute><AdminCards /></ProtectedRoute>} />
               <Route path="/admin/import" element={<ProtectedRoute><AdminImport /></ProtectedRoute>} />
-              
+              <Route path="/admin/beckett" element={<ProtectedRoute><AdminBeckettBrowser /></ProtectedRoute>} />
+              <Route path="/admin/beckett/:filename" element={<ProtectedRoute><AdminBeckettFileDetail /></ProtectedRoute>} />
+
               {/* Design System Demo - Testing new CSS system */}
               <Route path="/design-system-demo" element={<DesignSystemDemo />} />
 

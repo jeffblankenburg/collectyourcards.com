@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react' // useRef still needed for imageUploaderRef
+import React, { useState, useEffect, useRef, useCallback } from 'react' // useRef still needed for imageUploaderRef
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom'
 import axios from 'axios'
 import { useToast } from '../contexts/ToastContext'
@@ -46,6 +46,7 @@ function AdminCards() {
   })
   const { addToast } = useToast()
   const imageUploaderRef = useRef(null)
+  const playerSearchDebounceRef = useRef(null)
 
   // Persist view mode preference
   const handleViewModeChange = (mode) => {
@@ -102,6 +103,15 @@ function AdminCards() {
       document.title = 'Admin Cards - Collect Your Cards'
     }
   }, [selectedSeries])
+
+  // Cleanup debounce timer on unmount
+  useEffect(() => {
+    return () => {
+      if (playerSearchDebounceRef.current) {
+        clearTimeout(playerSearchDebounceRef.current)
+      }
+    }
+  }, [])
 
   // Filter cards based on search term
   useEffect(() => {
@@ -272,6 +282,13 @@ function AdminCards() {
     setSaving(false)
     setCommunityImages([])
     setCurrentReferenceUserCard(null)
+    // Clear any pending player search debounce
+    if (playerSearchDebounceRef.current) {
+      clearTimeout(playerSearchDebounceRef.current)
+    }
+    setPlayerSearchTerm('')
+    setFilteredPlayers([])
+    setSelectedResultIndex(-1)
   }
 
   const loadCommunityImages = async (cardId) => {
@@ -611,9 +628,8 @@ function AdminCards() {
   }
 
 
-  const handlePlayerSearch = async (searchTerm) => {
-    setPlayerSearchTerm(searchTerm)
-    
+  // Debounced player search - performs actual API call
+  const performPlayerSearch = useCallback(async (searchTerm, currentCardPlayers) => {
     if (!searchTerm.trim() || searchTerm.trim().length < 2) {
       setFilteredPlayers([])
       return
@@ -623,30 +639,51 @@ function AdminCards() {
       // Use the new player-team search API
       const response = await axios.get(`/api/player-team-search?q=${encodeURIComponent(searchTerm)}&limit=50`)
       const playerTeamCombinations = response.data.playerTeamCombinations || []
-      
+
       // Filter out combinations already on the card using IDs for reliable comparison
       const availableCombinations = playerTeamCombinations.filter(combination => {
-        const alreadyOnCard = cardPlayers.some(cp => 
+        const alreadyOnCard = currentCardPlayers.some(cp =>
           cp.player.player_id === combination.player.player_id &&
           cp.team.team_id === combination.team.team_id
         )
         return !alreadyOnCard
       })
-      
+
       // Add displayName and set results
       const resultsWithDisplayName = availableCombinations.map(combination => ({
         ...combination,
         displayName: `${combination.player.name} (${combination.team.abbreviation})`
       }))
-      
+
       setFilteredPlayers(resultsWithDisplayName)
       setSelectedResultIndex(-1) // Reset selection when new results come in
-      
+
     } catch (error) {
       console.error('Error searching players:', error)
       setFilteredPlayers([])
       setSelectedResultIndex(-1)
     }
+  }, [])
+
+  // Debounced handler - delays API call by 300ms
+  const handlePlayerSearch = (searchTerm) => {
+    setPlayerSearchTerm(searchTerm)
+
+    // Clear any pending debounce
+    if (playerSearchDebounceRef.current) {
+      clearTimeout(playerSearchDebounceRef.current)
+    }
+
+    // Clear results immediately if search is too short
+    if (!searchTerm.trim() || searchTerm.trim().length < 2) {
+      setFilteredPlayers([])
+      return
+    }
+
+    // Debounce the API call
+    playerSearchDebounceRef.current = setTimeout(() => {
+      performPlayerSearch(searchTerm, cardPlayers)
+    }, 300)
   }
 
   const handleSearchKeyDown = (e) => {

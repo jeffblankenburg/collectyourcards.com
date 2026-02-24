@@ -739,3 +739,255 @@ Each entry should include:
   SELECT * FROM achievement_categories WHERE name = 'Crowdsourcing';
   ```
 - **Expected Result**: 119 achievements, 1 category
+
+### 2026-01-08: Unified Interface & Audit History - Issue #88
+- **Date**: 2026-01-08
+- **Change Type**: Schema (ALTER TABLE, CREATE TABLE)
+- **Description**:
+  - Phase 1 of unified interface implementation for Issue #88
+  - Added `previous_*` columns to existing submission tables for change tracking
+  - Added `batch_id` columns for grouping related submissions (imports)
+  - Created new `player_edit_submissions` table
+  - Created new `team_edit_submissions` table
+  - Updated `contributor_stats` with new submission type counters
+- **Tables Modified**:
+  - `card_edit_submissions` - Added: previous_card_number, previous_is_rookie, previous_is_autograph, previous_is_relic, previous_is_short_print, previous_print_run, previous_notes, batch_id
+  - `set_submissions` - Added: set_id (for edit tracking), previous_name, previous_year, previous_sport, previous_manufacturer, previous_description, batch_id
+  - `series_submissions` - Added: existing_series_id (for edit tracking), previous_name, previous_description, previous_base_card_count, previous_is_parallel, previous_parallel_name, previous_print_run, previous_parallel_of_series, batch_id
+  - `contributor_stats` - Added: player_edit_submissions, team_edit_submissions
+- **Tables Created**:
+  - `player_edit_submissions` - For tracking edits to player data (first_name, last_name, nick_name, birthdate, is_hof)
+  - `team_edit_submissions` - For tracking edits to team data (name, city, mascot, abbreviation, primary_color, secondary_color)
+- **Indexes Created**:
+  - `IX_card_edit_submissions_batch_id`
+  - `IX_set_submissions_batch_id`
+  - `IX_series_submissions_batch_id`
+  - `IX_player_edit_submissions_player`, `IX_player_edit_submissions_user`, `IX_player_edit_submissions_status`, `IX_player_edit_submissions_batch_id`, `IX_player_edit_submissions_created`
+  - `IX_team_edit_submissions_team`, `IX_team_edit_submissions_user`, `IX_team_edit_submissions_status`, `IX_team_edit_submissions_batch_id`, `IX_team_edit_submissions_created`
+- **Foreign Keys Added**:
+  - `FK_set_submissions_set` - Links set_submissions.set_id to set.set_id
+  - `FK_series_submissions_existing_series` - Links series_submissions.existing_series_id to series.series_id
+  - `FK_player_edit_submissions_player`, `FK_player_edit_submissions_user`, `FK_player_edit_submissions_reviewer`
+  - `FK_team_edit_submissions_team`, `FK_team_edit_submissions_user`, `FK_team_edit_submissions_reviewer`
+- **SQL File Reference**: DATABASE_CHANGES_FOR_PRODUCTION.sql (Issue #88 section)
+- **Status**: Pending Production
+- **Purpose**:
+  - Enable complete audit history for all entity changes
+  - Track what values changed FROM (previous_*) and TO (proposed_*)
+  - Support batch tracking for bulk imports
+  - Enable unified interface where all users can edit (admin = auto-approve, user = pending review)
+- **Verification Queries**:
+  ```sql
+  -- Check card_edit_submissions columns
+  SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+  WHERE TABLE_NAME = 'card_edit_submissions'
+  AND (COLUMN_NAME LIKE 'previous_%' OR COLUMN_NAME = 'batch_id');
+
+  -- Check new tables exist
+  SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES
+  WHERE TABLE_NAME IN ('player_edit_submissions', 'team_edit_submissions');
+
+  -- Check contributor_stats columns
+  SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+  WHERE TABLE_NAME = 'contributor_stats'
+  AND COLUMN_NAME IN ('player_edit_submissions', 'team_edit_submissions');
+  ```
+- **Expected Results**:
+  - card_edit_submissions: 8 new columns (7 previous_* + batch_id)
+  - 2 new tables: player_edit_submissions (21 cols), team_edit_submissions (23 cols)
+  - contributor_stats: 2 new columns
+
+### 2026-01-09: Player Crowdsourcing Tables
+- **Date**: 2026-01-09
+- **Change Type**: Schema (Tables + Columns)
+- **Description**:
+  - Created `player_alias_submissions` table for crowdsourcing player aliases/alternate names
+  - Created `player_team_submissions` table for crowdsourcing player-team associations (add/remove)
+  - Added `player_alias_submissions` and `player_team_submissions` counter columns to `contributor_stats`
+  - These tables support user-suggested changes that go through admin review
+- **Tables Created**:
+  - `player_alias_submissions` - For suggesting aliases (misspellings, nicknames, etc.)
+  - `player_team_submissions` - For suggesting add/remove team associations
+- **Columns Added**:
+  - `contributor_stats.player_alias_submissions` (INT, default 0)
+  - `contributor_stats.player_team_submissions` (INT, default 0)
+- **SQL File Reference**: DATABASE_CHANGES_FOR_PRODUCTION.sql (lines 17-117)
+- **Status**: ✅ Applied to Development
+- **Verification Queries**:
+  ```sql
+  -- Check new tables exist
+  SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES
+  WHERE TABLE_NAME IN ('player_alias_submissions', 'player_team_submissions');
+
+  -- Check contributor_stats columns
+  SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+  WHERE TABLE_NAME = 'contributor_stats'
+  AND COLUMN_NAME IN ('player_alias_submissions', 'player_team_submissions');
+  ```
+- **Expected Results**:
+  - 2 new tables: player_alias_submissions, player_team_submissions
+  - contributor_stats: 2 new columns
+
+### 2026-01-14: New Player Submissions Table
+- **Date**: 2026-01-14
+- **Change Type**: Schema (Table + Column)
+- **Description**:
+  - Created `player_submissions` table for crowdsourcing new player additions to the database
+  - Added `player_submissions` counter column to `contributor_stats`
+  - Supports user-suggested new players that go through admin review
+  - Admins can directly create players (auto-approved)
+  - Non-admins submit for review
+  - Supports pre-selecting teams to associate with the new player
+- **Tables Created**:
+  - `player_submissions` - For suggesting new players to add to the database
+    - `submission_id` BIGINT (PK)
+    - `user_id` BIGINT (FK to user)
+    - `proposed_first_name`, `proposed_last_name` NVARCHAR(MAX)
+    - `proposed_nick_name`, `proposed_birthdate`, `proposed_is_hof`
+    - `proposed_team_ids` NVARCHAR(MAX) - JSON array of team IDs
+    - `submission_notes`, `status`, `batch_id`
+    - `created_player_id` BIGINT (FK to player, set when approved)
+    - `reviewed_by`, `reviewed_at`, `review_notes`
+    - `created_at`, `updated_at`
+- **Columns Added**:
+  - `contributor_stats.player_submissions` (INT, default 0)
+- **SQL Script**:
+  ```sql
+  -- Create player_submissions table
+  CREATE TABLE player_submissions (
+      submission_id BIGINT IDENTITY(1,1) PRIMARY KEY,
+      user_id BIGINT NOT NULL,
+      proposed_first_name NVARCHAR(MAX) NOT NULL,
+      proposed_last_name NVARCHAR(MAX) NOT NULL,
+      proposed_nick_name NVARCHAR(MAX) NULL,
+      proposed_birthdate DATETIME NULL,
+      proposed_is_hof BIT DEFAULT 0,
+      proposed_team_ids NVARCHAR(MAX) NULL,
+      submission_notes NVARCHAR(MAX) NULL,
+      status NVARCHAR(20) DEFAULT 'pending',
+      batch_id NVARCHAR(100) NULL,
+      created_player_id BIGINT NULL,
+      reviewed_by BIGINT NULL,
+      reviewed_at DATETIME NULL,
+      review_notes NVARCHAR(MAX) NULL,
+      created_at DATETIME DEFAULT GETDATE(),
+      updated_at DATETIME NULL,
+      CONSTRAINT FK_player_submissions_user FOREIGN KEY (user_id) REFERENCES [user](user_id),
+      CONSTRAINT FK_player_submissions_reviewer FOREIGN KEY (reviewed_by) REFERENCES [user](user_id),
+      CONSTRAINT FK_player_submissions_player FOREIGN KEY (created_player_id) REFERENCES player(player_id)
+  );
+
+  CREATE INDEX IX_player_submissions_user ON player_submissions(user_id);
+  CREATE INDEX IX_player_submissions_status ON player_submissions(status);
+  CREATE INDEX IX_player_submissions_created ON player_submissions(created_at DESC);
+
+  -- Add column to contributor_stats
+  ALTER TABLE contributor_stats ADD player_submissions INT DEFAULT 0;
+  ```
+- **Status**: ⏳ Pending Production
+- **Verification Queries**:
+  ```sql
+  -- Check new table exists
+  SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES
+  WHERE TABLE_NAME = 'player_submissions';
+
+  -- Check contributor_stats column
+  SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+  WHERE TABLE_NAME = 'contributor_stats'
+  AND COLUMN_NAME = 'player_submissions';
+  ```
+- **Expected Results**:
+  - 1 new table: player_submissions
+  - contributor_stats: 1 new column (player_submissions)
+
+---
+
+### 2026-01-15: Provisional Card System - User-Centric Card Submission
+- **Date**: 2026-01-15
+- **Change Type**: Schema (New Tables + ALTER TABLE)
+- **Description**:
+  - Implements "Users submit cards, system resolves entities" approach
+  - Users can add cards using text descriptions (player name, set name, etc.)
+  - System auto-matches against existing entities with confidence scores
+  - Cards appear in user's collection immediately as "provisional" until approved
+  - Supports multi-player cards using "/" syntax (e.g., "Mike Trout / Aaron Judge")
+  - Admin review shows diff view comparing proposed vs existing entities
+- **New Tables**:
+  1. `suggestion_bundle` - Groups multiple card submissions from a single session
+  2. `provisional_card` - Card data with soft (text) references
+  3. `provisional_card_player` - Players on provisional cards (supports multi-player)
+- **Tables Modified**:
+  - `user_card` - Added `is_provisional` (BIT) and `provisional_card_id` (BIGINT FK)
+  - `contributor_stats` - Added `bundle_submissions`, `provisional_cards_submitted`, `provisional_cards_resolved`
+- **New API Endpoints**:
+  - `POST /api/crowdsource/provisional-card` - Submit cards with auto-resolution
+  - `GET /api/crowdsource/my-provisional-cards` - Get user's provisional cards
+  - `GET /api/crowdsource/my-bundles` - Get user's submission bundles
+- **Key Features**:
+  - Auto-resolution matches sets, series, players, teams, colors
+  - Confidence scores (0.00-1.00) indicate match quality
+  - Cards flagged as `needs_review` when auto-resolution fails
+  - Multi-player parsing supports "/" and "," separators
+- **SQL File Reference**: DATABASE_CHANGES_FOR_PRODUCTION.sql (Provisional Card System section)
+- **Status**: ⏳ Pending Production
+- **Verification Queries**:
+  ```sql
+  -- Check new tables exist
+  SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES
+  WHERE TABLE_NAME IN ('suggestion_bundle', 'provisional_card', 'provisional_card_player');
+
+  -- Check user_card modifications
+  SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+  WHERE TABLE_NAME = 'user_card'
+  AND COLUMN_NAME IN ('is_provisional', 'provisional_card_id');
+
+  -- Check contributor_stats columns
+  SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+  WHERE TABLE_NAME = 'contributor_stats'
+  AND COLUMN_NAME IN ('bundle_submissions', 'provisional_cards_submitted', 'provisional_cards_resolved');
+  ```
+- **Expected Results**:
+  - 3 new tables: suggestion_bundle, provisional_card, provisional_card_player
+  - user_card: 2 new columns (is_provisional, provisional_card_id)
+  - contributor_stats: 3 new columns
+
+---
+
+### 2026-01-19: External Pricing System (SportsCardsPro Integration)
+- **Date**: 2026-01-19
+- **Change Type**: Schema (New Tables + Seed Data)
+- **Description**:
+  - Implements external pricing data integration system (GitHub Issue #94)
+  - Supports multiple price sources (starting with SportsCardsPro)
+  - Supports multiple price types (raw/loose, PSA 10, BGS 9.5, etc.)
+  - Maps our cards to external product IDs for 1:1 matching
+  - Designed for weekly batch price updates via API
+- **New Tables**:
+  1. `price_source` - External pricing APIs/sources (SportsCardsPro, etc.)
+  2. `price_type` - Types of prices (loose, PSA 10, BGS 9.5, etc.)
+  3. `card_external_id` - Maps our card_id to external product IDs
+  4. `card_price` - Actual price data per card/type/source
+- **Seed Data**:
+  - 1 price source: SportsCardsPro
+  - 18 price types: loose, graded, PSA 10/9/8/7, BGS 10/9.5/9/8.5/8, CGC 10/9.5/9/8.5, SGC 10/9.5/9
+- **Key Features**:
+  - Unique constraint on (card_id, price_source_id) for external IDs
+  - Unique constraint on (card_id, price_type_id, price_source_id) for prices
+  - Index on external_id lookup for efficient API-driven updates
+  - Supports manual vs auto matching via `match_method` field
+- **SQL File Reference**: DATABASE_CHANGES_FOR_PRODUCTION.sql (PRICING SYSTEM section, lines 212-338)
+- **Status**: ⏳ Pending Production
+- **Verification Queries**:
+  ```sql
+  -- Check new tables exist
+  SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES
+  WHERE TABLE_NAME IN ('price_source', 'price_type', 'card_external_id', 'card_price');
+
+  -- Check seed data
+  SELECT COUNT(*) as sources FROM price_source;
+  SELECT COUNT(*) as types FROM price_type;
+  ```
+- **Expected Results**:
+  - 4 new tables: price_source, price_type, card_external_id, card_price
+  - 1 price source (SportsCardsPro)
+  - 18 price types

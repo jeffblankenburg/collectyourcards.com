@@ -97,9 +97,9 @@
 .public-profile-page .header-top {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: stretch;
   margin-bottom: 0;
-  gap: 2rem;
+  gap: 1.5rem;
 }
 
 .public-profile-page .header-title {
@@ -347,6 +347,53 @@
   font-weight: 500;
 }
 
+/* Header Favorite Cards Thumbnails - Centered in header */
+.public-profile-page .header-favorite-cards {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  align-self: center;
+}
+
+.public-profile-page .favorite-card-thumbnail {
+  width: auto;
+  height: 100%;
+  max-height: 130px;
+  aspect-ratio: 2.5 / 3.5;
+  border-radius: 6px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  transition: all 0.2s ease;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.public-profile-page .favorite-card-thumbnail:hover {
+  border-color: #fbbf24;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3);
+}
+
+.public-profile-page .favorite-card-thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.public-profile-page .favorite-card-thumbnail .thumbnail-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: rgba(255, 255, 255, 0.3);
+}
+
 /* Recent Activity */
 .public-profile-page .recent-activity {
   background: rgba(255, 255, 255, 0.05);
@@ -418,174 +465,6 @@
   white-space: nowrap;
 }
 
-/* Favorite Cards */
-.public-profile-page .favorite-cards {
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 2rem;
-  backdrop-filter: blur(10px);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-  min-height: 600px;
-  display: flex;
-  flex-direction: column;
-}
-
-.public-profile-page .favorite-cards h3 {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin: 0 0 1.5rem 0;
-  color: white;
-  font-size: 1.5rem;
-  font-weight: 700;
-}
-
-/* Gallery Grid for Favorite Cards */
-.public-profile-page .favorite-cards .gallery-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 0.75rem;
-  padding: 0;
-  max-height: 500px;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding-right: 0.5rem;
-}
-
-/* Custom scrollbar for favorite cards */
-.public-profile-page .favorite-cards .gallery-grid::-webkit-scrollbar {
-  width: 8px;
-}
-
-.public-profile-page .favorite-cards .gallery-grid::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 4px;
-}
-
-.public-profile-page .favorite-cards .gallery-grid::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 4px;
-}
-
-.public-profile-page .favorite-cards .gallery-grid::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
-}
-
-.gallery-card {
-  background: rgba(30, 41, 59, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  overflow: hidden;
-  transition: all 0.3s ease;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  height: auto;
-}
-
-.gallery-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
-  border-color: rgba(255, 255, 255, 0.2);
-}
-
-.public-profile-page .favorite-cards .gallery-card-image {
-  position: relative;
-  width: 100%;
-  height: 180px;
-  background: transparent !important;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-top: 0.5rem;
-  margin-bottom: 0.5rem;
-}
-
-.gallery-card-image .card-image {
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
-  border-radius: 8px 8px 0 0;
-}
-
-.gallery-card-image .card-placeholder {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.5rem;
-  color: #64748b;
-}
-
-.gallery-card-image .card-placeholder span {
-  font-size: 0.8rem;
-  font-weight: 500;
-}
-
-.gallery-card-info {
-  padding: 1rem;
-  flex-grow: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-.gallery-card-info .card-number {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: #60a5fa;
-  margin-bottom: 0.5rem;
-}
-
-.gallery-card-info .card-player {
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: #e2e8f0;
-  margin-bottom: 0.25rem;
-}
-
-.gallery-card-info .card-series {
-  font-size: 0.8rem;
-  color: #94a3b8;
-  margin-bottom: 0.5rem;
-}
-
-.gallery-tags {
-  display: flex;
-  gap: 0.5rem;
-  margin-top: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.gallery-grade-tag {
-  font-size: 0.7rem;
-  color: white;
-  background: rgba(34, 197, 94, 0.8);
-  border: 1px solid rgba(34, 197, 94, 0.3);
-  padding: 0.2rem 0.4rem;
-  border-radius: 4px;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.gallery-color-stripe {
-  width: 100%;
-  padding: 0.125rem;
-  border-radius: 0 0 12px 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.gallery-color-text {
-  font-size: 0.6rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  text-align: center;
-  width: 100%;
-}
-
 /* Empty State */
 .empty-profile {
   display: flex;
@@ -626,6 +505,7 @@
   
   .public-profile-page .header-top {
     flex-direction: column;
+    flex-wrap: wrap;
     gap: 1rem;
   }
   
@@ -640,7 +520,21 @@
     grid-template-columns: repeat(2, 1fr);
     grid-template-rows: repeat(4, 1fr);
   }
-  
+
+  /* Favorite cards in header - stack below on tablet/mobile */
+  .public-profile-page .header-favorite-cards {
+    order: 3;
+    width: 100%;
+    justify-content: center;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .public-profile-page .favorite-card-thumbnail {
+    max-height: 80px;
+  }
+
   /* Stack columns on mobile */
   .public-profile-page .content-columns {
     grid-template-columns: 1fr;
@@ -953,6 +847,266 @@
 
 .public-profile-page .view-all-achievements:hover {
   color: #3b82f6;
+}
+
+/* Contributions Section */
+.public-profile-page .contributions-section {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 2rem;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+}
+
+.public-profile-page .contributions-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.public-profile-page .contributions-section h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  color: white;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.public-profile-page .trust-level-badge {
+  padding: 0.4rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  white-space: nowrap;
+}
+
+.public-profile-page .trust-level-badge.novice {
+  background: linear-gradient(135deg, #64748b, #475569);
+  color: white;
+}
+
+.public-profile-page .trust-level-badge.contributor {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+}
+
+.public-profile-page .trust-level-badge.trusted {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: white;
+}
+
+.public-profile-page .trust-level-badge.expert {
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  color: white;
+}
+
+.public-profile-page .trust-level-badge.master {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #1f2937;
+}
+
+.public-profile-page .contributions-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.public-profile-page .contribution-stat-row {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+}
+
+.public-profile-page .contribution-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.public-profile-page .contribution-stat-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: white;
+  line-height: 1.2;
+}
+
+.public-profile-page .contribution-stat-label {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.6);
+  margin-top: 0.25rem;
+  font-weight: 500;
+}
+
+.public-profile-page .contribution-breakdown {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 12px;
+  padding: 1.25rem;
+}
+
+.public-profile-page .contribution-breakdown h4 {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0 0 1rem 0;
+  text-align: center;
+}
+
+.public-profile-page .breakdown-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: center;
+}
+
+.public-profile-page .breakdown-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.public-profile-page .breakdown-item svg {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.public-profile-page .contribution-dates {
+  text-align: center;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.5);
+  margin-top: 0.5rem;
+}
+
+.public-profile-page .recent-edits {
+  margin-top: 0.5rem;
+}
+
+.public-profile-page .recent-edits h4 {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0 0 0.75rem 0;
+}
+
+.public-profile-page .recent-edits-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.public-profile-page .recent-edit-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: all 0.2s ease;
+}
+
+.public-profile-page .recent-edit-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.public-profile-page .recent-edit-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: rgba(99, 102, 241, 0.2);
+  border-radius: 6px;
+  color: #818cf8;
+  flex-shrink: 0;
+}
+
+.public-profile-page .recent-edit-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.public-profile-page .recent-edit-header {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.public-profile-page .recent-edit-type {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.public-profile-page .recent-edit-name {
+  font-size: 0.8rem;
+  color: white;
+  font-weight: 700;
+}
+
+.public-profile-page a.recent-edit-name {
+  color: #60a5fa;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.public-profile-page a.recent-edit-name:hover {
+  color: #93c5fd;
+  text-decoration: underline;
+}
+
+.public-profile-page .recent-edit-secondary {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.4);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.public-profile-page .recent-edit-changes {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.6);
+  line-height: 1.4;
+  margin-top: 0.25rem;
+  padding: 0.35rem 0.5rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+  border-left: 2px solid rgba(99, 102, 241, 0.5);
+}
+
+.public-profile-page .change-summary-link {
+  color: #60a5fa;
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.2s ease;
+}
+
+.public-profile-page .change-summary-link:hover {
+  color: #93c5fd;
+  text-decoration: underline;
+}
+
+.public-profile-page .recent-edit-date {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.4);
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 /* Public Lists Section */

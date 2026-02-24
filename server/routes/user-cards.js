@@ -1,4 +1,5 @@
 const express = require('express')
+const { Prisma } = require('@prisma/client')
 const prisma = require('../config/prisma')
 const { authMiddleware } = require('../middleware/auth')
 const { sanitizeInput, sanitizeParams } = require('../middleware/inputSanitization')
@@ -238,6 +239,135 @@ const trackFirstCardIfNeeded = async (userId) => {
     console.error('Failed to track first card for campaign:', error.message)
   }
 }
+
+// POST /api/user/cards/bulk - Add multiple cards to user's collection in one request
+router.post('/bulk', async (req, res) => {
+  try {
+    const userId = req.user?.userId
+    const { card_ids, user_location, notes } = req.sanitized || req.body
+
+    if (!userId) {
+      return res.status(401).json({
+        error: 'Authentication error',
+        message: 'User ID not found in authentication token'
+      })
+    }
+
+    if (!Array.isArray(card_ids) || card_ids.length === 0) {
+      return res.status(400).json({
+        error: 'Validation error',
+        message: 'card_ids must be a non-empty array'
+      })
+    }
+
+    // Cap at 1000 cards per request to prevent abuse
+    if (card_ids.length > 1000) {
+      return res.status(400).json({
+        error: 'Validation error',
+        message: 'Maximum 1000 cards per bulk request'
+      })
+    }
+
+    const cardIdNumbers = card_ids.map(id => parseInt(id))
+
+    // Validate all cards exist in a single query
+    const existingCards = await prisma.$queryRaw`
+      SELECT card_id, series FROM card WHERE card_id IN (${Prisma.join(cardIdNumbers)})
+    `
+    const existingCardIds = new Set(existingCards.map(c => Number(c.card_id)))
+    const missingIds = cardIdNumbers.filter(id => !existingCardIds.has(id))
+
+    if (missingIds.length > 0) {
+      return res.status(404).json({
+        error: 'Not found',
+        message: `Cards not found: ${missingIds.join(', ')}`
+      })
+    }
+
+    // Generate random codes server-side
+    const chars = '0123456789abcdefghijkmnopqrstuvwxyzABCDEFGHJKMNOPQRSTUVWXYZ'
+    const generateCode = () => {
+      let result = ''
+      for (let i = 0; i < 4; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length))
+      }
+      return result
+    }
+
+    const locationValue = user_location ? parseInt(user_location) : null
+    const notesValue = notes || null
+    const userIdBigInt = BigInt(parseInt(userId))
+
+    // Insert all cards in a single transaction
+    const insertedIds = await prisma.$transaction(async (tx) => {
+      const ids = []
+      for (const cardId of cardIdNumbers) {
+        await tx.$queryRaw`
+          INSERT INTO user_card (
+            [user], card, random_code, user_location, notes, created
+          ) VALUES (
+            ${userIdBigInt},
+            ${cardId},
+            ${generateCode()},
+            ${locationValue},
+            ${notesValue},
+            GETDATE()
+          )
+        `
+        const idResult = await tx.$queryRaw`
+          SELECT CAST(SCOPE_IDENTITY() AS BIGINT) as user_card_id
+        `
+        ids.push(Number(idResult[0].user_card_id))
+      }
+      return ids
+    })
+
+    console.log(`Bulk added ${insertedIds.length} cards for user ${userId}`)
+
+    // Collect unique series IDs and update completion for each (async, don't block response)
+    const seriesIds = [...new Set(existingCards.map(c => Number(c.series)))]
+    for (const seriesId of seriesIds) {
+      updateUserSeriesCompletion(userId, seriesId)
+        .catch(err => console.error('Error updating series completion:', err))
+    }
+
+    // Track telemetry for the batch
+    telemetryService.trackCollectionEvent('cards_bulk_added', userId, null, {
+      count: insertedIds.length,
+      card_ids: cardIdNumbers
+    })
+
+    // Track first card for campaign conversion (async)
+    trackFirstCardIfNeeded(userId)
+
+    // Trigger achievement check once for the batch (async)
+    setImmediate(async () => {
+      try {
+        const achievementEngine = require('../services/achievementEngine')
+        await achievementEngine.checkUserAchievements(
+          req.user.user_id || userId,
+          'card_added',
+          { cardId: cardIdNumbers[0], bulkCount: cardIdNumbers.length }
+        )
+      } catch (error) {
+        console.error('Achievement check failed for bulk card_added:', error)
+      }
+    })
+
+    res.status(201).json({
+      message: `${insertedIds.length} cards added to collection successfully`,
+      added: insertedIds.length,
+      user_card_ids: insertedIds
+    })
+
+  } catch (error) {
+    console.error('Error bulk adding cards to collection:', error)
+    res.status(500).json({
+      error: 'Database error',
+      message: 'Failed to bulk add cards to collection'
+    })
+  }
+})
 
 // POST /api/user/cards - Add a card to user's collection
 router.post('/', async (req, res, next) => {

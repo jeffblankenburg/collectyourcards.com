@@ -553,14 +553,23 @@
   }
 }
 
-/* Admin Edit Button */
-.player-detail-page .admin-edit-button {
+/* Floating Action Button Container */
+.player-detail-page .player-detail-floating-action-container {
   position: fixed;
   bottom: 2rem;
   right: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.75rem;
+  z-index: 1000;
+}
+
+/* Floating Action Button */
+.player-detail-page .player-detail-floating-action-button {
   width: 56px;
   height: 56px;
-  background: #f59e0b;
+  background: #3b82f6;
   border: none;
   border-radius: 50%;
   color: white;
@@ -568,19 +577,30 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
   transition: all 0.2s ease;
-  z-index: 1000;
 }
 
-.player-detail-page .admin-edit-button:hover {
-  background: #d97706;
+.player-detail-page .player-detail-floating-action-button:hover {
+  background: #2563eb;
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(245, 158, 11, 0.5);
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.5);
 }
 
-.player-detail-page .admin-edit-button:active {
+.player-detail-page .player-detail-floating-action-button:active {
   transform: translateY(0);
+}
+
+@media (max-width: 480px) {
+  .player-detail-page .player-detail-floating-action-container {
+    bottom: 1rem;
+    right: 1rem;
+  }
+
+  .player-detail-page .player-detail-floating-action-button {
+    width: 48px;
+    height: 48px;
+  }
 }
 
 @media (max-width: 480px) {
@@ -591,9 +611,12 @@
     border-radius: 12px;
   }
 
-  .player-detail-page .admin-edit-button {
+  .player-detail-page .fab-container {
     bottom: 1rem;
     right: 1rem;
+  }
+
+  .player-detail-page .fab-button {
     width: 48px;
     height: 48px;
   }

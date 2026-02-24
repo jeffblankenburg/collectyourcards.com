@@ -1,6 +1,5 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import axios from 'axios'
-import * as XLSX from 'xlsx'
 import Icon from '../Icon'
 import { useToast } from '../../contexts/ToastContext'
 import './SuggestSeriesModalScoped.css'
@@ -12,10 +11,6 @@ function SuggestSeriesModal({ isOpen, onClose, onSuccess, preselectedSet = null 
   const [setSearchQuery, setSetSearchQuery] = useState('')
   const [setSearchResults, setSetSearchResults] = useState([])
   const [selectedSet, setSelectedSet] = useState(null)
-  const [uploadedFile, setUploadedFile] = useState(null)
-  const [parsedCards, setParsedCards] = useState([])
-  const [parseError, setParseError] = useState(null)
-  const fileInputRef = useRef(null)
 
   // Parent series for parallels
   const [seriesSearchQuery, setSeriesSearchQuery] = useState('')
@@ -48,12 +43,6 @@ function SuggestSeriesModal({ isOpen, onClose, onSuccess, preselectedSet = null 
       setSeriesSearchQuery('')
       setSeriesSearchResults([])
       setSelectedParentSeries(null)
-      setUploadedFile(null)
-      setParsedCards([])
-      setParseError(null)
-      if (fileInputRef.current) {
-        fileInputRef.current.value = ''
-      }
 
       // If preselected set provided, use it; otherwise clear selection
       if (preselectedSet) {
@@ -154,106 +143,6 @@ function SuggestSeriesModal({ isOpen, onClose, onSuccess, preselectedSet = null 
     setSeriesSearchResults([])
   }
 
-  const handleFileUpload = async (e) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    setUploadedFile(file)
-    setParseError(null)
-
-    try {
-      const buffer = await file.arrayBuffer()
-      const workbook = XLSX.read(buffer, { type: 'array' })
-      const sheetName = workbook.SheetNames[0]
-      const worksheet = workbook.Sheets[sheetName]
-      const rawData = XLSX.utils.sheet_to_json(worksheet, { header: 1 })
-
-      if (rawData.length < 2) {
-        setParseError('Spreadsheet appears to be empty or has no data rows')
-        setParsedCards([])
-        return
-      }
-
-      // Skip header row, parse data rows
-      const cards = rawData.slice(1).map((row, index) => {
-        if (!row || row.length === 0 || !row[0]) return null
-
-        const cardNumber = row[0] ? String(row[0]).trim() : ''
-        const playerNames = row[1] ? String(row[1]).trim() : ''
-        const teamNames = row[2] ? String(row[2]).trim() : ''
-        const rcIndicator = row[3] ? String(row[3]).trim().toLowerCase() : ''
-        const autoIndicator = row[4] ? String(row[4]).trim().toLowerCase() : ''
-        const relicIndicator = row[5] ? String(row[5]).trim().toLowerCase() : ''
-        const spIndicator = row[6] ? String(row[6]).trim().toLowerCase() : ''
-        const color = row[7] ? String(row[7]).trim() : ''
-        const printRun = row[8] ? parseInt(String(row[8]).trim()) || null : null
-        const notes = row[9] ? String(row[9]).trim() : ''
-
-        // Check for truthy indicators
-        const isTruthy = (val) => val && (val === 'rc' || val === 'auto' || val === 'relic' || val === 'sp' ||
-                                          val === 'yes' || val === 'true' || val === '1' || val === 'x')
-
-        return {
-          card_number: cardNumber,
-          player_names: playerNames,
-          team_names: teamNames,
-          is_rookie: isTruthy(rcIndicator),
-          is_autograph: isTruthy(autoIndicator),
-          is_relic: isTruthy(relicIndicator),
-          is_short_print: isTruthy(spIndicator),
-          color: color || null,
-          print_run: printRun,
-          notes: notes || null
-        }
-      }).filter(card => card && card.card_number)
-
-      if (cards.length === 0) {
-        setParseError('No valid card data found in spreadsheet')
-        setParsedCards([])
-        return
-      }
-
-      setParsedCards(cards)
-
-      // Auto-set the card count if not already set
-      if (!formData.proposed_base_card_count) {
-        handleChange('proposed_base_card_count', cards.length.toString())
-      }
-    } catch (err) {
-      console.error('Error parsing spreadsheet:', err)
-      setParseError('Failed to parse spreadsheet. Please check the format.')
-      setParsedCards([])
-    }
-  }
-
-  const handleRemoveFile = () => {
-    setUploadedFile(null)
-    setParsedCards([])
-    setParseError(null)
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ''
-    }
-  }
-
-  const handleDownloadTemplate = async () => {
-    try {
-      const response = await axios.get('/api/crowdsource/template/series-checklist', {
-        responseType: 'blob'
-      })
-      const url = window.URL.createObjectURL(new Blob([response.data]))
-      const link = document.createElement('a')
-      link.href = url
-      link.setAttribute('download', 'series-checklist-template.xlsx')
-      document.body.appendChild(link)
-      link.click()
-      link.remove()
-      window.URL.revokeObjectURL(url)
-    } catch (err) {
-      console.error('Error downloading template:', err)
-      showError('Failed to download template')
-    }
-  }
-
   const isValid = () => {
     if (!formData.proposed_name.trim() || !selectedSet) return false
     // If parallel, must have parent series selected
@@ -278,22 +167,36 @@ function SuggestSeriesModal({ isOpen, onClose, onSuccess, preselectedSet = null 
     try {
       const submissionData = {
         set_id: selectedSet.set_id,
-        name: formData.proposed_name.trim(),
-        description: formData.proposed_description.trim() || null,
-        base_card_count: formData.proposed_base_card_count ? parseInt(formData.proposed_base_card_count) : null,
-        is_parallel: formData.proposed_is_parallel,
-        parallel_of_series_id: formData.proposed_is_parallel && selectedParentSeries ? selectedParentSeries.series_id : null,
-        print_run: formData.proposed_print_run ? parseInt(formData.proposed_print_run) : null,
-        submission_notes: formData.submission_notes.trim() || null,
-        cards: parsedCards.length > 0 ? parsedCards : null
+        name: formData.proposed_name.trim()
       }
 
-      await axios.post('/api/crowdsource/series', submissionData)
+      // Only include optional fields if they have values
+      if (formData.proposed_description.trim()) {
+        submissionData.description = formData.proposed_description.trim()
+      }
+      if (formData.proposed_base_card_count) {
+        submissionData.base_card_count = parseInt(formData.proposed_base_card_count)
+      }
+      if (formData.proposed_is_parallel) {
+        submissionData.is_parallel = true
+        if (selectedParentSeries) {
+          submissionData.parallel_of_series_id = selectedParentSeries.series_id
+        }
+      }
+      if (formData.proposed_print_run) {
+        submissionData.print_run = parseInt(formData.proposed_print_run)
+      }
+      if (formData.submission_notes.trim()) {
+        submissionData.submission_notes = formData.submission_notes.trim()
+      }
 
-      const message = parsedCards.length > 0
-        ? `Series submission with ${parsedCards.length} cards created! It will be reviewed by our team.`
-        : 'Series submission created! It will be reviewed by our team.'
-      success(message)
+      const response = await axios.post('/api/crowdsource/series', submissionData)
+
+      if (response.data.auto_approved) {
+        success('Series created successfully!')
+      } else {
+        success('Series submission created! It will be reviewed by our team.')
+      }
       onSuccess?.()
       onClose()
     } catch (err) {
@@ -477,115 +380,6 @@ function SuggestSeriesModal({ isOpen, onClose, onSuccess, preselectedSet = null 
                 min="1"
               />
             </div>
-          </div>
-
-          {/* Checklist Upload Section */}
-          <div className="suggest-series-upload-section">
-            <div className="suggest-series-upload-header">
-              <label>
-                <Icon name="file-spreadsheet" size={16} />
-                Upload Checklist (Optional)
-              </label>
-              <button
-                type="button"
-                className="suggest-series-template-btn"
-                onClick={handleDownloadTemplate}
-              >
-                <Icon name="download" size={14} />
-                Download Template
-              </button>
-            </div>
-            <p className="suggest-series-upload-hint">
-              Upload an Excel file with your card data. Use our template for the correct format.
-            </p>
-
-            {!uploadedFile ? (
-              <div className="suggest-series-upload-dropzone">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".xlsx,.xls"
-                  onChange={handleFileUpload}
-                  className="suggest-series-file-input"
-                  id="checklist-upload"
-                />
-                <label htmlFor="checklist-upload" className="suggest-series-upload-label">
-                  <Icon name="upload" size={24} />
-                  <span>Click to upload or drag and drop</span>
-                  <span className="suggest-series-upload-formats">.xlsx or .xls files</span>
-                </label>
-              </div>
-            ) : (
-              <div className="suggest-series-file-info">
-                <div className="suggest-series-file-details">
-                  <Icon name="file-spreadsheet" size={20} />
-                  <div>
-                    <span className="suggest-series-file-name">{uploadedFile.name}</span>
-                    {parsedCards.length > 0 && (
-                      <span className="suggest-series-card-count">
-                        {parsedCards.length} cards parsed
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  className="suggest-series-remove-file"
-                  onClick={handleRemoveFile}
-                >
-                  <Icon name="x" size={16} />
-                </button>
-              </div>
-            )}
-
-            {parseError && (
-              <div className="suggest-series-parse-error">
-                <Icon name="alert-circle" size={14} />
-                {parseError}
-              </div>
-            )}
-
-            {parsedCards.length > 0 && (
-              <div className="suggest-series-preview">
-                <div className="suggest-series-preview-header">
-                  Preview (first 5 cards)
-                </div>
-                <div className="suggest-series-preview-table">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>#</th>
-                        <th>Player(s)</th>
-                        <th>Team(s)</th>
-                        <th>Flags</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {parsedCards.slice(0, 5).map((card, idx) => (
-                        <tr key={idx}>
-                          <td>{card.card_number}</td>
-                          <td>{card.player_names || '-'}</td>
-                          <td>{card.team_names || '-'}</td>
-                          <td className="suggest-series-flags">
-                            {card.is_rookie && <span className="flag-rc">RC</span>}
-                            {card.is_autograph && <span className="flag-auto">Auto</span>}
-                            {card.is_relic && <span className="flag-relic">Relic</span>}
-                            {card.is_short_print && <span className="flag-sp">SP</span>}
-                            {card.color && <span className="flag-color">{card.color}</span>}
-                            {card.print_run && <span className="flag-print-run">/{card.print_run}</span>}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  {parsedCards.length > 5 && (
-                    <div className="suggest-series-preview-more">
-                      ...and {parsedCards.length - 5} more cards
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
           </div>
 
           <div className="suggest-series-form-row">

@@ -69,16 +69,19 @@ class TelemetryService {
       })
 
       // Configure exporters based on environment
-      const traceExporter = (dynatraceUrl && dynatraceToken)
+      // In development without Dynatrace, disable verbose console exporters
+      const isDynatraceConfigured = dynatraceUrl && dynatraceToken
+
+      const traceExporter = isDynatraceConfigured
         ? new OTLPTraceExporter({
             url: `${dynatraceUrl}/api/v2/otlp/v1/traces`,
             headers: {
               'Authorization': `Api-Token ${dynatraceToken}`
             }
           })
-        : new ConsoleSpanExporter()
+        : null // Disable console trace exporter in dev - too noisy
 
-      const metricReader = (dynatraceUrl && dynatraceToken)
+      const metricReader = isDynatraceConfigured
         ? new PeriodicExportingMetricReader({
             exporter: new OTLPMetricExporter({
               url: `${dynatraceUrl}/api/v2/otlp/v1/metrics`,
@@ -88,20 +91,24 @@ class TelemetryService {
             }),
             exportIntervalMillis: 60000 // Export every 60 seconds
           })
-        : new PeriodicExportingMetricReader({
-            exporter: new ConsoleMetricExporter(),
-            exportIntervalMillis: 60000
-          })
+        : null // Disable console metric exporter in dev - too noisy
 
       // Configure log exporter
-      const logExporter = (dynatraceUrl && dynatraceToken)
+      const logExporter = isDynatraceConfigured
         ? new OTLPLogExporter({
             url: `${dynatraceUrl}/api/v2/otlp/v1/logs`,
             headers: {
               'Authorization': `Api-Token ${dynatraceToken}`
             }
           })
-        : new ConsoleLogRecordExporter()
+        : null // Disable console log exporter in dev - too noisy
+
+      // In development without Dynatrace, skip SDK initialization entirely
+      if (!isDynatraceConfigured) {
+        console.log('🔍 OpenTelemetry disabled in development (no Dynatrace configured)')
+        this.isEnabled = false
+        return
+      }
 
       // Initialize Logger Provider with log record processor
       const logRecordProcessor = new BatchLogRecordProcessor(logExporter, {
@@ -148,11 +155,7 @@ class TelemetryService {
 
       this.isEnabled = true
 
-      const mode = (dynatraceUrl && dynatraceToken) ? 'Dynatrace' : 'console (development mode)'
-      console.log(`🔍 OpenTelemetry initialized successfully`)
-      console.log(`   📊 Traces: exporting to ${mode}`)
-      console.log(`   📈 Metrics: exporting to ${mode}`)
-      console.log(`   📝 Logs: exporting to ${mode}`)
+      console.log(`🔍 OpenTelemetry initialized (exporting to Dynatrace)`)
 
     } catch (error) {
       console.warn('⚠️ OpenTelemetry initialization failed:', error.message)

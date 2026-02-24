@@ -16,7 +16,11 @@ import {
   ChevronDown,
   Users,
   Award,
-  MessageSquare
+  MessageSquare,
+  User,
+  UserPlus,
+  UserMinus,
+  Tag
 } from 'lucide-react'
 import './AdminCrowdsourceScoped.css'
 
@@ -24,7 +28,10 @@ const TYPE_CONFIG = {
   set: { label: 'New Set', icon: Archive, color: '#22c55e' },
   series: { label: 'New Series', icon: Layers, color: '#3b82f6' },
   card: { label: 'New Card', icon: CreditCard, color: '#f59e0b' },
-  card_edit: { label: 'Card Edit', icon: Edit3, color: '#8b5cf6' }
+  card_edit: { label: 'Card Edit', icon: Edit3, color: '#8b5cf6' },
+  player_edit: { label: 'Player Edit', icon: User, color: '#ec4899' },
+  player_alias: { label: 'Player Alias', icon: Tag, color: '#14b8a6' },
+  player_team: { label: 'Player Team', icon: UserPlus, color: '#f97316' }
 }
 
 const TRUST_LEVELS = {
@@ -103,7 +110,8 @@ function AdminCrowdsource() {
     setReviewLoading(true)
 
     try {
-      const type = selectedSubmission.submission_type
+      // Convert submission_type from underscores to hyphens for API endpoint
+      const type = selectedSubmission.submission_type.replace(/_/g, '-')
       const endpoint = `/api/crowdsource/admin/review/${type}/${selectedSubmission.submission_id}/${reviewAction}`
 
       await axios.post(endpoint, { review_notes: reviewNotes.trim() || null })
@@ -313,6 +321,103 @@ function AdminCrowdsource() {
           </div>
         )
 
+      case 'player_edit':
+        return (
+          <div className="admin-crowd-submission-details">
+            <div className="admin-crowd-detail-row">
+              <span className="admin-crowd-detail-label">Player:</span>
+              <span className="admin-crowd-detail-value">{submission.player_name}</span>
+            </div>
+            <div className="admin-crowd-changes">
+              <strong>Proposed Changes:</strong>
+              {submission.proposed_first_name !== null && submission.proposed_first_name !== submission.previous_first_name && (
+                <div className="admin-crowd-change-row">
+                  <span>First Name:</span>
+                  <span className="admin-crowd-change-from">{submission.previous_first_name || '(empty)'}</span>
+                  <span className="admin-crowd-change-arrow">→</span>
+                  <span className="admin-crowd-change-to">{submission.proposed_first_name}</span>
+                </div>
+              )}
+              {submission.proposed_last_name !== null && submission.proposed_last_name !== submission.previous_last_name && (
+                <div className="admin-crowd-change-row">
+                  <span>Last Name:</span>
+                  <span className="admin-crowd-change-from">{submission.previous_last_name || '(empty)'}</span>
+                  <span className="admin-crowd-change-arrow">→</span>
+                  <span className="admin-crowd-change-to">{submission.proposed_last_name}</span>
+                </div>
+              )}
+              {submission.proposed_nick_name !== null && submission.proposed_nick_name !== submission.previous_nick_name && (
+                <div className="admin-crowd-change-row">
+                  <span>Nickname:</span>
+                  <span className="admin-crowd-change-from">{submission.previous_nick_name || '(none)'}</span>
+                  <span className="admin-crowd-change-arrow">→</span>
+                  <span className="admin-crowd-change-to">{submission.proposed_nick_name || '(none)'}</span>
+                </div>
+              )}
+              {submission.proposed_birthdate !== null && (
+                <div className="admin-crowd-change-row">
+                  <span>Birthdate:</span>
+                  <span className="admin-crowd-change-from">{submission.previous_birthdate ? new Date(submission.previous_birthdate).toLocaleDateString() : '(none)'}</span>
+                  <span className="admin-crowd-change-arrow">→</span>
+                  <span className="admin-crowd-change-to">{new Date(submission.proposed_birthdate).toLocaleDateString()}</span>
+                </div>
+              )}
+              {submission.proposed_is_hof !== null && submission.proposed_is_hof !== submission.previous_is_hof && (
+                <div className="admin-crowd-change-row">
+                  <span>Hall of Fame:</span>
+                  <span className="admin-crowd-change-from">{submission.previous_is_hof ? 'Yes' : 'No'}</span>
+                  <span className="admin-crowd-change-arrow">→</span>
+                  <span className="admin-crowd-change-to">{submission.proposed_is_hof ? 'Yes' : 'No'}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        )
+
+      case 'player_alias':
+        return (
+          <div className="admin-crowd-submission-details">
+            <div className="admin-crowd-detail-row">
+              <span className="admin-crowd-detail-label">Player:</span>
+              <span className="admin-crowd-detail-value">{submission.player_name}</span>
+            </div>
+            <div className="admin-crowd-detail-row">
+              <span className="admin-crowd-detail-label">Proposed Alias:</span>
+              <span className="admin-crowd-detail-value admin-crowd-alias-highlight">{submission.proposed_alias_name}</span>
+            </div>
+            {submission.proposed_alias_type && (
+              <div className="admin-crowd-detail-row">
+                <span className="admin-crowd-detail-label">Alias Type:</span>
+                <span className="admin-crowd-detail-value admin-crowd-alias-type">{submission.proposed_alias_type}</span>
+              </div>
+            )}
+          </div>
+        )
+
+      case 'player_team':
+        return (
+          <div className="admin-crowd-submission-details">
+            <div className="admin-crowd-detail-row">
+              <span className="admin-crowd-detail-label">Player:</span>
+              <span className="admin-crowd-detail-value">{submission.player_name}</span>
+            </div>
+            <div className="admin-crowd-detail-row">
+              <span className="admin-crowd-detail-label">Team:</span>
+              <span className="admin-crowd-detail-value">{submission.team_name}</span>
+            </div>
+            <div className="admin-crowd-detail-row">
+              <span className="admin-crowd-detail-label">Action:</span>
+              <span className={`admin-crowd-detail-value admin-crowd-action-${submission.action_type}`}>
+                {submission.action_type === 'add' ? (
+                  <><UserPlus size={14} /> Add Team Association</>
+                ) : (
+                  <><UserMinus size={14} /> Remove Team Association</>
+                )}
+              </span>
+            </div>
+          </div>
+        )
+
       default:
         return null
     }
@@ -361,7 +466,22 @@ function AdminCrowdsource() {
           <div className="admin-crowd-stat-card">
             <Edit3 size={20} />
             <div className="admin-crowd-stat-value">{stats.pending_card_edits}</div>
-            <div className="admin-crowd-stat-label">Edits</div>
+            <div className="admin-crowd-stat-label">Card Edits</div>
+          </div>
+          <div className="admin-crowd-stat-card">
+            <User size={20} />
+            <div className="admin-crowd-stat-value">{stats.pending_player_edits}</div>
+            <div className="admin-crowd-stat-label">Player Edits</div>
+          </div>
+          <div className="admin-crowd-stat-card">
+            <Tag size={20} />
+            <div className="admin-crowd-stat-value">{stats.pending_player_aliases}</div>
+            <div className="admin-crowd-stat-label">Aliases</div>
+          </div>
+          <div className="admin-crowd-stat-card">
+            <UserPlus size={20} />
+            <div className="admin-crowd-stat-value">{stats.pending_player_teams}</div>
+            <div className="admin-crowd-stat-label">Player Teams</div>
           </div>
           <div className="admin-crowd-stat-card">
             <Users size={20} />
@@ -384,6 +504,9 @@ function AdminCrowdsource() {
             <option value="series">New Series</option>
             <option value="card">New Cards</option>
             <option value="card_edit">Card Edits</option>
+            <option value="player_edit">Player Edits</option>
+            <option value="player_alias">Player Aliases</option>
+            <option value="player_team">Player Teams</option>
           </select>
         </div>
         <div className="admin-crowd-results-info">

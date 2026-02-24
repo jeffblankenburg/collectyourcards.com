@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import axios from 'axios'
+import { useAuth } from '../../contexts/AuthContext'
 import { useToast } from '../../contexts/ToastContext'
 import Icon from '../Icon'
 import './EditPlayerModal.css'
 
-function EditPlayerModal({ player, isOpen, onClose, onSave }) {
+function EditPlayerModal({ player, isOpen, onClose, onSave, onDeleteSuccess }) {
   const [editForm, setEditForm] = useState({})
   const [editingPlayer, setEditingPlayer] = useState(null)
   const [availableTeams, setAvailableTeams] = useState([])
@@ -16,9 +17,14 @@ function EditPlayerModal({ player, isOpen, onClose, onSave }) {
   const [reassignToTeam, setReassignToTeam] = useState('')
   const [saving, setSaving] = useState(false)
   const [reassigning, setReassigning] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [deleteConfirmText, setDeleteConfirmText] = useState('')
+  const [deleting, setDeleting] = useState(false)
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 })
   const addButtonRef = useRef(null)
+  const { user } = useAuth()
   const { addToast } = useToast()
+  const isSuperAdmin = user?.role === 'superadmin'
 
   useEffect(() => {
     if (isOpen && player) {
@@ -238,6 +244,36 @@ function EditPlayerModal({ player, isOpen, onClose, onSave }) {
       addToast(error.response?.data?.message || 'Failed to update player', 'error')
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handleClose = () => {
+    setShowDeleteConfirm(false)
+    setDeleteConfirmText('')
+    onClose()
+  }
+
+  const handleDeleteClick = () => {
+    setShowDeleteConfirm(true)
+    setDeleteConfirmText('')
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!editingPlayer || deleteConfirmText !== 'DELETE') return
+
+    try {
+      setDeleting(true)
+      await axios.delete(`/api/admin/players/${editingPlayer.player_id}`)
+      addToast(`Player "${editingPlayer.first_name} ${editingPlayer.last_name}" has been permanently deleted`, 'success')
+      handleClose()
+      if (onDeleteSuccess) {
+        onDeleteSuccess(editingPlayer.player_id)
+      }
+    } catch (error) {
+      console.error('Error deleting player:', error)
+      addToast(`Failed to delete player: ${error.response?.data?.message || error.message}`, 'error')
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -470,30 +506,106 @@ function EditPlayerModal({ player, isOpen, onClose, onSave }) {
             </div>
           </div>
 
+          {/* Delete Confirmation Section - Superadmin Only */}
+          {isSuperAdmin && showDeleteConfirm && (
+            <div className="edit-player-delete-section">
+              <div className="edit-player-delete-warning">
+                <Icon name="alert-triangle" size={24} />
+                <div className="edit-player-delete-warning-content">
+                  <h4>DANGER: Permanent Deletion</h4>
+                  <p>
+                    You are about to <strong>permanently delete</strong> the player "{editingPlayer?.first_name} {editingPlayer?.last_name}" and ALL of their data:
+                  </p>
+                  <ul>
+                    <li>All {editingPlayer?.card_count || 0} card associations</li>
+                    <li>All team associations ({editingPlayer?.teams?.length || 0} teams)</li>
+                    <li>All player aliases</li>
+                    <li>All user collection data for their cards</li>
+                  </ul>
+                  <p className="edit-player-delete-irreversible">
+                    This action is <strong>IRREVERSIBLE</strong>. There is no undo.
+                  </p>
+                </div>
+              </div>
+              <div className="edit-player-delete-confirm-input">
+                <label>Type DELETE to confirm:</label>
+                <input
+                  type="text"
+                  value={deleteConfirmText}
+                  onChange={(e) => setDeleteConfirmText(e.target.value.toUpperCase())}
+                  placeholder="Type DELETE"
+                  autoComplete="off"
+                />
+              </div>
+              <div className="edit-player-delete-actions">
+                <button
+                  className="edit-player-delete-cancel"
+                  onClick={() => {
+                    setShowDeleteConfirm(false)
+                    setDeleteConfirmText('')
+                  }}
+                  disabled={deleting}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="edit-player-delete-confirm"
+                  onClick={handleDeleteConfirm}
+                  disabled={deleteConfirmText !== 'DELETE' || deleting}
+                >
+                  {deleting ? (
+                    <>
+                      <div className="card-icon-spinner small"></div>
+                      Deleting...
+                    </>
+                  ) : (
+                    <>
+                      <Icon name="trash-2" size={16} />
+                      Permanently Delete Player
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="modal-actions">
-            <button 
-              type="button" 
-              className="cancel-btn" 
-              onClick={onClose}
-              disabled={saving}
-            >
-              Cancel
-            </button>
-            <button 
-              type="button" 
-              className="save-btn" 
-              onClick={handleSave}
-              disabled={saving || (!editForm.first_name?.trim() && !editForm.last_name?.trim() && !editForm.nick_name?.trim())}
-            >
-              {saving ? (
-                <>
-                  <div className="card-icon-spinner small"></div>
-                  Saving...
-                </>
-              ) : (
-                'Save Changes'
-              )}
-            </button>
+            {isSuperAdmin && !showDeleteConfirm && (
+              <button
+                type="button"
+                className="delete-btn"
+                onClick={handleDeleteClick}
+                disabled={saving}
+              >
+                <Icon name="trash-2" size={16} />
+                Delete Player
+              </button>
+            )}
+            <div className="modal-actions-right">
+              <button
+                type="button"
+                className="cancel-btn"
+                onClick={handleClose}
+                disabled={saving || deleting}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="save-btn"
+                onClick={handleSave}
+                disabled={saving || showDeleteConfirm || (!editForm.first_name?.trim() && !editForm.last_name?.trim() && !editForm.nick_name?.trim())}
+              >
+                {saving ? (
+                  <>
+                    <div className="card-icon-spinner small"></div>
+                    Saving...
+                  </>
+                ) : (
+                  'Save Changes'
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </div>

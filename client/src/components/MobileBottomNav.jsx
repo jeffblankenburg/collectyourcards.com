@@ -31,9 +31,8 @@ function MobileBottomNav() {
   }
 
   const handleQuickAdd = () => {
-    // Navigate to collection with add modal trigger
-    // This could be enhanced to open a quick-add sheet
-    navigate('/collection?action=add')
+    // Navigate to Add Card page
+    navigate('/add-card')
   }
 
   return (

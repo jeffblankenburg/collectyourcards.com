@@ -8,11 +8,14 @@ router.get('/:setId', optionalAuthMiddleware, async (req, res) => {
   try {
     const { setId } = req.params
     const userId = req.user?.id
+    const userRole = req.user?.role
+    const isAdmin = ['admin', 'superadmin', 'data_admin'].includes(userRole)
 
     console.log('Getting series for set:', setId, userId ? `for user ${userId}` : '(no user)')
 
     // Get series for the specified set
     // If user is authenticated, also include their completion data
+    // Admins can see empty series (card_count = 0), regular users only see populated series
     const seriesBySetQuery = `
       SELECT
         s.series_id,
@@ -42,7 +45,7 @@ router.get('/:setId', optionalAuthMiddleware, async (req, res) => {
       LEFT JOIN series parent_s ON s.parallel_of_series = parent_s.series_id
       LEFT JOIN color c ON s.color = c.color_id
       ${userId ? `LEFT JOIN user_series_completion usc ON s.series_id = usc.series_id AND usc.user_id = ${parseInt(userId)}` : ''}
-      WHERE s.[set] = ${parseInt(setId)} AND s.card_count > 0
+      WHERE s.[set] = ${parseInt(setId)} ${isAdmin ? '' : 'AND s.card_count > 0'}
       ORDER BY s.is_base DESC, s.name ASC
     `
 

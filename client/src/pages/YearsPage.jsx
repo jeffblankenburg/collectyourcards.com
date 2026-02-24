@@ -1,19 +1,24 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { createPortal } from 'react-dom'
 import axios from 'axios'
 import { useToast } from '../contexts/ToastContext'
+import { useAuth } from '../contexts/AuthContext'
 import Icon from '../components/Icon'
 import { YearCard } from '../components/cards'
+import SuggestSetModal from '../components/modals/SuggestSetModal'
 import './YearsPageScoped.css'
 
 function YearsPage() {
   const navigate = useNavigate()
   const { addToast } = useToast()
+  const { isAuthenticated } = useAuth()
 
   const [years, setYears] = useState([])
   const [filteredYears, setFilteredYears] = useState([])
   const [loading, setLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
+  const [showSuggestSetModal, setShowSuggestSetModal] = useState(false)
 
   useEffect(() => {
     loadYears()
@@ -113,6 +118,28 @@ function YearsPage() {
           </div>
         )}
       </div>
+
+      {/* FAB for adding new sets */}
+      {isAuthenticated && (
+        <button
+          className="years-page-fab"
+          onClick={() => setShowSuggestSetModal(true)}
+          title="Suggest New Set"
+        >
+          <Icon name="edit" size={24} />
+        </button>
+      )}
+
+      {/* Suggest Set Modal */}
+      {showSuggestSetModal && createPortal(
+        <SuggestSetModal
+          isOpen={showSuggestSetModal}
+          onClose={() => setShowSuggestSetModal(false)}
+          onSuccess={() => loadYears()}
+          yearEditable={true}
+        />,
+        document.body
+      )}
     </div>
   )
 }

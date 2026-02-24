@@ -355,6 +355,14 @@
   text-align: left;
 }
 
+.result-nickname {
+  color: #94a3b8;
+  font-style: italic;
+  font-weight: 400;
+  margin-left: 0.5rem;
+  font-size: 0.85em;
+}
+
 .result-count {
   display: flex;
   align-items: center;

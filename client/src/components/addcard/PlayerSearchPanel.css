@@ -1,0 +1,316 @@
+/* PlayerSearchPanel - Player search for Add Card flow */
+
+.player-search-panel {
+  background: var(--card-bg, #ffffff);
+  border-radius: 12px;
+  padding: 1.5rem;
+  border: 1px solid var(--border-color, #e2e8f0);
+}
+
+.player-search-panel-selected {
+  background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+  border-color: #86efac;
+}
+
+.player-search-step-label {
+  display: block;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary, #1e293b);
+  margin-bottom: 1rem;
+}
+
+/* Search Input */
+.player-search-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.player-search-icon {
+  position: absolute;
+  left: 16px;
+  color: var(--text-secondary, #64748b);
+  pointer-events: none;
+}
+
+.player-search-input {
+  width: 100%;
+  padding: 1rem 1rem 1rem 52px;
+  font-size: 1.1rem;
+  border: 2px solid var(--border-color, #e2e8f0);
+  border-radius: 12px;
+  background: var(--bg-primary, #ffffff);
+  color: var(--text-primary, #1e293b);
+  transition: all 0.2s ease;
+}
+
+.player-search-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.player-search-input::placeholder {
+  color: var(--text-tertiary, #94a3b8);
+}
+
+.player-search-loading {
+  position: absolute;
+  right: 16px;
+}
+
+.player-search-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--border-color, #e2e8f0);
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: player-search-spin 0.8s linear infinite;
+}
+
+@keyframes player-search-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Search Results */
+.player-search-results {
+  margin-top: 1rem;
+}
+
+.player-search-no-results {
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-secondary, #64748b);
+}
+
+.player-search-no-results p:first-child {
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
+.player-search-hint {
+  font-size: 0.875rem;
+  color: var(--text-tertiary, #94a3b8);
+}
+
+.player-search-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Player Result Card */
+.player-search-result-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.875rem 1rem;
+  background: var(--bg-primary, #ffffff);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+  width: 100%;
+}
+
+.player-search-result-card:hover {
+  background: var(--bg-secondary, #f8fafc);
+  border-color: #3b82f6;
+  transform: translateX(4px);
+}
+
+.player-search-result-card:active {
+  transform: translateX(2px);
+}
+
+.player-result-avatar {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.player-result-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.player-result-avatar-fallback {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-secondary, #64748b);
+  text-transform: uppercase;
+}
+
+.player-result-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.player-result-name {
+  font-weight: 600;
+  color: var(--text-primary, #1e293b);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.player-hof-badge {
+  font-size: 0.625rem;
+  font-weight: 700;
+  color: #b45309;
+  background: #fef3c7;
+  padding: 0.125rem 0.375rem;
+  border-radius: 4px;
+  letter-spacing: 0.05em;
+}
+
+.player-result-cards {
+  font-size: 0.875rem;
+  color: var(--text-secondary, #64748b);
+}
+
+.player-result-arrow {
+  flex-shrink: 0;
+  color: var(--text-tertiary, #94a3b8);
+  transition: transform 0.2s ease;
+}
+
+.player-search-result-card:hover .player-result-arrow {
+  transform: translateX(4px);
+  color: #3b82f6;
+}
+
+/* Selected State */
+.player-search-selected-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.player-search-selected-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 10px;
+  border: 1px solid #86efac;
+}
+
+.player-search-selected-avatar {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: linear-gradient(135deg, #bbf7d0 0%, #86efac 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.player-search-selected-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.player-search-avatar-placeholder {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #166534;
+  text-transform: uppercase;
+}
+
+.player-search-selected-details {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.player-search-selected-name {
+  font-weight: 600;
+  color: #166534;
+}
+
+.player-search-selected-cards {
+  font-size: 0.875rem;
+  color: #15803d;
+}
+
+.player-search-change-btn {
+  flex-shrink: 0;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #166534;
+  background: transparent;
+  border: 1px solid #86efac;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.player-search-change-btn:hover {
+  background: rgba(255, 255, 255, 0.5);
+  border-color: #22c55e;
+}
+
+/* Initial Hint */
+.player-search-initial-hint {
+  text-align: center;
+  padding: 1.5rem;
+  color: var(--text-tertiary, #94a3b8);
+  font-size: 0.9rem;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .player-search-panel {
+    padding: 1rem;
+  }
+
+  .player-search-input {
+    padding: 0.875rem 0.875rem 0.875rem 48px;
+    font-size: 1rem;
+  }
+
+  .player-search-icon {
+    left: 14px;
+    width: 20px;
+    height: 20px;
+  }
+
+  .player-result-avatar {
+    width: 40px;
+    height: 40px;
+  }
+
+  .player-search-selected-avatar {
+    width: 40px;
+    height: 40px;
+  }
+
+  .player-search-selected-info {
+    flex-wrap: wrap;
+  }
+
+  .player-search-change-btn {
+    width: 100%;
+    margin-top: 0.5rem;
+  }
+}

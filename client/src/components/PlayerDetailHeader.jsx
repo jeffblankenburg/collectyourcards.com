@@ -56,7 +56,18 @@ const PlayerDetailHeader = ({
           )}
           {player.birthdate && (
             <p className="player-birthdate">
-              Born: {new Date(player.birthdate + 'T00:00:00').toLocaleDateString()}
+              Born: {(() => {
+                try {
+                  const dateStr = typeof player.birthdate === 'string'
+                    ? player.birthdate.split('T')[0]
+                    : player.birthdate
+                  const date = new Date(dateStr + 'T00:00:00')
+                  if (isNaN(date.getTime())) return null
+                  return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+                } catch {
+                  return null
+                }
+              })()}
             </p>
           )}
           

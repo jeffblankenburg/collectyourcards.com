@@ -130,6 +130,7 @@ router.post('/', requireDataAdmin, async (req, res) => {
 router.put('/:id', requireDataAdmin, async (req, res) => {
   try {
     const cardId = parseInt(req.params.id)
+    const userId = req.user?.userId
     const { card_number, sort_order, is_rookie, is_autograph, is_relic, is_short_print, print_run, notes, color_id, players } = req.body
 
     if (!cardId) {
@@ -149,7 +150,7 @@ router.put('/:id', requireDataAdmin, async (req, res) => {
       color: color_id ? parseInt(color_id) : null
     }
 
-    // Check if card exists
+    // Check if card exists and capture previous values for audit history
     const existingCard = await prisma.card.findUnique({
       where: { card_id: cardId }
     })
@@ -157,6 +158,27 @@ router.put('/:id', requireDataAdmin, async (req, res) => {
     if (!existingCard) {
       return res.status(404).json({ error: 'Card not found' })
     }
+
+    // Store previous values for audit trail
+    const previousValues = {
+      card_number: existingCard.card_number,
+      is_rookie: existingCard.is_rookie,
+      is_autograph: existingCard.is_autograph,
+      is_relic: existingCard.is_relic,
+      is_short_print: existingCard.is_short_print,
+      print_run: existingCard.print_run,
+      notes: existingCard.notes
+    }
+
+    // Check if any auditable fields actually changed
+    const hasChanges =
+      previousValues.card_number !== updateData.card_number ||
+      previousValues.is_rookie !== updateData.is_rookie ||
+      previousValues.is_autograph !== updateData.is_autograph ||
+      previousValues.is_relic !== updateData.is_relic ||
+      previousValues.is_short_print !== updateData.is_short_print ||
+      previousValues.print_run !== updateData.print_run ||
+      previousValues.notes !== updateData.notes
 
     // Use a transaction to update both card and player relationships
     await prisma.$transaction(async (tx) => {
@@ -204,6 +226,38 @@ router.put('/:id', requireDataAdmin, async (req, res) => {
             console.warn(`No player_team found for player ${playerId} and team ${teamId}`)
           }
         }
+      }
+
+      // Log the change to card_edit_submissions for audit history (admin = auto-approved)
+      if (hasChanges && userId) {
+        await tx.card_edit_submissions.create({
+          data: {
+            card_id: BigInt(cardId),
+            user_id: BigInt(userId),
+            // Previous values (what it was before)
+            previous_card_number: previousValues.card_number,
+            previous_is_rookie: previousValues.is_rookie,
+            previous_is_autograph: previousValues.is_autograph,
+            previous_is_relic: previousValues.is_relic,
+            previous_is_short_print: previousValues.is_short_print,
+            previous_print_run: previousValues.print_run,
+            previous_notes: previousValues.notes,
+            // Proposed values (what it changed to)
+            proposed_card_number: updateData.card_number,
+            proposed_is_rookie: updateData.is_rookie,
+            proposed_is_autograph: updateData.is_autograph,
+            proposed_is_relic: updateData.is_relic,
+            proposed_is_short_print: updateData.is_short_print,
+            proposed_print_run: updateData.print_run,
+            proposed_notes: updateData.notes,
+            // Auto-approve for admin users
+            status: 'approved',
+            reviewed_by: BigInt(userId),
+            reviewed_at: new Date(),
+            review_notes: 'Admin direct edit - auto-approved',
+            created_at: new Date()
+          }
+        })
       }
     })
 

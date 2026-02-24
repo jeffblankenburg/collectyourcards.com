@@ -1283,14 +1283,22 @@
   }
 }
 
-/* Admin Edit Button */
-.card-detail-page .admin-edit-button {
+/* Floating Action Button (FAB) */
+.card-detail-page .fab-container {
   position: fixed;
   bottom: 2rem;
   right: 2rem;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.75rem;
+}
+
+.card-detail-page .fab-button {
   width: 56px;
   height: 56px;
-  background: #f59e0b;
+  background: #3b82f6;
   border: none;
   border-radius: 50%;
   color: white;
@@ -1298,27 +1306,107 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
   transition: all 0.2s ease;
-  z-index: 1000;
 }
 
-.card-detail-page .admin-edit-button:hover {
-  background: #d97706;
+.card-detail-page .fab-button:hover {
+  background: #2563eb;
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(245, 158, 11, 0.5);
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.5);
 }
 
-.card-detail-page .admin-edit-button:active {
-  transform: translateY(0);
+.card-detail-page .fab-button.active {
+  background: #ef4444;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+}
+
+.card-detail-page .fab-button.active:hover {
+  background: #dc2626;
+  box-shadow: 0 6px 16px rgba(239, 68, 68, 0.5);
+}
+
+.card-detail-page .fab-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  background: rgba(30, 41, 59, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  padding: 0.5rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  animation: cardFabMenuSlideIn 0.2s ease-out;
+  min-width: 280px;
+}
+
+@keyframes cardFabMenuSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.card-detail-page .fab-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.card-detail-page .fab-menu-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.card-detail-page .fab-menu-item svg {
+  flex-shrink: 0;
+  color: #60a5fa;
+}
+
+.card-detail-page .fab-menu-item:hover svg {
+  color: #93c5fd;
+}
+
+.card-detail-page .fab-menu-item.admin svg {
+  color: #fbbf24;
+}
+
+.card-detail-page .fab-menu-item.admin:hover svg {
+  color: #fcd34d;
 }
 
 @media (max-width: 480px) {
-  .card-detail-page .admin-edit-button {
+  .card-detail-page .fab-container {
     bottom: 80px; /* Above mobile bottom nav */
     right: 1rem;
+  }
+
+  .card-detail-page .fab-button {
     width: 48px;
     height: 48px;
+  }
+
+  .card-detail-page .fab-menu {
+    min-width: 240px;
+  }
+
+  .card-detail-page .fab-menu-item {
+    font-size: 0.8rem;
+    padding: 0.625rem 0.875rem;
   }
 
   /* Touch-friendly action buttons */

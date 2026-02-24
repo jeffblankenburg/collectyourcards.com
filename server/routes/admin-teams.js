@@ -187,7 +187,7 @@ router.put('/teams/:id', async (req, res) => {
       }
     })
 
-    // Log admin action
+    // Log admin action to legacy admin_action_log
     try {
       await prisma.admin_action_log.create({
         data: {
@@ -205,6 +205,49 @@ router.put('/teams/:id', async (req, res) => {
     } catch (logError) {
       console.warn('Failed to log admin action:', logError.message)
       // Don't fail the request if logging fails
+    }
+
+    // Log to team_edit_submissions for unified audit history (admin = auto-approved)
+    // Check if any trackable fields changed
+    const hasChanges =
+      existingTeam.name !== updateData.name ||
+      existingTeam.city !== updateData.city ||
+      existingTeam.mascot !== updateData.mascot ||
+      existingTeam.abbreviation !== updateData.abbreviation ||
+      existingTeam.primary_color !== updateData.primary_color ||
+      existingTeam.secondary_color !== updateData.secondary_color
+
+    if (hasChanges && req.user?.userId) {
+      try {
+        await prisma.team_edit_submissions.create({
+          data: {
+            team_id: teamId,
+            user_id: BigInt(req.user.userId),
+            // Previous values
+            previous_name: existingTeam.name,
+            previous_city: existingTeam.city,
+            previous_mascot: existingTeam.mascot,
+            previous_abbreviation: existingTeam.abbreviation,
+            previous_primary_color: existingTeam.primary_color,
+            previous_secondary_color: existingTeam.secondary_color,
+            // Proposed/new values
+            proposed_name: updateData.name,
+            proposed_city: updateData.city,
+            proposed_mascot: updateData.mascot,
+            proposed_abbreviation: updateData.abbreviation,
+            proposed_primary_color: updateData.primary_color,
+            proposed_secondary_color: updateData.secondary_color,
+            // Auto-approve for admin
+            status: 'approved',
+            reviewed_by: BigInt(req.user.userId),
+            reviewed_at: new Date(),
+            review_notes: 'Admin direct edit - auto-approved',
+            created_at: new Date()
+          }
+        })
+      } catch (auditError) {
+        console.warn('Failed to create team_edit_submissions audit record:', auditError.message)
+      }
     }
 
     res.json({
@@ -399,6 +442,171 @@ router.post('/teams', async (req, res) => {
     res.status(500).json({
       error: 'Database error',
       message: 'Failed to create team',
+      details: error.message
+    })
+  }
+})
+
+// DELETE /api/admin/teams/:id - Delete a team and all related data
+// DANGEROUS OPERATION - Requires superadmin
+router.delete('/teams/:id', requireSuperAdmin, async (req, res) => {
+  try {
+    const { id } = req.params
+    const teamId = parseInt(id)
+
+    if (!teamId || isNaN(teamId)) {
+      return res.status(400).json({
+        error: 'Invalid team ID',
+        message: 'Team ID must be a valid number'
+      })
+    }
+
+    // Check if team exists
+    const team = await prisma.team.findUnique({
+      where: { team_Id: teamId },
+      select: {
+        team_Id: true,
+        name: true,
+        card_count: true
+      }
+    })
+
+    if (!team) {
+      return res.status(404).json({
+        error: 'Team not found',
+        message: `Team with ID ${teamId} does not exist`
+      })
+    }
+
+    console.log(`Superadmin: Beginning cascade delete of team ${teamId} (${team.name})`)
+
+    // Track what we're about to delete for logging
+    let deletedCounts = {
+      userCardPhotos: 0,
+      userCards: 0,
+      cardPlayerTeam: 0,
+      cards: 0,
+      playerTeam: 0,
+      teamEditSubmissions: 0
+    }
+
+    // Get all player_team IDs for this team
+    const playerTeams = await prisma.$queryRawUnsafe(`
+      SELECT player_team_id FROM player_team WHERE team = ${teamId}
+    `)
+    const playerTeamIds = playerTeams.map(pt => Number(pt.player_team_id))
+
+    if (playerTeamIds.length > 0) {
+      // Get all card IDs associated with this team through card_player_team
+      const cardIdsResult = await prisma.$queryRawUnsafe(`
+        SELECT DISTINCT card FROM card_player_team
+        WHERE player_team IN (${playerTeamIds.join(',')})
+      `)
+      const cardIds = cardIdsResult.map(c => Number(c.card))
+
+      if (cardIds.length > 0) {
+        // Delete user_card_photo records for all cards
+        const photoDeleteResult = await prisma.$executeRawUnsafe(`
+          DELETE ucp FROM user_card_photo ucp
+          INNER JOIN user_card uc ON ucp.user_card = uc.user_card_id
+          WHERE uc.card IN (${cardIds.join(',')})
+        `)
+        deletedCounts.userCardPhotos = photoDeleteResult
+
+        // Delete user_card records
+        const userCardDeleteResult = await prisma.$executeRawUnsafe(`
+          DELETE FROM user_card WHERE card IN (${cardIds.join(',')})
+        `)
+        deletedCounts.userCards = userCardDeleteResult
+
+        // Delete card_player_team records for this team's player_teams
+        const cptDeleteResult = await prisma.$executeRawUnsafe(`
+          DELETE FROM card_player_team WHERE player_team IN (${playerTeamIds.join(',')})
+        `)
+        deletedCounts.cardPlayerTeam = cptDeleteResult
+
+        // Delete cards that are now orphaned (no more card_player_team records)
+        const orphanedCardsResult = await prisma.$executeRawUnsafe(`
+          DELETE c FROM card c
+          WHERE c.card_id IN (${cardIds.join(',')})
+          AND NOT EXISTS (SELECT 1 FROM card_player_team cpt WHERE cpt.card = c.card_id)
+        `)
+        deletedCounts.cards = orphanedCardsResult
+      }
+
+      // Delete player-team relationships
+      const ptDeleteResult = await prisma.$executeRawUnsafe(`
+        DELETE FROM player_team WHERE team = ${teamId}
+      `)
+      deletedCounts.playerTeam = ptDeleteResult
+    }
+
+    // Delete team_edit_submissions records
+    try {
+      const editSubmissionsResult = await prisma.team_edit_submissions.deleteMany({
+        where: { team_id: teamId }
+      })
+      deletedCounts.teamEditSubmissions = editSubmissionsResult.count
+    } catch (e) {
+      console.warn('Could not delete team_edit_submissions:', e.message)
+    }
+
+    // Delete team_submissions records (new team submissions that created this team)
+    try {
+      const teamSubmissionsResult = await prisma.team_submissions.deleteMany({
+        where: { created_team_id: teamId }
+      })
+      deletedCounts.teamSubmissions = teamSubmissionsResult.count
+    } catch (e) {
+      console.warn('Could not delete team_submissions:', e.message)
+    }
+
+    // Delete user_team records (user's recently viewed teams)
+    try {
+      const userTeamResult = await prisma.user_team.deleteMany({
+        where: { team: teamId }
+      })
+      deletedCounts.userTeam = userTeamResult.count
+    } catch (e) {
+      console.warn('Could not delete user_team:', e.message)
+    }
+
+    // Delete the team
+    await prisma.team.delete({
+      where: { team_Id: teamId }
+    })
+
+    // Log admin action
+    try {
+      await prisma.admin_action_log.create({
+        data: {
+          user_id: BigInt(req.user.userId),
+          action_type: 'DELETE_TEAM',
+          entity_type: 'team',
+          entity_id: teamId.toString(),
+          old_values: JSON.stringify({
+            team_name: team.name,
+            card_count: Number(team.card_count || 0),
+            deletedCounts
+          })
+        }
+      })
+    } catch (logError) {
+      console.warn('Failed to log admin action:', logError.message)
+    }
+
+    console.log('Superadmin: Deleted team:', team.name, 'Deleted counts:', deletedCounts)
+
+    res.json({
+      message: 'Team deleted successfully',
+      deletedCounts
+    })
+
+  } catch (error) {
+    console.error('Error deleting team:', error)
+    res.status(500).json({
+      error: 'Database error',
+      message: 'Failed to delete team',
       details: error.message
     })
   }

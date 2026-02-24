@@ -204,11 +204,13 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
   try {
     const {
       player_name,
+      player_id,  // Filter by specific player ID (for Add Card feature)
       team_id,
       team_ids,  // NEW: Multiple team IDs (comma-separated)
       series_name,
       series_id,
       card_number,
+      year,  // Filter by set year
       search,  // NEW: Intelligent search parameter
       limit = 100,
       page = 1
@@ -244,6 +246,27 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
           AND LOWER(p2.last_name) LIKE LOWER('%${lastName}%')
         )`)
       }
+    }
+
+    // Filter by specific player ID (for Add Card feature)
+    if (player_id) {
+      const playerIdNum = validateNumericId(player_id, 'player_id')
+      whereConditions.push(`EXISTS (
+        SELECT 1 FROM card_player_team cpt_pid
+        JOIN player_team pt_pid ON cpt_pid.player_team = pt_pid.player_team_id
+        WHERE cpt_pid.card = c.card_id
+        AND pt_pid.player = ${playerIdNum}
+      )`)
+    }
+
+    // Filter by year
+    if (year) {
+      const yearNum = validateNumericId(year, 'year')
+      whereConditions.push(`EXISTS (
+        SELECT 1 FROM [set] st_year_filter
+        WHERE st_year_filter.set_id = s.[set]
+        AND st_year_filter.year = ${yearNum}
+      )`)
     }
 
     // Handle team filtering - supports both single team_id and multiple team_ids
@@ -395,17 +418,19 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
         c.print_run, c.sort_order, c.notes, c.reference_user_card,
         c.front_image_path, c.back_image_path, c.color as color_id,
         s.name as series_name, s.series_id, s.slug as series_slug,
+        st.set_id, st.name as set_name, st.year as set_year, st.slug as set_slug,
         col.name as color, col.hex_value as hex_color,
         ${userIdNumber ? 'ISNULL(COUNT(uc.user_card_id), 0) as user_card_count' : '0 as user_card_count'}
       FROM card c
       JOIN series s ON c.series = s.series_id
+      JOIN [set] st ON s.[set] = st.set_id
       LEFT JOIN color col ON c.color = col.color_id
       ${userCollectionJoin}
       ${whereClause}
       GROUP BY c.card_id, c.card_number, c.is_rookie, c.is_autograph, c.is_relic, c.is_short_print,
                c.print_run, c.sort_order, c.notes, c.reference_user_card, c.front_image_path, c.back_image_path, c.color,
-               s.name, s.series_id, s.slug, col.name, col.hex_value
-      ORDER BY s.name ASC, c.sort_order ASC
+               s.name, s.series_id, s.slug, st.set_id, st.name, st.year, st.slug, col.name, col.hex_value
+      ORDER BY st.year DESC, st.name ASC, s.name ASC, c.sort_order ASC
       OFFSET ${offsetNum} ROWS FETCH NEXT ${limitNum} ROWS ONLY
     `
     
@@ -496,6 +521,12 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
           series_id: serialized.series_id,
           name: serialized.series_name,
           slug: serialized.series_slug
+        },
+        set_rel: {
+          set_id: Number(serialized.set_id),
+          name: serialized.set_name,
+          year: serialized.set_year,
+          slug: serialized.set_slug
         },
         color_rel: serialized.color ? {
           color: serialized.color,
@@ -970,6 +1001,122 @@ router.get('/:id', async (req, res) => {
       error: 'Database error',
       message: 'Failed to fetch card details',
       details: error.message
+    })
+  }
+})
+
+// GET /api/cards/:cardId/history - Get change history for a card
+router.get('/:cardId/history', async (req, res) => {
+  try {
+    const { cardId } = req.params
+    const limit = Math.min(parseInt(req.query.limit) || 50, 100)
+
+    if (!cardId || isNaN(parseInt(cardId))) {
+      return res.status(400).json({ error: 'Invalid card ID' })
+    }
+
+    // Fetch all approved submissions for this card (the audit trail)
+    const submissions = await prisma.card_edit_submissions.findMany({
+      where: {
+        card_id: BigInt(cardId),
+        status: 'approved' // Only show approved changes (the actual history)
+      },
+      orderBy: {
+        created_at: 'desc'
+      },
+      take: limit,
+      include: {
+        user_card_edit_submissions_user_idTouser: {
+          select: {
+            user_id: true,
+            email: true,
+            name: true,
+            avatar_url: true
+          }
+        }
+      }
+    })
+
+    // Transform the data for the frontend
+    const history = submissions.map(sub => {
+      const changes = []
+
+      // Compare previous vs proposed for each field
+      if (sub.previous_card_number !== sub.proposed_card_number) {
+        changes.push({
+          field: 'Card Number',
+          from: sub.previous_card_number || '(empty)',
+          to: sub.proposed_card_number || '(empty)'
+        })
+      }
+      if (sub.previous_is_rookie !== sub.proposed_is_rookie) {
+        changes.push({
+          field: 'Rookie',
+          from: sub.previous_is_rookie ? 'Yes' : 'No',
+          to: sub.proposed_is_rookie ? 'Yes' : 'No'
+        })
+      }
+      if (sub.previous_is_autograph !== sub.proposed_is_autograph) {
+        changes.push({
+          field: 'Autograph',
+          from: sub.previous_is_autograph ? 'Yes' : 'No',
+          to: sub.proposed_is_autograph ? 'Yes' : 'No'
+        })
+      }
+      if (sub.previous_is_relic !== sub.proposed_is_relic) {
+        changes.push({
+          field: 'Relic',
+          from: sub.previous_is_relic ? 'Yes' : 'No',
+          to: sub.proposed_is_relic ? 'Yes' : 'No'
+        })
+      }
+      if (sub.previous_is_short_print !== sub.proposed_is_short_print) {
+        changes.push({
+          field: 'Short Print',
+          from: sub.previous_is_short_print ? 'Yes' : 'No',
+          to: sub.proposed_is_short_print ? 'Yes' : 'No'
+        })
+      }
+      if (sub.previous_print_run !== sub.proposed_print_run) {
+        changes.push({
+          field: 'Print Run',
+          from: sub.previous_print_run?.toString() || '(none)',
+          to: sub.proposed_print_run?.toString() || '(none)'
+        })
+      }
+      if (sub.previous_notes !== sub.proposed_notes) {
+        changes.push({
+          field: 'Notes',
+          from: sub.previous_notes || '(empty)',
+          to: sub.proposed_notes || '(empty)'
+        })
+      }
+
+      const user = sub.user_card_edit_submissions_user_idTouser
+      return {
+        id: Number(sub.submission_id),
+        timestamp: sub.reviewed_at || sub.created_at,
+        user: {
+          id: Number(user.user_id),
+          name: user.name || user.email?.split('@')[0] || 'Unknown',
+          avatar_url: user.avatar_url
+        },
+        changes,
+        review_notes: sub.review_notes,
+        is_admin_edit: sub.review_notes?.includes('Admin direct edit')
+      }
+    }).filter(h => h.changes.length > 0) // Only include entries with actual changes
+
+    res.json({
+      history,
+      total: history.length
+    })
+
+  } catch (error) {
+    console.error('Error fetching card history:', error)
+    res.status(500).json({
+      error: 'Failed to fetch card history',
+      message: error.message
     })
   }
 })
