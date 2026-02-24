@@ -61,6 +61,7 @@ function CollectionDashboard() {
   const [cardToDelete, setCardToDelete] = useState(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
   const [selectedSetId, setSelectedSetId] = useState(null)
+  const [valueMode, setValueMode] = useState('current') // 'current' or 'estimated'
 
   const navigate = useNavigate()
 
@@ -71,6 +72,7 @@ function CollectionDashboard() {
     const uniquePlayers = new Set()
     const uniqueSeries = new Set()
     let totalValue = 0
+    let totalEstimatedValue = 0
     let rookieCount = 0
     let autoCount = 0
     let relicCount = 0
@@ -89,11 +91,16 @@ function CollectionDashboard() {
         uniqueSeries.add(card.series_rel.series_id)
       }
 
-      // Calculate total value - prefer market_price (from SportsCardsPro), fallback to current_value
+      // Calculate total current value - prefer market_price (from SportsCardsPro), fallback to current_value
       if (card.market_price) {
         totalValue += parseFloat(card.market_price)
       } else if (card.current_value) {
         totalValue += parseFloat(card.current_value)
+      }
+
+      // Calculate total estimated value
+      if (card.estimated_value) {
+        totalEstimatedValue += parseFloat(card.estimated_value)
       }
 
       // Count special card types
@@ -106,6 +113,7 @@ function CollectionDashboard() {
     return {
       total_cards: cards.length,
       total_value: totalValue,
+      total_estimated_value: totalEstimatedValue,
       unique_players: uniquePlayers.size,
       unique_series: uniqueSeries.size,
       rookie_cards: rookieCount,
@@ -842,11 +850,17 @@ function CollectionDashboard() {
                     <span className="stat-label">Cards</span>
                   </div>
                 </div>
-                <div className="stat-item">
+                <div
+                  className="stat-item clickable"
+                  onClick={() => setValueMode(prev => prev === 'current' ? 'estimated' : 'current')}
+                  title={`Click to show ${valueMode === 'current' ? 'estimated' : 'current'} value`}
+                >
                   <Icon name="value" size={18} />
                   <div className="stat-content">
-                    <span className="stat-value">{formatCurrency(filteredStats.total_value)}</span>
-                    <span className="stat-label">Value</span>
+                    <span className="stat-value">
+                      {formatCurrency(valueMode === 'current' ? filteredStats.total_value : filteredStats.total_estimated_value)}
+                    </span>
+                    <span className="stat-label">{valueMode === 'current' ? 'Current Value' : 'Estimated Value'}</span>
                   </div>
                 </div>
                 <div className="stat-item">
