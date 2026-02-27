@@ -9,7 +9,12 @@ import './SuppliesManagementScoped.css'
 function SuppliesManagement() {
   const { user, isAuthenticated } = useAuth()
   const { success: showSuccess, error: showError } = useToast()
-  const isAdmin = useMemo(() => user?.role === 'admin', [user?.role])
+  const hasSellerAccess = useMemo(() => {
+    if (user?.role === 'admin' || user?.role === 'superadmin') return true
+    if (!user?.seller_role) return false
+    if (user?.seller_expires && new Date(user.seller_expires) < new Date()) return false
+    return true
+  }, [user?.role, user?.seller_role, user?.seller_expires])
   const hasFetched = useRef(false)
 
   // State
@@ -56,7 +61,7 @@ function SuppliesManagement() {
 
   // Fetch data - only run once on mount
   const fetchData = useCallback(async (force = false) => {
-    if (!isAuthenticated || !isAdmin) return
+    if (!isAuthenticated || !hasSellerAccess) return
     if (hasFetched.current && !force) return
 
     hasFetched.current = true
@@ -76,7 +81,7 @@ function SuppliesManagement() {
     } finally {
       setLoading(false)
     }
-  }, [isAuthenticated, isAdmin])
+  }, [isAuthenticated, hasSellerAccess])
 
   useEffect(() => {
     fetchData()
@@ -284,13 +289,13 @@ function SuppliesManagement() {
     return typeBatches.length > 0 ? typeBatches[0].image_url : null
   }
 
-  if (!isAdmin) {
+  if (!hasSellerAccess) {
     return (
       <div className="supplies-management-page">
         <div className="supplies-unauthorized">
           <AlertCircle size={48} />
           <h2>Access Denied</h2>
-          <p>You need admin access to manage supplies.</p>
+          <p>You need seller access to manage supplies.</p>
         </div>
       </div>
     )

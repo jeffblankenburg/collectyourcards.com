@@ -9,7 +9,12 @@ import './ShippingConfigsScoped.css'
 function ShippingConfigs() {
   const { user, isAuthenticated } = useAuth()
   const { success: showSuccess, error: showError } = useToast()
-  const isAdmin = user?.role === 'admin'
+  const hasSellerAccess = (() => {
+    if (user?.role === 'admin' || user?.role === 'superadmin') return true
+    if (!user?.seller_role) return false
+    if (user?.seller_expires && new Date(user.seller_expires) < new Date()) return false
+    return true
+  })()
 
   // State
   const [configs, setConfigs] = useState([])
@@ -65,7 +70,7 @@ function ShippingConfigs() {
 
   // Fetch data
   const fetchData = useCallback(async () => {
-    if (!isAuthenticated || !isAdmin) return
+    if (!isAuthenticated || !hasSellerAccess) return
 
     setLoading(true)
     try {
@@ -85,7 +90,7 @@ function ShippingConfigs() {
     } finally {
       setLoading(false)
     }
-  }, [isAuthenticated, isAdmin])
+  }, [isAuthenticated, hasSellerAccess])
 
   useEffect(() => {
     fetchData()
@@ -236,13 +241,13 @@ function ShippingConfigs() {
     }).format(value)
   }
 
-  if (!isAdmin) {
+  if (!hasSellerAccess) {
     return (
       <div className="shipping-configs-page">
         <div className="shipping-unauthorized">
           <AlertCircle size={48} />
           <h2>Access Denied</h2>
-          <p>You need admin access to manage shipping configurations.</p>
+          <p>You need seller access to manage shipping configurations.</p>
         </div>
       </div>
     )
