@@ -42,7 +42,7 @@ function UserNavigation() {
           ))}
         </div>
 
-        {/* Center: Add a Card button (authenticated only) */}
+        {/* Center: Add a Card button (temporarily hidden)
         {isAuthenticated && (
           <div className="user-nav-items center">
             <Link
@@ -54,6 +54,7 @@ function UserNavigation() {
             </Link>
           </div>
         )}
+        */}
 
         {/* Right side: Authenticated user links */}
         {isAuthenticated && (
