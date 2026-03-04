@@ -31,9 +31,6 @@ router.post('/', requireDataAdmin, async (req, res) => {
     if (!series_id) {
       return res.status(400).json({ error: 'Series ID is required' })
     }
-    if (!card_number || !card_number.trim()) {
-      return res.status(400).json({ error: 'Card number is required' })
-    }
 
     // Verify series exists
     const series = await prisma.series.findUnique({
@@ -47,7 +44,7 @@ router.post('/', requireDataAdmin, async (req, res) => {
     // Prepare card data
     const cardData = {
       series: BigInt(series_id),
-      card_number: card_number.trim(),
+      card_number: card_number?.trim() || null,
       sort_order: sort_order ? parseInt(sort_order) : null,
       is_rookie: Boolean(is_rookie),
       is_autograph: Boolean(is_autograph),
