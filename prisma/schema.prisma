@@ -1394,6 +1394,13 @@ model card_edit_submissions {
   submission_id                                BigInt    @id(map: "PK__card_edi__9B53559505339B2F") @default(autoincrement())
   card_id                                      BigInt
   user_id                                      BigInt
+  previous_card_number                         String?   @db.NVarChar(Max)
+  previous_is_rookie                           Boolean?
+  previous_is_autograph                        Boolean?
+  previous_is_relic                            Boolean?
+  previous_is_short_print                      Boolean?
+  previous_print_run                           Int?
+  previous_notes                               String?   @db.NVarChar(Max)
   proposed_card_number                         String?   @db.NVarChar(Max)
   proposed_is_rookie                           Boolean?
   proposed_is_autograph                        Boolean?
@@ -1402,6 +1409,7 @@ model card_edit_submissions {
   proposed_print_run                           Int?
   proposed_notes                               String?   @db.NVarChar(Max)
   submission_notes                             String?   @db.NVarChar(Max)
+  batch_id                                     String?   @db.NVarChar(Max)
   status                                       String    @default("pending", map: "DF__card_edit__statu__34B3CB38") @db.NVarChar(20)
   reviewed_by                                  BigInt?
   reviewed_at                                  DateTime? @db.DateTime
