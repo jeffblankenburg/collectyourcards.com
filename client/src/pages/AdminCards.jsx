@@ -493,11 +493,6 @@ function AdminCards() {
   }
 
   const handleSave = async () => {
-    if (!editForm.card_number.trim()) {
-      addToast('Card number is required', 'error')
-      return
-    }
-
     try {
       setSaving(true)
 
@@ -510,7 +505,7 @@ function AdminCards() {
       console.log('Players data being sent to API:', playersToSave)
 
       const cardData = {
-        card_number: editForm.card_number.trim(),
+        card_number: editForm.card_number?.trim() || '',
         sort_order: editForm.sort_order ? parseInt(editForm.sort_order) : null,
         is_rookie: editForm.is_rookie,
         is_autograph: editForm.is_autograph,
@@ -683,7 +678,7 @@ function AdminCards() {
     // Debounce the API call
     playerSearchDebounceRef.current = setTimeout(() => {
       performPlayerSearch(searchTerm, cardPlayers)
-    }, 300)
+    }, 500)
   }
 
   const handleSearchKeyDown = (e) => {
@@ -1001,9 +996,8 @@ function AdminCards() {
                     value={editForm.card_number}
                     onChange={(e) => handleFormChange('card_number', e.target.value)}
                     onKeyDown={handleKeyDown}
-                    placeholder="Enter card number"
+                    placeholder="Enter card number (optional)"
                     autoFocus
-                    required
                   />
                 </div>
 
