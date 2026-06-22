@@ -140,7 +140,26 @@ const RESERVED_USERNAMES = new Set([
   'wishlist',
   'favorites',
   'bookmarks',
-  'saved'
+  'saved',
+
+  // Existing application routes (top-level paths in client/src/main.jsx).
+  // These pages already exist at the root level, so usernames must never
+  // collide with them or the /:username catch-all would shadow the page.
+  'verify-email',
+  'check-email',
+  'attributions',
+  'add-card',
+  'contributions',
+  'rainbow',
+  'design-system-demo',
+  'pwa-demo',
+  'achievements',
+  'notifications',
+  'seller',
+  'lists',
+  'shared',
+  'boxed',
+  'start'
 ])
 
 // Function to check if a username is reserved

@@ -111,6 +111,7 @@ const AdminCrowdsource = lazy(() => import('./pages/AdminCrowdsource.jsx'))
 const MyContributions = lazy(() => import('./pages/MyContributions.jsx'))
 const AddCard = lazy(() => import('./pages/AddCard.jsx'))
 const ApiDocs = lazy(() => import('./pages/ApiDocs.jsx'))
+const Attributions = lazy(() => import('./pages/Attributions.jsx'))
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -131,7 +132,7 @@ createRoot(document.getElementById('root')).render(
               <Route path="/register" element={<Auth />} />
               <Route path="/verify-email" element={<VerifyEmail />} />
               <Route path="/check-email" element={<CheckEmail />} />
-              {/* <Route path="/attributions" element={<Attributions />} /> */}
+              <Route path="/attributions" element={<Attributions />} />
               {/* <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} /> */}
               <Route path="/profile" element={<ProtectedRoute><ProfileManagement /></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute><ProfileManagement /></ProtectedRoute>} />
