@@ -49,9 +49,15 @@ class ExcelParserService {
   }
 
   /**
-   * Parse pasted tab-separated data
+   * Parse pasted data
    *
-   * @param {string} data - Tab-separated data pasted by user
+   * Supports two formats, auto-detected:
+   * 1. Tab-separated columns (Excel/Google Sheets paste):
+   *    "CardNumber<TAB>Player(s)<TAB>Team(s)<TAB>RC<TAB>Notes"
+   * 2. Simple line format:
+   *    "CardNumber Player - Team" (e.g. "BG-1 Roman Anthony - Boston Red Sox")
+   *
+   * @param {string} data - Pasted data in either supported format
    * @returns {Promise<Array>} - Array of parsed and preprocessed cards
    */
   async parsePastedData(data) {
@@ -63,8 +69,16 @@ class ExcelParserService {
 
     console.log('Data length:', data.length, 'characters')
 
-    // Split into rows and parse as tab-separated values
-    const rows = data.trim().split('\n').map(row => row.split('\t'))
+    // Auto-detect format. Tab/CSV spreadsheet paste uses column delimiters;
+    // the line format uses " - " to separate player from team.
+    let rows
+    if (this._isLineFormat(data)) {
+      console.log('Detected format: LINE ("CardNumber Player - Team")')
+      rows = this._parseLineFormat(data)
+    } else {
+      console.log('Detected format: TAB-separated columns')
+      rows = data.trim().split('\n').map(row => row.split('\t'))
+    }
 
     console.log('Total rows found:', rows.length)
     console.log('First 3 rows:', rows.slice(0, 3))
@@ -88,6 +102,83 @@ class ExcelParserService {
   // ============================================================================
   // PRIVATE HELPER METHODS
   // ============================================================================
+
+  /**
+   * Regex for the simple line format: "CardNumber PlayerName - TeamName"
+   *
+   * - Group 1: card number (leading token with no spaces, e.g. "BG-1")
+   * - Group 2: player name(s) (non-greedy so it stops at the first " - ")
+   * - Group 3: team name(s)
+   *
+   * The " - " (space-hyphen-space) separator is what distinguishes this format
+   * from tab/CSV spreadsheet pastes. A card number's internal hyphen ("BG-1")
+   * has no surrounding spaces, so it is never mistaken for the separator.
+   *
+   * @private
+   * @returns {RegExp}
+   */
+  _lineFormatPattern() {
+    return /^(\S+)\s+(.+?)\s+-\s+(.+)$/
+  }
+
+  /**
+   * Detect whether pasted data uses the simple "CardNumber Player - Team" format.
+   *
+   * @private
+   * @param {string} data - Raw pasted data
+   * @returns {boolean} - True if the data should be parsed as the line format
+   */
+  _isLineFormat(data) {
+    // Tabs always indicate a spreadsheet paste, never the line format
+    if (data.includes('\t')) {
+      return false
+    }
+
+    const lines = data.trim().split('\n').map(line => line.trim()).filter(line => line)
+    if (lines.length === 0) {
+      return false
+    }
+
+    const pattern = this._lineFormatPattern()
+    const matchCount = lines.filter(line => pattern.test(line)).length
+
+    // Require a majority of lines to match so a stray row doesn't misroute the paste
+    return matchCount >= Math.ceil(lines.length / 2)
+  }
+
+  /**
+   * Parse the simple line format into row arrays compatible with _parseRows.
+   *
+   * Each line becomes [cardNumber, playerNames, teamNames] (columns 0-2),
+   * leaving RC/notes blank just as an unfilled spreadsheet column would.
+   *
+   * @private
+   * @param {string} data - Raw pasted data in line format
+   * @returns {Array<Array<string>>} - Row arrays
+   */
+  _parseLineFormat(data) {
+    const pattern = this._lineFormatPattern()
+
+    return data.trim().split('\n').map(line => {
+      const trimmed = line.trim()
+      if (!trimmed) {
+        return []
+      }
+
+      const match = trimmed.match(pattern)
+      if (match) {
+        return [match[1].trim(), match[2].trim(), match[3].trim()]
+      }
+
+      // No " - " team separator: treat the first token as the card number
+      // and the remainder as the player name, leaving the team blank.
+      const spaceIndex = trimmed.indexOf(' ')
+      if (spaceIndex === -1) {
+        return [trimmed]
+      }
+      return [trimmed.slice(0, spaceIndex).trim(), trimmed.slice(spaceIndex + 1).trim(), '']
+    })
+  }
 
   /**
    * Parse rows into card objects

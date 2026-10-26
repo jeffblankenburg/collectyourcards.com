@@ -387,6 +387,80 @@ describe('ExcelParserService', () => {
   })
 
   // ============================================================================
+  // parsePastedData - Line Format ("CardNumber Player - Team")
+  // ============================================================================
+
+  describe('parsePastedData (line format)', () => {
+    test('should parse "CardNumber Player - Team" lines', async () => {
+      const data = [
+        'BG-1 Roman Anthony - Boston Red Sox',
+        'BG-2 Jac Caglianone - Kansas City Royals',
+        'BG-6 JJ Wetherholt - St. Louis Cardinals'
+      ].join('\n')
+
+      const result = await excelParser.parsePastedData(data)
+
+      expect(result).toHaveLength(3)
+      expect(result[0]).toMatchObject({
+        cardNumber: 'BG-1',
+        playerNames: ['Roman Anthony'],
+        teamNames: ['Boston Red Sox']
+      })
+      expect(result[2]).toMatchObject({
+        cardNumber: 'BG-6',
+        playerNames: ['JJ Wetherholt'],
+        teamNames: ['St. Louis Cardinals']
+      })
+    })
+
+    test('should handle player suffixes and accents in line format', async () => {
+      const data = [
+        'BG-22 Bobby Witt Jr. - Kansas City Royals',
+        'BG-23 Ronald Acuña Jr. - Atlanta Braves'
+      ].join('\n')
+
+      const result = await excelParser.parsePastedData(data)
+
+      expect(result[0]).toMatchObject({
+        cardNumber: 'BG-22',
+        playerNames: ['Bobby Witt Jr.'],
+        teamNames: ['Kansas City Royals']
+      })
+      expect(result[1]).toMatchObject({
+        cardNumber: 'BG-23',
+        playerNames: ['Ronald Acuña Jr.'],
+        teamNames: ['Atlanta Braves']
+      })
+    })
+
+    test('should parse a line with a plain numeric card number', async () => {
+      const data = '5 Mike Trout - Los Angeles Angels'
+
+      const result = await excelParser.parsePastedData(data)
+
+      expect(result).toHaveLength(1)
+      expect(result[0]).toMatchObject({
+        cardNumber: '5',
+        playerNames: ['Mike Trout'],
+        teamNames: ['Los Angeles Angels']
+      })
+    })
+
+    test('should handle a line with no team (no " - " separator)', async () => {
+      const data = 'BG-1 Roman Anthony'
+
+      const result = await excelParser.parsePastedData(data)
+
+      expect(result).toHaveLength(1)
+      expect(result[0]).toMatchObject({
+        cardNumber: 'BG-1',
+        playerNames: ['Roman Anthony'],
+        teamNames: []
+      })
+    })
+  })
+
+  // ============================================================================
   // Rookie Card Detection Tests
   // ============================================================================
 

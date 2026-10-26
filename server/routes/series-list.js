@@ -290,27 +290,25 @@ router.get('/:id/history', async (req, res) => {
       return res.status(400).json({ error: 'Invalid series ID' })
     }
 
-    // Fetch all approved submissions for this series (the audit trail)
-    const submissions = await prisma.series_submissions.findMany({
-      where: {
-        existing_series_id: BigInt(seriesId),
-        status: 'approved'
-      },
-      orderBy: {
-        created_at: 'desc'
-      },
-      take: limit,
-      include: {
-        user_series_submissions_user_idTouser: {
-          select: {
-            user_id: true,
-            email: true,
-            name: true,
-            avatar_url: true
-          }
-        }
-      }
-    })
+    // Fetch all approved submissions for this series (the audit trail).
+    // series_submissions has no Prisma model, so query it via raw SQL
+    // (consistent with how crowdsource.js accesses this same table).
+    const submissions = await prisma.$queryRaw`
+      SELECT TOP (${limit})
+        ss.submission_id,
+        ss.previous_name, ss.proposed_name,
+        ss.previous_base_card_count, ss.proposed_base_card_count,
+        ss.previous_is_parallel, ss.proposed_is_parallel,
+        ss.previous_print_run, ss.proposed_print_run,
+        ss.previous_description, ss.proposed_description,
+        ss.reviewed_at, ss.created_at, ss.review_notes,
+        u.user_id, u.email, u.name, u.avatar_url
+      FROM series_submissions ss
+      INNER JOIN [user] u ON u.user_id = ss.user_id
+      WHERE ss.existing_series_id = ${BigInt(seriesId)}
+        AND ss.status = 'approved'
+      ORDER BY ss.created_at DESC
+    `
 
     // Transform the data for the frontend
     const history = submissions.map(sub => {
@@ -353,14 +351,13 @@ router.get('/:id/history', async (req, res) => {
         })
       }
 
-      const user = sub.user_series_submissions_user_idTouser
       return {
         id: Number(sub.submission_id),
         timestamp: sub.reviewed_at || sub.created_at,
         user: {
-          id: Number(user.user_id),
-          name: user.name || user.email?.split('@')[0] || 'Unknown',
-          avatar_url: user.avatar_url
+          id: Number(sub.user_id),
+          name: sub.name || sub.email?.split('@')[0] || 'Unknown',
+          avatar_url: sub.avatar_url
         },
         changes,
         review_notes: sub.review_notes,

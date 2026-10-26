@@ -600,9 +600,9 @@ const AdminImport = () => {
               </>
             ) : (
               <>
-                <li>Tab-separated data (from Excel, Google Sheets, etc.)</li>
-                <li>5 columns: Card Number, Player Name(s), Team Name(s), RC Indicator, Notes</li>
-                <li>First row should contain headers (will be ignored)</li>
+                <li>Tab-separated columns (from Excel, Google Sheets, etc.): Card Number, Player Name(s), Team Name(s), RC Indicator, Notes</li>
+                <li>OR simple line format: <code>CardNumber Player - Team</code> (e.g. <code>BG-1 Roman Anthony - Boston Red Sox</code>)</li>
+                <li>Format is auto-detected</li>
               </>
             )}
           </ul>
@@ -648,7 +648,7 @@ const AdminImport = () => {
           <div className="paste-input-section">
             <textarea
               className="paste-textarea"
-              placeholder="Paste your card checklist data here (tab-separated)&#10;&#10;Example:&#10;BR-1    Shohei Ohtani    Los Angeles Dodgers&#10;BR-2    Ronald Acuña Jr.    Atlanta Braves&#10;BR-3    Juan Soto    New York Mets"
+              placeholder="Paste your card checklist data here.&#10;&#10;Tab-separated (from Excel/Sheets):&#10;BR-1    Shohei Ohtani    Los Angeles Dodgers&#10;BR-2    Ronald Acuña Jr.    Atlanta Braves&#10;&#10;OR simple line format:&#10;BG-1 Roman Anthony - Boston Red Sox&#10;BG-2 Jac Caglianone - Kansas City Royals"
               value={pastedData}
               onChange={(e) => setPastedData(e.target.value)}
               rows={15}
