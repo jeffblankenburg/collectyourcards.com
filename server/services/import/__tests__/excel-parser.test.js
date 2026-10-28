@@ -458,6 +458,116 @@ describe('ExcelParserService', () => {
         teamNames: []
       })
     })
+
+    test('should detect a trailing SP flag as short print', async () => {
+      const result = await excelParser.parsePastedData('14 Jhoan Duran - Philadelphia Phillies SP')
+
+      expect(result[0]).toMatchObject({
+        cardNumber: '14',
+        playerNames: ['Jhoan Duran'],
+        teamNames: ['Philadelphia Phillies'],
+        isShortPrint: true,
+        isRC: false
+      })
+    })
+
+    test('should detect a trailing RC flag as rookie', async () => {
+      const result = await excelParser.parsePastedData('32 Andre Granillo - St. Louis Cardinals RC')
+
+      expect(result[0]).toMatchObject({
+        cardNumber: '32',
+        playerNames: ['Andre Granillo'],
+        teamNames: ['St. Louis Cardinals'],
+        isRC: true,
+        isShortPrint: false
+      })
+    })
+
+    test('should detect both RC and SP flags', async () => {
+      const result = await excelParser.parsePastedData('181 Ian Seymour - Tampa Bay Rays RC SP')
+
+      expect(result[0]).toMatchObject({
+        cardNumber: '181',
+        playerNames: ['Ian Seymour'],
+        teamNames: ['Tampa Bay Rays'],
+        isRC: true,
+        isShortPrint: true
+      })
+    })
+
+    test('should treat "SP*" as short print', async () => {
+      const result = await excelParser.parsePastedData('360 Owen Caissie - Chicago Cubs RC SP*')
+
+      expect(result[0]).toMatchObject({
+        cardNumber: '360',
+        playerNames: ['Owen Caissie'],
+        teamNames: ['Chicago Cubs'],
+        isRC: true,
+        isShortPrint: true
+      })
+    })
+
+    test('should extract a trailing note that comes after the RC flag', async () => {
+      const result = await excelParser.parsePastedData('86 Roman Anthony - Boston Red Sox RC (eBay)')
+
+      expect(result[0]).toMatchObject({
+        cardNumber: '86',
+        playerNames: ['Roman Anthony'],
+        teamNames: ['Boston Red Sox'],
+        isRC: true,
+        notes: 'eBay'
+      })
+    })
+
+    test('should extract a note that comes before the SP flag', async () => {
+      const result = await excelParser.parsePastedData('333 Miguel Cabrera - Detroit Tigers (Turn Back the Clock) SP')
+
+      expect(result[0]).toMatchObject({
+        cardNumber: '333',
+        playerNames: ['Miguel Cabrera'],
+        teamNames: ['Detroit Tigers'],
+        isShortPrint: true,
+        notes: 'Turn Back the Clock'
+      })
+    })
+
+    test('should extract a note with no flags', async () => {
+      const result = await excelParser.parsePastedData('231 Cal Raleigh - Seattle Mariners (Record Breakers)')
+
+      expect(result[0]).toMatchObject({
+        cardNumber: '231',
+        playerNames: ['Cal Raleigh'],
+        teamNames: ['Seattle Mariners'],
+        isRC: false,
+        isShortPrint: false,
+        notes: 'Record Breakers'
+      })
+    })
+
+    test('should split "/" multi-player cards with no team and a note', async () => {
+      const result = await excelParser.parsePastedData('1 Aaron Judge/Trea Turner (League Leaders)')
+
+      expect(result[0]).toMatchObject({
+        cardNumber: '1',
+        playerNames: ['Aaron Judge', 'Trea Turner'],
+        teamNames: [],
+        notes: 'League Leaders'
+      })
+    })
+
+    test('should split a 4-player card with no team and RC SP flags', async () => {
+      const result = await excelParser.parsePastedData(
+        '372 Philip Abner/Eduarniel Núñez/Didier Fuentes/Jonathan Pintaro RC SP'
+      )
+
+      expect(result[0]).toMatchObject({
+        cardNumber: '372',
+        playerNames: ['Philip Abner', 'Eduarniel Núñez', 'Didier Fuentes', 'Jonathan Pintaro'],
+        teamNames: [],
+        isRC: true,
+        isShortPrint: true
+      })
+    })
   })
 
   // ============================================================================

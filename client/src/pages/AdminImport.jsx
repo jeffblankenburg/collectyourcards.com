@@ -601,7 +601,9 @@ const AdminImport = () => {
             ) : (
               <>
                 <li>Tab-separated columns (from Excel, Google Sheets, etc.): Card Number, Player Name(s), Team Name(s), RC Indicator, Notes</li>
-                <li>OR simple line format: <code>CardNumber Player - Team</code> (e.g. <code>BG-1 Roman Anthony - Boston Red Sox</code>)</li>
+                <li>OR line format: <code>CardNumber Player - Team</code> (e.g. <code>9 Josh Hader - Houston Astros</code>)</li>
+                <li>Line format extras: add <code>RC</code> and/or <code>SP</code> flags and a <code>(note)</code> at the end — e.g. <code>86 Roman Anthony - Boston Red Sox RC (eBay)</code></li>
+                <li>Multiple players: separate with <code>/</code>, team optional — e.g. <code>1 Aaron Judge/Trea Turner (League Leaders)</code></li>
                 <li>Format is auto-detected</li>
               </>
             )}
@@ -648,7 +650,7 @@ const AdminImport = () => {
           <div className="paste-input-section">
             <textarea
               className="paste-textarea"
-              placeholder="Paste your card checklist data here.&#10;&#10;Tab-separated (from Excel/Sheets):&#10;BR-1    Shohei Ohtani    Los Angeles Dodgers&#10;BR-2    Ronald Acuña Jr.    Atlanta Braves&#10;&#10;OR simple line format:&#10;BG-1 Roman Anthony - Boston Red Sox&#10;BG-2 Jac Caglianone - Kansas City Royals"
+              placeholder="Paste your card checklist data here.&#10;&#10;Tab-separated (from Excel/Sheets):&#10;BR-1    Shohei Ohtani    Los Angeles Dodgers&#10;BR-2    Ronald Acuña Jr.    Atlanta Braves&#10;&#10;OR line format (RC/SP flags and (notes) optional):&#10;9 Josh Hader - Houston Astros&#10;14 Jhoan Duran - Philadelphia Phillies SP&#10;86 Roman Anthony - Boston Red Sox RC (eBay)&#10;1 Aaron Judge/Trea Turner (League Leaders)"
               value={pastedData}
               onChange={(e) => setPastedData(e.target.value)}
               rows={15}

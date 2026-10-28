@@ -54,8 +54,13 @@ class ExcelParserService {
    * Supports two formats, auto-detected:
    * 1. Tab-separated columns (Excel/Google Sheets paste):
    *    "CardNumber<TAB>Player(s)<TAB>Team(s)<TAB>RC<TAB>Notes"
-   * 2. Simple line format:
-   *    "CardNumber Player - Team" (e.g. "BG-1 Roman Anthony - Boston Red Sox")
+   * 2. Line format:
+   *    "CardNumber Player - Team" with optional trailing RC / SP flags and a
+   *    trailing parenthetical note, e.g.:
+   *      "9 Josh Hader - Houston Astros"
+   *      "181 Ian Seymour - Tampa Bay Rays RC SP"
+   *      "86 Roman Anthony - Boston Red Sox RC (eBay)"
+   *      "1 Aaron Judge/Trea Turner (League Leaders)"   (multi-player, no team)
    *
    * @param {string} data - Pasted data in either supported format
    * @returns {Promise<Array>} - Array of parsed and preprocessed cards
@@ -70,25 +75,17 @@ class ExcelParserService {
     console.log('Data length:', data.length, 'characters')
 
     // Auto-detect format. Tab/CSV spreadsheet paste uses column delimiters;
-    // the line format uses " - " to separate player from team.
-    let rows
+    // the line format packs everything onto one space-delimited line.
+    let cards
     if (this._isLineFormat(data)) {
       console.log('Detected format: LINE ("CardNumber Player - Team")')
-      rows = this._parseLineFormat(data)
+      cards = this._parseLineFormat(data)
     } else {
       console.log('Detected format: TAB-separated columns')
-      rows = data.trim().split('\n').map(row => row.split('\t'))
+      const rows = data.trim().split('\n').map(row => row.split('\t'))
+      cards = this._parseRows(rows)
     }
 
-    console.log('Total rows found:', rows.length)
-    console.log('First 3 rows:', rows.slice(0, 3))
-
-    if (rows.length === 0) {
-      throw new Error('No data rows found')
-    }
-
-    // Process all pasted rows - user manually selected what to import
-    const cards = this._parseRows(rows)
     console.log(`Parsed ${cards.length} cards from pasted data`)
 
     // Apply preprocessing (multi-player detection, consecutive duplicates)
@@ -104,25 +101,12 @@ class ExcelParserService {
   // ============================================================================
 
   /**
-   * Regex for the simple line format: "CardNumber PlayerName - TeamName"
+   * Detect whether pasted data uses the line format.
    *
-   * - Group 1: card number (leading token with no spaces, e.g. "BG-1")
-   * - Group 2: player name(s) (non-greedy so it stops at the first " - ")
-   * - Group 3: team name(s)
-   *
-   * The " - " (space-hyphen-space) separator is what distinguishes this format
-   * from tab/CSV spreadsheet pastes. A card number's internal hyphen ("BG-1")
-   * has no surrounding spaces, so it is never mistaken for the separator.
-   *
-   * @private
-   * @returns {RegExp}
-   */
-  _lineFormatPattern() {
-    return /^(\S+)\s+(.+?)\s+-\s+(.+)$/
-  }
-
-  /**
-   * Detect whether pasted data uses the simple "CardNumber Player - Team" format.
+   * Line format packs one card per line, starting with a card-number token:
+   *   "CardNumber Player[/Player...] [ - Team] [RC] [SP] [(note)]"
+   * It is distinguished from spreadsheet pastes by having no tab delimiters and
+   * not being comma-delimited (CSV).
    *
    * @private
    * @param {string} data - Raw pasted data
@@ -139,45 +123,117 @@ class ExcelParserService {
       return false
     }
 
-    const pattern = this._lineFormatPattern()
-    const matchCount = lines.filter(line => pattern.test(line)).length
+    // CSV uses commas as column delimiters; the line format does not. If most
+    // lines contain commas, treat it as CSV rather than the line format.
+    const commaLines = lines.filter(line => line.includes(',')).length
+    if (commaLines >= Math.ceil(lines.length / 2)) {
+      return false
+    }
+
+    // Each line should start with a card-number token followed by the subject.
+    const leadingToken = /^\S+\s+\S/
+    const matchCount = lines.filter(line => leadingToken.test(line)).length
 
     // Require a majority of lines to match so a stray row doesn't misroute the paste
     return matchCount >= Math.ceil(lines.length / 2)
   }
 
   /**
-   * Parse the simple line format into row arrays compatible with _parseRows.
+   * Parse the line format into card objects.
    *
-   * Each line becomes [cardNumber, playerNames, teamNames] (columns 0-2),
-   * leaving RC/notes blank just as an unfilled spreadsheet column would.
+   * Each line is "CardNumber Player[/Player...] [ - Team]" optionally followed
+   * by RC / SP flags and a trailing "(note)". Flags and the note can appear in
+   * either order at the end of the line (e.g. "RC (eBay)" or "(Record Breakers) SP"),
+   * so they are stripped iteratively from the right. Multiple players separated
+   * by "/" are left intact here and split later by _preprocessCards.
    *
    * @private
    * @param {string} data - Raw pasted data in line format
-   * @returns {Array<Array<string>>} - Row arrays
+   * @returns {Array<Object>} - Card objects (same shape as _parseRows output)
    */
   _parseLineFormat(data) {
-    const pattern = this._lineFormatPattern()
+    const cards = []
 
-    return data.trim().split('\n').map(line => {
+    data.trim().split('\n').forEach((line, index) => {
       const trimmed = line.trim()
       if (!trimmed) {
-        return []
+        return
       }
 
-      const match = trimmed.match(pattern)
-      if (match) {
-        return [match[1].trim(), match[2].trim(), match[3].trim()]
-      }
-
-      // No " - " team separator: treat the first token as the card number
-      // and the remainder as the player name, leaving the team blank.
+      // Split the leading card-number token from the rest of the line
       const spaceIndex = trimmed.indexOf(' ')
       if (spaceIndex === -1) {
-        return [trimmed]
+        return // card number with no subject - skip
       }
-      return [trimmed.slice(0, spaceIndex).trim(), trimmed.slice(spaceIndex + 1).trim(), '']
+      const cardNumber = trimmed.slice(0, spaceIndex).trim()
+      let rest = trimmed.slice(spaceIndex + 1).trim()
+      if (!cardNumber || !rest) {
+        return
+      }
+
+      // Strip trailing flags/notes from the right. Order varies in the source
+      // data, so loop until nothing more can be removed.
+      let isRC = false
+      let isShortPrint = false
+      const notes = []
+      let changed = true
+      while (changed) {
+        changed = false
+
+        // Trailing parenthetical note, e.g. "... (Record Breakers)"
+        const noteMatch = rest.match(/\(([^()]*)\)\s*$/)
+        if (noteMatch) {
+          if (noteMatch[1].trim()) {
+            notes.unshift(noteMatch[1].trim())
+          }
+          rest = rest.slice(0, noteMatch.index).trim()
+          changed = true
+          continue
+        }
+
+        // Trailing short-print flag: "SP" or "SP*"
+        if (/(^|\s)SP\*?$/.test(rest)) {
+          isShortPrint = true
+          rest = rest.replace(/\s*SP\*?$/, '').trim()
+          changed = true
+          continue
+        }
+
+        // Trailing rookie flag: "RC"
+        if (/(^|\s)RC$/.test(rest)) {
+          isRC = true
+          rest = rest.replace(/\s*RC$/, '').trim()
+          changed = true
+          continue
+        }
+      }
+
+      // What remains is "Player(s) - Team" (team optional). Split on the first
+      // " - "; a card number's internal hyphen ("BG-1") has no surrounding
+      // spaces so it is never mistaken for the separator.
+      let playerNames = rest
+      let teamNames = ''
+      const dashIndex = rest.indexOf(' - ')
+      if (dashIndex !== -1) {
+        playerNames = rest.slice(0, dashIndex).trim()
+        teamNames = rest.slice(dashIndex + 3).trim()
+      }
+
+      cards.push({
+        sortOrder: index + 1,
+        cardNumber,
+        playerNames,
+        teamNames,
+        isRC,
+        rcIndicator: isRC ? 'RC' : '',
+        isAutograph: false,
+        isRelic: false,
+        isShortPrint,
+        notes: notes.join('; ')
+      })
     })
+
+    return cards
   }
 
   /**
