@@ -56,11 +56,12 @@ class ExcelParserService {
    *    "CardNumber<TAB>Player(s)<TAB>Team(s)<TAB>RC<TAB>Notes"
    * 2. Line format:
    *    "CardNumber Player - Team" with optional trailing RC / SP flags and a
-   *    trailing parenthetical note, e.g.:
+   *    trailing parenthetical note. Multiple "Player - Team" pairs are separated
+   *    by "/". Examples:
    *      "9 Josh Hader - Houston Astros"
    *      "181 Ian Seymour - Tampa Bay Rays RC SP"
    *      "86 Roman Anthony - Boston Red Sox RC (eBay)"
-   *      "1 Aaron Judge/Trea Turner (League Leaders)"   (multi-player, no team)
+   *      "1 Aaron Judge - New York Yankees/Trea Turner - Philadelphia Phillies (League Leaders)"
    *
    * @param {string} data - Pasted data in either supported format
    * @returns {Promise<Array>} - Array of parsed and preprocessed cards
@@ -208,16 +209,30 @@ class ExcelParserService {
         }
       }
 
-      // What remains is "Player(s) - Team" (team optional). Split on the first
-      // " - "; a card number's internal hyphen ("BG-1") has no surrounding
-      // spaces so it is never mistaken for the separator.
-      let playerNames = rest
-      let teamNames = ''
-      const dashIndex = rest.indexOf(' - ')
-      if (dashIndex !== -1) {
-        playerNames = rest.slice(0, dashIndex).trim()
-        teamNames = rest.slice(dashIndex + 3).trim()
-      }
+      // What remains is one or more "Player - Team" segments separated by "/",
+      // e.g. "Aaron Judge - New York Yankees/Trea Turner - Philadelphia Phillies".
+      // Split into segments, then split each on the first " - " (team optional;
+      // a card number's internal hyphen like "BG-1" was already removed above
+      // and player/team names don't contain " - "). Players and teams are joined
+      // with ";" to stay aligned by position for downstream matching.
+      const players = []
+      const teams = []
+      rest.split('/').forEach(segment => {
+        const seg = segment.trim()
+        if (!seg) {
+          return
+        }
+        const dashIndex = seg.indexOf(' - ')
+        if (dashIndex !== -1) {
+          players.push(seg.slice(0, dashIndex).trim())
+          teams.push(seg.slice(dashIndex + 3).trim())
+        } else {
+          players.push(seg)
+          teams.push('')
+        }
+      })
+      const playerNames = players.join('; ')
+      const teamNames = teams.join('; ')
 
       cards.push({
         sortOrder: index + 1,

@@ -568,6 +568,44 @@ describe('ExcelParserService', () => {
         isShortPrint: true
       })
     })
+
+    test('should pair each player with their own team across "/" segments', async () => {
+      const result = await excelParser.parsePastedData(
+        '1 Aaron Judge - New York Yankees/Trea Turner - Philadelphia Phillies (League Leaders)'
+      )
+
+      expect(result[0]).toMatchObject({
+        cardNumber: '1',
+        playerNames: ['Aaron Judge', 'Trea Turner'],
+        teamNames: ['New York Yankees', 'Philadelphia Phillies'],
+        notes: 'League Leaders'
+      })
+    })
+
+    test('should tolerate a stray space before the "/" separator', async () => {
+      const result = await excelParser.parsePastedData(
+        '4 Oneil Cruz - Pittsburgh Pirates /José Caballero - New York Yankees (League Leaders)'
+      )
+
+      expect(result[0]).toMatchObject({
+        playerNames: ['Oneil Cruz', 'José Caballero'],
+        teamNames: ['Pittsburgh Pirates', 'New York Yankees']
+      })
+    })
+
+    test('should pair four players with their teams and strip trailing RC SP', async () => {
+      const result = await excelParser.parsePastedData(
+        '372 Philip Abner - Arizona Diamondbacks/Eduarniel Núñez - Athletics/Didier Fuentes - Atlanta Braves/Jonathan Pintaro - New York Mets RC SP'
+      )
+
+      expect(result[0]).toMatchObject({
+        cardNumber: '372',
+        playerNames: ['Philip Abner', 'Eduarniel Núñez', 'Didier Fuentes', 'Jonathan Pintaro'],
+        teamNames: ['Arizona Diamondbacks', 'Athletics', 'Atlanta Braves', 'New York Mets'],
+        isRC: true,
+        isShortPrint: true
+      })
+    })
   })
 
   // ============================================================================
