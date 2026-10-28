@@ -862,9 +862,33 @@ async function performFastMatching(cards, playerLookup, teamLookup, playerTeamLo
       // Collect teams for player_team checking (based on position guess)
       const playerTeamCheckTeams = { exact: [], fuzzy: [] }
 
-      // Handle NO TEAM case - recommend "no name" teams
+      // When a player has more than one known team we can't infer which one this
+      // card is for, so we present them as options rather than auto-selecting all.
+      let noTeamAmbiguous = false
+
+      // Handle NO TEAM case
       if (teamNamesList.length === 0 || playerTeamGuess.length === 0) {
-        console.log(`⚠️ No team specified for "${playerName}" - recommending no-team placeholder teams`)
+        // Preferred: recommend the matched player's own existing team(s) from
+        // their player_team records, the same way other ingestion flows do.
+        // (batchFindPlayers already loads each player's teams.)
+        const knownTeams = []
+        playerMatches.exact.forEach(player => {
+          (player.teams || []).forEach(team => {
+            if (!knownTeams.some(t => t.teamId === team.teamId)) {
+              knownTeams.push(team)
+            }
+          })
+        })
+
+        if (knownTeams.length > 0) {
+          console.log(`💡 No team specified for "${playerName}" - recommending ${knownTeams.length} known team(s) from player_team records: ${knownTeams.map(t => t.teamName).join(', ')}`)
+          knownTeams.forEach(team => playerTeamCheckTeams.exact.push(team))
+
+          // Only auto-select when the player has exactly one known team; with
+          // multiple historical teams the user must pick the right one.
+          noTeamAmbiguous = knownTeams.length > 1
+        } else {
+        console.log(`⚠️ No team specified and no known teams for "${playerName}" - recommending no-team placeholder teams`)
 
         // Get placeholder teams for non-team subjects (mascots, stadiums, etc.)
         // Specific match for: NULL, empty string, "No Name", "No Team", "No Team Assigned"
@@ -956,6 +980,7 @@ async function performFastMatching(cards, playerLookup, teamLookup, playerTeamLo
             }
           }
         }
+        }
       } else {
         // Normal team matching
         playerTeamGuess.forEach(teamName => {
@@ -1000,8 +1025,10 @@ async function performFastMatching(cards, playerLookup, teamLookup, playerTeamLo
         selectedPlayer = playerMatches.exact[0]
         console.log(`🎯 Auto-selected player: "${selectedPlayer.playerName}" for "${playerName}"`)
 
-        // If we also have team matches in the position guess, auto-select them
-        if (playerTeamCheckTeams?.exact?.length > 0) {
+        // If we also have team matches in the position guess, auto-select them.
+        // For no-team cards we only auto-select when the player has a single
+        // known team; otherwise the teams are shown as options to choose from.
+        if (playerTeamCheckTeams?.exact?.length > 0 && !noTeamAmbiguous) {
           selectedTeams = playerTeamCheckTeams.exact
           console.log(`🎯 Auto-selected ${selectedTeams.length} teams: ${selectedTeams.map(t => t.teamName).join(', ')}`)
 
