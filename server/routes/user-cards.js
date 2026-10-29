@@ -298,31 +298,31 @@ router.post('/bulk', async (req, res) => {
     const notesValue = notes || null
     const userIdBigInt = BigInt(parseInt(userId))
 
-    // Insert all cards in a single transaction
-    const insertedIds = await prisma.$transaction(async (tx) => {
-      const ids = []
-      for (const cardId of cardIdNumbers) {
-        await tx.$queryRaw`
-          INSERT INTO user_card (
-            [user], card, random_code, user_location, notes, created
-          ) VALUES (
-            ${userIdBigInt},
-            ${cardId},
-            ${generateCode()},
-            ${locationValue},
-            ${notesValue},
-            GETDATE()
-          )
+    // Insert all cards using batched multi-row INSERTs inside a single
+    // transaction. Doing one INSERT per card (plus a SCOPE_IDENTITY round-trip)
+    // meant ~2 queries per card, which blew past the Prisma transaction timeout
+    // on large batches (e.g. 372 cards ≈ 744 queries). Batching keeps it to a
+    // handful of round-trips. The returned IDs aren't used by any caller, so we
+    // no longer fetch them.
+    //
+    // SQL Server caps a single statement at 2100 parameters; each row here uses
+    // 5 params, so 300 rows/batch (1500 params) stays comfortably under the cap.
+    const BATCH_SIZE = 300
+    await prisma.$transaction(async (tx) => {
+      for (let i = 0; i < cardIdNumbers.length; i += BATCH_SIZE) {
+        const batch = cardIdNumbers.slice(i, i + BATCH_SIZE)
+        const valueRows = batch.map(cardId =>
+          Prisma.sql`(${userIdBigInt}, ${cardId}, ${generateCode()}, ${locationValue}, ${notesValue}, GETDATE())`
+        )
+        await tx.$executeRaw`
+          INSERT INTO user_card ([user], card, random_code, user_location, notes, created)
+          VALUES ${Prisma.join(valueRows)}
         `
-        const idResult = await tx.$queryRaw`
-          SELECT CAST(SCOPE_IDENTITY() AS BIGINT) as user_card_id
-        `
-        ids.push(Number(idResult[0].user_card_id))
       }
-      return ids
-    })
+    }, { timeout: 30000 })
 
-    console.log(`Bulk added ${insertedIds.length} cards for user ${userId}`)
+    const addedCount = cardIdNumbers.length
+    console.log(`Bulk added ${addedCount} cards for user ${userId}`)
 
     // Collect unique series IDs and update completion for each (async, don't block response)
     const seriesIds = [...new Set(existingCards.map(c => Number(c.series)))]
@@ -333,7 +333,7 @@ router.post('/bulk', async (req, res) => {
 
     // Track telemetry for the batch
     telemetryService.trackCollectionEvent('cards_bulk_added', userId, null, {
-      count: insertedIds.length,
+      count: addedCount,
       card_ids: cardIdNumbers
     })
 
@@ -355,9 +355,8 @@ router.post('/bulk', async (req, res) => {
     })
 
     res.status(201).json({
-      message: `${insertedIds.length} cards added to collection successfully`,
-      added: insertedIds.length,
-      user_card_ids: insertedIds
+      message: `${addedCount} cards added to collection successfully`,
+      added: addedCount
     })
 
   } catch (error) {
